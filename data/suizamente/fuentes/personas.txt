@@ -1,0 +1,41 @@
+# fue o es | nombre | descripción (respuesta) | emoji | dato
+fue|Henri Dunant|El fundador de la Cruz Roja|❤️|Recibió el primer premio Nobel de la Paz, en 1901.
+fue|Johanna Spyri|La autora de «Heidi»|📖|«Heidi» se publicó en 1880 y es uno de los libros suizos más leídos del mundo.
+es|Roger Federer|Un tenista de Basilea con 20 títulos de Grand Slam|🎾|Ganó Wimbledon 8 veces.
+fue|Albert Einstein|El físico que publicó la relatividad especial viviendo en Berna|🧠|Trabajaba en la oficina de patentes de Berna y tenía nacionalidad suiza desde 1901.
+fue|Le Corbusier|Un arquitecto nacido en La Chaux-de-Fonds|🏢|Varias de sus obras en el mundo son Patrimonio de la Humanidad.
+fue|Alberto Giacometti|Un escultor de figuras humanas muy alargadas|🗿|Nació en Grisones y aparecía en el billete de 100 francos de la serie anterior.
+es|Guillermo Tell|Un héroe legendario de la ballesta y la manzana|🏹|Según la leyenda, disparó a una manzana sobre la cabeza de su hijo en Altdorf.
+fue|Nicolás de Flüe|Un ermitaño que hoy es el santo patrón de Suiza|🙏|Vivió en Flüeli-Ranft, en el cantón de Obwalden.
+fue|Leonhard Euler|Un genio de las matemáticas nacido en Basilea|➗|Es uno de los matemáticos más importantes de la historia.
+fue|Paracelso|Un médico y alquimista del siglo XVI|⚗️|Nació cerca de Einsiedeln y revolucionó la medicina de su época.
+fue|Carl Gustav Jung|El psiquiatra creador de la psicología analítica|🧩|Vivió y trabajó en Küsnacht, junto al lago de Zúrich.
+fue|Jean Piaget|Un psicólogo que estudió cómo aprenden los niños|🧒|Nació en Neuchâtel.
+es|Ursula Andress|La actriz bernesa de la primera película de James Bond|🎬|Su salida del mar en «Agente 007 contra el Dr. No» (1962) es una escena mítica.
+es|Martina Hingis|Una tenista que fue número 1 del mundo con 16 años|🎾|Es la persona más joven que ha llegado al número 1 del tenis mundial.
+es|Stan Wawrinka|Un tenista suizo con tres títulos de Grand Slam|🎾|Ganó el Open de Australia, Roland Garros y el US Open.
+es|Simon Ammann|Un saltador de esquí con cuatro oros olímpicos|🎿|Ganó dos oros en 2002 y otros dos en 2010.
+es|Bernhard Russi|Un campeón olímpico de descenso que diseña pistas olímpicas|⛷️|Ganó el oro olímpico de descenso en 1972.
+fue|Jean-Jacques Rousseau|Un filósofo de la Ilustración nacido en Ginebra|📚|Escribió «El contrato social».
+fue|Juan Calvino|El reformador protestante que transformó Ginebra|⛪|A Ginebra la llegaron a llamar «la Roma protestante».
+fue|Huldrych Zwinglio|El reformador protestante de Zúrich|📜|Predicaba en la Grossmünster, la gran iglesia de Zúrich.
+fue|Hermann Hesse|Un premio Nobel de Literatura que vivió en el Tesino|✍️|Escribió «Siddhartha» y vivió en Montagnola, cerca de Lugano.
+fue|Friedrich Dürrenmatt|El autor de «La visita de la vieja dama»|🎭|Su casa en Neuchâtel es hoy un museo.
+fue|Max Frisch|El autor de la novela «Homo Faber»|📘|Además de escritor, fue arquitecto en Zúrich.
+es|Mario Botta|Un arquitecto del Tesino de formas geométricas|🏛️|Diseñó, entre otros, el museo SFMOMA de San Francisco.
+fue|Jean Tinguely|Un escultor de máquinas en movimiento|⚙️|Su fuente de máquinas está frente al teatro de Basilea.
+fue|H. R. Giger|El artista que diseñó el monstruo de «Alien»|👽|Ganó un Óscar a los mejores efectos visuales por «Alien».
+es|Bertrand Piccard|El aventurero que dio la vuelta al mundo en globo y en avión solar|🎈|En 2016 completó la vuelta al mundo en el avión solar Solar Impulse 2.
+fue|Auguste Piccard|El científico que subió a la estratosfera en globo|🌍|En 1931 llegó a casi 16 000 metros de altura.
+fue|Jacques Piccard|El oceanógrafo que bajó a la fosa de las Marianas|🌊|Llegó al punto más profundo del océano en 1960.
+fue|Louis Chevrolet|Un piloto de La Chaux-de-Fonds que fundó una marca de coches en EE. UU.|🚗|Cofundó la marca Chevrolet en 1911.
+fue|César Ritz|El hotelero del Valais que dio nombre a los hoteles Ritz|🏨|Nació en Niederwald, un pueblecito del Valais.
+fue|Henri Nestlé|El fundador de la empresa de alimentación de Vevey|🍼|Nació en Alemania y creó en Vevey una harina láctea para bebés.
+es|Ruth Dreifuss|La primera mujer presidenta de la Confederación|👩‍💼|Lo fue en 1999.
+fue|Jean-Luc Godard|Un cineasta franco-suizo de la «nouvelle vague»|🎥|Dirigió «Al final de la escapada».
+fue|Ella Maillart|Una viajera y escritora de Ginebra|🧭|Recorrió Asia en los años 30 y lo contó en sus libros.
+fue|Nicolas Hayek|El empresario que impulsó el reloj Swatch|⌚|Ayudó a salvar la relojería suiza en los años 80.
+fue|Ferdinand Hodler|Un pintor famoso por sus paisajes alpinos|🎨|Es uno de los pintores suizos más conocidos.
+fue|Sophie Taeuber-Arp|Una artista de vanguardia del dadaísmo|🎨|Aparecía en el billete de 50 francos de la serie anterior.
+es|Lara Gut-Behrami|Una esquiadora del Tesino ganadora de la Copa del Mundo|⛷️|Ganó la clasificación general de la Copa del Mundo en 2016 y en 2024.
+fue|Paul Klee|Un pintor nacido cerca de Berna|🖌️|El Zentrum Paul Klee de Berna guarda miles de sus obras.

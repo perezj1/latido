@@ -1,0 +1,27 @@
+# código | nombre | capital | emoji | dato
+AG|Argovia|Aarau|🏰|A Argovia la llaman «el cantón de los castillos» y su tarta de zanahoria es famosa en todo el país.
+AI|Appenzell Rodas Interiores|Appenzell|🗳️|Fue el último cantón en dar el voto a las mujeres, en 1990, por orden del Tribunal Federal.
+AR|Appenzell Rodas Exteriores|Herisau|🎶|En Urnäsch celebran el Año Nuevo dos veces, con los Silvesterchläuse y sus enormes trajes.
+BE|Berna|Berna|🐻|Es el segundo cantón más poblado y es bilingüe: alemán y francés.
+BL|Basilea-Campiña|Liestal|✂️|Se separó de Basilea-Ciudad en 1833, tras un conflicto entre la ciudad y el campo.
+BS|Basilea-Ciudad|Basilea|🎨|Es el cantón más pequeño de Suiza por superficie, pero lleno de museos.
+FR|Friburgo|Friburgo|🧀|Es bilingüe y es la tierra del queso Gruyère.
+GE|Ginebra|Ginebra|🕊️|Acoge la sede europea de la ONU y la de la Cruz Roja Internacional.
+GL|Glaris|Glaris|✋|Todavía vota a mano alzada en la plaza, en la Landsgemeinde.
+GR|Grisones|Coira|🏔️|Es el cantón más grande de Suiza y el único trilingüe: alemán, romanche e italiano.
+JU|Jura|Delémont|🆕|Es el cantón más joven de Suiza: nació en 1979 al separarse de Berna.
+LU|Lucerna|Lucerna|🌉|Está a orillas del lago de los Cuatro Cantones y es famosa por su carnaval.
+NE|Neuchâtel|Neuchâtel|⌚|Es cuna de la relojería y de la absenta, nacida en el Val-de-Travers.
+NW|Nidwalden|Stans|✈️|En Stans se fabrican los aviones Pilatus.
+OW|Obwalden|Sarnen|🙏|Es la tierra de Nicolás de Flüe, santo patrón de Suiza.
+SG|San Galo|San Galo|📚|La biblioteca de su abadía es Patrimonio de la Humanidad.
+SH|Schaffhausen|Schaffhausen|💦|Está casi rodeado por Alemania y junto a las cataratas del Rin.
+SO|Soleura|Soleura|1️⃣|Su capital está obsesionada con el número 11: tiene 11 iglesias y 11 fuentes.
+SZ|Schwyz|Schwyz|🇨🇭|Dio su nombre y su bandera a toda Suiza.
+TG|Turgovia|Frauenfeld|🍎|La llaman en broma «Mostindien» por sus manzanas y su sidra.
+TI|Tesino|Bellinzona|🌴|Es el cantón de habla italiana, con palmeras junto a sus lagos.
+UR|Uri|Altdorf|🏹|Es la tierra de Guillermo Tell: su estatua está en la plaza de Altdorf.
+VD|Vaud|Lausana|🏅|Acoge el Comité Olímpico Internacional, en Lausana.
+VS|Valais|Sion|🗻|Tiene la mayoría de las cumbres de más de 4000 metros de Suiza, incluido el Cervino.
+ZG|Zug|Zug|💰|Sus impuestos bajos atraen a muchas empresas; lo llaman el «Crypto Valley».
+ZH|Zúrich|Zúrich|🏙️|Es el cantón más poblado de Suiza.

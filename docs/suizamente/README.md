@@ -5,19 +5,22 @@ iframe del mismo origen para conservar su aspecto, Poppins, modo oscuro y revela
 a pantalla completa. Usa el logo oficial `/favicon.svg`, también utilizado por la
 portada de Latido. Los accesos de Inicio, Perfil y Explorar llevan al nuevo juego.
 
-«¿Qué prefieres?» usa solo dilemas de dos opciones (46). «Preguntas y respuestas»
-usa solo preguntas de tipo `real` (50). Mix combina cinco de cada tipo por ronda
+«¿Qué prefieres?» usa solo dilemas de dos opciones (941). «Preguntas y respuestas»
+usa solo preguntas de tipo `real` (1.000). Mix combina cinco de cada tipo por ronda
 de diez, en orden aleatorio. Se priorizan las no respondidas dentro de cada tipo.
-Los cuatro dilemas originales de tres opciones se conservan sin modificar en el
-JSON y en la base de datos, pero no se incluyen en las rondas. Hay 96 preguntas jugables.
+Los 59 dilemas de tres opciones se conservan sin modificar en el JSON y en la
+base de datos, pero no se incluyen en las rondas. Hay 1.941 preguntas jugables.
 
 ## Archivos
 
 - `public/suizamente/juego.html`: estilos y estructura originales.
 - `public/suizamente/juego.js`: inicio, rondas, resultado, resumen y compartir.
 - `public/suizamente/votos.js`: sesión, recuentos, recuperación y reintentos.
-- `public/suizamente/data/preguntas.json`: las 100 preguntas originales, con los
-  mismos identificadores e índices de opciones; no modificar su orden.
+- `public/suizamente/data/preguntas.json`: banco de 2.000 preguntas del ZIP de Latido,
+  incluidas las 100 anteriores intactas; no modificar los índices de sus opciones.
+- `data/suizamente/fuentes/`: fuentes editoriales originales entregadas en el ZIP.
+- `scripts/generar-suizamente-preguntas.cjs`: generador determinista entregado por
+  Latido, adaptado a las rutas del repositorio; permite regenerar el mismo banco.
 - `src/pages/Suizamente.jsx`: ruta React y puente de sesión del mismo origen.
 - `api/suizamente.js`: adaptador de los tres endpoints HTTP para Vite/Vercel.
 - `supabase/functions/suizamente-votos/index.ts`: API de producción desplegada
@@ -26,6 +29,8 @@ JSON y en la base de datos, pero no se incluyen en las rondas. Hay 96 preguntas 
   validación y privacidad compartidos por ambos adaptadores.
 - `supabase/suizamente_votos.sql`: tablas, catálogo de opciones, RPC restringida
   al servidor y límites persistentes por jugador/IP.
+- `supabase/suizamente_actualizar_catalogo.sql`: actualización aditiva para una
+  instalación existente, sin modificar votos ni cambiar opciones publicadas.
 - `openapi.yaml`: contrato entregado por Latido. La sesión de esta integración
   usa `Authorization: Bearer <access_token>` de Supabase, con prioridad sobre
   `X-Jugador-Id`. Las respuestas de recuentos tienen tres posiciones (0–2).
@@ -72,7 +77,7 @@ Instalación en otro proyecto o restauración:
 
 3. Desplegar la web por el flujo habitual de la rama Git.
 
-El 19 de noviembre de 2026 se verificaron la instalación SQL, las 100 preguntas,
+El 19 de noviembre de 2026 se verificaron la instalación SQL, las 2.000 preguntas,
 los permisos y RLS en el proyecto Supabase de Latido; se desplegó la función y
 se comprobaron los endpoints reales. No se insertaron votos ficticios.
 `supabase/suizamente_verificar_produccion.sql` permite repetir las comprobaciones
@@ -100,6 +105,7 @@ Los límites almacenan el hash de la IP, no su valor original, y expiran tras un
 
 ```powershell
 npm run suizamente:validar
+npm run suizamente:comprobar
 npm run test:suizamente:votos
 npm run test:suizamente:referencia
 npm run build
@@ -118,3 +124,16 @@ Function real: verifica CORS, conexión y los tres modos sin enviar votos.
 
 Las comprobaciones `test:suizamente:votos` y `test:suizamente:referencia` son
 las del juego integrado en esta rama.
+
+## Actualizar el contenido
+
+Editar las fuentes de `data/suizamente/fuentes/` según `LEEME-FUENTES.md`,
+conservando `base.json`, y ejecutar `npm run suizamente:generar`. El comando
+genera el JSON público, lo valida y sincroniza el catálogo de la Edge Function
+y los SQL de instalación y actualización. `npm run suizamente:comprobar` verifica
+que el banco publicado coincide exactamente con sus fuentes sin escribir archivos.
+
+Después se aplica `supabase/suizamente_actualizar_catalogo.sql` a la base de datos,
+se despliega de nuevo `suizamente-votos` y se publica la web. El ZIP importado
+solo aporta contenido y herramientas editoriales: no se incorpora su HTML,
+sus estilos ni sus instrucciones de diseño al juego actual.

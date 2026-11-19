@@ -1,0 +1,41 @@
+# ciudad o pueblo | código del cantón | emoji | dato
+Zermatt|VS|🗻|Pueblo sin coches de combustión a los pies del Cervino.
+Davos|GR|🎿|Sede del Foro Económico Mundial y una de las ciudades más altas de Europa.
+St. Moritz|GR|⛸️|Acogió los Juegos Olímpicos de invierno de 1928 y de 1948.
+Lugano|TI|🌴|La ciudad más grande del Tesino, a orillas de su lago.
+Locarno|TI|🎬|Su festival de cine proyecta películas al aire libre en la Piazza Grande.
+Ascona|TI|🌅|Pueblo junto al lago Mayor, con el famoso Monte Verità.
+Montreux|VD|🎷|Festival de jazz cada julio y una estatua de Freddie Mercury frente al lago.
+Vevey|VD|🎩|Sede de Nestlé. Charlie Chaplin vivió muy cerca sus últimos años.
+Nyon|VD|⚽|Sede de la UEFA, a orillas del lago Lemán.
+Yverdon-les-Bains|VD|♨️|Ciudad termal en el extremo sur del lago de Neuchâtel.
+Interlaken|BE|🪂|Está entre los lagos de Thun y Brienz, y es un paraíso del parapente.
+Grindelwald|BE|🧗|Está a los pies de la cara norte del Eiger.
+Lauterbrunnen|BE|🌄|El valle de las 72 cascadas.
+Wengen|BE|⛷️|Cada enero acoge el descenso de esquí del Lauberhorn.
+Gstaad|BE|💎|Estación de esquí famosa por su ambiente exclusivo.
+Adelboden|BE|⛷️|Acoge cada año una prueba de la Copa del Mundo de esquí.
+Thun|BE|🏰|Castillo y lago turquesa con vistas a las cumbres del Oberland.
+Biel/Bienne|BE|⌚|La ciudad bilingüe más grande de Suiza.
+Mürren|BE|🚡|Pueblo sin coches colgado sobre el valle de Lauterbrunnen.
+Gruyères|FR|🧀|El pueblo medieval que da nombre al queso Gruyère.
+Einsiedeln|SZ|⛪|Su abadía, con la Virgen Negra, es un gran lugar de peregrinación.
+Winterthur|ZH|🏭|La sexta ciudad de Suiza, con museos de arte de primer nivel.
+Rapperswil|SG|🌹|La «ciudad de las rosas», a orillas del lago de Zúrich.
+Baden|AG|♨️|Ciudad termal con baños desde la época romana.
+La Chaux-de-Fonds|NE|⌚|Ciudad relojera Patrimonio de la Humanidad y cuna de Le Corbusier.
+Engelberg|OW|🚠|Está a los pies del Titlis y de un gran monasterio.
+Saas-Fee|VS|❄️|Pueblo sin coches rodeado de glaciares.
+Verbier|VS|🏂|Paraíso del esquí fuera de pista y del freeride.
+Crans-Montana|VS|⛳|Estación de golf y esquí sobre el valle del Ródano.
+Leukerbad|VS|♨️|Termas alpinas a los pies de enormes paredes de roca.
+Martigny|VS|🐕|Allí se pueden ver los famosos perros San Bernardo.
+Brig|VS|🏯|Tiene el palacio Stockalper, con torres de cúpulas doradas.
+Andermatt|UR|🌉|Está cerca del puente del Diablo, en la ruta del San Gotardo.
+Laax|GR|🏂|Una de las grandes estaciones de snowboard de Europa.
+Arosa|GR|🐻|Tiene un refugio para osos rescatados.
+Sils Maria|GR|🌊|El filósofo Friedrich Nietzsche pasaba allí los veranos.
+Olten|SO|🚉|Uno de los grandes nudos ferroviarios de Suiza.
+Kreuzlingen|TG|🌉|Está pegada a la ciudad alemana de Constanza.
+Stans|NW|✈️|Allí se fabrican los aviones Pilatus.
+Sierre|VS|☀️|Una de las ciudades más soleadas de Suiza, rodeada de viñedos.

@@ -1,0 +1,193 @@
+# idioma | palabra | significado | emoji | dato
+# idioma: DE suizo alemán · FR francés de Suiza · IT Tesino · RM romanche
+DE|Grüezi|hola (formal)|👋|Saludo formal típico de Zúrich y del este de Suiza. Se dice al entrar en tiendas, consultas y ascensores.
+DE|Grüessech|hola (en Berna)|🐻|Es la versión bernesa de «Grüezi». Cada región de la Suiza alemana tiene su manera de saludar.
+DE|Hoi|hola (entre amigos)|🙋|Saludo informal entre amigos. Para varias personas se dice «Hoi zäme».
+DE|Tschüss|adiós (informal)|👋|Despedida entre amigos. También se oye mucho «Tschau» o «Ciao».
+DE|Uf Widerluege|adiós (formal)|🎩|Despedida formal en tiendas y oficinas. Literalmente, «hasta volver a vernos».
+DE|Merci vielmal|muchas gracias|🙏|Mezcla de francés («merci») y alemán («vielmal»). Es el «gracias» suizo por excelencia.
+DE|Exgüsi|perdón|🙇|Viene del francés «excusez». Sirve para pedir paso en el tranvía o disculparse.
+DE|En Guete|buen provecho|🍽️|Se dice antes de empezar a comer, y nadie empieza hasta que se ha dicho.
+DE|Znüni|tentempié de media mañana|🥐|Literalmente «a las nueve». En muchas oficinas la pausa del Znüni es sagrada.
+DE|Zvieri|merienda|🍎|Literalmente «a las cuatro»: la merienda de media tarde.
+DE|Zmorge|desayuno|🥣|Viene de «Morge» (mañana). Un Zmorge de domingo es largo, con trenza, mermelada y queso.
+DE|Zmittag|comida del mediodía|🍲|En Suiza se come pronto: muchas cantinas sirven desde las 11:30.
+DE|Znacht|cena|🌙|La cena suele ser entre las 18:00 y las 19:30.
+DE|Natel|móvil|📱|Nombre suizo del teléfono móvil. Venía de la antigua red de telefonía móvil del país y se quedó.
+DE|Velo|bicicleta|🚲|Palabra de origen francés que se usa en toda la Suiza alemana. En Alemania dirían «Fahrrad».
+DE|Trottoir|acera|🚶|Otra palabra francesa adoptada por el suizo alemán. En Alemania dirían «Bürgersteig».
+DE|Glace|helado|🍦|Del francés. En Alemania dirían «Eis».
+DE|Poulet|pollo|🍗|Del francés. En la carta de un restaurante suizo verás «Poulet», no «Hähnchen».
+DE|Gipfeli|cruasán|🥐|El cruasán suizo, primo del francés y normalmente algo más denso.
+DE|Weggli|panecillo blando|🍞|Panecillo pequeño y tierno. Con una tableta de chocolate dentro es merienda de campeones.
+DE|Zopf|pan trenzado|🥖|La trenza del domingo, hecha con mantequilla. En Berna también se llama «Züpfe».
+DE|Rüebli|zanahoria|🥕|La tarta de zanahoria de Argovia (Rüeblitorte) es tan famosa que a Argovia la llaman «Rüebliland».
+DE|Härdöpfel|patata|🥔|Literalmente «manzana de tierra», igual que «pomme de terre» en francés.
+DE|Anke|mantequilla|🧈|En alemán estándar es «Butter». Un «Ankezopf» es una trenza de mantequilla.
+DE|Rahm|nata|🍰|En Alemania se dice «Sahne». Ojo en el súper: «Vollrahm» es nata, no leche.
+DE|Chuchichäschtli|armarito de cocina|🗄️|La palabra favorita de los suizos para poner a prueba a quien viene de fuera. La «ch» suena como una jota.
+DE|Chuchi|cocina|🍳|En alemán estándar es «Küche». La «ch» del principio se pronuncia con la garganta.
+DE|Chäs|queso|🧀|«Chäs» es queso. Una «Chäsi» es la quesería del pueblo.
+DE|Gopfriedstutz|¡caramba!|🤬|Exclamación de enfado suave y muy suiza. Ideal para cuando pierdes el tren por un segundo.
+DE|Gäll|¿verdad?|🤔|Muletilla al final de la frase: «Schön, gäll?» significa «Bonito, ¿verdad?».
+DE|Jo|sí|👍|El «ja» alemán en Suiza suele sonar «jo» o «jaa».
+DE|Nei|no|👎|El «nein» alemán en versión suiza.
+DE|Schätzli|cariño|💕|Apodo cariñoso para la pareja o los niños. Literalmente, «tesorito».
+DE|Büsi|gato|🐱|Gato en lenguaje cariñoso. Un gatito es un «Büsseli».
+DE|Chüngel|conejo|🐇|En alemán estándar es «Kaninchen».
+DE|Hüsli|casita|🏡|El diminutivo «-li» está por todas partes en suizo alemán: Hüsli, Lädeli, Stägeli…
+DE|Müntschi|besito|😘|Beso cariñoso, por ejemplo a un niño o a la abuela.
+DE|Schoggi|chocolate|🍫|Un «Schoggistängeli» es una barrita de chocolate. Suiza come unos 10 kilos por persona al año.
+DE|Guetzli|galleta|🍪|En Navidad se hornean muchas: Mailänderli, Brunsli, Zimtsterne y Spitzbuebe.
+DE|Grittibänz|muñeco de pan dulce|🎅|Pan con forma de hombrecito que se come alrededor del 6 de diciembre, día de San Nicolás.
+DE|Fasnacht|carnaval|🎭|Los más famosos de Suiza son los de Basilea y Lucerna.
+DE|Chilbi|fiesta del pueblo|🎡|Feria con atracciones, música y puestos de comida que llega cada año al pueblo.
+DE|Lädeli|tiendecita|🏪|Tienda pequeña de barrio. Con diminutivo todo suena más simpático.
+DE|Beiz|bar o tasca|🍺|Bar sencillo de barrio. «Gömmer i d'Beiz?» es «¿vamos al bar?».
+DE|Stange|caña de cerveza|🍺|Un vaso alto de cerveza de unos 3 decilitros.
+DE|Kafi|café|☕|El café estándar es el «Kafi Crème», un café largo con un poco de crema.
+DE|Kafi Luz|café con aguardiente|🥃|Café muy suave con aguardiente, típico de Lucerna y la Suiza central.
+DE|Bschiss|engaño|🤥|«Das isch Bschiss!» significa «¡esto es un timo!».
+DE|Chabis|tonterías|🥬|Literalmente es «col». «Das isch Chabis» quiere decir «eso es una tontería».
+DE|Gwunder|curiosidad|🧐|Una persona «gwundrig» es curiosa, o un poco cotilla.
+DE|Hüt|hoy|📅|En alemán estándar, «heute». «Hüt znacht» es «esta noche».
+DE|Morn|mañana (el día siguiente)|🌅|«Bis morn!» significa «¡hasta mañana!».
+DE|Geschter|ayer|⏪|En alemán estándar, «gestern».
+DE|Lueg|¡mira!|👀|Viene de «luege», mirar. «Lueg emal!» es «¡mira esto!».
+DE|Poschte|hacer la compra|🛒|«I gang go poschte» significa «voy a hacer la compra».
+DE|Schaffe|trabajar|💼|En alemán estándar es «arbeiten». En Suiza se «schafft» mucho.
+DE|Zügle|mudarse|📦|Mudarse de casa. Muchos contratos de alquiler terminan en fechas fijas de mudanza.
+DE|Ferie|vacaciones|🏖️|«I bi i de Ferie» significa «estoy de vacaciones».
+DE|Ghüder|basura|🗑️|La basura. Y recuerda: en casi toda Suiza va en bolsas oficiales de pago.
+DE|Billett|billete|🎫|Del francés. En Alemania dirían «Fahrkarte».
+DE|Perron|andén|🚉|Del francés. Por megafonía oirás «uf em Perron 7».
+DE|Coiffeur|peluquería|💇|Otra palabra francesa del suizo alemán.
+DE|Portemonnaie|monedero|👛|Del francés y muy usada en suizo alemán.
+DE|Stutz|franco (dinero)|💰|Coloquial: «Das choschtet zäh Stutz» significa «cuesta diez francos».
+DE|Fünfliber|moneda de 5 francos|🪙|Así se llama popularmente a la moneda más grande de Suiza.
+DE|Chrampfe|trabajar muy duro|😩|«Chrampfe» es currar sin parar, normalmente con esfuerzo físico.
+DE|Fyrabig|fin de la jornada laboral|🌇|El momento de salir del trabajo. Un «Fyrabigbier» es la cerveza de después.
+DE|Sünneli|solecito|☀️|Diminutivo cariñoso del sol. En noviembre se echa mucho de menos.
+DE|Hoger|colina|⛰️|Una colina pequeña. La meseta suiza está llena de «Hoger».
+DE|Chriesi|cereza|🍒|El «Chriesiwasser» o kirsch es aguardiente de cerezas, típico de Zug.
+DE|Öpfel|manzana|🍎|Turgovia es tan famosa por sus manzanas y su sidra que la llaman en broma «Mostindien».
+DE|Bire|pera|🍐|Con peras secas se hace el «Birnbrot», un pan relleno muy típico.
+DE|Zibele|cebolla|🧅|En Berna se celebra el Zibelemärit, el mercado de la cebolla, cada noviembre.
+DE|Bölle|cebolla (en Basilea)|🧅|En Basilea dicen «Bölle». En Zúrich, «Zibele». Mismo ingrediente, distinta palabra.
+DE|Wienerli|salchicha de Viena|🌭|Salchicha fina que se come con mostaza y pan.
+DE|Gugge|banda de carnaval|🎺|Las Guggenmusik tocan desafinado a propósito en carnaval. Es parte de la gracia.
+DE|Schwiizerdütsch|suizo alemán|🇨🇭|No tiene forma escrita oficial y cada región tiene su dialecto. Para escribir se usa alemán estándar.
+DE|Hochdütsch|alemán estándar|📚|Es el alemán de la escuela, las noticias y las cartas oficiales.
+DE|Gschpänli|compañero de juegos|🧸|Amiguito o compañero, sobre todo entre niños.
+DE|Grosi|abuela|👵|También se dice «Grossmami». El abuelo es el «Grossvati» o «Grosspapi».
+DE|Bueb|niño (chico)|👦|En alemán estándar sería «Junge». Un niño pequeño es un «Büebli».
+DE|Meitli|niña (chica)|👧|En alemán estándar sería «Mädchen».
+DE|Gschtürm|jaleo|🌀|«So es Gschtürm!» significa «¡qué follón!».
+DE|Samichlaus|San Nicolás|🎅|Visita a los niños el 6 de diciembre con su ayudante, el Schmutzli.
+DE|Schmutzli|ayudante de San Nicolás|🖤|Acompaña al Samichlaus vestido de oscuro y con un saco.
+DE|Bünzli|persona muy cuadriculada|📏|Estereotipo del suizo obsesionado con las normas. Se usa en broma… y a veces en serio.
+DE|Huere guet|buenísimo|🤩|«Huere» es un intensificador muy coloquial. «Huere guet» es «buenísimo».
+DE|Rüüdig|muy (en Lucerna)|😄|Intensificador típico de Lucerna: «rüüdig schön» es «precioso».
+DE|Töff|moto|🏍️|En suizo alemán, la moto es el «Töff».
+DE|Pöstler|cartero|📬|El cartero de Correos. Pon tu nombre en el buzón o no te dejará nada.
+DE|Schuel|escuela|🏫|En alemán estándar, «Schule».
+DE|Chind|niño o niños|🧒|En alemán estándar, «Kind». «Chinderwage» es el carrito del bebé.
+DE|Schwümme|nadar|🏊|En verano, ir a nadar al lago o al río después del trabajo es un plan nacional.
+DE|Badi|piscina al aire libre|🏖️|Baño público junto al lago, el río o con piscina. Algunas son gratis.
+DE|Säuli|cerdito|🐷|Los cerditos de mazapán se regalan en Año Nuevo para dar suerte.
+DE|Alp|pasto de montaña|🐄|En verano las vacas suben a la «Alp» y en septiembre bajan adornadas con flores.
+DE|Senn|quesero de montaña|🧀|Pastor que pasa el verano en los pastos alpinos haciendo queso.
+DE|Sirup|sirope para mezclar con agua|🧃|Refresco de toda la vida en Suiza: sirope de frambuesa o saúco con agua.
+DE|Gugus|¡cucú!|🙈|Lo que se dice al jugar a esconderse con un bebé.
+DE|Plausch|diversión|🎉|«Das isch en Plausch!» significa «¡qué divertido!».
+DE|Gschänkli|regalito|🎁|Diminutivo de «Gschänk», regalo. Llevar un «Gschänkli» a una casa es casi obligatorio.
+DE|Besebeiz|bar de granja temporal|🌾|Granjas que abren unas semanas al año como bar sencillo, con comida casera.
+DE|Muni|toro|🐂|El ganador del gran festival nacional de Schwingen se lleva un «Muni» de premio.
+DE|Chue|vaca|🐄|En Suiza hay alrededor de 1,5 millones de vacas y bueyes.
+DE|Geiss|cabra|🐐|La cabra. Las de Valais, con media cara negra y media blanca, son famosas.
+DE|Gschwind|rápido|⚡|«Chumm gschwind!» significa «¡ven rápido!».
+DE|Lüüt|gente|👥|En alemán estándar, «Leute».
+DE|Gnueg|suficiente|✋|«Es isch gnueg!» significa «¡ya basta!».
+DE|Tschutte|jugar al fútbol|⚽|El balón de fútbol es el «Tschuttiballe».
+DE|Welsch|de la Suiza francesa|🥐|Así llaman en la Suiza alemana a la gente y las cosas de la Romandía.
+DE|Schnuder|mocos|🤧|«Schnuder» son los mocos. En invierno hay muchos.
+DE|Brötli|panecillo|🥯|Los suizos dicen casi todo en diminutivo: «Brötli», «Bierli», «Kafeli».
+DE|Bierli|cervecita|🍻|«Gömmer es Bierli go näh?» significa «¿vamos a tomar una cervecita?».
+DE|Gümmeler|ciclista de carretera|🚴|Así se llama a los ciclistas deportivos con maillot. Los fines de semana hay miles.
+DE|Pfnüsel|resfriado|🤒|Tener «Pfnüsel» es estar con la nariz tapada.
+DE|Gstell|estantería o armazón|🪑|También se usa en broma para una persona muy delgada.
+DE|Gugelhopf|bizcocho de molde con agujero|🍰|Bizcocho típico de las fiestas, en molde redondo con un agujero en el centro.
+DE|Ämtli|tarea doméstica asignada|🧹|En los pisos compartidos hay un «Ämtliplan» con las tareas de cada persona.
+DE|Spickzettel|chuleta (para un examen)|📝|Ojo: en Suiza también se usa para cualquier papelito de apuntes.
+DE|Rappe|céntimo|🪙|El franco suizo tiene 100 «Rappen». En francés se llaman «centimes».
+FR|Septante|setenta|7️⃣|En Suiza y Bélgica se dice «septante» en vez del «soixante-dix» de Francia.
+FR|Huitante|ochenta|8️⃣|Se usa en Vaud, Valais y Friburgo. En Ginebra se dice «quatre-vingts».
+FR|Nonante|noventa|9️⃣|Mucho más lógico que el «quatre-vingt-dix» de Francia.
+FR|Natel|móvil|📱|En la Suiza francesa también se dice «Natel», no «portable».
+FR|Panosse|fregona|🧽|Palabra muy de la Romandía. «Passer la panosse» es fregar el suelo.
+FR|Cornet|bolsa de plástico|🛍️|En la caja del súper te preguntan si quieres un «cornet». No es un helado.
+FR|Dîner|comida del mediodía|🍲|En Suiza, «déjeuner» es el desayuno, «dîner» la comida y «souper» la cena.
+FR|Souper|cena|🌙|Si te invitan a «souper», es por la noche. Si es a «dîner», es al mediodía.
+FR|Déjeuner|desayuno|🥐|En Francia «déjeuner» es la comida del mediodía. En Suiza, el desayuno.
+FR|Cheni|desorden|🧺|«Quel cheni!» significa «¡qué desorden!». Muy de la Romandía.
+FR|Linge|toalla|🛁|En Suiza, «linge» se usa para la toalla. Un «linge de bain» es una toalla de baño.
+FR|Galetas|desván|🏚️|El trastero bajo el tejado, donde acaban las maletas y los adornos de Navidad.
+FR|Carnotzet|bodeguita para comer y beber vino|🍷|Pequeño espacio en el sótano, típico de Vaud y Valais, para fondues y vino con amigos.
+FR|Fœhn|secador de pelo|💨|En Suiza el secador se llama «fœhn», como el viento cálido de los Alpes.
+FR|Pive|piña de pino|🌲|La piña de los pinos y abetos. Los niños las recogen en los bosques.
+FR|Torrée|barbacoa en el bosque|🔥|Tradición de Neuchâtel: salchicha cocinada en las brasas de un gran fuego, en otoño.
+FR|Bancomat|cajero automático|🏧|En toda Suiza, el cajero automático se llama «Bancomat».
+FR|Agender|programar en la agenda|📅|«Agender une séance» es fijar una reunión. Un verbo muy suizo.
+FR|Séance|reunión|🗓️|En el trabajo, una reunión es una «séance».
+FR|Votation|votación popular|🗳️|Suiza vota varias veces al año sobre leyes e iniciativas populares.
+FR|Syndic|alcalde (en Vaud y Friburgo)|🏛️|En Vaud y Friburgo el alcalde se llama «syndic».
+FR|Tip-top|perfecto|👌|Muy usado en la Suiza francesa y alemana: «C'est tip-top!».
+FR|Ça joue|está bien, funciona|👍|«Ça joue pour toi?» significa «¿te va bien?».
+FR|Lavette|bayeta|🧽|El trapito de cocina para limpiar.
+FR|Fourre|funda|🛏️|Una «fourre de duvet» es la funda del edredón. En Francia dirían «housse».
+FR|Cuchaule|brioche con azafrán|🍞|Pan dulce de Friburgo que se come con la mostaza de la Bénichon.
+FR|Bénichon|fiesta de la cosecha de Friburgo|🍂|Gran comida de otoño con muchos platos típicos y mostaza dulce.
+FR|Gymnase|instituto preuniversitario|🎓|En Vaud y otros cantones, el instituto que prepara para la universidad.
+FR|Bourbine|suizo alemán (apodo)|🙃|Apodo burlón con el que en la Romandía llaman a la gente de la Suiza alemana.
+FR|Papet vaudois|guiso de puerros y patatas|🥔|Plato de Vaud que se come con la «saucisse aux choux».
+FR|Malakoff|buñuelo de queso|🧀|Especialidad frita de Vaud, de la zona de Eysins y Vinzel.
+FR|Tomme|queso pequeño y blando|🧀|La tomme vaudoise es un queso blando muy popular.
+FR|Raisinée|melaza de zumo de manzana o pera|🍯|Jarabe espeso hecho cociendo zumo durante horas. Se usa para la «tarte au vin cuit».
+FR|Chalet|casa de madera de montaña|🛖|La palabra viene de los Alpes francófonos y hoy se usa en medio mundo.
+FR|Bonne app|buen provecho|🍽️|La forma corta de «bon appétit». Se dice antes de empezar a comer.
+FR|Santé|¡salud! (al brindar)|🥂|Al brindar se mira a los ojos de cada persona, una por una.
+FR|Service|de nada|🙂|En la Suiza francesa, a un «merci» se responde a menudo con «service».
+FR|Action|oferta|🏷️|En los súper suizos, las ofertas son «actions». En Francia dirían «promotion».
+FR|Livret de famille|libro de familia|📘|Documento suizo que recoge matrimonio e hijos.
+IT|Grotto|restaurante rústico|🍷|Taberna típica del Tesino, a menudo con mesas de piedra a la sombra del bosque.
+IT|Boccalino|jarrita de cerámica para el vino|🍶|El merlot del Tesino se sirve en un «boccalino».
+IT|Polenta|gachas de maíz|🌽|Plato tradicional del Tesino, removido durante horas en una olla de cobre.
+IT|Luganighe|salchichas típicas|🌭|Salchichas del Tesino que se reparten en el carnaval de Bellinzona.
+IT|Azione|oferta del súper|🏷️|En el Tesino la oferta es «azione». En Italia se diría «offerta».
+IT|Licenza di condurre|carnet de conducir|🚗|En el Tesino se dice así. En Italia se dice «patente».
+IT|Autopostale|autobús de Correos|🚌|El autobús amarillo de Correos llega a los pueblos de valle donde no llega el tren.
+IT|Grazie mille|muchas gracias|🙏|En el Tesino se habla italiano y también dialecto tesinés.
+IT|Castagne|castañas|🌰|La castaña fue durante siglos el «pan de los pobres» de los valles del Tesino.
+IT|Merlot|vino tinto típico|🍷|La uva merlot llegó al Tesino a principios del siglo XX y hoy es su vino estrella.
+IT|Rustico|casa de piedra de montaña|🏚️|Antiguas casas de campesinos, hoy muy buscadas como casas de vacaciones.
+IT|Nocino|licor de nueces|🥃|Licor oscuro hecho con nueces verdes. Muy típico de sobremesa.
+IT|Formaggini|quesitos frescos|🧀|Quesitos pequeños de cabra o vaca, a menudo con pimienta.
+IT|Gazzosa|refresco gaseoso de limón|🥤|Refresco tradicional del Tesino que se sigue embotellando en botellas de vidrio.
+IT|Funivia|teleférico|🚡|El Monte Generoso y el Monte Brè tienen trenes y teleféricos con vistas al lago de Lugano.
+IT|Rabadan|carnaval de Bellinzona|🎭|El gran carnaval del Tesino, con risotto repartido en la calle.
+IT|Risotto|arroz cremoso|🍚|En las fiestas del Tesino se cocina risotto en ollas gigantes para todo el pueblo.
+IT|Buongiorno|buenos días|🌅|En el Tesino se saluda al entrar en tiendas y bares, igual que en el resto de Suiza.
+IT|Ciao|hola y adiós|👋|Vale para saludar y para despedirse. En el Tesino se oye a todas horas.
+IT|Brutto ma buono|feo pero rico|🍪|Así se llaman unas galletas de avellana o almendra que no son bonitas, pero están buenísimas.
+RM|Allegra|hola|👋|El saludo típico en romanche, la cuarta lengua nacional, que se habla en partes de Grisones.
+RM|Grazia fitg|muchas gracias|🙏|El romanche se habla en Grisones y tiene cinco variantes regionales.
+RM|Bun di|buenos días|🌅|En 1982 se creó una forma escrita común del romanche: el «rumantsch grischun».
+RM|Buna saira|buenas tardes|🌙|Menos del 1 % de la población suiza tiene el romanche como lengua principal.
+RM|Chasa|casa|🏠|En la Engadina verás casas con fachadas decoradas con esgrafiados.
+RM|Aua|agua|💧|Grisones tiene más de 600 lagos y el nacimiento del río Inn.
+RM|Ustaria|posada o restaurante|🍲|En los pueblos de Grisones verás carteles de «ustaria» junto a los de «Gasthaus».
+RM|Chalandamarz|fiesta del 1 de marzo|🔔|En la Engadina, los niños recorren el pueblo con cencerros para echar al invierno.
+RM|Capuns|hojas de acelga rellenas|🥬|Plato típico de Grisones: masa de spätzle con embutido envuelta en hojas de acelga.
+RM|Pizokels|pasta casera tipo spätzle|🍝|Pasta típica de Grisones, a menudo con queso y verduras.
+RM|Engiadina|Engadina|🏔️|El valle de St. Moritz se llama Engiadina en romanche. Por él corre el río Inn.
+RM|Bainvegni|bienvenida|🤗|Así te reciben en muchos pueblos de Grisones.

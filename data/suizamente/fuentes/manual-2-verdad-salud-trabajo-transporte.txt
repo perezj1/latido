@@ -1,0 +1,70 @@
+# V | tema | emoji | afirmación | V o M | dato
+V|salud|🦷|El seguro médico básico cubre el dentista.|M|No lo cubre. Mucha gente contrata un seguro dental aparte o va al dentista en su país.
+V|salud|🧾|La franquicia del seguro médico de adultos puede ir de 50 a 10 000 francos al año.|M|Va de 300 a 2500 francos al año. Cuanto más alta, más barata la cuota mensual, pero más pagas si enfermas.
+V|salud|💉|Además de la franquicia, se paga el 10 % de los gastos médicos hasta un máximo anual.|V|Ese máximo es de 700 francos al año para adultos.
+V|salud|📬|Para cambiar de seguro básico el 1 de enero, la baja debe llegar antes del 30 de noviembre.|V|El seguro básico cubre lo mismo en todas: compara precios en el comparador oficial priminfo.ch.
+V|salud|🏥|El seguro básico cubre cosas distintas según la aseguradora.|M|Por ley cubre lo mismo en todas. Lo que cambia es el precio y el servicio.
+V|salud|🚑|El número de la ambulancia en Suiza es el 118.|M|El 118 es el de los bomberos. Ambulancia: 144. Policía: 117. Rega: 1414. El 112 también funciona.
+V|salud|🚁|La Rega es una regata de vela en el lago Lemán.|M|La Rega es el servicio suizo de rescate en helicóptero: su número es el 1414. La gran regata del Lemán es el Bol d’Or.
+V|salud|💊|En Suiza el paracetamol se compra en cualquier supermercado.|M|Muchos medicamentos que en otros países están en el súper aquí solo se venden en farmacia o droguería.
+V|salud|🌲|La vacuna contra la encefalitis por garrapatas se recomienda en casi toda Suiza.|V|Excepto en Ginebra y el Tesino. La cubre el seguro básico.
+V|salud|🍄|En muchos municipios puedes llevar las setas que recoges a un control oficial gratuito.|V|Se llama Pilzkontrolle o contrôle des champignons. Antes de comerlas, siempre al control.
+V|salud|🧠|La psicoterapia prescrita por un médico la cubre el seguro básico.|V|Desde 2022, siempre que la prescriba un médico.
+V|salud|📞|El 143 es un teléfono de ayuda para hablar cuando lo estás pasando mal.|V|Se llama Die Dargebotene Hand o La Main Tendue y atiende las 24 horas.
+V|salud|👓|El seguro básico paga las gafas de los adultos.|M|Para adultos apenas las cubre, salvo casos médicos concretos. Algunos seguros complementarios ayudan.
+V|salud|🤰|La baja de maternidad en Suiza es de seis meses.|M|Son 14 semanas, pagadas al 80 % del sueldo con un tope. La del otro progenitor es de 2 semanas.
+V|salud|💼|Si trabajas al menos 8 horas por semana, el seguro de accidentes de la empresa te cubre también fuera del trabajo.|V|Por ejemplo, si te rompes un brazo esquiando un domingo. Avisa enseguida a tu empresa.
+V|salud|🩺|Con el modelo de telemedicina tienes que llamar antes de ir al médico.|V|A cambio, la prima mensual es más barata. Si te saltas la llamada, pueden no reembolsarte.
+V|salud|🌍|El seguro básico suizo no cubre nada fuera de Suiza.|M|Cubre las urgencias en el extranjero hasta el doble de lo que costarían en Suiza.
+V|salud|💉|Muchas farmacias suizas vacunan contra la gripe sin cita.|V|Es una forma rápida de prepararse para el invierno.
+V|salud|🧑‍⚕️|En Suiza todos los médicos de cabecera aceptan pacientes nuevos.|M|Muchas consultas tienen la lista llena. El buscador de médicos de la FMH permite filtrar por idioma.
+V|salud|📃|Muchas facturas médicas llegan a casa y luego se envían al seguro para el reembolso.|V|Se puede hacer por correo o desde la app de la aseguradora.
+V|trabajo|🏖️|El mínimo legal de vacaciones en Suiza es de 6 semanas al año.|M|Son 4 semanas, y 5 para menores de 20 años. Muchas empresas dan 5 a todo el mundo.
+V|trabajo|📝|Durante el periodo de prueba, el preaviso para terminar el contrato es de 7 días.|V|Después, el preaviso legal va de 1 a 3 meses según los años en la empresa.
+V|trabajo|🎂|En Suiza, el día de tu cumpleaños el equipo de la oficina te trae un pastel.|M|Es al revés: quien cumple años trae el pastel o algo dulce para el equipo.
+V|trabajo|🍽️|Antes de comer con compañeros en la Suiza alemana se dice «En Guete».|V|Es el «buen provecho» suizo, y nadie empieza a comer hasta que se ha dicho.
+V|trabajo|⏰|En una reunión suiza, llegar 10 minutos tarde se considera llegar a tiempo.|M|Se espera llegar a la hora o unos minutos antes.
+V|trabajo|📜|El certificado de trabajo suizo usa frases en clave.|V|«A nuestra entera satisfacción» es mejor que «a nuestra satisfacción».
+V|trabajo|🖼️|En Suiza poner foto en el currículum está mal visto.|M|Al contrario: el currículum suele llevar foto, y se adjuntan los certificados de trabajos anteriores.
+V|trabajo|🏢|Si pierdes el trabajo, conviene inscribirte en la oficina de empleo ya durante el preaviso.|V|Se llama RAV en alemán y ORP en francés.
+V|trabajo|🎓|Para trabajar en profesiones reguladas, como la enfermería, hay que pedir el reconocimiento del título.|V|La Secretaría de Estado de Formación (SEFRI) indica qué oficina lo tramita.
+V|trabajo|💰|El BVG o LPP de tu nómina es el plan de pensiones de empresa.|V|Es el segundo pilar y tu empresa también aporta.
+V|trabajo|☕|El Znüni es la cena típica de las nueve de la noche.|M|Es la pausa de media mañana para comer algo. Significa «a las nueve»… de la mañana.
+V|trabajo|🌇|Quedarse siempre hasta muy tarde en la oficina impresiona mucho en Suiza.|M|Se valora más la eficiencia que las horas de presencia. Puede leerse como falta de organización.
+V|trabajo|🤝|En muchas empresas suizas se tutea desde el principio.|V|Pero con clientes o personas mayores se empieza de usted hasta que te ofrezcan el tú.
+V|trabajo|🌐|En muchas empresas internacionales de Suiza se trabaja en inglés.|V|Aun así, aprender el idioma local abre muchas puertas, también con los compañeros.
+V|trabajo|🛂|Menos de 10 000 personas cruzan cada día la frontera para trabajar en Suiza.|M|Son unas 400 000. Tienen un permiso especial para trabajadores fronterizos: el permiso G.
+V|trabajo|📅|En Suiza las vacaciones de los equipos se planifican con mucha antelación.|V|En muchas empresas el calendario de verano se decide a principios de año.
+V|trabajo|🤒|Muchos contratos piden certificado médico a partir del tercer día de baja.|V|A veces antes: mira tu contrato y avisa desde el primer día.
+V|trabajo|📈|Las horas extra se pagan con recargo o se compensan con tiempo libre.|V|Lo que te corresponde tiene que estar en tu contrato.
+V|trabajo|🥂|El Apéro de empresa es una cena formal, con todo el mundo sentado a la mesa.|M|Es un aperitivo de pie, con vino, queso y mucha charla.
+V|trabajo|💬|Los sindicatos suizos asesoran sobre contratos y sueldos.|V|Unia es el sindicato más grande de Suiza.
+V|transporte|🚆|Más del 90 % de los trenes suizos llega con menos de 3 minutos de retraso.|V|La puntualidad del tren es casi un deporte nacional.
+V|transporte|🎫|Con el abono de medio precio pagas la mitad en casi todos los billetes.|V|Cuesta menos de 200 francos al año y lo tiene muchísima gente.
+V|transporte|🚇|El túnel ferroviario más largo del mundo está en Japón.|M|Es el túnel de base del San Gotardo, en Suiza: mide 57 km y se inauguró en 2016.
+V|transporte|🚋|Viajar sin billete por primera vez cuesta solo 5 francos.|M|Cuesta unos 90 francos, y más si se repite, porque queda registrado.
+V|transporte|🚲|En Suiza el casco es obligatorio en todas las bicicletas.|M|No lo es en las bicis normales, aunque es muy recomendable. Las luces de noche sí son obligatorias.
+V|transporte|🌙|Ir en bici de noche sin luces está permitido si vas despacio.|M|De noche las luces delante y detrás son obligatorias.
+V|transporte|🍺|En Suiza se puede conducir con hasta 1,5 por mil de alcohol en sangre.|M|El límite es de 0,5 por mil, y de 0,1 si llevas menos de tres años con carnet.
+V|transporte|🚌|Los autobuses amarillos de Correos llegan a pueblos de montaña sin tren.|V|Su bocina de tres notas es famosa en las curvas alpinas.
+V|transporte|⛴️|Con el abono general también se puede viajar en muchos barcos de los lagos.|V|Y con el abono de medio precio, pagas la mitad.
+V|transporte|🔇|Muchos trenes suizos tienen zonas de silencio.|V|Allí no se habla por teléfono ni se escucha música sin cascos.
+V|transporte|🦶|Poner los pies en el asiento del tren puede costarte una multa.|V|Está muy mal visto, con zapatos o sin ellos.
+V|transporte|🛗|En las escaleras mecánicas suizas, quien no tiene prisa se pone a la izquierda.|M|Se pone a la derecha, para dejar libre la izquierda a quien adelanta.
+V|transporte|🅿️|En la zona azul se aparca gratis un tiempo limitado usando el disco de aparcamiento.|V|Hay que poner el disco con la hora de llegada.
+V|transporte|❄️|Los neumáticos de invierno son obligatorios por ley en Suiza.|M|No lo son, pero si causas un accidente con ruedas de verano en la nieve te pueden culpar.
+V|transporte|⏱️|Si tu tren llega con 60 minutos o más de retraso, puedes pedir una compensación.|V|Se pide en la web o la app, y te devuelven parte del precio del billete.
+V|transporte|🚞|La estación de tren más alta de Europa está en Austria.|M|Es la del Jungfraujoch, en Suiza, a 3454 metros de altura.
+V|transporte|🚠|El funicular del Stoos es el más empinado del mundo.|V|Llega a una pendiente del 110 %.
+V|transporte|🚂|El tren cremallera del Pilatus es el más empinado del mundo.|V|Llega a una pendiente del 48 %.
+V|transporte|🚘|En las autopistas suizas se paga peaje en cabinas.|M|No hay cabinas de peaje: basta con la viñeta anual de 40 francos.
+V|transporte|🕐|En las líneas principales suizas los trenes salen siempre a los mismos minutos de cada hora.|V|Es el horario cadenciado, que hace muy fáciles los enlaces.
+V|transporte|🛴|Los patinetes eléctricos pueden circular por la acera.|M|Van por el carril bici o la calzada, como las bicis eléctricas lentas.
+V|transporte|🚊|El tranvía tiene preferencia y no puede esquivarte.|V|Ojo al cruzar sus vías, y en bici, con las ruedas en los raíles.
+V|transporte|🗺️|Los carteles amarillos de los senderos suizos indican la distancia en kilómetros.|M|Indican el tiempo a pie hasta cada destino. Suiza tiene unos 65 000 km de senderos señalizados.
+V|transporte|🚗|A Zermatt se puede llegar en coche hasta el centro del pueblo.|M|En Zermatt no se permiten coches de combustión: se aparca en Täsch y se sube en tren.
+V|transporte|🛫|Suiza tiene un solo aeropuerto internacional.|M|Los principales son Zúrich, Ginebra y Basilea-Mulhouse, este último en suelo francés.
+V|transporte|🚞|El Glacier Express es el tren más rápido de Suiza.|M|Al contrario: tarda unas 8 horas de Zermatt a St. Moritz y lo llaman el expreso más lento del mundo.
+V|social|🎒|En Suiza muchos niños van solos andando al colegio desde el Kindergarten.|V|Se les enseña el camino y muchos llevan un triángulo reflectante.
+V|transporte|🚲|Para subir la bici al tren normalmente hace falta un billete de bici.|V|En verano, en algunos trenes de larga distancia también hay que reservar plaza.
+V|transporte|🛣️|La viñeta de autopista suiza solo vale un mes.|M|Es anual: vale del 1 de diciembre del año anterior al 31 de enero del año siguiente.

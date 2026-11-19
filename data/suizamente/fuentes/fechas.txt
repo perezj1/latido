@@ -1,0 +1,41 @@
+# año | emoji | evento (sigue a «¿En qué año ») | dato
+1291|📜|se firmó el pacto que se considera el nacimiento de Suiza|El pacto entre Uri, Schwyz y Unterwalden se recuerda cada 1 de agosto, la fiesta nacional.
+1848|🏛️|nació el Estado federal suizo con su primera Constitución|Tras la breve guerra del Sonderbund, Suiza pasó de ser una alianza de cantones a un Estado federal.
+1971|🗳️|votaron por primera vez las mujeres a nivel federal en Suiza|Llegó tras una votación de los hombres. En algunos cantones tardó todavía más.
+1990|⚖️|obligó el Tribunal Federal a Appenzell Rodas Interiores a dar el voto a las mujeres|Fue el último cantón en hacerlo.
+1979|🆕|nació el cantón del Jura|Se separó del cantón de Berna y es el cantón más joven de Suiza.
+2002|🇺🇳|entró Suiza en la ONU|Fue tras una votación popular, aunque Ginebra ya era sede europea de la organización.
+1863|❤️|se fundó en Ginebra el comité que dio origen a la Cruz Roja|Su gran impulsor fue el ginebrino Henri Dunant.
+1901|🏅|recibió Henri Dunant el primer premio Nobel de la Paz|Lo compartió con el francés Frédéric Passy.
+1815|🕊️|se reconoció internacionalmente la neutralidad suiza|Fue en el Congreso de Viena, tras las guerras napoleónicas.
+1515|⚔️|perdieron los suizos la batalla de Marignano|Tras esa derrota, Suiza dejó de lado las guerras de expansión.
+1506|💂|llegó la Guardia Suiza al Vaticano|Más de cinco siglos después sigue protegiendo al Papa.
+1882|🚂|se inauguró el primer túnel ferroviario del San Gotardo|Medía unos 15 km y su construcción costó la vida a cientos de obreros.
+2016|🚄|se inauguró el túnel de base del San Gotardo|Con 57 km es el túnel ferroviario más largo del mundo.
+1912|🏔️|llegó el tren de la Jungfrau al Jungfraujoch|Es la estación de tren más alta de Europa, a 3454 metros.
+1914|🦌|se creó el Parque Nacional Suizo|Está en Grisones y es el único parque nacional del país.
+1928|⛸️|acogió St. Moritz sus primeros Juegos Olímpicos de invierno|Los volvió a acoger en 1948.
+1954|⚽|se celebró en Suiza el Mundial de fútbol|La final se jugó en Berna y la ganó Alemania Occidental.
+1865|🧗|se escaló por primera vez el Cervino|Cuatro de los siete escaladores murieron en el descenso.
+1905|🧠|publicó Einstein la relatividad especial mientras vivía en Berna|Trabajaba en la oficina de patentes de la ciudad.
+1989|🌐|se propuso en el CERN la World Wide Web|La propuso Tim Berners-Lee, cerca de Ginebra.
+1983|⌚|salió a la venta el primer Swatch|Ayudó a salvar la relojería suiza frente a la competencia asiática.
+1875|🍫|creó Daniel Peter el chocolate con leche|Lo hizo en Vevey usando leche condensada.
+1994|🎆|pasó a ser festivo el 1 de agosto en toda Suiza|Fue tras una votación popular en 1993.
+1999|🎈|dio Bertrand Piccard la vuelta al mundo en globo sin escalas|Lo hizo junto a Brian Jones a bordo del Breitling Orbiter 3.
+1960|🌊|bajó Jacques Piccard a la fosa de las Marianas|Llegó a casi 11 000 metros de profundidad.
+1798|🇫🇷|invadió Francia Suiza y creó la República Helvética|Esa república centralizada duró solo hasta 1803.
+1833|✂️|se dividió el cantón de Basilea en dos|Así nacieron Basilea-Ciudad y Basilea-Campiña.
+1847|⚔️|se libró la guerra del Sonderbund, la última guerra en suelo suizo|Duró menos de un mes y abrió el camino al Estado federal.
+1874|📜|se aprobó la Constitución revisada que introdujo el referéndum|Desde entonces se puede votar contra leyes aprobadas por el Parlamento.
+1850|🪙|se creó el franco suizo|Sustituyó a decenas de monedas cantonales distintas.
+2008|🛂|entró Suiza en el espacio Schengen|Lo hizo sin ser miembro de la Unión Europea.
+1959|🤝|empezó la «fórmula mágica» para repartir el Gobierno|Repartía los siete puestos del Consejo Federal entre los grandes partidos.
+1871|🚞|empezó a funcionar el tren cremallera del Rigi|Fue el primer tren de cremallera de montaña de Europa.
+2007|🚇|se inauguró el túnel de base del Lötschberg|Une Berna y el Valais por debajo de los Alpes en unos 35 km.
+1803|📝|impuso Napoleón el Acta de Mediación en Suiza|Puso fin a la República Helvética y devolvió poder a los cantones.
+1386|🛡️|se libró la batalla de Sempach|Según la leyenda, la ganó el sacrificio de Arnold Winkelried.
+1880|📖|se publicó «Heidi», de Johanna Spyri|Es uno de los libros suizos más leídos del mundo.
+1908|🔺|se creó la Toblerone en Berna|Sus creadores fueron Theodor Tobler y Emil Baumann.
+1957|🔤|se diseñó la tipografía Helvetica|La crearon Max Miedinger y Eduard Hoffmann, y hoy está por todas partes.
+1999|👩‍💼|fue Ruth Dreifuss la primera mujer presidenta de la Confederación|Cada año uno de los siete miembros del Gobierno asume la presidencia.

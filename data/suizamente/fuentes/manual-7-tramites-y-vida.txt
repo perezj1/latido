@@ -1,0 +1,98 @@
+# R | tema | emoji | pregunta | *correcta | opción | opción | dato
+# V | tema | emoji | afirmación | V o M | dato
+
+# trabajo
+R|trabajo|📝|Llevas dos años en tu empresa y quieres irte. Si el contrato no dice otra cosa, ¿qué preaviso marca la ley?|*📅 Dos meses, hasta final de mes|⏰ Un día|🗓️ Un año entero|El primer año es un mes. Del segundo al noveno, dos meses. A partir del décimo, tres.
+R|trabajo|💶|¿Qué parte de tu último sueldo suele cubrir el paro en Suiza?|*💶 Entre el 70 y el 80 %|💶 El 100 %|💶 El 20 %|Es el 80 % si tienes hijos a cargo o un sueldo bajo, y el 70 % en los demás casos. Hay que haber cotizado al menos 12 meses en dos años.
+R|trabajo|🤒|Estás de baja por enfermedad. ¿Sigues cobrando?|*💶 Sí, durante un tiempo, por ley o por el seguro de la empresa|🙅 No, ni un franco desde el primer día|🎰 Solo si te toca la lotería|Muchas empresas tienen un seguro que paga el 80 % del sueldo hasta 720 días. Si no, la ley fija un mínimo según los años trabajados.
+R|trabajo|📚|¿Qué es la «Weiterbildung» o «formation continue»?|*📚 Formación para mejorar en tu profesión|🛌 Una siesta muy larga|🧀 Un curso de quesería obligatorio|Muchas empresas suizas pagan cursos de formación continua, y Suiza es de los países donde más adultos se forman.
+R|trabajo|🧾|Trabajas por cuenta propia. ¿Qué haces con la AHV?|*📝 Te inscribes en la caja de compensación y pagas tus cotizaciones|🙈 Nada: solo cotiza quien tiene jefe|🎲 Pagas cuando te apetece|La caja de compensación decide si te reconoce el trabajo por cuenta propia. Sin eso, tus clientes podrían tener que cotizar por ti.
+R|trabajo|🍽️|¿Qué es el «Lunch-Check» que dan algunas empresas?|*🍽️ Un vale o tarjeta para pagar la comida en restaurantes|✅ Un control de lo que comes|🧀 Un queso que se come a mediodía|Hasta un cierto importe al mes está libre de impuestos. Lo aceptan miles de restaurantes.
+R|trabajo|📑|¿Qué es un «GAV» o una «CCT»?|*📑 Un convenio colectivo de trabajo|🚆 Un tren de alta velocidad|🧀 Un queso de Appenzell|Sectores como la construcción o la hostelería tienen convenio, con sueldos mínimos obligatorios.
+R|trabajo|📆|Empiezas a trabajar en julio. ¿Cuántas vacaciones tienes ese año?|*📆 La parte proporcional a los meses trabajados|🏝️ Las cuatro semanas enteras|🙅 Ninguna hasta el año siguiente|Las vacaciones se calculan en proporción al tiempo trabajado en el año.
+R|trabajo|🧑‍🍳|¿Cuál es el salario mínimo de Ginebra?|*💶 Algo más de 24 francos por hora|💶 5 francos por hora|💶 100 francos por hora|Ginebra, Neuchâtel, Jura, Tesino y Basilea-Ciudad tienen salario mínimo cantonal. El de Ginebra es de los más altos del mundo.
+V|trabajo|📈|En Suiza los sueldos se suelen negociar en bruto anual.|V|Las ofertas suelen indicar el bruto al año. Luego se descuentan las cotizaciones sociales y, con permiso B, el impuesto.
+V|trabajo|👶|Las empresas suizas están obligadas a tener guardería.|M|No lo están. Algunas grandes empresas ofrecen plazas o ayudas para el cuidado de los niños.
+V|trabajo|📅|El lunes de Pentecostés es festivo en muchos cantones.|V|Igual que el lunes de Pascua y el día de la Ascensión.
+V|trabajo|🌙|Para trabajar de noche en Suiza hace falta una autorización oficial.|V|Entre las 23:00 y las 6:00 hace falta permiso, con compensaciones en tiempo o en dinero.
+V|trabajo|☀️|Por norma general, en Suiza está prohibido trabajar los domingos.|V|Hay excepciones, como hospitales, transporte, hostelería o tiendas de estaciones.
+
+# dinero
+R|dinero|🐷|Con segundo pilar, ¿cuánto puedes meter como máximo al año en el pilar 3a?|*💰 Algo más de 7000 francos|💰 500 francos|💰 100 000 francos|Todo lo que metes se descuenta de la base de tus impuestos. Sin segundo pilar, el máximo es más alto.
+R|dinero|⚖️|¿Qué es una «Betreibung» o «poursuite»?|*⚖️ Un procedimiento oficial para cobrarte una deuda|🍫 Una persecución de chocolate|🎿 Una carrera de esquí|Queda anotada en el registro de cobros y puede complicarte alquilar un piso.
+R|dinero|🪙|¿Cuál es la moneda más pequeña que se usa hoy en Suiza?|*🪙 La de 5 céntimos|🪙 La de 1 céntimo|🪙 La de 50 céntimos|La de 1 céntimo dejó de valer en 2007. Por eso los precios se redondean a 5 céntimos.
+R|dinero|🛍️|¿Qué son Tutti y Ricardo?|*🛍️ Webs suizas de compraventa de segunda mano|🎶 Dos cantantes de ópera|🍝 Dos platos de pasta del Tesino|Son muy útiles para amueblar tu piso o vender lo que no usas.
+R|dinero|🎟️|¿Qué es la «KulturLegi» o «CarteCulture»?|*🎟️ Una tarjeta de descuentos en cultura y deporte para quien tiene pocos ingresos|🎨 Un carnet para artistas famosos|🧀 Un pase para museos del queso|La ofrece Cáritas en muchos cantones, con descuentos de hasta el 70 %.
+R|dinero|🛒|¿Qué son las tiendas de Cáritas?|*🛒 Supermercados muy baratos para personas con pocos ingresos|🎁 Tiendas de regalos de lujo|⛪ Iglesias con caja registradora|Para comprar allí hace falta una tarjeta que dan los servicios sociales y otras entidades.
+V|dinero|💳|Muchas tarjetas de crédito suizas cobran una cuota anual.|V|Suelen costar entre 50 y 200 francos al año, aunque también hay opciones gratis.
+V|dinero|📲|En Suiza se puede pagar casi todo sin contacto.|V|Con tarjeta, móvil o reloj. Aun así, algunos mercados y granjas solo aceptan efectivo o TWINT.
+V|dinero|🏦|En Suiza existe un impuesto sobre el patrimonio.|V|Los cantones cobran cada año un pequeño impuesto sobre la riqueza, algo poco común en Europa.
+V|dinero|🎰|Los premios de lotería de hasta un millón de francos no pagan impuestos.|V|Es así desde 2019 para las loterías y apuestas autorizadas.
+
+# salud
+R|salud|💉|¿Qué es el «Selbstbehalt»?|*💉 El 10 % de los gastos médicos que pagas tras la franquicia|🧀 La corteza del queso que te guardas|🎁 Un regalo del seguro|Tiene un máximo de 700 francos al año para adultos. Si eliges un medicamento original con genérico más barato, puede subir al 40 %.
+R|salud|🧒|¿Qué franquicia mínima tiene el seguro médico de un niño?|*0️⃣ 0 francos|💸 300 francos|💸 2500 francos|Para menores de 18 años el copago máximo es de 350 francos al año.
+R|salud|📅|Llamas a la consulta de tu médico. ¿Qué es lo habitual?|*📅 Pedir cita, a veces con semanas de espera|🚪 Presentarte sin avisar|📯 Tocar el cuerno alpino en la puerta|Para urgencias leves, en muchas ciudades hay centros sin cita, llamados Permanence o Walk-in.
+R|salud|☎️|¿A qué número llamas para pedir consejo si un niño se traga algo tóxico?|*☎️ Al 145, Tox Info Suisse|☎️ Al 118|☎️ Al 1811|Atiende las 24 horas. Si la persona está grave, llama al 144.
+R|salud|💉|¿Hay vacunas obligatorias en Suiza?|*🙅 No: todas son recomendadas|💉 Sí, diez obligatorias|🐄 Solo la de las vacas|El seguro básico paga las vacunas del plan oficial de vacunación.
+R|salud|🏠|¿Qué es el Spitex?|*🏠 Un servicio de cuidados y ayuda a domicilio|🏥 Un hospital de lujo|🧦 Unos calcetines térmicos|Permite que personas mayores o enfermas sigan en casa. El seguro básico cubre parte de los cuidados.
+R|salud|🚑|En suizo alemán, ¿qué es el «Notfall»?|*🚑 Las urgencias|🍂 La caída de las hojas|🫕 Una fondue que se quema|En francés es «urgences» y en italiano, «pronto soccorso».
+V|salud|🩸|En Suiza te pagan por donar sangre.|M|Es voluntario y gratuito. Normalmente te ofrecen algo de comer y beber.
+V|salud|💊|En Suiza todas las farmacias abren las 24 horas.|M|Hay farmacias de guardia por turnos. En las grandes ciudades, algunas abren hasta tarde.
+V|salud|🧪|Las pruebas de embarazo solo se venden con receta.|M|Se venden en farmacias, droguerías y supermercados.
+
+# papeles
+R|papeles|📮|¿Cuánto tiempo tienes para recurrir una decisión oficial?|*📅 Lo dice la carta: a menudo 10 o 30 días|⏳ Un año|🙅 No se puede recurrir nunca|Las decisiones oficiales incluyen siempre el plazo y dónde presentar el recurso.
+R|papeles|🚗|Te mudas de cantón con tu coche. ¿Qué tienes que hacer?|*🔄 Registrarlo en el nuevo cantón y cambiar las matrículas|🎨 Pintar la matrícula con el nuevo escudo|🙈 Nada: las matrículas valen para siempre|Normalmente tienes 14 días desde que te mudas.
+R|papeles|🏠|¿Qué es la «Wohnsitzbestätigung» o «attestation de domicile»?|*🏠 Un certificado de que vives en tu municipio|🔑 Una llave de repuesto|📜 Un título de propiedad|Se pide en el municipio y te lo piden, por ejemplo, para algunos trámites en tu país.
+R|papeles|🗳️|¿Qué hace falta para aprobar un cambio de la Constitución en votación?|*🗺️ Mayoría del pueblo y mayoría de los cantones|🗺️ El sí de los 26 cantones sin excepción|🗺️ Solo que vote sí Zúrich|Se llama doble mayoría. Algunas propuestas han fracasado con más votos a favor que en contra.
+R|papeles|🔢|¿Qué es el número AHV?|*🔢 Tu número de la seguridad social suiza, de 13 cifras|📞 El teléfono de urgencias|🎰 Un número de lotería|Empieza por 756, el código de Suiza, y lo usas toda la vida: en el trabajo, el seguro médico y la pensión.
+R|papeles|✈️|Tienes permiso C y te vas de viaje muy largo. ¿Tras cuánto tiempo fuera puede caducar?|*📅 Seis meses seguidos|📅 Una semana|📅 Diez años|Antes de irte puedes pedir que lo mantengan hasta cuatro años.
+R|papeles|👨‍👩‍👧|¿Qué es el «Familiennachzug» o la reagrupación familiar?|*👨‍👩‍👧 Que tu familia pueda venir a vivir contigo a Suiza|🚂 Un tren lleno de familias|🎉 Una fiesta familiar del pueblo|Con nacionalidad de la UE es bastante sencillo. Para otras nacionalidades hay plazos y requisitos de vivienda e ingresos.
+V|papeles|🛂|Con permiso B puedes viajar de turismo por el espacio Schengen.|V|Con el permiso y un pasaporte válido, hasta 90 días.
+V|papeles|📮|Los buzones de Correos suizos son rojos.|M|Son amarillos, el color de Correos, igual que sus autobuses.
+V|papeles|📦|Si no estás en casa, puedes recoger un paquete en una taquilla automática.|V|Se llaman My Post 24 y están en muchas estaciones.
+
+# transporte
+R|transporte|🌙|¿Qué es el abono «Seven25»?|*🌙 Un abono para menores de 25 que permite viajar gratis desde las 19:00|🕖 Un reloj suizo|🍷 Un vino de siete años|Hace falta tener también el abono de medio precio.
+R|transporte|🚆|En Zúrich o Berna, ¿qué son las líneas «S»?|*🚆 Trenes de cercanías|🚲 Rutas para bici|🍫 Tiendas de chocolate|La red de cercanías de Zúrich tiene más de 30 líneas.
+R|transporte|🛣️|¿Cuánto cuesta la viñeta anual de autopista?|*💶 40 francos|💶 400 francos|💶 4 francos al día|Desde 2023 existe la viñeta electrónica, que se compra online y va ligada a la matrícula.
+R|transporte|🎂|¿A qué edad se puede tener el permiso de aprendizaje para conducir coche en Suiza?|*🎂 A los 17 años|🎂 A los 14|🎂 A los 25|El examen práctico se puede hacer a partir de los 18.
+R|transporte|🩹|¿Qué cursos hay que hacer para sacar el carnet de coche en Suiza?|*🩹 Primeros auxilios y sensibilización vial|🧀 Un curso de quesería|🎿 Un curso de esquí|Sin ellos no puedes presentarte a los exámenes.
+R|transporte|🚨|En un control de policía, ¿qué tienes que llevar en el coche?|*🪪 El carnet de conducir y el permiso de circulación del vehículo|📜 Tu partida de nacimiento|🍫 Chocolate para la patrulla|Sin ellos te pueden multar, aunque todo esté en regla.
+R|transporte|🐄|Hay vacas en la carretera de montaña. ¿Qué haces?|*🐢 Paras o pasas muy despacio sin asustarlas|📯 Pitas para que se aparten|🏎️ Aceleras para pasar antes|Si chocas con un animal, avisa a quien lo cuida o a la policía.
+R|transporte|🔶|¿Qué significa una señal con un rombo amarillo?|*🛣️ Que circulas por una carretera con prioridad|🐄 Que hay vacas|🧀 Que hay una quesería cerca|Cuando la carretera prioritaria termina, el rombo aparece tachado.
+R|transporte|🚲|¿Qué tiene que llevar tu bici para circular?|*🔔 Timbre, frenos, reflectores y luces de noche|📯 Un cuerno alpino|🇨🇭 Una bandera suiza|Desde 2012 no hace falta la antigua pegatina de seguro: lo cubre tu seguro de responsabilidad civil.
+V|transporte|🚌|En los autobuses de muchas ciudades suizas se sube por cualquier puerta.|V|Hay que tener el billete antes de subir. Los controles se hacen al azar.
+V|transporte|🧓|En Suiza, a partir de los 70 años hay que pasar un control médico para seguir conduciendo.|M|Desde 2019, el control empieza a los 75 años y se repite cada dos.
+V|transporte|👶|En el transporte público suizo los niños menores de 6 años viajan gratis.|V|Siempre que vayan con una persona con billete.
+
+# casa
+R|casa|💧|Se desborda tu lavadora e inundas el piso de abajo. ¿Qué seguro lo paga?|*🛡️ Tu seguro de responsabilidad civil|🙈 Ninguno: le toca a quien vive abajo|🌊 El seguro del lago|Muchas administraciones piden este seguro antes de alquilarte el piso. Cuesta poco y es muy recomendable.
+R|casa|📅|¿Con cuánto preaviso se suele dejar un piso de alquiler?|*📅 Tres meses, para las fechas que marca el contrato|📅 Un día|📅 Dos años|Si te quieres ir antes, puedes proponer a alguien que te sustituya en el contrato.
+R|casa|📜|¿Qué es la «Hausordnung» o el «règlement de maison»?|*📜 El reglamento del edificio|🏠 Un tipo de casa de madera|🧹 Una marca de escobas|Fija los horarios de lavandería, descanso y basura, y el uso de las zonas comunes. Te lo dan con el contrato.
+R|casa|🔌|¿Dónde llevas un secador de pelo viejo que ya no funciona?|*🏪 A una tienda que venda aparatos de ese tipo|🗑️ A la basura normal|🌊 Al río, a que descanse|Las tiendas tienen que recoger gratis los aparatos eléctricos del tipo que venden, aunque no compres nada.
+R|casa|🐦|¿Se puede dar de comer a las palomas en las ciudades suizas?|*🚫 En muchas ciudades está prohibido|✅ Sí, y se recomienda|🧀 Solo queso|Ciudades como Basilea o Zúrich lo prohíben para controlar el número de palomas.
+V|casa|🔥|En muchos cantones está prohibido quemar los restos del jardín.|V|Por el humo. Lo verde va al compost o a la recogida municipal.
+V|casa|🔔|En muchos pueblos suizos las campanas de la iglesia suenan cada cuarto de hora, también de noche.|V|Ha habido incluso juicios de vecinos contra las campanas nocturnas.
+V|casa|🐓|Tener gallinas en el jardín está prohibido en toda Suiza.|M|Se permite en muchos municipios, con condiciones. El gallo, eso sí, puede molestar al vecindario.
+
+# social
+R|social|🗳️|¿A qué edad se puede votar en Suiza a nivel federal?|*🗳️ A los 18 años|🗳️ A los 16|🗳️ A los 21|En el cantón de Glaris se puede votar en asuntos cantonales desde los 16.
+R|cultura|✋|¿Qué es la «Landsgemeinde»?|*✋ Una asamblea al aire libre donde se vota a mano alzada|🏞️ Un parque nacional|🎺 Una banda de música|Aún se celebra en Glaris y en Appenzell Rodas Interiores.
+R|social|👵|¿Qué es Pro Senectute?|*👵 Una organización que ayuda a las personas mayores|🍷 Un vino muy añejo|🎭 Una obra de teatro romana|Ofrece cursos, asesoramiento y actividades en toda Suiza.
+R|social|🤝|¿Qué hace un servicio de integración cantonal?|*🤝 Informa y orienta a quien acaba de llegar, a veces en su idioma|🧀 Enseña a hacer queso, obligatoriamente|🪖 Organiza el servicio militar|Muchos cantones ofrecen sesiones de bienvenida gratuitas, a veces también en español.
+R|idioma|👥|¿Qué parte de la población de Suiza tiene el español como idioma principal?|*👥 Alrededor del 2-3 %|👥 El 25 %|👥 El 0,01 %|Junto con el inglés y el portugués, es uno de los idiomas no nacionales más hablados del país.
+R|social|🥂|Alguien levanta la copa y dice «Prost!». ¿Qué está haciendo?|*🥂 Brindar|🤧 Estornudar|👋 Despedirse|Cuando alguien estornuda, en la Suiza alemana se dice «Gesundheit».
+R|cultura|🏛️|¿Cuántos escaños tiene el Consejo Nacional, la cámara baja del Parlamento?|*🏛️ 200|🏛️ 26|🏛️ 1000|El Consejo de los Estados tiene 46: dos por cantón y uno por cada antiguo semicantón.
+V|social|🍂|En Suiza los colegios tienen vacaciones de otoño.|V|Suelen durar dos o tres semanas, según el cantón.
+V|social|⛷️|En muchos cantones los colegios tienen vacaciones de esquí en febrero.|V|Se llaman Sportferien o vacances de février.
+V|naturaleza|🪂|Interlaken es uno de los lugares más populares de Suiza para volar en parapente.|V|Muchas empresas ofrecen vuelos en tándem con vistas al Eiger, el Mönch y la Jungfrau.
+
+# extra
+V|dinero|🧾|En Suiza el IVA se suma en caja al precio de la etiqueta.|M|El IVA ya va incluido: lo que ves en la estantería es lo que pagas.
+V|casa|🧺|En muchos edificios la secadora común se paga con fichas o con una tarjeta.|V|Igual que la lavadora: en algunos edificios cada piso tiene su contador.
+V|transporte|🚉|Las estaciones suizas tienen consigna para dejar las maletas.|V|Hay taquillas de varios tamaños en las estaciones grandes y medianas.
+V|salud|🏃|En muchas ciudades suizas hay circuitos gratuitos de ejercicio en el bosque.|V|Se llaman Vitaparcours: rutas con estaciones de ejercicios señalizadas. Hay unos 500 en Suiza.
+V|social|🧑‍🏫|Las clases de idiomas para personas recién llegadas solo existen en las ciudades grandes.|M|También hay cursos en muchos pueblos, a menudo subvencionados por el cantón o el municipio.
+V|trabajo|🧑‍💼|En Suiza el periodo de prueba de un contrato puede durar hasta un año.|M|Puede durar como máximo tres meses. Si el contrato no dice nada, es de un mes.

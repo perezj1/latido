@@ -1,0 +1,110 @@
+# V | tema | emoji | afirmación | V o M | dato
+# casa
+V|casa|🧹|En muchos edificios suizos hay una persona encargada de cuidar las zonas comunes.|V|Se llama Hauswart o concierge. Si algo se estropea en la escalera o la lavandería, suele ser tu primer contacto.
+V|casa|🚬|Fumar en la escalera del edificio es lo normal en Suiza.|M|En las zonas comunes suele estar prohibido por el reglamento de la casa.
+V|casa|🌱|En muchas ciudades suizas se pueden alquilar pequeños huertos.|V|Se llaman Schrebergärten o jardins familiaux, y a menudo tienen lista de espera.
+V|casa|🐱|En Suiza se paga un impuesto por tener gato.|M|Solo existe el impuesto por perro. Los gatos, de momento, viven sin pagar.
+V|casa|🧑‍🏭|En muchos cantones un deshollinador revisa la chimenea o la calefacción de forma periódica.|V|Se llama Kaminfeger o ramoneur. Dice la tradición que cruzarse con uno trae buena suerte.
+V|casa|🛗|Muchos edificios antiguos de Suiza no tienen ascensor.|V|Si te mudas a un cuarto piso sin ascensor, la mudanza también es un entrenamiento.
+V|casa|⛲|Se puede beber agua de casi todas las fuentes públicas suizas.|V|Si no es potable, un cartel lo dice: «Kein Trinkwasser» o «eau non potable». Zúrich tiene más de 1200 fuentes.
+V|casa|🔊|Una ley federal prohíbe pasar la aspiradora después de las 20:00.|M|No hay ley federal: lo regulan el reglamento del edificio y el municipio. Aun así, por la noche mejor evitar ruidos fuertes.
+V|casa|🍳|Los pisos de alquiler suizos suelen tener la cocina equipada.|V|Nevera, horno, placas y a menudo lavavajillas vienen con el piso.
+V|casa|💡|En muchos pisos de alquiler te encuentras solo los cables del techo, sin lámparas.|V|Las lámparas suelen ser de quien alquila y se las lleva al mudarse.
+V|casa|🖼️|Para colgar un cuadro en un piso de alquiler necesitas permiso de la administración.|M|Colgar cuadros es un uso normal. Al irte, quizá tengas que tapar los agujeros.
+V|casa|🛋️|El seguro de los muebles del hogar es obligatorio en todos los cantones.|M|Solo lo es en algunos, como Vaud o Friburgo. Muchas administraciones piden además un seguro de responsabilidad civil.
+V|casa|🚪|Al mudarte es habitual presentarte a tus vecinos.|V|Una nota en el buzón o tocar el timbre con algo de chocolate hace milagros.
+
+# papeles
+V|papeles|📇|Para registrarte en tu municipio te pueden pedir el contrato de alquiler.|V|Normalmente piden pasaporte o documento de identidad, contrato de alquiler o de trabajo y a veces una foto.
+V|papeles|🚗|En Suiza las matrículas van con el coche cuando lo vendes.|M|Las matrículas son de la persona, no del coche: si lo vendes, te las quedas.
+V|papeles|🔢|Las matrículas suizas llevan las letras del cantón.|V|ZH es Zúrich, GE Ginebra y TI el Tesino. Algunas matrículas de pocos números se subastan por miles de francos.
+V|papeles|⛪|Si te das de baja de la Iglesia, dejas de pagar el impuesto eclesiástico.|V|Basta con una carta a la parroquia o a la administración eclesiástica de tu cantón.
+V|papeles|📸|Si tu nacionalidad es de fuera de la UE, para el permiso te toman huellas y foto.|V|La tarjeta es biométrica, así que hay que ir en persona a una cita.
+V|papeles|🧾|La declaración de impuestos es igual en todos los cantones.|M|Cada cantón tiene su formulario, sus plazos y su programa. Normalmente se presenta en primavera.
+V|papeles|🕰️|Si no llegas a tiempo con la declaración de impuestos, puedes pedir una prórroga.|V|Se pide al cantón, muchas veces online y gratis durante los primeros meses.
+V|papeles|📨|Muchas cartas oficiales llegan en el idioma del cantón, no en el tuyo.|V|Por eso conviene aprender el vocabulario básico de trámites. Algunos cantones ofrecen ayuda en otros idiomas.
+V|papeles|🏘️|Suiza tiene más de 2000 municipios.|V|Unos 2100. Cada uno tiene sus propias normas sobre basura, ruido y hasta impuestos.
+V|papeles|💒|Para casarte en Suiza basta con la boda en la iglesia.|M|El matrimonio civil en el registro civil es obligatorio. La boda religiosa es opcional y va después.
+V|papeles|🌈|El matrimonio entre personas del mismo sexo es legal en Suiza.|V|Desde el 1 de julio de 2022, tras una votación popular.
+V|papeles|✉️|Quien tiene nacionalidad suiza tiene que inscribirse antes de cada votación.|M|Si vive en Suiza, el material le llega a casa automáticamente. Mucha gente vota por correo.
+
+# dinero
+V|dinero|🏦|Para abrir una cuenta en un banco suizo te piden el permiso de residencia.|V|O el justificante de que lo has pedido. Algunos bancos online permiten abrirla desde el móvil en minutos.
+V|dinero|💸|Enviar dinero a tu país cuesta lo mismo en todos los bancos.|M|Las comisiones y el tipo de cambio varían mucho. Comparar puede ahorrarte bastante.
+V|dinero|🎟️|Con un solo pase se puede entrar en cientos de museos suizos.|V|El Swiss Museum Pass da acceso a más de 500 museos durante un año.
+V|dinero|🍽️|En los restaurantes suizos el servicio ya va incluido en el precio.|V|Por eso la propina es voluntaria: se suele redondear o dejar algo si te ha gustado.
+V|dinero|🥩|La carne en Suiza es más barata que en los países vecinos.|M|Es de las más caras de Europa. Por eso mucha gente cerca de la frontera compra en Alemania, Francia o Italia.
+V|dinero|📉|Los intereses de las cuentas de ahorro suizas son muy altos.|M|Suelen ser bajos. El franco es estable, pero el ahorro en el banco rinde poco.
+V|dinero|🎓|Estudiar en una universidad pública suiza cuesta decenas de miles de francos al semestre.|M|Las tasas suelen ir de unos 500 a 2000 francos por semestre. Vivir en la ciudad es lo que sale caro.
+V|dinero|🚕|En los taxis suizos la propina es obligatoria.|M|Es voluntaria. Lo habitual es redondear el precio.
+V|dinero|🧾|La garantía legal de los productos en Suiza es de dos años.|V|Aunque algunas tiendas la limitan en sus condiciones. Guarda el tique.
+
+# salud
+V|salud|💊|En la farmacia te pueden dar algunos medicamentos con receta sin pasar por el médico.|V|Desde 2019 las farmacias pueden dar algunos tras una consulta en el mostrador.
+V|salud|🏥|Sin seguro médico, las urgencias de un hospital suizo te atienden gratis.|M|Te atienden si es urgente, pero la factura llega. Por eso el seguro es obligatorio desde el primer día.
+V|salud|💊|En Suiza los antibióticos se compran sin receta en el supermercado.|M|Siempre necesitan receta médica. Tomarlos sin necesidad hace que dejen de funcionar.
+V|salud|🦟|En Suiza no hay mosquito tigre.|M|Se ha extendido sobre todo por el Tesino y por algunas ciudades del norte. Las autoridades piden avisar si lo ves.
+V|salud|🍺|En Suiza se puede comprar cerveza y vino desde los 16 años.|V|Para los licores destilados, como el vodka o el kirsch, hay que tener 18 años.
+V|salud|🚭|En Suiza se puede fumar dentro de cualquier bar o restaurante.|M|Está prohibido en bares y restaurantes cerrados desde 2010. Algunos cantones permiten salas de fumadores con ventilación.
+V|salud|👶|En Suiza hay asesoramiento gratuito para familias con bebés.|V|Se llama Mütter- und Väterberatung o consultation parents-enfants y ayuda con lactancia, sueño y alimentación.
+V|salud|🧘|El seguro básico paga el gimnasio y las clases de yoga.|M|El básico no las paga. Algunos seguros complementarios devuelven una parte.
+
+# trabajo
+V|trabajo|🪪|Con pasaporte de la UE puedes trabajar en Suiza más de tres meses sin ningún permiso.|M|Necesitas un permiso, pero con un contrato se concede casi automáticamente. Se pide al registrarte en el municipio.
+V|trabajo|🕑|Muchas empresas suizas permiten horario flexible.|V|Se llama Gleitzeit. Las horas de más o de menos se compensan con el tiempo.
+V|trabajo|🧹|Quien contrata a alguien para limpiar su casa unas pocas horas tiene que declararlo.|V|Y pagar los seguros sociales, aunque sean pocas horas. Hay un procedimiento simplificado para hacerlo.
+V|trabajo|⏰|En Suiza es normal empezar a trabajar a las 7:00 o 7:30.|V|Mucha gente empieza pronto y sale hacia las 17:00.
+V|trabajo|🤝|Es normal hacer un día de prueba (Schnuppertag) en una empresa antes de empezar.|V|Es muy común en la formación profesional y en oficios.
+V|trabajo|📝|Un contrato de trabajo en Suiza puede ser válido aunque sea solo verbal.|V|Es legal, pero mejor tenerlo por escrito para evitar malentendidos.
+V|trabajo|⚖️|Por ley, mujeres y hombres tienen que cobrar lo mismo por el mismo trabajo.|V|La ley de igualdad lo exige. Las empresas de 100 personas o más tienen que analizar sus sueldos.
+
+# transporte
+V|transporte|🛵|La bici eléctrica rápida, de hasta 45 km/h, necesita matrícula.|V|Y carnet de ciclomotor o de coche. Las lentas, de hasta 25 km/h, no.
+V|transporte|🧒|Los niños menores de 12 años pueden ir en bici por la acera si no hay carril bici.|V|Es así desde 2021. Eso sí, con cuidado y cediendo el paso a los peatones.
+V|transporte|🚦|En Suiza los coches pueden girar a la derecha con el semáforo en rojo.|M|Los coches no. Solo las bicis, en algunos cruces con una señal especial.
+V|transporte|🚌|En las carreteras de montaña señalizadas, el autobús postal tiene preferencia.|V|Su bocina de tres notas avisa en las curvas.
+V|transporte|⚠️|En Suiza el chaleco reflectante es obligatorio en el coche.|M|Solo es obligatorio el triángulo de emergencia. El chaleco se recomienda, pero no es obligatorio.
+V|transporte|💡|En Suiza, de día, se conduce con las luces apagadas.|M|Desde 2014 es obligatorio llevar luces también de día, de cruce o de circulación diurna.
+V|transporte|📱|Usar el móvil con la mano mientras conduces cuesta 100 francos de multa.|V|Es una multa fija. Con manos libres sí se puede hablar.
+V|transporte|❄️|Si tu coche está cubierto de nieve, basta con limpiar un trocito del parabrisas.|M|Hay que limpiar todas las ventanas, las luces y el techo. Si no, te pueden multar.
+V|transporte|🏷️|Con los billetes ahorro de tren se puede pagar hasta un 70 % menos.|V|Se llaman Sparbillette o billets dégriffés y valen para un tren concreto.
+V|transporte|💺|Con billete de segunda puedes sentarte en primera si hay sitio libre.|M|Te multarán. Pero puedes pagar un suplemento para cambiar de clase.
+V|transporte|🚇|Zúrich tiene metro.|M|Se mueve con tranvía, autobús y trenes de cercanías. La única ciudad suiza con metro es Lausana.
+
+# social
+V|social|📚|Muchas bibliotecas públicas suizas tienen libros en español.|V|Y hay bibliotecas interculturales, como las de la red Interbiblio, con libros en decenas de idiomas.
+V|social|🗣️|En primaria los niños suizos empiezan a aprender otro idioma nacional.|V|Y también inglés. Según el cantón, empiezan por uno o por otro.
+V|social|🎓|Hacia los 12 años, al pasar a secundaria, el alumnado suizo se reparte en niveles.|V|Según las notas van a niveles más exigentes o más prácticos. Más adelante se puede cambiar de camino.
+V|social|🌇|En la Suiza alemana el Feierabend, el final de la jornada, es casi sagrado.|V|Después del trabajo, mejor no llamar por temas de trabajo.
+V|social|🐕|En algunos cantones hay que hacer un curso para tener perro.|V|Zúrich, por ejemplo, lo exige para perros grandes. Pregunta en tu municipio.
+V|social|📣|En muchas ciudades suizas hace falta permiso para una manifestación.|V|Se pide al municipio, que fija el recorrido.
+
+# comida
+V|comida|🧀|En Suiza se hacen cientos de quesos distintos.|V|Se habla de más de 700 variedades, muchas de pequeñas queserías de montaña.
+V|comida|🥘|La fondue chinoise es un plato de queso.|M|Es una fondue de caldo con lonchas finas de carne. En muchas casas suizas es la cena de Navidad o Nochevieja.
+V|comida|🍰|La tarta de Zug lleva kirsch.|V|Es un bizcocho con merengue y crema de mantequilla, empapado en aguardiente de cereza.
+V|comida|🦌|En otoño muchos restaurantes suizos ofrecen menús de carne de caza.|V|Es la temporada de Wild o chasse: ciervo, corzo o jabalí con Spätzli, castañas y lombarda.
+V|comida|🐄|En Suiza hay más vacas que personas.|M|Hay alrededor de 1,5 millones de cabezas de ganado bovino y unos 9 millones de personas.
+V|comida|🍎|La manzana es la fruta más cultivada de Suiza.|V|Con ella se hace mucho zumo (Süssmost) y sidra.
+V|comida|🍺|En Suiza hay más de 1000 cervecerías registradas.|V|Es una de las densidades más altas del mundo. Muchas son microcervecerías.
+V|comida|🍞|El pan del Tesino es una fila de panecillos unidos.|V|Se llama Tessinerbrot y cada panecillo se arranca con la mano.
+V|comida|🐴|En Suiza es imposible encontrar carne de caballo.|M|Se vende en muchos supermercados y carnicerías, sobre todo en la Suiza francesa.
+V|comida|🐟|Los filetes de perca son un clásico de los restaurantes junto al lago Lemán.|V|Se sirven con patatas fritas y salsa tártara, aunque gran parte de la perca viene de fuera.
+
+# naturaleza
+V|naturaleza|🏊|En verano mucha gente baja nadando por el Rin en Basilea o el Aar en Berna.|V|Se dejan llevar por la corriente con una bolsa impermeable, el Wickelfisch. Hay que saber nadar bien.
+V|naturaleza|🌧️|En el Tesino llueve más que en Zúrich.|V|El Tesino tiene mucho sol, pero cuando llueve, llueve con fuerza.
+V|naturaleza|❄️|En ciudades como Zúrich o Ginebra nieva mucho todos los inviernos.|M|En la meseta cada vez nieva menos. Para nieve segura, hay que subir a la montaña.
+V|naturaleza|🏔️|El Eiger, el Mönch y la Jungfrau están en el Oberland bernés.|V|Sus nombres significan «ogro», «monje» y «doncella».
+V|naturaleza|🌊|El lago de Constanza lo comparten Suiza, Alemania y Austria.|V|En algunas partes del lago, la frontera exacta nunca se ha fijado.
+
+# cultura
+V|cultura|⚓|Suiza no tiene mar, pero sí una flota de barcos mercantes.|V|Los barcos con bandera suiza tienen su puerto de matrícula en Basilea.
+V|cultura|⚽|Suiza ha ganado un Mundial de fútbol.|M|Su mejor resultado son los cuartos de final, la última vez en 1954, cuando jugó en casa.
+V|cultura|🕵️|Sherlock Holmes «muere» en las cataratas de Reichenbach, en Suiza.|V|En Meiringen hay un museo dedicado al detective.
+V|cultura|🧟|«Frankenstein» se empezó a escribir en Suiza.|V|Mary Shelley lo empezó en 1816 en una villa junto al lago Lemán.
+V|cultura|🎬|En los Alpes suizos se rodaron escenas de James Bond.|V|El restaurante giratorio Piz Gloria del Schilthorn sale en «Al servicio secreto de Su Majestad».
+V|cultura|🎶|El himno nacional suizo no tiene letra.|M|Tiene letra en los cuatro idiomas nacionales. Se llama «Salmo suizo» y es oficial desde 1981.
+V|cultura|🏆|Suiza ha ganado Eurovisión.|V|Tres veces: en 1956 con Lys Assia, en 1988 con Céline Dion y en 2024 con Nemo.
+V|cultura|🏰|El castillo de Gruyères está en el cantón de Friburgo.|V|El pueblo da nombre al queso y tiene un museo de H. R. Giger, el creador de «Alien».
+V|fiestas|🏳️‍🌈|Zúrich celebra cada año una de las fiestas del Orgullo más grandes de Suiza.|V|El Zurich Pride reúne a decenas de miles de personas en junio.

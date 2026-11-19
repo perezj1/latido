@@ -1,0 +1,196 @@
+# categoría | nombre | emoji | dato (máx. ~125 caracteres)
+# categorías: comida, ciudad, naturaleza, fiesta, plan, palabra, experiencia, souvenir
+comida|Fondue|🫕|Se hizo plato nacional en los años 30. El pan se remueve haciendo un ocho.
+comida|Raclette|🥔|Viene de «racler», rascar: el queso fundido se rasca de la media rueda sobre las patatas.
+comida|Rösti|🍳|Torta de patata rallada que era el desayuno de los campesinos de Berna.
+comida|Birchermüesli|🥣|Lo inventó hacia 1900 el médico suizo Maximilian Bircher-Benner.
+comida|Älplermagronen|🍝|Pasta de los pastores con patata, queso y cebolla, servida con compota de manzana.
+comida|Zürcher Geschnetzeltes|🍖|Tiras de ternera en salsa de nata y champiñones, con Rösti. El plato estrella de Zúrich.
+comida|Cervelat a la brasa|🌭|La salchicha nacional: se le hacen cortes en cruz para que se abra como una flor.
+comida|Chocolate con leche|🍫|Lo creó Daniel Peter en Vevey en 1875.
+comida|Trenza de domingo (Zopf)|🥖|El pan trenzado de mantequilla que perfuma las casas los domingos.
+comida|Gipfeli con café|🥐|El cruasán suizo, primo algo más denso del francés.
+comida|Tarta de zanahoria de Argovia|🥕|Es tan típica que a Argovia la llaman en broma «Rüebliland», tierra de zanahorias.
+comida|Läckerli de Basilea|🍪|Galletas de miel y especias de Basilea con siglos de historia.
+comida|Merengue de Meiringen|🍮|Meiringen, en el Oberland bernés, presume de ser la cuna del merengue.
+comida|Pastel de nueces de Engadina|🌰|Masa de mantequilla rellena de nueces caramelizadas. Aguanta semanas sin estropearse.
+comida|Carne de Grisones|🥩|Carne de ternera curada al aire seco de la montaña y cortada muy fina.
+comida|Saucisse aux choux con papet|🥔|Salchicha de col de Vaud con guiso de puerros y patatas.
+comida|Fondue chinoise|🍲|Láminas de carne cocinadas en caldo: un clásico de la cena de Navidad.
+comida|Polenta del Tesino|🌽|Se remueve durante horas en una olla de cobre.
+comida|Capuns|🥬|Hojas de acelga rellenas de masa y embutido, típicas de Grisones.
+comida|Malakoff|🧀|Buñuelo de queso frito, especialidad de la zona de Eysins y Vinzel, en Vaud.
+comida|Croûte au fromage|🍞|Pan empapado en vino blanco con queso gratinado por encima.
+comida|Merengue con double crème de Gruyère|🍨|La «double crème» de Gruyère es tan espesa que se come a cucharadas.
+comida|Ovomaltine caliente|🥛|Bebida de malta inventada en Berna en 1904.
+comida|Rivella bien fría|🥤|Refresco suizo hecho con suero de leche, creado en 1952.
+comida|Sopa de cebada de Grisones|🥣|Sopa espesa de cebada con verduras y carne ahumada.
+comida|Vermicelles|🌰|Puré de castaña en forma de fideos con nata: el postre suizo del otoño.
+comida|Tarta de cebolla|🧅|Imprescindible en el mercado de la cebolla de Berna.
+comida|Spätzli con caza|🍝|En otoño los restaurantes sirven caza con pasta casera, castañas y lombarda.
+comida|Brunsli|🍪|Galletas de chocolate y almendra de Basilea, típicas de Navidad.
+comida|Grittibänz|🎅|Muñeco de pan dulce que se come alrededor del 6 de diciembre.
+comida|Risotto del carnaval|🍚|En el carnaval de Bellinzona se reparte risotto en la calle.
+comida|Fondue moitié-moitié|🧀|Mitad Gruyère y mitad Vacherin fribourgeois: la mezcla más clásica.
+comida|Cerezas de Zug|🍒|Zug es famosa por sus cerezas y por el kirsch, el aguardiente de cereza.
+ciudad|Zúrich|🏙️|La ciudad más grande de Suiza, con más de 1200 fuentes de agua potable.
+ciudad|Ginebra|⛲|Sede europea de la ONU y de la Cruz Roja. Su chorro de agua sube unos 140 metros.
+ciudad|Basilea|🎨|Ciudad del arte y de la Fasnacht, donde en verano se nada en el Rin.
+ciudad|Berna|🐻|Ciudad federal con unos 6 km de soportales en un casco antiguo que es Patrimonio de la Humanidad.
+ciudad|Lucerna|🌉|Su Puente de la Capilla, de madera, es del siglo XIV.
+ciudad|Lausana|🏅|Sede del Comité Olímpico Internacional, con cuestas que bajan hasta el lago Lemán.
+ciudad|Lugano|🌴|La ciudad más grande del Tesino, con palmeras, lago y aire mediterráneo.
+ciudad|St. Gallen|📚|Su biblioteca de la abadía guarda manuscritos de más de mil años.
+ciudad|Winterthur|🏭|La sexta ciudad de Suiza, con museos de arte de primer nivel.
+ciudad|Neuchâtel|⌚|Junto al lago más grande que está entero en Suiza, en tierra de relojeros.
+ciudad|Friburgo|🌉|Ciudad bilingüe a caballo entre la Suiza alemana y la francesa.
+ciudad|Sion|🏰|Capital del Valais, con dos castillos en dos colinas.
+ciudad|Coira|🏛️|Capital de Grisones y una de las ciudades más antiguas de Suiza.
+ciudad|Bellinzona|🏰|Sus tres castillos son Patrimonio de la Humanidad.
+ciudad|Schaffhausen|💦|A su lado rugen las cataratas del Rin.
+ciudad|Montreux|🎷|Festival de jazz cada julio y una estatua de Freddie Mercury frente al lago.
+ciudad|Zug|💰|Cantón de impuestos bajos con un lago famoso por sus atardeceres.
+ciudad|Biel/Bienne|⌚|La ciudad bilingüe más grande de Suiza y gran centro de la relojería.
+ciudad|Locarno|🎬|Su festival de cine proyecta películas al aire libre en la Piazza Grande.
+ciudad|Thun|🏰|Castillo, lago turquesa y vistas a las cumbres del Oberland bernés.
+ciudad|Vevey|🎩|Sede de Nestlé, muy cerca de la casa donde vivió Charlie Chaplin sus últimos años.
+ciudad|Davos|🎿|Una de las ciudades más altas de Europa y sede del Foro Económico Mundial.
+ciudad|Zermatt|🗻|Pueblo sin coches de combustión a los pies del Cervino.
+ciudad|Interlaken|🪂|Entre los lagos de Thun y Brienz, y paraíso del parapente.
+ciudad|St. Moritz|⛸️|Acogió los Juegos Olímpicos de invierno de 1928 y de 1948.
+ciudad|Appenzell|🏘️|Casas pintadas de colores y votaciones a mano alzada en la plaza.
+ciudad|Gruyères|🧀|Pueblo medieval con castillo, queso y el museo del creador de «Alien».
+naturaleza|El Cervino|🗻|4478 metros y una de las montañas más fotografiadas del mundo.
+naturaleza|El Jungfraujoch|🚞|La estación de tren más alta de Europa, a 3454 metros.
+naturaleza|El glaciar Aletsch|🧊|El glaciar más grande de los Alpes, de unos 20 km de largo.
+naturaleza|Las cataratas del Rin|💦|Cerca de Schaffhausen: de las cascadas más caudalosas de Europa.
+naturaleza|El valle de Lauterbrunnen|🌄|Un valle con 72 cascadas en el Oberland bernés.
+naturaleza|El lago Oeschinen|💎|Lago de montaña turquesa sobre Kandersteg.
+naturaleza|El Creux du Van|🏞️|Un anfiteatro de roca de unos 160 metros de alto en Neuchâtel.
+naturaleza|El Parque Nacional Suizo|🦌|El único parque nacional del país, en Grisones, creado en 1914.
+naturaleza|El Rigi|⛰️|«La reina de las montañas», con el primer tren de cremallera de montaña de Europa (1871).
+naturaleza|El Pilatus|🚠|Su tren cremallera es el más empinado del mundo, con un 48 % de pendiente.
+naturaleza|El Säntis|📡|Montaña de 2502 metros desde la que, en días claros, se ven seis países.
+naturaleza|El lago Lemán|🌊|El lago más grande de Suiza, compartido con Francia.
+naturaleza|El lago de los Cuatro Cantones|⛵|Lago con forma de estrella junto a Lucerna, rodeado de cantones fundadores.
+naturaleza|El lago de Brienz|🩵|De un turquesa intenso por el agua que llega de los glaciares.
+naturaleza|La Engadina|❄️|Valle alto de Grisones con lagos que se hielan y un famoso maratón de esquí de fondo.
+naturaleza|La cara norte del Eiger|🧗|Una pared de unos 1800 metros, mítica en la historia del alpinismo.
+naturaleza|El Gornergrat|🚞|Tren de cremallera hasta 3089 metros, con vistas a 29 cumbres de más de 4000.
+naturaleza|El Blausee|💙|Pequeño lago de agua azul cristalina en el valle de Kander.
+naturaleza|La garganta del Aare|🏞️|Un cañón estrecho y profundo junto a Meiringen.
+naturaleza|Las cascadas de Reichenbach|🕵️|Allí «murió» Sherlock Holmes en una novela de Arthur Conan Doyle.
+naturaleza|Los viñedos de Lavaux|🍇|Viñedos en terrazas sobre el Lemán, Patrimonio de la Humanidad.
+naturaleza|El valle de Verzasca|💚|Río de agua verde esmeralda y un puente de piedra en Lavertezzo.
+naturaleza|El lago de Sils|🌊|En la Engadina, donde veraneaba el filósofo Friedrich Nietzsche.
+naturaleza|El Titlis|🚠|Su teleférico Rotair gira 360 grados mientras sube.
+naturaleza|El glaciar del Ródano|🧊|Nacimiento del Ródano, con una gruta de hielo que se excava cada año.
+naturaleza|El lago de Lugano|🌴|Compartido con Italia, rodeado de montañas y pueblos con aire mediterráneo.
+naturaleza|El Stoos|🚞|Su funicular es el más empinado del mundo, con un 110 % de pendiente.
+fiesta|La Fasnacht de Basilea|🏮|Empieza un lunes a las 4:00 con la ciudad a oscuras: el Morgestraich.
+fiesta|El carnaval de Lucerna|🎭|Arranca el «jueves sucio» a las 5:00 con un gran estallido.
+fiesta|El Sechseläuten|⛄|Zúrich quema el Böögg en abril para despedir el invierno.
+fiesta|El 1 de agosto|🎆|La fiesta nacional, con farolillos, hogueras y fuegos artificiales.
+fiesta|La Escalade|🍫|Ginebra rompe ollas de chocolate cada diciembre para celebrar una victoria de 1602.
+fiesta|El Zibelemärit|🧅|El mercado de la cebolla de Berna, el cuarto lunes de noviembre.
+fiesta|La bajada del ganado|🐄|Vacas adornadas con flores bajan de los Alpes en septiembre.
+fiesta|El Samichlaus|🎅|San Nicolás visita a los niños el 6 de diciembre.
+fiesta|El desfile de Räbeliechtli|🏮|Niños con faroles de nabo tallado desfilan en noviembre.
+fiesta|El Knabenschiessen|🎯|Concurso de tiro juvenil con gran feria en Zúrich, en septiembre.
+fiesta|La Street Parade|🎧|Desfile de música electrónica alrededor del lago de Zúrich.
+fiesta|El Montreux Jazz Festival|🎷|Música junto al lago Lemán cada julio, con muchos conciertos gratis.
+fiesta|El Festival de cine de Locarno|🎬|Cine al aire libre para miles de personas en la Piazza Grande, en agosto.
+fiesta|El Chalandamarz|🔔|Los niños de la Engadina tocan cencerros el 1 de marzo para echar al invierno.
+fiesta|Los Silvesterchläuse|🎶|En Urnäsch celebran el Año Nuevo dos veces, con trajes enormes y cencerros.
+fiesta|La fiesta de Unspunnen|🪨|En Interlaken se lanza una piedra de 83,5 kilos.
+fiesta|Un festival de Schwingen|🤼|Lucha suiza en serrín: en el gran festival nacional el ganador se lleva un toro.
+fiesta|El Rabadan|🎭|El carnaval de Bellinzona, con risotto repartido en la calle.
+fiesta|La Bénichon|🍂|Fiesta de la cosecha de Friburgo con un menú interminable.
+fiesta|El mercado de Navidad de Basilea|🎄|Uno de los mercados navideños más grandes de Suiza.
+fiesta|La Fête des Vignerons|🍇|Fiesta de los viticultores de Vevey que solo se celebra unas cuatro o cinco veces por siglo.
+fiesta|Una Landsgemeinde|✋|En Appenzell Interior y Glaris se vota a mano alzada en la plaza.
+fiesta|El Paléo Festival|🎪|Gran festival de música al aire libre en Nyon, en julio.
+plan|Barbacoa en el bosque|🔥|Hay zonas públicas con parrilla de piedra, a veces con leña incluida.
+plan|Nadar en el río dejándote llevar|🏊|En Basilea y Berna se nada en el Rin y el Aar con la ropa en una bolsa impermeable.
+plan|Apuntarte a un club (Verein)|📜|Suiza tiene clubes para todo: es la forma más clásica de hacer amistades.
+plan|Ir al mercado del sábado|🧺|Casi todas las ciudades tienen mercado semanal de productores locales.
+plan|Aprender a jugar al Jass|🃏|El juego de cartas nacional suizo. Con él te ganas a cualquier abuelo del pueblo.
+plan|Subir a un mirador en tren cremallera|🚞|Hay trenes de cremallera que suben a cumbres de más de 3000 metros.
+plan|Domingo de senderismo|🥾|Suiza tiene unos 65 000 km de senderos señalizados con carteles amarillos.
+plan|Apéro con compañeros|🥂|Vino, queso y charla de pie: la fiesta más suiza que existe.
+plan|Fondue en la nieve|🫕|Llevarse caquelon y hornillo a una excursión de invierno es muy suizo.
+plan|Trineo por la noche|🛷|Muchas pistas de trineo están iluminadas para bajar de noche.
+plan|Esquí de fondo|⛷️|La Engadina tiene más de 200 km de pistas de esquí de fondo.
+plan|Recoger setas en el bosque|🍄|Antes de comerlas, al control de setas oficial, que suele ser gratis.
+plan|Ruta en bici junto a un lago|🚲|Suiza tiene una red nacional de rutas en bici señalizadas.
+plan|Voluntariado en el barrio|🤝|Muchísima gente en Suiza hace voluntariado en clubes, barrios o ayuda social.
+plan|Tándem de idiomas|🗣️|Intercambias tu español por alemán, francés o italiano. Gratis y divertido.
+plan|Brunch en una granja|🥐|El 1 de agosto muchas granjas suizas ofrecen un gran desayuno campestre.
+plan|Tarde en unas termas|♨️|Leukerbad, en el Valais, tiene uno de los mayores complejos termales de los Alpes.
+plan|Partido de hockey sobre hielo|🏒|El hockey sobre hielo es uno de los deportes más seguidos de Suiza.
+plan|Visitar una quesería|🧀|En Gruyères puedes ver cómo se hace el queso cada día.
+plan|Excursión en barco de vapor|⛴️|Varios lagos suizos conservan barcos de vapor de hace más de cien años.
+plan|Noche en una cabaña de montaña|🛖|El Club Alpino Suizo tiene unas 150 cabañas de montaña.
+plan|Picnic junto al lago|🧺|En verano las orillas se llenan de gente al salir del trabajo.
+plan|Concierto de cuerno alpino|📯|El cuerno alpino mide más de 3 metros y se hace de madera de abeto.
+plan|Fiesta latina con Latido|🎤|La comunidad es la forma más rápida de sentirse en casa.
+plan|Curso de yodel|🎶|En muchas regiones hay cursos de yodel para principiantes.
+palabra|Chuchichäschtli|🗄️|Significa «armarito de cocina» y es el trabalenguas favorito de los suizos.
+palabra|Gopfriedstutz|🤬|Exclamación de enfado suave, algo así como «¡caramba!».
+palabra|Znüni|🥐|El tentempié de media mañana. Literalmente, «a las nueve».
+palabra|Grüezi|👋|El saludo formal de la Suiza alemana.
+palabra|Merci vielmal|🙏|«Muchas gracias», mezclando francés y alemán.
+palabra|Exgüsi|🙇|«Perdón», del francés «excusez».
+palabra|Natel|📱|El móvil, en toda Suiza.
+palabra|Schoggi|🍫|«Chocolate» en suizo alemán.
+palabra|Büsi|🐱|«Gato» en lenguaje cariñoso.
+palabra|Schätzli|💕|«Tesorito», para la pareja o los niños.
+palabra|Fyrabig|🌇|El fin de la jornada laboral.
+palabra|Gäll|🤔|«¿Verdad?», al final de la frase.
+palabra|Panosse|🧽|«Fregona» en la Suiza francesa.
+palabra|Septante|7️⃣|«Setenta» en la Suiza francesa.
+palabra|Cornet|🛍️|«Bolsa de plástico» en la Suiza francesa.
+palabra|Cheni|🧺|«Desorden» en la Romandía.
+palabra|Allegra|👋|«Hola» en romanche.
+palabra|Grotto|🍷|Taberna rústica del Tesino.
+palabra|Bünzli|📏|Persona muy cuadriculada, dicho en broma.
+palabra|Huere guet|🤩|«Buenísimo», muy coloquial.
+palabra|Rüebli|🥕|«Zanahoria» en suizo alemán.
+palabra|Härdöpfel|🥔|«Patata»: literalmente, «manzana de tierra».
+palabra|Gwunder|🧐|Curiosidad, o ganas de cotillear.
+palabra|Plausch|🎉|Diversión, en suizo alemán.
+palabra|Tip-top|👌|«Perfecto», en toda Suiza.
+experiencia|Viajar en el Glacier Express|🚞|Une Zermatt y St. Moritz en unas 8 horas: lo llaman el expreso más lento del mundo.
+experiencia|Cruzar los Alpes en el Bernina Express|🚆|Su línea hasta Italia es Patrimonio de la Humanidad.
+experiencia|Viajar en el autobús amarillo de Correos|🚌|Su bocina de tres notas suena en las curvas de montaña.
+experiencia|Volar en parapente en Interlaken|🪂|Interlaken es uno de los lugares de parapente más famosos del mundo.
+experiencia|Subir al Jungfraujoch|🏔️|La estación de tren más alta de Europa.
+experiencia|Saltar en la presa de Verzasca|🪢|Esta presa de 220 metros salió en una película de James Bond.
+experiencia|Dormir en un iglú|❄️|En invierno hay hoteles iglú en varias estaciones de esquí.
+experiencia|Visitar el CERN|⚛️|Allí nació la World Wide Web en 1989.
+experiencia|Ver la biblioteca de St. Gallen|📚|Una de las bibliotecas monásticas más antiguas del mundo.
+experiencia|Cruzar el Gotardo por el túnel de base|🚄|57 km bajo los Alpes: el túnel ferroviario más largo del mundo.
+experiencia|Bañarte en un lago en enero|🥶|Cada vez más gente se apunta al baño de invierno en los lagos.
+experiencia|Ver a los osos de Berna|🐻|Viven en un parque junto al río Aar, en pleno centro.
+experiencia|Navegar en un barco de vapor histórico|⛴️|Hay barcos de vapor con más de cien años en servicio.
+experiencia|Ver Schwingen en directo|🤼|Lucha tradicional suiza en un círculo de serrín.
+experiencia|Visitar la casa de Chaplin|🎩|Su casa cerca de Vevey es hoy un museo.
+experiencia|Recorrer Lavaux a pie|🍇|Viñedos en terrazas con vistas al lago Lemán.
+experiencia|Subir en el funicular del Stoos|🚞|El más empinado del mundo, con un 110 % de pendiente.
+experiencia|Asistir a una Landsgemeinde|✋|Votación a mano alzada en la plaza del pueblo.
+experiencia|Esquiar en Zermatt en verano|⛷️|Gracias al glaciar, en Zermatt se puede esquiar todo el año.
+experiencia|Ver el Jet d'eau iluminado|⛲|El chorro de agua de Ginebra sube unos 140 metros sobre el lago.
+souvenir|Una navaja suiza|🔪|El ejército suizo encargó sus primeras navajas en 1891.
+souvenir|Un reloj suizo|⌚|La relojería suiza se concentra en el arco del Jura.
+souvenir|Una caja de chocolate|🍫|Suiza come unos 10 kilos de chocolate por persona al año.
+souvenir|Un cencerro|🔔|Los cencerros grandes de las fiestas pueden pesar varios kilos.
+souvenir|Un queso Gruyère|🧀|Queso con denominación de origen protegida, sin apenas agujeros.
+souvenir|Una botella de kirsch|🍒|Aguardiente de cerezas, típico de Zug.
+souvenir|Una taza del mercado de Navidad|☕|Se puede devolver por el depósito… o guardarla de recuerdo.
+souvenir|Läckerli de Basilea|🍪|Galletas de miel y especias que aguantan semanas.
+souvenir|Una camiseta de Latido|💚|Para llevar tus raíces con orgullo en Suiza.
+souvenir|Una postal del Cervino|🗻|Una de las montañas más fotografiadas del mundo.
+souvenir|Un cuerno alpino en miniatura|📯|El de verdad mide más de 3 metros.
+souvenir|Un pastel de nueces de Engadina|🌰|Aguanta semanas sin estropearse: perfecto para la maleta.
+souvenir|Caramelos de hierbas suizos|🍬|Los de Ricola nacieron en 1940 en Laufen, cerca de Basilea.
+souvenir|Un tarro de Ovomaltine|🥛|Inventada en Berna en 1904.

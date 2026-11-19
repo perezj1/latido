@@ -53,6 +53,9 @@
     "test:card:webkit": "node scripts/test-latido-card-browser.mjs --webkit",
     "vapid:keys": "node scripts/generate-vapid-keys.mjs",
     "suizamente:validar": "node scripts/validar-suizamente.cjs",
+    "suizamente:comprobar": "node scripts/generar-suizamente-preguntas.cjs --comprobar && node scripts/validar-suizamente.cjs",
+    "suizamente:catalogo": "node scripts/sincronizar-suizamente-catalogo.mjs",
+    "suizamente:generar": "node scripts/generar-suizamente-preguntas.cjs --escribir && node scripts/validar-suizamente.cjs && node scripts/sincronizar-suizamente-catalogo.mjs",
     "test:suizamente:votos": "node scripts/test-suizamente-votos.mjs",
     "test:suizamente:referencia": "node scripts/test-suizamente-referencia.mjs",
     "test:suizamente:produccion": "node scripts/test-suizamente-produccion.mjs"

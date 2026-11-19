@@ -1,0 +1,106 @@
+# V | tema | emoji | afirmación | V o M | dato
+V|social|💋|Entre amigos, en Suiza se suelen dar tres besos.|V|En el trabajo o al conocer a alguien formalmente, mejor un apretón de manos.
+V|social|🍽️|Si te invitan a cenar a las 19:00, lo educado es llegar a las 19:30.|M|Se llega a la hora o, como mucho, un par de minutos tarde.
+V|social|🎁|Llevar algo cuando te invitan a cenar a una casa suiza se considera raro.|M|Es lo habitual: flores, vino o chocolate funcionan siempre.
+V|social|📅|Muchos suizos organizan sus planes de tiempo libre con semanas de antelación.|V|No es un rechazo: apúntalo en la agenda y cúmplelo.
+V|social|📜|En Suiza hay clubes (Vereine) para casi todo.|V|Deporte, música, tiro, jardinería… Son una de las mejores formas de hacer amistades.
+V|social|🧖|En muchas saunas de la Suiza alemana se entra sin bañador.|V|Con una toalla para sentarse. Y suelen ser mixtas.
+V|social|👋|En la montaña suiza no se saluda a desconocidos.|M|Se saluda a todo el mundo: «Grüezi», «Bonjour» o «Buongiorno», según la región.
+V|social|🥂|Al brindar en Suiza se mira a los ojos de cada persona.|V|Una por una. Dice la superstición que no hacerlo trae mala suerte.
+V|social|📞|Hablar por teléfono en voz alta en el tranvía es lo más normal en Suiza.|M|En el transporte público se habla bajo. Las llamadas largas están mal vistas.
+V|social|🥗|Un «Apéro riche» es un aperitivo tan abundante que sustituye a la cena.|V|Si te invitan a uno, mejor no cenar antes.
+V|social|🃏|El juego de cartas más popular de Suiza es el póker.|M|Es el Jass. Según la región, se juega con baraja de palos alemanes o franceses.
+V|social|🍻|En los bares suizos es muy normal que cada persona pague lo suyo.|V|Las rondas existen, pero no se espera que se devuelvan enseguida.
+V|social|🤝|Mucha gente en Suiza hace voluntariado.|V|En clubes, barrios, deporte o ayuda social. Es una gran forma de conocer gente.
+V|social|🤫|En Suiza la gente suele ser reservada al principio, pero las amistades suelen durar mucho.|V|Toma tú la iniciativa: invitar y proponer planes funciona.
+V|social|🐕|En los parques suizos hay bolsas gratis para recoger los excrementos de los perros.|V|Las verás en dispensadores por todas partes.
+V|social|🌙|En Suiza se cena tarde, hacia las 22:00.|M|Se cena pronto, normalmente entre las 18:00 y las 19:30.
+V|social|📵|Cancelar una cita a última hora está bien visto si avisas por mensaje.|M|Está bastante mal visto. Si no puedes ir, avisa con tiempo y propón otra fecha.
+V|social|💬|En Suiza la política se comenta mucho, por las votaciones frecuentes.|V|En cambio, hablar de sueldos y dinero es más delicado.
+V|social|🧒|En Suiza el colegio obligatorio empieza a los 7 años.|M|En casi todos los cantones empieza a los 4 años, con dos años de Kindergarten antes de primaria.
+V|social|🍼|Las guarderías suizas son baratas y siempre tienen plaza.|M|Suelen ser caras y con lista de espera. Muchos municipios dan ayudas según los ingresos.
+V|social|💶|Por cada hijo se recibe una asignación familiar mensual.|V|Es de al menos unos 200 francos según el cantón y se pide a través de la empresa.
+V|social|🗓️|Las vacaciones escolares son las mismas en toda Suiza.|M|Cambian de un cantón a otro e incluso entre municipios.
+V|social|🍽️|Muchos niños suizos comen en casa al mediodía y vuelven al colegio por la tarde.|V|Para las familias que trabajan hay comedores escolares y cuidado extraescolar.
+V|social|📚|En muchas ciudades suizas hay cursos de español para hijos de familias hispanohablantes.|V|Son los cursos de lengua y cultura de origen (HSK, LCO).
+V|fiestas|🎆|La fiesta nacional suiza es el 14 de julio.|M|El 14 de julio es la de Francia. La suiza es el 1 de agosto y recuerda el pacto de 1291.
+V|fiestas|⛄|En el Sechseläuten de Zúrich se quema un muñeco de nieve lleno de petardos.|V|Se llama Böögg. Cuanto antes le explota la cabeza, mejor verano, según la tradición.
+V|fiestas|🏮|La Fasnacht de Basilea empieza a las 4 de la mañana.|V|Con el Morgestraich: se apagan las luces de la ciudad y salen farolillos y tambores.
+V|fiestas|🍫|En la Escalade de Ginebra se rompen ollas de chocolate.|V|Celebra que la ciudad rechazó un ataque nocturno de Saboya en 1602.
+V|fiestas|🎅|En la Suiza alemana, San Nicolás visita a los niños el 24 de diciembre.|M|El Samichlaus llega el 6 de diciembre, con su ayudante el Schmutzli.
+V|fiestas|🧅|Berna celebra cada noviembre un mercado de la cebolla.|V|Es el Zibelemärit, el cuarto lunes de noviembre, con trenzas de cebollas y batallas de confeti.
+V|fiestas|🥚|En Pascua es tradición chocar huevos duros pintados.|V|Gana quien no rompe el suyo. En suizo alemán se llama «Eiertütschen».
+V|fiestas|🐄|En septiembre las vacas suben a los pastos de alta montaña a pasar el invierno.|M|Es al revés: suben a principios de verano y bajan en septiembre, adornadas con flores. Es el Alpabzug o désalpe.
+V|fiestas|🎶|En Urnäsch, en Appenzell, celebran el Año Nuevo dos veces.|V|El 31 de diciembre y el 13 de enero, según el antiguo calendario juliano.
+V|fiestas|🍇|La Fête des Vignerons de Vevey se celebra cada año.|M|Solo se celebra unas cuatro o cinco veces por siglo. La última fue en 2019.
+V|fiestas|🪨|En la fiesta de Unspunnen se lanza una piedra de más de 80 kilos.|V|La piedra de Unspunnen pesa 83,5 kilos.
+V|fiestas|🏮|Los Räbeliechtli son faroles hechos con nabos tallados.|V|Los niños desfilan con ellos en noviembre por las calles.
+V|fiestas|🎄|En los mercados de Navidad suizos el vino caliente se sirve en tazas con depósito.|V|Devuelves la taza y te devuelven el dinero… o te la quedas de recuerdo.
+V|fiestas|🎺|Las Guggenmusik son bandas de carnaval que tocan desafinado a propósito.|V|Es parte de la gracia del carnaval suizo.
+V|fiestas|🎬|El festival de cine de Locarno proyecta películas al aire libre en su plaza principal.|V|En la Piazza Grande caben miles de personas.
+V|fiestas|🍇|En Suiza es tradición comer 12 uvas en Nochevieja.|M|Esa costumbre es española. En Suiza hay fuegos artificiales y cerditos de mazapán para dar suerte.
+V|comida|🧀|El Gruyère está lleno de agujeros grandes.|M|Casi no tiene agujeros. El famoso por sus agujeros es el Emmentaler.
+V|comida|🍫|El chocolate con leche se inventó en Bélgica.|M|Lo creó Daniel Peter en Vevey, en Suiza, en 1875.
+V|comida|🥣|El Birchermüesli lo inventó una marca de cereales de Estados Unidos.|M|Lo inventó el médico suizo Maximilian Bircher-Benner hacia 1900, para sus pacientes.
+V|comida|🫕|En la fondue, a quien se le cae el pan le toca una penitencia.|V|Pagar una ronda, cantar… lo que decida la mesa.
+V|comida|💧|Con la fondue se recomienda beber mucha agua fría.|M|Se suele beber vino blanco o té. Dicen que el agua fría con queso fundido sienta mal.
+V|comida|🥔|La raclette se come tradicionalmente con pasta.|M|Se come con patatas cocidas con piel, pepinillos y cebollitas en vinagre.
+V|comida|🍞|El Zopf es un pastel de chocolate para los cumpleaños.|M|Es el pan trenzado del domingo, hecho con mantequilla. Perfuma toda la casa.
+V|comida|🥛|En el súper suizo, «Vollrahm» significa leche entera.|M|Es nata para montar. La leche entera es «Vollmilch».
+V|comida|☕|Si pides «un café» en Zúrich, te suelen traer un café largo con crema.|V|Es el Kafi Crème. Para algo corto e intenso, pide un espresso.
+V|comida|💦|En los restaurantes suizos el agua del grifo es gratis por ley.|M|No hay ley que lo obligue: muchos la dan gratis, pero algunos la cobran.
+V|comida|🕑|En muchos restaurantes la cocina cierra por la tarde, entre las 14:00 y las 18:00.|V|A mediodía se come entre las 11:30 y las 13:30.
+V|comida|🌭|El cervelat es la salchicha nacional suiza.|V|Se le hacen cortes en cruz en las puntas para asarla.
+V|comida|🍫|En Suiza se come menos de un kilo de chocolate por persona al año.|M|Son unos 10 kilos por persona al año, uno de los consumos más altos del mundo.
+V|comida|🍯|Los Läckerli son galletas típicas de Ginebra.|M|Son de Basilea: galletas de miel y especias.
+V|comida|🌰|Los vermicelles suizos son unos fideos para la sopa.|M|Son un postre de puré de castaña en forma de fideos, servido con nata o merengue.
+V|comida|🍚|El risotto es típico de las fiestas del Tesino.|V|En el carnaval de Bellinzona se reparte en la calle.
+V|comida|🧀|La fondue moitié-moitié mezcla un queso suizo y uno francés.|M|Mezcla dos quesos suizos: Gruyère y Vacherin fribourgeois.
+V|comida|🍒|El kirsch es un aguardiente de ciruelas.|M|Es de cerezas: «Kirsche» significa cereza en alemán. Zug es famosa por su kirsch.
+V|comida|🥩|La carne de Grisones se cura al aire de la montaña.|V|Se corta en lonchas muy finas.
+V|comida|🛒|Los supermercados suizos abren normalmente los domingos.|M|En la mayoría de cantones cierran. Abren las tiendas de estaciones y algunas gasolineras.
+V|naturaleza|🗻|La montaña más alta de Suiza es el Cervino.|M|Es la Dufourspitze, de 4634 metros. El Cervino mide 4478.
+V|naturaleza|🧊|El glaciar más grande de los Alpes está en el Mont Blanc, en Francia.|M|Es el glaciar Aletsch, en el Valais, con unos 20 km de largo.
+V|naturaleza|🦌|Suiza tiene un solo parque nacional.|V|Está en Grisones y se creó en 1914.
+V|naturaleza|🌊|El lago más grande que está entero en Suiza es el de Neuchâtel.|V|El Lemán es más grande, pero lo comparte con Francia.
+V|naturaleza|💦|Las cataratas del Rin están en Basilea.|M|Están en Neuhausen, junto a Schaffhausen. Son de las cascadas más caudalosas de Europa.
+V|naturaleza|🌄|El valle de Lauterbrunnen tiene 72 cascadas.|V|Está en el Oberland bernés.
+V|naturaleza|🐺|En Suiza no hay lobos.|M|Los lobos volvieron a Suiza en los años 90 y hoy hay varias manadas.
+V|naturaleza|🐐|El íbice aparece en el escudo de Grisones.|V|El íbice casi desapareció de Suiza y fue reintroducido.
+V|naturaleza|🐕|Los perros San Bernardo rescataban viajeros en el paso del Gran San Bernardo.|V|El más famoso, Barry, salvó a decenas de personas a principios del siglo XIX.
+V|naturaleza|🌫️|En noviembre, por encima de unos 1000 metros, a menudo hace sol sobre un mar de niebla.|V|Se llama Nebelmeer y es la escapada perfecta de los días grises.
+V|naturaleza|🏔️|Suiza no tiene ninguna montaña de más de 4000 metros.|M|Tiene más de 40, la mayoría en el Valais. La más alta es la Dufourspitze, de 4634 metros.
+V|naturaleza|🌊|El Rin nace en la Selva Negra, en Alemania.|M|Nace en los Alpes de Grisones, en Suiza. El que nace en la Selva Negra es el Danubio.
+V|naturaleza|🧊|El río Ródano nace en un glaciar suizo.|V|Nace en el glaciar del Ródano, en el Valais, y atraviesa el lago Lemán.
+V|naturaleza|🏞️|El Ródano es el río más largo que discurre entero por Suiza.|M|Es el Aar, de unos 290 km. El Ródano y el Rin siguen después por otros países.
+V|naturaleza|🐻|En Suiza viven grandes grupos de osos salvajes.|M|Solo aparecen de vez en cuando algunos ejemplares que llegan desde Italia.
+V|naturaleza|🦅|El quebrantahuesos volvió a los Alpes suizos gracias a programas de reintroducción.|V|Este gran buitre había desaparecido de la región.
+V|naturaleza|🐿️|Las marmotas silban para avisar de un peligro.|V|Si oyes un silbido agudo en la montaña, probablemente sea una marmota.
+V|naturaleza|🌋|Suiza tiene volcanes activos.|M|No tiene ninguno. Sus montañas nacieron del choque de placas tectónicas.
+V|naturaleza|🏞️|Suiza tiene unos 1500 lagos.|V|Desde grandes lagos hasta pequeños lagos de montaña.
+V|naturaleza|🌲|Suiza casi no tiene bosques: solo un 5 % de su superficie.|M|Alrededor de un tercio de Suiza es bosque. Y por los bosques se puede pasear libremente.
+V|idioma|🗣️|Suiza tiene tres idiomas nacionales: alemán, francés e italiano.|M|Tiene cuatro: también el romanche, que se habla en partes de Grisones.
+V|idioma|📝|El suizo alemán tiene una forma escrita oficial que se enseña en la escuela.|M|No la tiene: para escribir se usa el alemán estándar.
+V|idioma|7️⃣|En la Suiza francesa se dice «septante» para el número 70.|V|Y «nonante» para el 90. En Vaud y Valais, «huitante» para el 80.
+V|idioma|📱|En Suiza al móvil se le llama «Natel».|V|Tanto en alemán como en francés.
+V|idioma|🥐|En la Suiza francesa, «dîner» es la cena.|M|«Dîner» es la comida del mediodía. La cena es el «souper».
+V|idioma|🛍️|En la Suiza francesa, «cornet» solo significa cucurucho de helado.|M|También es la bolsa de la compra: en la caja del súper te preguntarán si quieres un cornet.
+V|idioma|👋|«Allegra» es un saludo en romanche.|V|El romanche se habla en partes de Grisones.
+V|idioma|🇨🇭|La mayoría de la población suiza tiene el francés como idioma principal.|M|La mayoría habla alemán, alrededor del 62 %. El francés, el 23 %, y el italiano, el 8 %.
+V|idioma|🙏|En suizo alemán se dice «Merci» para dar las gracias.|V|Y «Merci vielmal» para «muchas gracias».
+V|idioma|🔤|El código «CH» de Suiza significa «Chocolate Helvético».|M|Viene del latín «Confoederatio Helvetica». Por eso las webs suizas terminan en «.ch».
+V|cultura|🏛️|La Constitución suiza dice que Berna es la capital.|M|No nombra ninguna capital. Berna es la «ciudad federal».
+V|cultura|🇨🇭|La bandera suiza es cuadrada.|V|Solo Suiza y el Vaticano tienen bandera cuadrada.
+V|cultura|💂|La Guardia Suiza protege al Papa desde hace más de 500 años.|V|Llegó al Vaticano en 1506.
+V|cultura|🇪🇺|Suiza es miembro de la Unión Europea.|M|No lo es, aunque forma parte de Schengen y tiene muchos acuerdos bilaterales.
+V|cultura|🕊️|La sede europea de la ONU está en Bruselas.|M|Está en Ginebra, en el Palacio de las Naciones. Bruselas es la sede de las instituciones de la UE.
+V|cultura|🗳️|Las mujeres suizas votan a nivel federal desde 1918.|M|No pudieron hacerlo hasta 1971. En Appenzell Rodas Interiores, en asuntos cantonales, hasta 1990.
+V|cultura|🏅|El Comité Olímpico Internacional tiene su sede en París.|M|Está en Lausana, por eso la ciudad se presenta como «capital olímpica». Allí está también el Museo Olímpico.
+V|cultura|⚽|La FIFA tiene su sede en Zúrich.|V|Y la UEFA, en Nyon, junto al lago Lemán.
+V|cultura|🌐|La World Wide Web nació en el CERN, cerca de Ginebra.|V|Tim Berners-Lee la propuso en 1989.
+V|cultura|🗺️|Suiza tiene 12 cantones.|M|Tiene 26. Seis de ellos se llamaban antes «semicantones», como Basilea-Ciudad y Basilea-Campiña.
+V|cultura|🎾|Roger Federer es de Ginebra.|M|Es de Basilea.
+V|cultura|📖|Heidi es un personaje creado por los estudios Disney.|M|La creó la escritora suiza Johanna Spyri en 1880. La famosa serie de dibujos japonesa llegó en 1974.
+V|cultura|🏹|Hay documentos que prueban que Guillermo Tell existió.|M|Es una leyenda: no hay pruebas históricas de que existiera.
+V|cultura|🪖|En Suiza el servicio militar es obligatorio para los hombres con nacionalidad suiza.|V|Quien no lo hace paga una tasa o hace servicio civil.
+V|cultura|⚖️|La neutralidad suiza se reconoció internacionalmente en 1815.|V|Fue en el Congreso de Viena, tras las guerras napoleónicas.

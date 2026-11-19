@@ -1,0 +1,21 @@
+# invento | emoji | dato
+El velcro|🧷|George de Mestral se inspiró en los cardos que se pegaban al pelo de su perro tras una excursión.
+El celofán|🎁|Lo inventó el químico suizo Jacques Brandenberger en 1908.
+La navaja suiza|🔪|El ejército suizo encargó sus primeras navajas en 1891.
+El chocolate con leche|🍫|Daniel Peter lo creó en Vevey en 1875 usando leche condensada.
+El café soluble de éxito|☕|Nestlé lanzó su café soluble en 1938.
+El LSD|🧪|Albert Hofmann lo sintetizó en Basilea y descubrió sus efectos en 1943.
+La World Wide Web|🌐|Tim Berners-Lee la propuso en 1989 en el CERN, cerca de Ginebra.
+El pelador de patatas Rex|🥔|Este pelador se inventó en Suiza en 1947 y se sigue fabricando casi igual.
+El Birchermüesli|🥣|Lo inventó el médico Maximilian Bircher-Benner hacia 1900.
+El cubito de caldo Maggi|🍲|Julius Maggi lo lanzó en 1908.
+La tipografía Helvetica|🔤|Max Miedinger y Eduard Hoffmann la diseñaron en 1957.
+La absenta|🍸|Nació a finales del siglo XVIII en el Val-de-Travers, en Neuchâtel.
+El reloj Swatch|⌚|Salió en 1983 y ayudó a salvar la relojería suiza.
+El lenguaje de programación Pascal|💻|Lo creó Niklaus Wirth en la ETH de Zúrich hacia 1970.
+El microscopio de efecto túnel|🔬|Lo inventaron Gerd Binnig y Heinrich Rohrer en IBM Zúrich; ganaron el Nobel en 1986.
+Los caramelos de hierbas Ricola|🍬|Emil Richterich los creó en 1940 en Laufen.
+La Ovomaltine|🥛|Albert Wander la lanzó en Berna en 1904.
+El conchado del chocolate|🍫|Rodolphe Lindt inventó en 1879 el proceso que hace el chocolate tan suave.
+La Toblerone|🔺|Theodor Tobler y Emil Baumann la crearon en Berna en 1908.
+La Rivella|🥤|Robert Barth creó en 1952 este refresco hecho con suero de leche.

@@ -1,0 +1,211 @@
+# D | tema | emoji | pregunta | opción | opción | [opción] | dato
+# Las opciones empiezan con emoji. Sin respuesta correcta: el dato enseña algo del tema.
+
+# casa
+D|casa|🧺|¿Qué prefieres?|🧺 Lavandería común con turno los martes a las 6:00|🛁 Lavar a mano en la bañera cuando quieras|En muchos edificios la lavandería se reparte por turnos. A veces se puede cambiar el turno con quien vive al lado.
+D|casa|🗑️|¿Qué prefieres?|💰 Pagar 2 francos por cada bolsa de basura|⚖️ Que pesen tu basura y pagar por kilo|Las bolsas oficiales cuestan de 1 a 3 francos según el municipio. En algunos sitios los contenedores pesan la basura con una tarjeta.
+D|casa|🔇|¿Qué ruido del edificio aguantas mejor?|🎺 Alguien que ensaya trompeta a las 19:00|🐕 Un perro que ladra cada vez que sales|🥾 Alguien que camina con zuecos a las 23:00|Los reglamentos de los edificios suelen fijar horas de descanso, muchas veces de 12:00 a 13:00 y de 22:00 a 7:00.
+D|casa|🏠|¿Dónde prefieres vivir?|🏙️ Un estudio diminuto en el centro de Zúrich|🏡 Un piso enorme en un pueblo a 45 minutos en tren|El precio por metro cuadrado baja mucho al alejarse de las ciudades. Por eso mucha gente en Suiza vive lejos y viaja cada día.
+D|casa|📦|Mudanza en Suiza:|🚚 Empresa con limpieza y garantía de entrega|💪 Amistades, pizza y una furgoneta alquilada|Las fechas típicas de mudanza suelen ser a finales de marzo y de septiembre. Esos días, las furgonetas vuelan.
+D|casa|🛋️|Para amueblar tu primer piso:|🪑 Todo de segunda mano en un Brocki|🛒 Todo nuevo, y montarlo tú en un fin de semana|🪵 Los muebles que deja la persona anterior por 1 franco|Es muy común vender los muebles a quien entra en el piso. También hay webs de segunda mano como Tutti o Ricardo.
+D|casa|🌻|¿Qué prefieres tener?|🌻 Un huerto urbano con lista de espera de tres años|🪴 Un balcón lleno de macetas|Los huertos familiares, los Schrebergärten, son muy populares y en las ciudades suelen tener lista de espera.
+D|casa|🛗|¿Qué prefieres?|🧗 Un quinto piso sin ascensor con vistas al lago|🚪 Un bajo con ascensor y vistas al contenedor de PET|Muchos edificios antiguos no tienen ascensor. Y sí: los pisos con vistas al lago son de los más caros.
+D|casa|📮|¿Qué prefieres encontrar en el buzón?|📬 Un recordatorio de pago con recargo|📨 El aviso de una carta certificada que hay que recoger un sábado|Si no estás cuando llega una carta certificada, te dejan un aviso y tienes 7 días para recogerla.
+D|casa|🥵|¿Qué prefieres?|❄️ Un piso sin aire acondicionado en agosto|🔥 Un piso con calefacción que no puedes regular en enero|Casi ninguna vivienda suiza tiene aire acondicionado. El truco local: bajar las persianas exteriores de día.
+D|casa|🔑|¿Qué prefieres perder?|🔑 La llave del piso, de un sistema de seguridad|📱 El móvil con todos tus billetes de tren|Perder una llave de seguridad puede obligar a cambiar varias cerraduras. El seguro de responsabilidad civil a veces lo cubre.
+D|casa|🐌|¿Con quién prefieres compartir el balcón?|🐌 Un caracol que se come tus lechugas|🕷️ Una araña que se come los mosquitos|Ninguno paga alquiler. En Suiza viven casi mil especies de arañas, y casi todas son inofensivas.
+D|casa|🧽|Al dejar el piso de alquiler:|🧽 Limpiar tú dos días enteros, horno incluido|💸 Pagar a una empresa con garantía de entrega|Las empresas de limpieza de mudanza suelen dar garantía: si la administración no acepta el piso, vuelven a limpiar.
+D|casa|📜|¿Qué norma del edificio prefieres?|🚫 Nada de ropa tendida en el balcón los domingos|🔇 Nada de ducharse después de las 22:00|Ninguna ley nacional prohíbe ducharse por la noche: es casi una leyenda urbana. Pero cada edificio tiene su reglamento.
+D|casa|🔥|Barbacoa en verano:|🔥 En la parrilla pública del bosque, con leña|⚡ En una parrilla eléctrica en el balcón|En Suiza hay miles de parrillas públicas gratuitas en bosques y orillas de lagos, muchas con leña preparada.
+D|casa|🏰|¿Qué piso prefieres?|🏰 Un ático antiguo con techos inclinados|🏢 Un piso nuevo con lavadora propia|Tener lavadora en el propio piso es un lujo en muchos edificios suizos antiguos.
+D|casa|🚲|¿Dónde guardas la bici?|🚲 En el cuarto de bicis del sótano|🏠 Colgada del techo del salón|Muchos edificios tienen un cuarto común para bicis. Y en Suiza se roban bastantes: candado siempre.
+D|casa|💡|Te mudas a un piso sin lámparas:|💡 Bombilla colgando del cable durante meses|🛋️ Lámparas de diseño el primer día|En Suiza las lámparas suelen ser de quien alquila. Muchas personas pasan semanas con la bombilla al aire.
+D|casa|🧹|¿Qué tarea de casa prefieres?|♻️ Separar la basura en ocho tipos|🧺 Planchar la ropa de toda la semana|Más de la mitad de la basura de los hogares suizos se recicla: vidrio, papel, PET, aluminio, pilas…
+D|casa|🌙|¿Qué prefieres?|🌙 Vecindario silencioso desde las 22:00|🎉 Vecindario de fiesta pero muy simpático|El descanso nocturno, la Nachtruhe, suele empezar a las 22:00 y se respeta mucho.
+
+# papeles
+D|papeles|📑|¿Qué trámite prefieres?|🏛️ Registrarte en el municipio en persona|💻 Rellenar la declaración de impuestos online en alemán|Al llegar tienes normalmente 14 días para registrarte. La declaración llega cada año… y no perdona.
+D|papeles|⏳|¿Qué prefieres?|⏳ Esperar tres meses por tu permiso|🧾 Enseñar el justificante de solicitud en todas partes|Mientras se tramita el permiso, el justificante de la oficina de migración sirve para muchas gestiones.
+D|papeles|🗳️|Si pudieras votar en Suiza:|📬 Votar por correo desde el sofá|🚶 Ir a la urna del pueblo el domingo|La gran mayoría de la gente vota por correo. Las votaciones nacionales se celebran cuatro veces al año.
+D|papeles|📜|¿Qué examen de naturalización prefieres?|🏔️ Nombrar los 26 cantones y sus capitales|🧀 Explicar las normas de basura de tu municipio|En muchos municipios el examen incluye preguntas sobre la vida local, como la historia o las asociaciones del pueblo.
+D|papeles|🐕|¿Qué prefieres?|🐕 Pagar el impuesto anual del perro|🐈 Un gato que no paga nada y te ignora|El impuesto del perro lo fija cada municipio y puede ir de unos 50 a más de 200 francos al año.
+D|papeles|📨|¿Qué carta te asusta más?|💌 Una del cantón en alemán administrativo|📮 Una de la oficina de cobros|Si no entiendes una carta oficial, los centros de integración pueden ayudarte a leerla.
+D|papeles|🚗|¿Qué prefieres?|🚗 Hacer el examen práctico de conducir suizo|🪪 Acordarte de cambiar tu carnet extranjero a tiempo|Con carnet extranjero tienes 12 meses para cambiarlo. Según el país, puede que tengas que hacer un examen práctico.
+D|papeles|🗺️|Para elegir cantón, ¿qué miras primero?|💸 Los impuestos|🗣️ El idioma|🏔️ Las vistas|Los impuestos cambian mucho entre cantones, e incluso entre municipios del mismo cantón. Zug es famoso por sus impuestos bajos.
+D|papeles|🧾|Declaración de impuestos:|📝 La haces tú, con el programa del cantón|🧑‍💼 Pagas una gestoría y no piensas|Muchos cantones tienen programas gratuitos para hacer la declaración. También hay asesorías para todos los bolsillos.
+D|papeles|🪪|¿Qué permiso prefieres tener ya?|🪪 Permiso C, de establecimiento|🇨🇭 Pasaporte suizo, con examen incluido|El permiso C da casi los mismos derechos que la nacionalidad, salvo votar a nivel federal. La naturalización pide 10 años de residencia.
+
+# dinero
+D|dinero|💸|¿Qué prefieres?|💰 Sueldo suizo y precios suizos|🌍 Sueldo de tu país y precios de tu país|Los sueldos suizos están entre los más altos del mundo, pero el alquiler y el seguro médico se llevan una buena parte.
+D|dinero|🛒|¿Dónde haces la compra?|🧡 Migros, sin alcohol en los estantes|🧡 Coop, con de todo|🏷️ Lidl o Aldi, a la caza de ofertas|Migros no vende alcohol en sus supermercados. Aldi y Lidl llegaron a Suiza en los años 2000.
+D|dinero|📱|¿Cómo pagas el café?|📱 Con TWINT|💳 Con tarjeta|🪙 Con las monedas de la hucha|En Suiza aún se usa mucho el efectivo, pero TWINT ha crecido muchísimo en pocos años.
+D|dinero|🎁|Te regalan 1000 francos. ¿Qué haces?|🏔️ Un fin de semana en un hotel de montaña|🧾 Pagar la franquicia del seguro médico|🐷 Meterlos en el pilar 3a, como una persona muy suiza|Con el pilar 3a se ahorra para la jubilación y se descuenta de los impuestos.
+D|dinero|☕|¿Qué prefieres?|☕ Un café de 5 francos en una terraza con vistas|🥤 Un termo de casa en un banco del parque|En una cafetería suiza un café cuesta de 4 a 6 francos. Los bancos del parque, por suerte, siguen siendo gratis.
+D|dinero|🛍️|Viernes por la tarde cerca de la frontera:|🇩🇪 Compra en Alemania con cola en la aduana|🇨🇭 Compra en Suiza sin moverte|Puedes traer hasta 150 francos por persona y día sin pagar IVA, con límites para la carne y el alcohol.
+D|dinero|🧾|¿Qué prefieres?|🧾 Pagar con factura a 30 días|💳 Pagar al momento y olvidarte|Muchas tiendas suizas dejan pagar con factura. Si se te olvida, llegan recordatorios con recargo.
+D|dinero|🏦|¿Qué banco prefieres?|🏦 Banco tradicional con oficina|📱 Banco solo en el móvil y sin comisiones|Casi todos los cantones tienen su banco cantonal, y cada vez hay más bancos digitales.
+D|dinero|🎿|Plan del sábado:|🎿 Forfait de esquí de 80 francos|🥾 Excursión gratis con bocadillo|Un forfait de un día en las grandes estaciones puede pasar de 80 francos. Los senderos son gratis, y hay 65 000 km.
+D|dinero|💼|¿Qué prefieres?|📅 13 sueldos al año|🏖️ 12 sueldos y una semana más de vacaciones|Muchas empresas suizas pagan un decimotercer sueldo, normalmente en diciembre o repartido a lo largo del año.
+D|dinero|😩|¿Qué te duele más pagar?|🏥 La prima del seguro médico cada mes|🗑️ Las bolsas oficiales de basura|📺 La tasa de radio y televisión|La tasa de radio y televisión es de unos 335 francos al año por hogar y bajará poco a poco hasta 300.
+D|dinero|🧀|¿Qué prefieres?|🧀 Queso de montaña a precio suizo|🧀 Queso del súper alemán a mitad de precio|Suiza produce cientos de quesos, y muchos solo se encuentran en la quesería del pueblo.
+D|dinero|🧥|¿Qué prefieres encontrar en el bolsillo del abrigo?|💵 Un billete de 10 francos olvidado|🎫 Un abono de tren todavía válido|El billete de 10 francos es amarillo y está dedicado a la organización y al tiempo, con relojes y horarios.
+D|dinero|📈|¿Qué prefieres?|📈 Sueldo alto en Zúrich con alquiler carísimo|📉 Sueldo algo menor en el Jura con alquiler barato|Los alquileres de Zúrich y Ginebra son los más caros del país. En el Jura o en Neuchâtel se paga bastante menos.
+D|dinero|🧮|Cena con amistades suizas:|🧮 Cada persona paga lo suyo, hasta el último céntimo|📱 Una persona paga y luego TWINT para todo el mundo|En Suiza es muy normal pagar por separado. TWINT hace que dividir la cuenta sea facilísimo.
+D|dinero|🛍️|¿Qué prefieres?|🛍️ Ir de rebajas en Zúrich|🪑 Rebuscar tesoros en un Brocki|Las tiendas de segunda mano son muy populares en Suiza. Muchas son de organizaciones sociales.
+D|dinero|💳|¿Qué prefieres?|🚫 Vivir sin tarjeta de crédito|💳 Tener tres y una app para controlarlas|Las deudas por créditos al consumo y leasing son frecuentes en Suiza. Hay asesoría gratuita en todos los cantones.
+
+# salud
+D|salud|🧾|¿Qué franquicia eliges?|💸 300 francos y cuota mensual alta|🎲 2500 francos y cuota mensual baja|Si casi nunca vas al médico, la franquicia alta suele salir a cuenta. Si tienes gastos médicos previsibles, la baja.
+D|salud|🩺|¿Qué modelo de seguro prefieres?|📞 Llamar a la telemedicina antes de ir al médico|🧑‍⚕️ Ir siempre primero a tu médico de familia|🗝️ Libertad total, pagando más|Los modelos alternativos ahorran bastante en la prima mensual a cambio de algunas condiciones.
+D|salud|🤧|Te resfrías en Suiza:|🍵 Té, manta y tres días en casa|💊 Ir a la farmacia a pedir consejo|🫕 Fondue curativa, que nunca falla|Las farmacias suizas aconsejan sobre medicamentos sin receta y te dicen si necesitas ver a un médico.
+D|salud|🚁|¿Qué prefieres?|🚁 Ser benefactor de la Rega por 40 francos al año|🎲 Confiar en que nunca te tendrán que rescatar|La Rega hace miles de misiones al año. Ser benefactor puede ahorrarte costes de rescate que el seguro no cubre.
+D|salud|🧖|Para relajarte:|🧖 Sauna mixta sin bañador|🏊 Piscina pública con bañador obligatorio|En muchas saunas de la Suiza alemana se entra sin bañador. En las piscinas, en cambio, el bañador es obligatorio.
+D|salud|🦷|¿Qué prefieres?|🦷 Pagar el dentista suizo|✈️ Cuadrar las vacaciones con el dentista de tu país|El seguro básico no cubre el dentista. Mucha gente contrata un seguro dental o aprovecha los viajes.
+D|salud|🌸|Primavera en Suiza:|🤧 Alergia al polen en la ciudad|🐝 Abejas zumbando en la montaña|El polen de abedul y el de gramíneas son los que más alergias causan en Suiza.
+D|salud|🍫|¿Qué prefieres comer cada día?|🍫 Una tableta de chocolate|🥣 Un bol de Birchermüesli|El Birchermüesli se inventó como comida sana para pacientes. El chocolate también tiene sus defensores.
+D|salud|🥾|¿Cómo haces ejercicio?|🥾 Senderismo por la montaña|🏊 Nadar en el lago|🚴 Ir en bici al trabajo|Suiza tiene unos 65 000 km de senderos señalizados y casi todos los lagos tienen baños públicos.
+D|salud|🛌|¿Qué prefieres?|🪟 Dormir con la ventana abierta en invierno|🔥 Dormir con la calefacción a tope|Mucha gente en Suiza ventila el dormitorio cada día, también con frío, para evitar la humedad.
+D|salud|☀️|Día de esquí con sol:|🧴 Crema factor 50 cada dos horas|😎 Volver con marca de gafas de panda|La radiación ultravioleta aumenta alrededor de un 10 % cada 1000 metros, y la nieve la refleja.
+D|salud|🍷|¿Qué prefieres?|🍷 Un vaso de vino con la comida|💧 Agua del grifo, que es buenísima|El agua del grifo suiza es potable y de gran calidad. En muchos sitios viene de manantiales de montaña.
+
+# trabajo
+D|trabajo|☕|¿Qué pausa prefieres?|🥐 Znüni a las 9:00 con cruasán|🍫 Zvieri a las 16:00 con chocolate|En la Suiza alemana hay dos pausas con nombre propio: el Znüni a media mañana y el Zvieri a media tarde.
+D|trabajo|🎂|Es tu cumpleaños en la oficina:|🍰 Traer tú un pastel para todo el equipo|🙊 Que nadie se entere|En Suiza quien cumple años suele traer algo dulce para compartir con el equipo.
+D|trabajo|⏰|¿Qué horario prefieres?|🌅 Empezar a las 7:00 y salir a las 16:00|🌙 Empezar a las 10:00 y salir a las 19:00|En Suiza mucha gente empieza pronto. Con el horario flexible, el Gleitzeit, cada persona organiza sus horas.
+D|trabajo|📅|¿Qué prefieres?|💼 Trabajar al 100 % y ganar más|🏞️ Trabajar al 80 % y tener los viernes libres|Suiza es uno de los países europeos donde más gente trabaja a tiempo parcial.
+D|trabajo|🗣️|¿En qué idioma prefieres trabajar?|🇩🇪 Alemán estándar en reuniones y dialecto en el café|🇫🇷 Francés todo el día|🇬🇧 Inglés en una multinacional|En la Suiza alemana muchas reuniones son en alemán estándar, pero las charlas informales suelen ser en dialecto.
+D|trabajo|🥂|Te vas de la empresa:|🧀 Organizar un Apéro de despedida con queso y vino|📧 Enviar un correo emotivo y desaparecer|En Suiza quien se va suele invitar a su equipo a un Apéro de despedida.
+D|trabajo|🤝|Primer día de trabajo:|🤝 Dar la mano a todo el equipo, una por una|👋 Saludar con la mano desde la puerta|En Suiza dar la mano y decir tu nombre al presentarte es lo habitual en el trabajo.
+D|trabajo|📧|¿Qué prefieres recibir?|📧 Un correo de tu jefa a las 22:00|📞 Una llamada de tu jefe el sábado|El Feierabend, el tiempo después del trabajo, es casi sagrado en Suiza.
+D|trabajo|🏢|¿Qué oficina prefieres?|🏔️ Con vistas a los Alpes y ventanas que no se abren|🌳 Junto al bosque, con un comedor barato|Muchas empresas suizas tienen comedor subvencionado, a veces con menús por menos de 10 francos.
+D|trabajo|🚆|¿Qué prefieres?|🚆 45 minutos de tren al trabajo, leyendo|🚲 15 minutos en bici bajo la lluvia|En Suiza muchísima gente va al trabajo en transporte público.
+D|trabajo|📜|¿Qué frase quieres en tu certificado de trabajo?|✍️ «Ha trabajado a nuestra entera satisfacción»|😐 «Se ha esforzado por cumplir sus tareas»|En los certificados de trabajo suizos, «se ha esforzado» es mala señal. Las frases van en clave.
+D|trabajo|🧑‍💻|¿Qué prefieres?|🏠 Teletrabajar tres días a la semana|🏢 Ir a la oficina cada día por el café gratis|Desde 2020 el teletrabajo ha crecido mucho en Suiza, sobre todo en oficinas y servicios.
+D|trabajo|🎄|Cena de Navidad de la empresa:|🫕 Fondue en un chalet de montaña|🍣 Sushi en el centro|🎤 Karaoke hasta el último tren|La cena de Navidad de empresa, el Weihnachtsessen, es una tradición en casi todas las empresas suizas.
+D|trabajo|🏖️|¿Cómo repartes las vacaciones?|🏝️ Tres semanas seguidas en verano|🧩 Muchos puentes y días sueltos|En Suiza hay que planificar pronto: el calendario de vacaciones del equipo se suele decidir a principios de año.
+D|trabajo|⏱️|¿Qué reuniones prefieres?|⏱️ Cortas y puntuales, de 25 minutos|☕ Largas, pero con café y pastas|En Suiza la puntualidad en las reuniones es casi sagrada. Llegar cinco minutos antes es llegar bien.
+D|trabajo|💬|¿Qué prefieres?|👋 Tutear desde el primer día|🎩 Hablar de usted hasta que te ofrezcan el tú|En muchas empresas se tutea pronto, pero en algunos sectores y en la Suiza francesa se empieza de usted.
+D|trabajo|🥪|Comida de mediodía:|🥪 Bocadillo en el escritorio|🍽️ Comedor con el equipo a las 12:00 en punto|☀️ Pícnic junto al lago|En Suiza se come pronto: entre las 11:30 y las 13:00 los comedores están llenos.
+D|trabajo|🛠️|¿Qué prefieres?|🛠️ Aprender un oficio con una formación profesional|🎓 Hacer una carrera universitaria|La formación profesional tiene mucho prestigio en Suiza. Muchas personas con cargos altos empezaron con un aprendizaje.
+D|trabajo|👔|¿Qué ropa de trabajo prefieres?|👔 Traje en un banco de Zúrich|🥾 Botas de montaña en una granja del Emmental|Suiza tiene unas 48 000 explotaciones agrícolas, muchas familiares.
+D|trabajo|🌐|¿Qué empresa prefieres?|🏢 Multinacional en Ginebra|🧀 Quesería familiar en Gruyères|La región de Ginebra acoge decenas de organizaciones internacionales y cientos de ONG.
+
+# transporte
+D|transporte|🚆|¿Qué tren prefieres?|⏱️ Uno que llega siempre a su hora|🪑 Uno con asiento libre siempre|En hora punta los trenes entre Zúrich, Berna y Basilea van llenos. Pero puntuales, casi siempre.
+D|transporte|🎫|¿Qué abono prefieres?|🎫 Medio precio, unos 190 francos al año|🚆 Abono general, casi 4000 francos al año|El abono general cubre casi todo el transporte público. El medio precio te da la mitad en casi todos los billetes.
+D|transporte|🚲|Para ir al trabajo:|🚲 Bici normal, sudando en las cuestas|⚡ Bici eléctrica, sin sudar|Cerca de la mitad de las bicis nuevas que se venden en Suiza son eléctricas.
+D|transporte|🚗|¿Qué prefieres?|🚗 Tener coche en Zúrich y buscar aparcamiento|🚋 Vivir sin coche, de tranvía en tranvía|En la ciudad de Zúrich, más de la mitad de los hogares no tiene coche.
+D|transporte|🚞|¿Qué tren panorámico prefieres?|🧊 Glacier Express, 8 horas|🌹 Bernina Express, entre paisajes de la Unesco|🏞️ GoldenPass, de Montreux a Lucerna|La línea del Albula y el Bernina es Patrimonio de la Humanidad desde 2008.
+D|transporte|🚠|¿Cómo subes a la montaña?|🚠 Teleférico giratorio del Titlis|🚂 Tren cremallera del Pilatus|El Rotair del Titlis gira sobre sí mismo mientras sube. El cremallera del Pilatus es el más empinado del mundo.
+D|transporte|⛴️|Para cruzar el lago:|⛴️ Barco de vapor de 1900|🚤 Barco moderno y rápido|Suiza tiene una de las mayores flotas de barcos de vapor de ruedas del mundo, sobre todo en el Lemán y el de los Cuatro Cantones.
+D|transporte|🧳|¿Qué prefieres?|🧳 Enviar la maleta por tren y viajar ligero|🎒 Cargar con todo|SBB tiene un servicio para enviar maletas de estación a estación o hasta el aeropuerto.
+D|transporte|🚌|¿Qué prefieres?|🚌 Autobús de Correos por un puerto de montaña|🚗 Conducir tú por las curvas|La bocina de tres notas del autobús postal viene de la obertura de «Guillermo Tell», de Rossini.
+D|transporte|🌙|Sábado noche, último tren a la 1:00:|🏃 Correr para pillarlo|🛋️ Dormir en el sofá de alguien|🌅 Esperar al primer tren del domingo|En muchas regiones hay trenes y autobuses nocturnos los fines de semana.
+D|transporte|🛴|¿Cómo te mueves por la ciudad?|🛴 Patinete eléctrico de alquiler|🚋 Tranvía|🚶 A pie|Los patinetes eléctricos van por el carril bici o la calzada, nunca por la acera.
+D|transporte|🚦|Son las 3:00 y no pasa ni un coche:|🚦 Esperar a que se ponga verde|🏃 Cruzar y sentir la mirada de toda la calle|Cruzar a pie en rojo puede costar una multa de 20 francos. Y un poco de vergüenza.
+D|transporte|✈️|¿Desde dónde prefieres volar?|✈️ Zúrich, el más grande|🛫 Ginebra, junto al lago|🛬 Basilea, que está en Francia|El aeropuerto de Basilea-Mulhouse está en suelo francés y tiene salida por el lado suizo y por el francés.
+D|transporte|🛣️|¿Qué prefieres?|🛣️ Autopista a 120 con radares|🐄 Carretera de montaña a 60 con vacas|Suiza prohibió las carreras en circuito tras el accidente de Le Mans de 1955. La Fórmula E corrió en Zúrich en 2018.
+D|transporte|🚞|De Zúrich a Lugano:|🚞 Dos horas de tren entre montañas|✈️ Un vuelo corto con dos horas de aeropuerto|Gracias al túnel de base del San Gotardo, de Zúrich a Lugano se tarda unas dos horas en tren.
+D|transporte|🎿|Para ir a esquiar:|🚆 Tren con los esquís a cuestas|🚗 Coche con cadenas y atasco|Muchas estaciones suizas tienen tren hasta el pie de las pistas, y hay billetes combinados de tren y forfait.
+D|transporte|🔒|¿Qué bici prefieres?|🚲 Una compartida de alquiler|🔒 La tuya, con un candado enorme|Muchas ciudades suizas tienen sistemas de bici compartida. El candado bueno, igualmente, merece la pena.
+D|transporte|🤫|¿En qué vagón te sientas?|🤫 Zona de silencio|📞 Vagón normal, donde se puede hablar|En las zonas de silencio de los trenes suizos no se habla por teléfono ni se escucha música sin cascos.
+D|transporte|🚡|¿Qué prefieres?|🚡 Teleférico colgado sobre un precipicio|🚂 Tren por un túnel de 57 km|El túnel de base del San Gotardo es el túnel ferroviario más largo del mundo.
+
+# social
+D|social|💋|Te presentan a alguien en una fiesta en Lausana:|💋 Tres besos, sin chocar la nariz|🤝 Un apretón de manos firme|En la Suiza francesa entre amistades se dan tres besos. Con gente nueva, el apretón de manos nunca falla.
+D|social|📅|Para quedar con amistades suizas:|📅 Fijar la cena con tres semanas de antelación|📱 Mandar un «¿Qué haces ahora?»|Mucha gente en Suiza tiene la agenda llena con semanas de antelación. La espontaneidad existe, pero se reserva.
+D|social|🎺|¿A qué club te apuntas?|🎺 La banda de música del pueblo|🎯 El club de tiro|🎭 El grupo de teatro amateur|Se calcula que en Suiza hay unas 100 000 asociaciones. Son de las mejores formas de hacer amistades.
+D|social|🍽️|Te invitan a cenar a las 19:00:|⏰ Llegar a las 19:00 en punto|💐 Llegar a las 19:15 con flores|En Suiza se llega a la hora o con muy poco retraso. Si vas a tardar más, se avisa.
+D|social|🥂|¿Qué prefieres?|🥂 Un Apéro riche de pie toda la tarde|🍝 Una cena sentada de tres platos|Un Apéro riche es tan abundante que sustituye a la cena.
+D|social|🎶|¿Qué prefieres aprender?|🎶 A cantar jodel|📯 A tocar el cuerno alpino|El jodel alterna voz de pecho y voz de cabeza. El cuerno alpino mide unos 3,5 metros.
+D|social|🃏|Noche de juegos:|🃏 Aprender a jugar al Jass|🎲 Enseñar un juego de tu país|El Jass es el juego de cartas nacional. En los bares de pueblo aún se juegan partidas cada semana.
+D|social|🐕|¿Dónde prefieres hacer amistades?|🐕 Paseando a un perro|🛝 En el parque infantil|Los parques y los paseos con perro son de los mejores sitios para empezar una conversación en Suiza.
+D|social|🗣️|¿Qué te cuesta más?|🗣️ Entender el suizo alemán|😶 El silencio en el ascensor|🤐 No hablar alto en el tren|En el transporte público suizo se habla bajo. En el ascensor, mucha gente saluda… y luego silencio.
+D|social|🏘️|¿Dónde prefieres vivir?|🏘️ En un pueblo donde todo el mundo te saluda|🏙️ En una ciudad donde nadie te conoce|En los pueblos suizos se saluda a todo el mundo por la calle. En la ciudad, mucho menos.
+D|social|⚽|¿Qué grupo de WhatsApp prefieres?|🏘️ El del edificio, con quejas de la lavandería|👪 El de las familias del colegio|⚽ El del equipo de fútbol amateur|La Asociación Suiza de Fútbol tiene alrededor de 300 000 jugadores y jugadoras con licencia.
+D|social|🧑‍🤝‍🧑|Para conocer gente en Suiza:|🗣️ Un tándem de idiomas|🥾 Un grupo de senderismo|💃 Clases de salsa con gente local|En un tándem tú enseñas español y aprendes alemán, francés o italiano. Son muy populares en las ciudades suizas.
+D|social|🌇|¿Qué atardecer prefieres?|🍺 Cerveza junto al Rin en Basilea|🍷 Vino blanco en las terrazas de Lavaux|Los viñedos en terrazas de Lavaux, junto al Lemán, son Patrimonio de la Humanidad desde 2007.
+D|social|🏮|¿Qué recuerdo de infancia suiza prefieres?|🎒 Ir sin adultos al colegio con 5 años|🏮 Desfilar con un farol de nabo|Muchos niños suizos van andando al colegio sin adultos desde el Kindergarten. Los faroles de nabo, Räbeliechtli, se tallan en noviembre.
+D|social|🎸|¿A qué fiesta vas?|🎉 Fiesta de vecinos en el patio|🎸 Concierto en un festival de verano|En verano Suiza se llena de festivales al aire libre, como el Paléo de Nyon o el Openair St. Gallen.
+D|social|📞|¿Qué prefieres?|📞 Llamar a una oficina suiza en alemán|✉️ Escribir un correo y esperar dos días|En muchas oficinas suizas se atiende en el idioma del cantón, aunque a menudo también en inglés.
+D|social|🙋|¿Qué prefieres?|🥂 Que te ofrezcan el tú con un brindis|🎩 Que te traten de usted para siempre|En la Suiza alemana pasar al tú, el Duzis, puede ser casi una ceremonia, a veces con una copa.
+D|social|💬|¿De qué hablas con alguien suizo que acabas de conocer?|🗳️ De la última votación|☁️ Del tiempo|💸 De cuánto cobra cada persona|Hablar de sueldos es delicado en Suiza. Del tiempo y de las votaciones, en cambio, se habla muchísimo.
+D|social|🎤|¿Qué prefieres?|🎤 Cantar el himno suizo en el 1 de agosto|🕺 Bailar salsa en la fiesta del pueblo|Mucha gente suiza no se sabe entera la letra del himno. El «Salmo suizo» es oficial desde 1981.
+D|social|🍝|Cena en casa con gente suiza:|🍝 Cocinar un plato de tu país|🫕 Que te enseñen a hacer fondue|Compartir comida de tu país es una de las mejores formas de hacer amistades. Y la fondue se aprende rápido.
+
+# comida
+D|comida|🫕|¿Qué fondue prefieres?|🫕 Moitié-moitié|🧀 Solo de Vacherin|La moitié-moitié mezcla Gruyère y Vacherin fribourgeois. La de Vacherin solo es más cremosa y se hace a menos temperatura.
+D|comida|🍳|¿Cómo te comes el Rösti?|🍳 Con un huevo frito encima|🧀 Con queso fundido|🥓 Con tocino|El Rösti nació como desayuno de los campesinos de Berna. Hoy se come a cualquier hora.
+D|comida|🍫|¿Qué chocolate suizo te llevas a una isla desierta?|🔺 Toblerone|🌰 Ragusa|🌿 Branche|La Toblerone nació en Berna en 1908. La Ragusa la creó Camille Bloch en 1942.
+D|comida|🍝|¿Qué plato regional prefieres?|🍝 Älplermagronen con compota de manzana|🥬 Capuns de Grisones|🍚 Risotto del Tesino|Cada región suiza tiene su plato estrella. Los Capuns se envuelven en hojas de acelga.
+D|comida|☕|¿Cómo tomas el café?|☕ Kafi Crème con galletita|🥃 Kafi Luz, café con aguardiente|🥛 Latte macchiato de 7 francos|El Kafi Luz es un café muy flojo con bastante aguardiente, típico de Lucerna. Mejor no antes de trabajar.
+D|comida|🎄|¿Qué pides en un mercado de Navidad?|🍷 Vino caliente con canela|🌰 Castañas asadas|🥖 Raclette en baguette|Los mercados de Navidad de Basilea, Montreux y Zúrich están entre los más visitados de Suiza.
+D|comida|🧀|¿Qué queso prefieres?|🧀 Gruyère curado 18 meses|🧀 Emmentaler con agujeros|🌸 Tête de Moine en flor|Los agujeros del Emmentaler se forman con el gas que sueltan las bacterias durante la maduración.
+D|comida|🍰|¿Qué postre suizo eliges?|🍰 Tarta de kirsch de Zug|🥛 Merengues con crema doble de Gruyère|🌰 Vermicelles de castaña|La crema doble de Gruyère es una nata tan espesa que se come a cucharadas con merengues.
+D|comida|🌡️|¿Qué prefieres?|🫕 Fondue en agosto a 30 grados|🍦 Helado en enero con nieve|La fondue es plato de invierno, pero hay quien la come todo el año. Incluso hay fondues en barcos y en góndolas.
+D|comida|🥤|¿Qué bebida suiza prefieres?|🥤 Rivella, hecha con suero de leche|🍵 Té frío|🍎 Süssmost, zumo de manzana|La Rivella se creó en 1952. Es tan suiza que casi no se encuentra fuera del país.
+D|comida|🍴|¿Qué comes a mediodía?|🍽️ Menú del día con sopa y ensalada|🥪 Bocadillo de la panadería|🥗 Táper de casa|Muchos restaurantes suizos ofrecen menú del día a mediodía, a menudo con sopa o ensalada incluidas.
+D|comida|🌶️|¿Qué echas más de menos?|🌶️ Comida picante de verdad|🥑 Aguacates baratos|🫓 Tu pan de siempre|En las ciudades suizas hay tiendas latinas con productos de casa. Eso sí, a precio suizo.
+D|comida|🦌|¿Qué prefieres?|🦌 Menú de caza en otoño|🐟 Filetes de perca junto al lago|El menú de caza con Spätzli, castañas y lombarda es una tradición del otoño suizo.
+D|comida|🍷|¿Qué vino suizo pruebas?|🍇 Fendant del Valais|🍷 Merlot del Tesino|🥂 Chasselas de Lavaux|Suiza exporta muy poco vino: casi todo se bebe dentro del país.
+D|comida|🥛|¿Qué prefieres?|🥛 Leche fresca de la máquina de una granja|🧃 Leche de brik del súper|En muchas granjas suizas hay tiendas de autoservicio: coges lo que quieres y pagas con monedas o TWINT.
+D|comida|🥐|¿Qué prefieres?|🥐 Gipfeli de la panadería del pueblo|🍫 Pan con chocolate, como en la merienda suiza|Mucha gente en Suiza recuerda el Zvieri de su infancia: pan con una tableta de chocolate.
+D|comida|🍕|¿Qué prefieres?|🍕 Pizza con raclette|🌮 Tacos con Gruyère|🍣 Sushi de perca del lago|La cocina suiza mezcla mucho: la influencia italiana, francesa y alemana se nota en cada región.
+D|comida|🧂|¿Qué prefieres?|🧂 Aromat en todo, como hace media Suiza|🌶️ Tu salsa picante de casa|El Aromat es un condimento suizo en polvo, amarillo, que se creó en 1952 y está en casi todas las cocinas.
+D|comida|🍳|¿Qué prefieres?|🍳 Desayunar a las 7:00 y comer a las 12:00|🕑 Desayunar tarde y comer a las 15:00|En Suiza se come pronto. A las 14:00 muchas cocinas de restaurante ya han cerrado.
+
+# fiestas
+D|fiestas|⛄|Sechseläuten en Zúrich:|⛄ Ver explotar la cabeza del Böögg|🐴 Ver los caballos de los gremios dar vueltas a la hoguera|Cuanto antes explota la cabeza del Böögg, mejor verano, dice la tradición.
+D|fiestas|🎅|¿Quién prefieres que te visite el 6 de diciembre?|🎅 El Samichlaus|🧔 El Schmutzli|El Samichlaus lee en su libro lo bueno y lo malo que has hecho. El Schmutzli, vestido de oscuro, lo acompaña.
+D|fiestas|🧅|Zibelemärit de Berna:|🧅 Comprar una trenza de cebollas|🎊 Tirar confeti a desconocidos|El mercado de la cebolla de Berna se celebra el cuarto lunes de noviembre y empieza de madrugada.
+D|fiestas|🎄|Navidad en Suiza:|🎄 Mercado de Navidad con vino caliente|🎿 Esquiar el 25 de diciembre|🛋️ Fondue chinoise en el sofá|La fondue chinoise es la cena de Navidad o de Nochevieja en muchas casas suizas.
+D|fiestas|🏮|¿Qué prefieres?|🏮 Räbeliechtli en noviembre|🎃 Halloween con calabazas|Tallar faroles en nabos es una tradición suiza mucho más antigua que Halloween.
+D|fiestas|🎶|¿Qué fiesta prefieres?|🍇 Fiesta de la vendimia de Neuchâtel|🎶 Street Parade de Zúrich|La Street Parade reúne cada agosto a cientos de miles de personas bailando junto al lago de Zúrich.
+D|fiestas|🐄|¿Qué prefieres ver?|🐄 La bajada de las vacas con flores|🤼 Lucha suiza en el serrín|🪨 El lanzamiento de una piedra de 83 kilos|Las tres son tradiciones suizas muy vivas: Alpabzug, Schwingen y piedra de Unspunnen.
+D|fiestas|🍫|En la Escalade de Ginebra:|🍫 Romper la olla de chocolate|🥣 Comer sopa de verduras|🎭 Disfrazarte y cantar por las calles|Según la leyenda, en 1602 una mujer echó sopa hirviendo a los soldados de Saboya. Por eso la olla.
+D|fiestas|🥁|¿Qué prefieres?|🔔 Tocar cencerros en el Chalandamarz|🥁 Tocar el tambor en la Fasnacht|El Chalandamarz se celebra el 1 de marzo en Engadina para echar al invierno.
+D|fiestas|🎬|¿Qué festival prefieres?|🎬 Cine en la Piazza Grande de Locarno|🎷 Jazz en Montreux|🎸 Rock en el Gurten de Berna|La pantalla de la Piazza Grande de Locarno es una de las más grandes de Europa al aire libre.
+D|fiestas|🥚|Pascua en Suiza:|🥚 Chocar huevos pintados con desconocidos|🐰 Comerte un conejo de chocolate entero|En Berna, el lunes de Pascua se chocan huevos en la plaza: gana quien no rompe el suyo.
+D|fiestas|🎆|Nochevieja:|🎆 Fuegos artificiales sobre el lago de Zúrich|🐷 Regalar cerditos de mazapán para la suerte|🍇 Comer las 12 uvas, aunque nadie más lo haga|En Suiza el cerdito de mazapán es un símbolo de buena suerte para el año nuevo.
+D|fiestas|🏃|¿Qué prefieres?|🏃 Correr la Escalade por el casco antiguo de Ginebra|🎿 Hacer el maratón de esquí de Engadina|El maratón de esquí de Engadina, de 42 km, reúne cada marzo a más de 10 000 participantes.
+D|fiestas|🎯|¿Qué prefieres?|🎯 El concurso de tiro del Knabenschiessen|🎡 Solo la feria con atracciones|El Knabenschiessen de Zúrich se celebra en septiembre y su feria es de las más grandes de Suiza.
+
+# naturaleza
+D|naturaleza|🌅|¿Cómo subes a la montaña?|🌅 A pie, al amanecer|🚠 En teleférico, y desayuno arriba|Muchas montañas suizas tienen teleférico. Pero las vistas sudadas, dicen, saben mejor.
+D|naturaleza|🌫️|Noviembre gris en la ciudad:|☁️ Quedarte bajo la niebla con chocolate caliente|⛰️ Subir por encima del mar de niebla al sol|En otoño e invierno la meseta suiza se cubre a menudo de niebla. Por encima de unos 1000 metros suele brillar el sol.
+D|naturaleza|🐐|¿Qué animal prefieres ver en la montaña?|🐐 Un íbice en un risco|🐿️ Una marmota silbando|🦅 Un quebrantahuesos volando|El íbice casi desapareció de los Alpes y se reintrodujo desde Italia a principios del siglo XX.
+D|naturaleza|⛺|¿Dónde duermes?|🏕️ En una cabaña del club alpino a 2800 metros|🏨 En un hotel con spa en el valle|El Club Alpino Suizo tiene más de 150 cabañas de montaña.
+D|naturaleza|🍄|¿Qué prefieres?|🍄 Buscar setas en otoño|🫐 Recoger arándanos en verano|Lleva siempre las setas al control oficial antes de comerlas. Algunos cantones limitan la cantidad por persona.
+D|naturaleza|🔺|¿Qué vista prefieres?|🔺 El Cervino desde Zermatt|🏔️ Eiger, Mönch y Jungfrau desde Mürren|🌊 El Lemán desde Lavaux|A Zermatt y a Mürren no se llega en coche: se sube en tren o en teleférico.
+D|naturaleza|🛷|¿Qué prefieres?|⛷️ Esquiar en Verbier|🛷 Bajar en trineo en Grindelwald|🥾 Raquetas de nieve en el Jura|En Grindelwald hay una pista de trineo de unos 15 km, una de las más largas del mundo.
+D|naturaleza|💎|¿Qué lago prefieres?|🌊 El de los Cuatro Cantones|🌴 El de Lugano|💎 El de Oeschinen|El Oeschinensee, sobre Kandersteg, forma parte del Patrimonio de la Humanidad de los Alpes suizos Jungfrau-Aletsch.
+D|naturaleza|🥾|Domingo de excursión:|🟡 Sendero amarillo de dos horas|🔴 Sendero de montaña blanco y rojo|🔵 Sendero alpino blanco y azul|Los senderos suizos se marcan por colores según la dificultad: amarillo, blanco y rojo, y blanco y azul.
+D|naturaleza|⛈️|¿Qué prefieres?|⛈️ Una tormenta de verano en la montaña|🌬️ Un día de Föhn con dolor de cabeza|En la montaña las tormentas de verano llegan rápido por la tarde. Por eso conviene salir temprano.
+D|naturaleza|🌊|¿Qué prefieres?|🏊 Bajar el Aar flotando en Berna|🚣 Remar en canoa por el Doubs|En verano mucha gente se tira al Aar en Berna y se deja llevar por la corriente. Hay que saber nadar bien.
+D|naturaleza|🦌|¿Qué prefieres?|🦌 Ver ciervos en el Parque Nacional|🐻 Ver osos en el BärenPark de Berna|El Parque Nacional Suizo, en Grisones, es el más antiguo de los Alpes: se creó en 1914.
+D|naturaleza|🌄|¿Qué prefieres?|🏔️ Vivir con vistas a los Alpes y frío|🌴 Vivir junto a un lago del Tesino con palmeras|En el Tesino y en algunas orillas de lagos suizos crecen palmeras gracias al clima suave.
+D|naturaleza|🧊|¿Qué prefieres?|🧊 Caminar sobre el glaciar Aletsch con guía|🏞️ Ver las cascadas de Lauterbrunnen|El glaciar Aletsch mide unos 20 km y pierde decenas de metros de longitud cada año.
+
+# idioma
+D|idioma|🗣️|¿Qué prefieres?|🗣️ Hablar alemán estándar perfecto sin entender el dialecto|🎤 Entender todos los dialectos sin saber escribir alemán|En la Suiza alemana se escribe en alemán estándar, pero casi siempre se habla en dialecto.
+D|idioma|🎙️|¿Qué superpoder prefieres?|🎙️ Imitar a la perfección el acento de Berna|✍️ Escribir alemán sin faltas|El bernés tiene fama de dialecto lento y amable. «Grüessech» es su forma de saludar.
+D|idioma|📚|¿Cómo prefieres aprender el idioma local?|🏫 Curso intensivo|📺 Series con subtítulos|❤️ Enamorándote de alguien que lo habla|Muchos municipios y cantones subvencionan cursos de idiomas para personas recién llegadas.
+D|idioma|🐿️|¿Qué palabra suiza alemana te gusta más?|🐿️ Eichhörnli, ardilla|🍫 Schoggi, chocolate|🥐 Gipfeli, cruasán|Las palabras que acaban en -li son diminutivos. El suizo alemán los usa muchísimo.
+D|idioma|🌍|¿Qué prefieres para tu peque?|🇪🇸 Español en casa y el idioma local en el colegio|🌐 Tres idiomas desde el principio|Dos de cada tres personas en Suiza usan más de un idioma con regularidad.
+D|idioma|🏔️|¿Qué idioma prefieres aprender?|🇮🇹 El italiano del Tesino|🏔️ El romanche de Engadina|El romanche lo habla alrededor del 0,5 % de la población, pero es idioma nacional desde 1938.
+D|idioma|💬|En una reunión en Zúrich:|🗣️ Hablas en alemán estándar|🇬🇧 Pides que sea en inglés|🤐 Escuchas y asientes|Si no entiendes el dialecto, mucha gente cambia al alemán estándar o al inglés. Pídelo sin miedo.
+D|idioma|📝|¿Qué prefieres conseguir?|🎓 El nivel A2 para el permiso C|🫕 Pedir una fondue en dialecto sin que te contesten en inglés|Para el permiso C se pide un nivel A2 oral y A1 escrito del idioma del cantón.
+D|idioma|🇨🇭|Si pudieras cambiar de región lingüística mañana:|🇩🇪 A la Suiza alemana, por el trabajo|🇫🇷 A la Suiza francesa, por el idioma|🇮🇹 Al Tesino, por el sol|Alrededor de dos tercios de la población vive en la parte de habla alemana.
+D|idioma|🤯|¿Qué te parece más difícil?|🤯 Los artículos der, die y das|🤯 Los números en francés de Francia|🤯 Los dialectos de cada valle|En la Suiza francesa los números son más fáciles: septante, huitante y nonante.
+
+# cultura
+D|cultura|🗳️|¿Qué prefieres?|🗳️ Votar cuatro veces al año sobre todo tipo de temas|🏛️ Votar una vez cada cuatro años y olvidarte|En Suiza se vota sobre temas concretos varias veces al año, desde impuestos hasta los cuernos de las vacas.
+D|cultura|😈|¿Qué leyenda suiza prefieres?|🍎 Guillermo Tell y la manzana|🐉 El dragón del Pilatus|😈 El puente del Diablo de Schöllenen|Según la leyenda, el diablo construyó el puente a cambio de la primera alma que lo cruzara… y le mandaron una cabra.
+D|cultura|🏛️|¿Qué museo prefieres?|🍫 El Lindt Home of Chocolate de Kilchberg|🚂 El Museo del Transporte de Lucerna|🕰️ El Museo de Relojería de La Chaux-de-Fonds|El Museo del Transporte de Lucerna es el museo más visitado de Suiza.
+D|cultura|🎯|¿Qué deporte suizo pruebas?|🤼 Schwingen|🏏 Hornussen|🏒 Hockey sobre hielo|En el Hornussen se golpea un disco con una vara larga y el otro equipo lo para con palas de madera.
+D|cultura|🎬|¿Qué prefieres?|🐐 Visitar el pueblo de Heidi en Maienfeld|🕵️ Ver las cataratas de Sherlock Holmes|🎬 Comer en el restaurante giratorio de James Bond|Maienfeld, en Grisones, se presenta como el pueblo de Heidi y tiene una «casa de Heidi».
+D|cultura|🔬|¿Qué visita prefieres?|🔬 El CERN, donde nació la web|🕊️ El Palacio de las Naciones de Ginebra|El gran acelerador de partículas del CERN mide 27 km y está bajo la frontera franco-suiza.
+D|cultura|🏰|¿Dónde prefieres pasar un día?|🏰 En el castillo de Chillon|🏘️ En el casco antiguo de Berna|⛪ En la abadía de Einsiedeln|El casco antiguo de Berna es Patrimonio de la Humanidad y tiene unos 6 km de soportales.
+D|cultura|👑|Si tuvieras un título suizo:|👑 Realeza del Schwingen|🐄 Tener la vaca reina de Hérens|🫕 Campeonato mundial de fondue|Suiza no tiene monarquía, pero sí «reyes» del Schwingen y «reinas» de las vacas.
+D|cultura|⌚|¿Qué prefieres?|⌚ Un reloj suizo de lujo|🔪 Una navaja suiza para toda la vida|El ejército suizo encargó sus primeras navajas en 1891. Hoy se fabrican en Ibach, en el cantón de Schwyz.
+D|cultura|📚|¿Qué libro suizo prefieres leer?|📖 «Heidi», de Johanna Spyri|🎭 «La visita de la vieja dama», de Dürrenmatt|«Heidi» se ha traducido a más de 50 idiomas y es uno de los libros suizos más leídos del mundo.

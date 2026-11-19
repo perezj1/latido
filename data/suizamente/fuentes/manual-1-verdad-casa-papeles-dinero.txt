@@ -1,0 +1,76 @@
+# V | tema | emoji | afirmación | V o M | dato
+V|casa|🚿|En Suiza está prohibido por ley ducharse después de las 22:00.|M|No existe esa ley. Lo que hay es un descanso nocturno para ruidos molestos, normalmente de 22:00 a 7:00, según el reglamento del edificio.
+V|casa|🍾|En muchos municipios no se puede tirar vidrio al contenedor los domingos.|V|Los horarios suelen estar escritos en el propio contenedor: ni domingos, ni festivos, ni de noche.
+V|casa|🗑️|En Suiza la recogida de basura es gratis y vale cualquier bolsa.|M|En casi toda Suiza hay que usar bolsas oficiales de pago o pegar una etiqueta de tasa. Con otra bolsa, te pueden multar.
+V|casa|🔑|En Suiza la fianza de un piso de alquiler puede ser de hasta seis meses.|M|El máximo legal son tres meses de alquiler, en una cuenta bloqueada a tu nombre.
+V|casa|🧺|En muchos edificios la lavandería es común y se usa por turnos.|V|El calendario de turnos se llama Waschplan y respetarlo es casi sagrado.
+V|casa|🧾|La calefacción y el agua caliente siempre van incluidas en el alquiler, sin liquidaciones.|M|Normalmente se pagan anticipos de gastos accesorios y una vez al año llega la liquidación, a pagar o a devolver.
+V|casa|📉|Si baja el tipo de interés de referencia, se puede pedir una rebaja del alquiler.|V|Los alquileres van ligados a ese tipo. Las asociaciones de inquilinos tienen plantillas para pedirla.
+V|casa|🐈|Para tener un gato en un piso de alquiler casi nunca hace falta preguntar.|M|Para perros y gatos suele hacer falta permiso de la administración. Los animalitos de jaula sí suelen estar permitidos.
+V|casa|💧|En Suiza es mejor no beber agua del grifo.|M|Es potable y de muy buena calidad: en muchos sitios viene de manantiales y aguas subterráneas. Ahórrate las botellas.
+V|casa|🪟|Para evitar el moho en invierno, lo mejor es dejar la ventana entornada todo el día.|M|Lo recomendado es ventilar «a golpes»: abrir de par en par 5 o 10 minutos, varias veces al día.
+V|casa|📦|El cartón se saca el día de recogida, atado con cuerda.|V|Sin cinta adhesiva y sin mezclarlo con el papel, que suele recogerse aparte.
+V|casa|🔋|Las pilas gastadas se tiran a la basura normal.|M|Se llevan a un punto de recogida: toda tienda que vende pilas tiene que recogerlas gratis.
+V|casa|🛋️|Los muebles viejos se pueden dejar en la acera para que se los lleve quien quiera.|M|Van al punto de reciclaje o a una recogida especial de voluminosos. Dejarlos en la calle puede costar una multa.
+V|casa|📬|Si tu nombre no está en el buzón, Correos puede no entregarte las cartas.|V|Pon tu nombre en el buzón y en el timbre en cuanto te mudes.
+V|casa|🚪|La administración puede entrar en tu piso cuando quiera, sin avisar.|M|Salvo urgencias, tiene que avisar con antelación para visitas o reparaciones.
+V|casa|🛏️|Para subalquilar tu piso por días necesitas permiso de la administración.|V|Sin permiso te arriesgas a una advertencia o incluso a perder el contrato.
+V|casa|🧹|Al dejar un piso de alquiler basta con barrer un poco.|M|Hay que entregarlo muy limpio, y lo revisan contigo. Mucha gente contrata una empresa con garantía de entrega.
+V|casa|📋|Conviene anotar al entrar los desperfectos que ya tiene el piso.|V|Así no te los cobran al irte. Hazlo por escrito y con fotos en los primeros días.
+V|casa|🌡️|En Suiza casi todas las viviendas tienen aire acondicionado.|M|Es poco común en las casas y en algunos cantones instalarlo necesita permiso.
+V|casa|🔨|Taladrar un domingo por la mañana está bien visto si es solo un momento.|M|Domingos y festivos son días de descanso: nada de taladros, cortacésped ni vidrio.
+V|casa|🌙|El descanso nocturno en los edificios suele empezar a las 22:00.|V|Y dura normalmente hasta las 7:00. Las normas exactas están en el reglamento de la casa.
+V|casa|🔒|Perder una llave de un sistema de seguridad puede obligar a cambiar varias cerraduras.|V|Por eso un seguro de responsabilidad civil o de hogar es tan útil.
+V|casa|🧴|El PET de bebidas va al contenedor amarillo, con el resto de plásticos.|M|En Suiza no hay contenedor amarillo como en España: las botellas de PET se devuelven gratis en el supermercado.
+V|casa|🍂|En muchos municipios los restos de comida y de jardín se recogen aparte.|V|Van al contenedor de residuos verdes (Grüngut, déchets verts) para compost o biogás.
+V|casa|🏠|La mayoría de los hogares suizos vive en una casa o piso en propiedad.|M|Es al revés: casi el 60 % de los hogares vive de alquiler, uno de los porcentajes más altos de Europa.
+V|casa|🚗|Lavar el coche en la calle está prohibido en muchos municipios.|V|El agua con jabón y aceite va a los desagües de lluvia y acaba en ríos y lagos.
+V|casa|🔥|En muchos edificios no se permiten barbacoas de carbón en el balcón.|V|Por el humo. Las eléctricas o de gas suelen estar permitidas.
+V|casa|📢|Si vas a hacer una fiesta en casa, lo habitual es avisar a los vecinos con una nota.|V|Y si los invitas, todavía mejor.
+V|casa|🫙|En Suiza todo el vidrio va junto al mismo contenedor.|M|Se separa por colores: blanco, verde y marrón. Y en muchos municipios no se puede tirar en domingo.
+V|casa|🌀|Las persianas exteriores de lamas se dejan bajadas cuando hay viento fuerte.|M|Se suben: con viento fuerte o granizo se pueden romper, y a veces lo paga el inquilino.
+V|casa|👟|En las casas suizas lo normal es entrar con los zapatos puestos.|M|En muchas casas se quitan al entrar. Algunas familias tienen zapatillas para invitados.
+V|casa|🏚️|Los refugios antiatómicos ya no existen en Suiza.|M|Suiza tiene plazas en refugios para toda su población. Muchos están en sótanos de edificios y se usan como trastero.
+V|papeles|📅|Al llegar a Suiza tienes tres meses para registrarte en tu municipio.|M|Lo normal son 14 días desde que llegas. Lleva tu documento de identidad y el contrato de alquiler o de trabajo.
+V|papeles|🏥|El seguro médico básico es opcional para quien llega a Suiza.|M|Es obligatorio. Hay 3 meses para contratarlo y, si lo haces en ese plazo, cubre desde el primer día.
+V|papeles|📺|La tasa de radio y televisión solo la paga quien tiene televisor.|M|Se paga por hogar, tengas aparatos o no: unos 335 francos al año.
+V|papeles|🧾|Con permiso B tienes que hacer la declaración de impuestos completa desde el primer año.|M|Con permiso B el impuesto se suele descontar del sueldo. La declaración completa llega si ganas más de 120 000 francos o si la pides.
+V|papeles|📮|Si te mudas dentro de Suiza, tienes que comunicar tu nueva dirección al municipio.|V|Normalmente en un plazo de 14 días. En muchos sitios se hace por internet.
+V|papeles|⛪|Quien se registra como miembro de la Iglesia católica o protestante paga impuesto eclesiástico en casi todos los cantones.|V|Se puede dejar la iglesia por escrito y entonces deja de pagarse.
+V|papeles|🐕|En Suiza hay un impuesto por tener perro.|V|Además, los perros se registran en una base de datos nacional y en el municipio.
+V|papeles|🇨🇭|Para pedir la nacionalidad suiza basta con 5 años de residencia.|M|Normalmente hacen falta 10 años, el permiso C y estar bien integrado. Los años entre los 8 y los 18 cuentan doble.
+V|papeles|🗳️|Las personas extranjeras pueden votar en algunos cantones y municipios.|V|No a nivel federal, pero sí en asuntos locales en sitios como Neuchâtel o el Jura.
+V|papeles|⚖️|Ante una orden de pago que no reconoces, puedes oponerte en 10 días sin dar motivos.|V|Se llama Rechtsvorschlag u «opposition». Después, la empresa tiene que demostrar la deuda.
+V|papeles|🚗|El carnet de conducir extranjero vale para siempre en Suiza.|M|Vale 12 meses desde que vives aquí. Antes de que pase ese plazo hay que canjearlo.
+V|papeles|🛣️|Para conducir por las autopistas suizas hace falta una viñeta anual.|V|Cuesta 40 francos y existe también en versión electrónica, ligada a la matrícula.
+V|papeles|🆔|Tu número de la seguridad social suiza (AHV) aparece en la tarjeta del seguro médico.|V|Tiene 13 cifras y empieza por 756.
+V|papeles|📄|Para alquilar piso casi siempre te piden un certificado de que no tienes deudas.|V|Se pide en la oficina de cobros de tu municipio y cuesta unos 20 francos.
+V|papeles|📨|Una carta certificada que esperas y no recoges puede darse por entregada a los 7 días.|V|En trámites oficiales funciona así. Por eso conviene recoger siempre los avisos de Correos.
+V|papeles|🗓️|En Suiza se vota sobre temas nacionales una vez cada cuatro años.|M|Se vota unas cuatro veces al año, sobre temas muy variados. Las elecciones al Parlamento sí son cada cuatro años.
+V|papeles|🌐|ch.ch es el portal oficial que explica los trámites en Suiza.|V|Explica en lenguaje sencillo permisos, impuestos, mudanzas y mucho más.
+V|papeles|🏛️|Suiza tiene un presidente que gobierna durante cuatro años.|M|El Gobierno son siete personas, el Consejo Federal, y la presidencia rota cada año sin poderes extra.
+V|papeles|🛂|Suiza no forma parte del espacio Schengen.|M|Sí forma parte, desde 2008, aunque no es miembro de la Unión Europea.
+V|papeles|📇|Con permiso B de la UE, el permiso suele durar cinco años.|V|Para personas de fuera de la UE y la AELE suele renovarse cada año.
+V|papeles|🗣️|Para el permiso C se pide un nivel mínimo del idioma del cantón.|V|Se pide nivel A2 escrito y B1 hablado.
+V|dinero|💵|El billete de 1000 francos sigue en circulación.|V|Es uno de los billetes de más valor del mundo.
+V|dinero|🪙|El franco suizo se divide en 1000 céntimos.|M|Se divide en 100 céntimos: Rappen en alemán, centimes en francés y centesimi en italiano.
+V|dinero|💳|En Suiza es obligatorio dejar un 20 % de propina en los restaurantes.|M|El servicio está incluido. Se suele redondear o dejar un 5 o 10 % si te ha gustado.
+V|dinero|🍽️|Pedir pagar por separado en un restaurante está mal visto en Suiza.|M|Es lo más normal del mundo, incluso en grupos grandes.
+V|dinero|🛒|Al volver de compras del extranjero puedes traer hasta 150 francos por persona y día sin pagar IVA.|V|Y como mucho 1 kg de carne sin aranceles. Lo que pase de ahí se declara.
+V|dinero|💰|En Suiza hay un salario mínimo nacional, igual para todo el país.|M|No hay uno nacional, pero sí en cantones como Ginebra, Neuchâtel, Jura, Tesino o Basilea-Ciudad.
+V|dinero|🎄|Muchas empresas suizas pagan un decimotercer sueldo.|V|Normalmente en diciembre. No es obligatorio por ley: mira tu contrato.
+V|dinero|📱|Una oficina suiza nunca te pedirá pagar una multa por teléfono con tarjetas regalo.|V|Si te lo piden, es una estafa: cuelga y llama tú al número oficial.
+V|dinero|🏦|El pilar 3a es un ahorro para la jubilación que se puede deducir de impuestos.|V|Hasta unos 7000 francos al año si tienes plan de pensiones en la empresa.
+V|dinero|🧾|Las facturas suizas llevan un código QR que se escanea con la app del banco.|V|Desde 2022 sustituyeron a las antiguas papeletas de pago naranjas y rojas.
+V|dinero|📄|Un recordatorio de pago (Mahnung) nunca tiene consecuencias.|M|Tras varios avisos pueden añadir gastos y pasar el caso a la oficina de cobros.
+V|dinero|💱|Al pagar con tarjeta suiza en el extranjero, conviene elegir que te cobren en francos.|M|Suele salir más caro, porque el comercio aplica su propio cambio. Mejor elegir la moneda local.
+V|dinero|🛍️|Muchas tiendas online suizas permiten pagar con factura a 30 días.|V|Es cómodo, pero si se te olvida llegan recargos y recordatorios.
+V|dinero|💸|Las ciudades suizas suelen estar entre las más caras del mundo para vivir.|V|Zúrich y Ginebra aparecen a menudo en lo alto de las clasificaciones de coste de vida.
+V|dinero|📲|Mucha gente en Suiza paga con el móvil, entre amigos y en tiendas.|V|La app de pagos móviles más usada en Suiza es TWINT.
+V|dinero|🤝|En todos los cantones hay asesoramiento gratuito para personas con deudas.|V|Es confidencial (Schuldenberatung, désendettement). Pedir ayuda pronto evita problemas mayores.
+V|dinero|🏧|En Suiza el cajero automático se llama «Bancomat».|V|Así se le llama en todo el país, en alemán, francés e italiano.
+V|dinero|🪙|Las monedas suizas de 5 céntimos son de oro.|M|Son de una aleación de aluminio y bronce de color dorado.
+V|dinero|🧑‍💼|Hablar de cuánto ganas es un tema muy normal entre compañeros suizos.|M|El sueldo sigue siendo bastante tabú. Para comparar está la calculadora oficial Salarium.
+V|dinero|🏠|Se suele aconsejar que el alquiler no pase de un tercio del sueldo.|V|Es la regla habitual que usan muchas administraciones al elegir inquilinos.
+V|dinero|🚗|El leasing y los créditos al consumo son una causa frecuente de deudas en Suiza.|V|Las cuotas de un coche «barato» se suman al seguro, la viñeta y el aparcamiento.
+V|dinero|🏪|Las ofertas del súper se llaman «Aktion» en alemán y «action» en francés.|V|Y en el Tesino, «azione». En los tres casos, es la palabra mágica para ahorrar.
