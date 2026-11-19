@@ -32,6 +32,8 @@
 
 *{box-sizing:border-box}
 html,body{margin:0}
+html,body,.reveal{scrollbar-width:none;-ms-overflow-style:none}
+html::-webkit-scrollbar,body::-webkit-scrollbar,.reveal::-webkit-scrollbar{display:none;width:0;height:0}
 body{background:var(--bg);color:var(--ink);font-family:var(--font);overflow-x:clip;-webkit-tap-highlight-color:transparent}
 button{font:inherit;color:inherit}
 .app{max-width:480px;margin:0 auto;padding-block:max(14px,env(safe-area-inset-top,0px)) max(32px,env(safe-area-inset-bottom,0px));padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:18px;min-height:100%}
