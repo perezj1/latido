@@ -78,6 +78,7 @@ function nuevaRonda(modo = modoActual) {
 
 /* ---------- pantallas ---------- */
 function pintarInicio() {
+  app.classList.remove('playing');
   ronda = null; cerrarResultado();
   const reales = PREG.filter(q => q.tipo === 'real' && local.resp[q.id]);
   const ok = reales.filter(q => local.resp[q.id].o === q.correcta).length;
@@ -106,6 +107,7 @@ function pintarInicio() {
 }
 
 function pintarPregunta() {
+  app.classList.add('playing');
   const id = ronda.ids[ronda.i], q = pregunta(id), real = q.tipo === 'real';
   const prog = ronda.ids.map((_, i) => `<i class="${ronda.marcas[i] || (i === ronda.i ? 'now' : '')}"></i>`).join('');
   const ops = ronda.orden[id].map((oi, k) => `<button class="opt o${k + 1}" type="button" data-o="${oi}"><span class="oe" aria-hidden="true">${q.opciones[oi].e}</span><span class="ot">${esc(q.opciones[oi].t)}</span></button>`);
@@ -114,11 +116,11 @@ function pintarPregunta() {
       <div class="prog" aria-label="Pregunta ${ronda.i + 1} de ${ronda.ids.length}">${prog}</div>
       <button class="skip" id="saltar" type="button">Saltar →</button>
     </div>
-    <section class="${tema(q)} in" style="display:flex;flex-direction:column;gap:12px">
+    <section class="question ${tema(q)} in">
       <div class="bubble"><span class="q-em" aria-hidden="true">${q.emoji}</span>
         <span class="kind">${real ? '🕵️ Solo una es verdad' : '🤔 ¿Qué prefieres?'}</span>
         <h2 class="q">${esc(q.pregunta)}</h2></div>
-      <div class="opts">${q.opciones.length === 2 ? ops.join('<span class="vs" aria-hidden="true">o</span>') : ops.join('')}</div>
+      <div class="opts${q.opciones.length === 2 ? ' with-or' : ''}">${q.opciones.length === 2 ? ops.join('<span class="vs" aria-hidden="true">O</span>') : ops.join('')}</div>
     </section>`;
   $('#salir').onclick = pintarInicio;
   $('#saltar').onclick = () => { ronda.marcas[ronda.i] = 'sk'; siguiente(); };
@@ -215,6 +217,7 @@ function siguiente() {
 }
 
 function pintarFinal() {
+  app.classList.remove('playing');
   const res = ronda.res.filter(Boolean), reales = res.filter(r => r.real), dilemas = res.filter(r => !r.real);
   const ok = reales.filter(r => r.acierto).length, mayoria = dilemas.filter(r => { const rep = reparto(pregunta(r.id)); return Votos.estado === 'ok' && rep.total > 1 && rep.n[r.o] === Math.max(...rep.n); }).length;
   const cuadros = ronda.ids.map((_, i) => ({ ok: '🟩', ko: '🟥', op: '🟦', sk: '⬜' }[ronda.marcas[i]] || '⬜')).join('');
