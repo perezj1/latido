@@ -1,0 +1,55 @@
+import assert from 'node:assert/strict'
+import { readFile, readdir } from 'node:fs/promises'
+import path from 'node:path'
+import { createHash } from 'node:crypto'
+
+const read=file=>readFile(file,'utf8')
+const hash=bytes=>createHash('sha256').update(bytes).digest('hex')
+const root=await read('dist/index.html')
+assert.match(root,/<title>Suizamente/)
+assert.match(root,/<link rel="canonical" href="https:\/\/suizamente\.latido\.ch\/">/)
+assert.match(root,/<meta name="robots" content="index, follow">/)
+assert.equal(root.includes('__SITE_URL__'),false)
+for (const route of ['cuenta','auth/callback','auth/restablecer']) {
+  const html=await read(`dist/${route}/index.html`)
+  assert.match(html,/<meta name="robots" content="noindex, nofollow">/)
+  assert.match(html,/<meta name="referrer" content="no-referrer">/)
+  assert.match(html,new RegExp('href="https://suizamente.latido.ch/'+route+'"'))
+}
+for (const file of ['juego.js','juego.html','votos.js','fonts.css','data/preguntas.json']) {
+  assert.equal(hash(await readFile('dist/suizamente/'+file)),hash(await readFile('../../public/suizamente/'+file)),`Shared source drift: ${file}`)
+}
+const sitemap=await read('dist/sitemap.xml')
+assert.match(sitemap,/<loc>https:\/\/suizamente.latido.ch\/instalar<\/loc>/)
+assert.doesNotMatch(sitemap,/cuenta|auth\//)
+const worker=await read('dist/sw.js')
+assert.equal(worker.includes('__BUILD_ID__'),false)
+assert.doesNotMatch(worker,/access_token|refresh_token|Authorization|localStorage/)
+const vercel=JSON.parse(await read('vercel.json'))
+for (const source of ['/cuenta(.*)','/auth/(.*)']) {
+  const headers=vercel.headers.find(rule=>rule.source===source).headers
+  assert.equal(headers.find(h=>h.key==='Cache-Control').value,'no-store')
+  assert.match(headers.find(h=>h.key==='X-Robots-Tag').value,/noindex/)
+}
+assert.equal(vercel.rewrites.some(rule=>rule.source.includes('(.*)')),false)
+// Check actual locally configured server secrets without printing any values.
+const localEnv=await read('../../.env.local').catch(()=>'')
+const secrets=[...localEnv.matchAll(/^(?:SUPABASE_SERVICE_ROLE_KEY|SUPABASE_SECRET_KEY|SUPABASE_DB_PASSWORD)\s*=\s*["']?([^\r\n"']+)/gm)].map(match=>match[1].trim()).filter(Boolean)
+async function scan(directory) {
+  for (const entry of await readdir(directory,{withFileTypes:true})) {
+    const file=path.join(directory,entry.name)
+    if (entry.isDirectory()) await scan(file)
+    else if (/\.(js|html|json|css|xml|txt|webmanifest)$/.test(file)) {
+      const text=await read(file)
+      for (const secret of secrets) assert.equal(text.includes(secret),false,'A private credential was included in the build')
+      for (const token of text.matchAll(/eyJ[\w-]+\.([\w-]+)\.[\w-]+/g)) {
+        let role
+        try {role=JSON.parse(Buffer.from(token[1],'base64url').toString()).role} catch {continue}
+        assert.notEqual(role,'service_role','Privileged JWT included in browser output')
+      }
+      assert.doesNotMatch(text,/sb_secret_[a-zA-Z0-9_-]{10,}/)
+    }
+  }
+}
+await scan('dist')
+console.log('PASS: independent production artifacts, exact shared sources, private SEO/headers, sitemap, versioned SW and absence of server secrets.')

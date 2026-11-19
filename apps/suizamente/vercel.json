@@ -1,0 +1,31 @@
+{
+  "framework": "vite",
+  "installCommand": "npm ci",
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
+  "headers": [
+    { "source": "/(.*)", "headers": [
+      { "key": "X-Content-Type-Options", "value": "nosniff" },
+      { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" }
+    ] },
+    { "source": "/cuenta(.*)", "headers": [
+      { "key": "Cache-Control", "value": "no-store" },
+      { "key": "X-Robots-Tag", "value": "noindex, nofollow, noarchive" },
+      { "key": "Referrer-Policy", "value": "no-referrer" }
+    ] },
+    { "source": "/auth/(.*)", "headers": [
+      { "key": "Cache-Control", "value": "no-store" },
+      { "key": "X-Robots-Tag", "value": "noindex, nofollow, noarchive" },
+      { "key": "Referrer-Policy", "value": "no-referrer" }
+    ] },
+    { "source": "/sw.js", "headers": [{ "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" }] },
+    { "source": "/suizamente/(.*)", "headers": [{ "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" }] },
+    { "source": "/sin-conexion.html", "headers": [{ "key": "X-Robots-Tag", "value": "noindex, nofollow" }] }
+  ],
+  "rewrites": [
+    { "source": "/cuenta", "destination": "/cuenta/index.html" },
+    { "source": "/instalar", "destination": "/instalar/index.html" },
+    { "source": "/auth/callback", "destination": "/auth/callback/index.html" },
+    { "source": "/auth/restablecer", "destination": "/auth/restablecer/index.html" }
+  ]
+}

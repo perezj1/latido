@@ -1,0 +1,206 @@
+import assert from 'node:assert/strict'
+import { mkdir, readFile } from 'node:fs/promises'
+import { chromium, expect } from '@playwright/test'
+import { preview, loadEnv } from 'vite'
+
+const origin='http://127.0.0.1:5271'
+const env=loadEnv('production',process.cwd(),'VITE_')
+const project=new URL(env.VITE_SUPABASE_URL).hostname.split('.')[0]
+const storageKey=`sb-${project}-auth-token`
+const data=JSON.parse(await readFile('../../public/suizamente/data/preguntas.json','utf8'))
+const user={id:'11111111-1111-4111-8111-111111111111',email:'prueba@example.test',aud:'authenticated',role:'authenticated',app_metadata:{provider:'email',providers:['email']},user_metadata:{name:'Prueba'},created_at:'2026-01-01T00:00:00Z'}
+const access=Buffer.from(JSON.stringify({alg:'HS256',typ:'JWT'})).toString('base64url')+'.'+Buffer.from(JSON.stringify({sub:user.id,aud:'authenticated',role:'authenticated',email:user.email,exp:Math.floor(Date.now()/1000)+3600,iat:Math.floor(Date.now()/1000)})).toString('base64url')+'.test-signature'
+const session={access_token:access,refresh_token:'mock-refresh-token',token_type:'bearer',expires_in:3600,expires_at:Math.floor(Date.now()/1000)+3600,user}
+const requests=[], votes=new Map(), errors=[]
+let browser
+const server=await preview({preview:{host:'127.0.0.1',port:5271,strictPort:true}})
+await mkdir('test-results',{recursive:true})
+async function context(options={}) {
+  const ctx=await browser.newContext({viewport:{width:390,height:844},reducedMotion:'reduce',...options})
+  ctx.on('page',page=>page.on('pageerror',e=>errors.push(e.message)))
+  await ctx.route('**/*',async route=>{
+    const req=route.request(), url=new URL(req.url())
+    if (url.origin===origin) return route.continue()
+    const headers={'access-control-allow-origin':origin,'access-control-allow-headers':'*'}
+    const send=(json,status=200)=>route.fulfill({status,headers,json})
+    if (req.method()==='OPTIONS') return route.fulfill({status:204,headers})
+    let body
+    try {body=req.postDataJSON()} catch {body=null}
+    requests.push({url,method:req.method(),body,headers:req.headers()})
+    if (url.pathname.includes('/auth/v1/')) {
+      if (url.pathname.endsWith('/token')) return send(session)
+      if (url.pathname.endsWith('/user')) return send(user)
+      if (url.pathname.endsWith('/logout')) return send({})
+      if (url.pathname.endsWith('/signup')) return send({...user,identities:[]})
+      if (url.pathname.endsWith('/recover')) return send({})
+      if (url.pathname.endsWith('/authorize')) return route.fulfill({contentType:'text/html',body:'<title>Proveedor simulado</title>Google simulado'})
+      return send({})
+    }
+    if (url.pathname.includes('/functions/v1/suizamente-votos/')) {
+      const identity=req.headers().authorization===`Bearer ${access}` ? user.id : req.headers()['x-jugador-id']
+      if (!votes.has(identity)) votes.set(identity,{})
+      const own=votes.get(identity)
+      if (url.pathname.endsWith('/resumen')) return send({conteos:Object.fromEntries(data.preguntas.map(q=>[q.id,[0,0,0]]))})
+      if (url.pathname.endsWith('/mios')) return send({votos:own})
+      const previous=own[body.preguntaId]
+      if (previous===undefined) own[body.preguntaId]=body.opcion
+      const reparto=[0,0,0]; reparto[own[body.preguntaId]]=1
+      return send({reparto,opcion:own[body.preguntaId],yaVotado:previous!==undefined})
+    }
+    return route.fulfill({status:404,body:'External request blocked by test'})
+  })
+  return ctx
+}
+try {
+  browser=await chromium.launch({headless:true})
+  const guest=await context()
+  const page=await guest.newPage()
+  await page.goto(origin)
+  const game=page.frameLocator('iframe')
+  await expect(game.locator('.title')).toHaveText('Suizamente')
+  await expect(game.locator('#nota')).toContainText('Tus votos cuentan')
+  await expect(game.locator('.host-actions')).toContainText('Iniciar sesión')
+  await expect(game.locator('.host-actions a[href="/instalar"]')).toHaveAttribute('target','_top')
+  await page.screenshot({path:'test-results/inicio-movil.png',fullPage:true})
+  // All modes still use the same source questions and original answer indices.
+  for (const [mode,type] of [['dilemas','dilema'],['preguntas','real'],['mix',null]]) {
+    await game.locator(`[data-modo="${mode}"]`).click()
+    const types=[]
+    const count=mode==='mix'?10:1
+    for (let n=0;n<count;n++) {
+      const prompt=await game.locator('.q').textContent()
+      const labels=await game.locator('.opt .ot').allTextContents()
+      const q=data.preguntas.find(q=>q.pregunta===prompt && q.opciones.every(o=>labels.includes(o.t)))
+      assert.ok(q)
+      if (type) assert.equal(q.tipo,type)
+      if (q.tipo==='dilema') assert.equal(labels.length,2)
+      types.push(q.tipo)
+      await game.locator('.opt').first().click()
+      await expect(game.getByRole('dialog')).toBeVisible()
+      await expect(game.locator('.tag.mine')).toHaveCount(1)
+      await game.locator('#sig').click()
+    }
+    if (mode==='mix') {
+      assert.equal(types.filter(t=>t==='dilema').length,5)
+      assert.equal(types.filter(t=>t==='real').length,5)
+      await game.locator('#inicio').click()
+    } else await page.goto(origin)
+    await expect(game.locator('[data-modo="mix"]')).toBeVisible()
+  }
+  const manifest=await (await page.request.get(origin+'/manifest.webmanifest')).json()
+  assert.equal(manifest.name,'Suizamente')
+  assert.equal(manifest.start_url,'/')
+  assert.equal(manifest.scope,'/')
+  assert.equal(manifest.display,'standalone')
+  for (const icon of manifest.icons) {
+    const bytes=await (await page.request.get(origin+icon.src)).body()
+    const size=Number(icon.sizes.split('x')[0])
+    assert.equal(bytes.readUInt32BE(16),size)
+    assert.equal(bytes.readUInt32BE(20),size)
+  }
+  // The service worker caches only its public allowlist, never sessions or pages.
+  await page.evaluate(async()=>{await navigator.serviceWorker.ready})
+  await expect.poll(()=>page.evaluate(()=>!!navigator.serviceWorker.controller)).toBe(true)
+  const cached=await page.evaluate(async()=>{
+    const result=[]
+    for (const name of await caches.keys()) for (const req of await (await caches.open(name)).keys()) result.push(new URL(req.url).pathname)
+    return result
+  })
+  assert.equal(cached.length,8)
+  assert.ok(cached.every(path=>path.startsWith('/icons/')||['/manifest.webmanifest','/favicon.svg','/sin-conexion.html'].includes(path)))
+  await page.goto(origin+'/cuenta')
+  await expect(page.getByRole('heading',{name:'Entrar a Suizamente'})).toBeVisible()
+  await expect(page.locator('meta[name=robots]')).toHaveAttribute('content','noindex, nofollow')
+  await page.screenshot({path:'test-results/cuenta-movil.png',fullPage:true})
+  await page.getByRole('button',{name:'Crear una cuenta',exact:true}).click()
+  await page.getByLabel('Nombre',{exact:true}).fill('Prueba')
+  await page.getByLabel('Correo electrónico').fill(user.email)
+  await page.getByLabel('Contraseña',{exact:true}).fill('password-only-for-mock')
+  await page.getByRole('checkbox').check()
+  await page.getByRole('button',{name:'Crear cuenta',exact:true}).click()
+  await expect(page.locator('#message')).toContainText('Revisa tu correo')
+  const signup=requests.find(r=>r.url.pathname.endsWith('/signup'))
+  assert.equal(signup.url.searchParams.get('redirect_to'),origin+'/auth/callback')
+  assert.equal(signup.body.data.latido_onboarding_completed,false)
+  assert.equal(signup.body.code_challenge_method,'s256')
+  await page.getByRole('button',{name:'Ya tengo cuenta'}).click()
+  await page.getByRole('button',{name:'He olvidado la contraseña'}).click()
+  await page.getByLabel('Correo electrónico').fill(user.email)
+  await page.getByRole('button',{name:'Enviar enlace'}).click()
+  await expect(page.locator('#message')).toContainText('Si existe una cuenta')
+  const recovery=requests.find(r=>r.url.pathname.endsWith('/recover'))
+  assert.equal(recovery.url.searchParams.get('redirect_to'),origin+'/auth/restablecer')
+  assert.equal(recovery.body.code_challenge_method,'s256')
+  await page.getByRole('button',{name:'Ya tengo cuenta'}).click()
+  await page.getByLabel('Correo electrónico').fill(user.email)
+  await page.getByLabel('Contraseña',{exact:true}).fill('password-only-for-mock')
+  await page.getByRole('button',{name:'Entrar',exact:true}).click()
+  await expect(game.locator('.host-actions')).toContainText('Tu cuenta')
+  const saved=data.preguntas.find(q=>q.tipo==='real')
+  votes.set(user.id,{[saved.id]:saved.correcta})
+  await page.reload()
+  await expect(game.locator('.host-actions')).toContainText('Tu cuenta')
+  await expect(game.locator('#nota')).toContainText('Tus votos cuentan')
+  await expect(game.locator('.stat').first().locator('b')).toHaveText('1')
+  assert.equal(await game.locator('body').evaluate((_node,{key,id})=>JSON.parse(localStorage.getItem(key))?.resp[id]?.o,{key:'suizamente:v1:'+user.id,id:saved.id}),saved.correcta)
+  await page.goto(origin+'/auth/restablecer')
+  await page.getByLabel('Nueva contraseña',{exact:true}).fill('new-password-for-mock')
+  await page.getByLabel('Repite la contraseña').fill('different-password')
+  const updates=()=>requests.filter(r=>r.url.pathname.endsWith('/user')&&r.method==='PUT').length
+  await page.getByRole('button',{name:'Guardar contraseña'}).click()
+  await expect(page.locator('#message')).toContainText('no coinciden')
+  assert.equal(updates(),0)
+  await page.getByLabel('Repite la contraseña').fill('new-password-for-mock')
+  await page.getByRole('button',{name:'Guardar contraseña'}).click()
+  await expect(page.getByRole('button',{name:'Cerrar sesión en esta app'})).toBeVisible()
+  assert.equal(updates(),1)
+  await page.getByRole('button',{name:'Cerrar sesión en esta app'}).click()
+  await expect(page.getByRole('button',{name:'Entrar',exact:true})).toBeVisible()
+  assert.equal(requests.find(r=>r.url.pathname.endsWith('/logout')).url.searchParams.get('scope'),'local')
+  await page.goto(origin+'/instalar')
+  await expect(page.getByRole('heading',{name:'Suizamente en tu móvil'})).toBeVisible()
+  await expect(page.locator('meta[name=robots]')).toHaveAttribute('content','index, follow')
+  await page.getByRole('button',{name:'Instalar Suizamente'}).click()
+  await expect(page.locator('#message')).toContainText('menú de tu navegador')
+  await guest.setOffline(true)
+  await page.goto(origin+'/cuenta')
+  await expect(page.locator('body')).toContainText('conexión')
+  await expect(page.locator('input')).toHaveCount(0)
+  await guest.close()
+
+  // A PKCE code is exchanged exactly once, then removed from the URL.
+  const callback=await context({colorScheme:'dark',viewport:{width:320,height:740}})
+  await callback.addInitScript(({key})=>{if(location.pathname.startsWith('/auth/'))localStorage.setItem(key+'-code-verifier',JSON.stringify('mock-verifier'))},{key:storageKey})
+  const cb=await callback.newPage()
+  await cb.goto(origin+'/auth/callback?code=mock-code')
+  await expect(cb.frameLocator('iframe').locator('.title')).toHaveText('Suizamente')
+  assert.equal(cb.url(),origin+'/')
+  const exchanges=requests.filter(r=>r.url.searchParams.get('grant_type')==='pkce')
+  assert.equal(exchanges.length,1)
+  assert.deepEqual(exchanges[0].body,{auth_code:'mock-code',code_verifier:'mock-verifier'})
+  await cb.goto(origin+'/cuenta')
+  await expect(cb.locator('.email')).toHaveText(user.email)
+  assert.equal(await cb.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true)
+  await cb.screenshot({path:'test-results/cuenta-estrecha-oscura.png',fullPage:true})
+  // Same browser, different origin: no automatic Latido/subdomain login.
+  await callback.route('http://localhost:5271/**',route=>route.continue())
+  await cb.goto('http://localhost:5271/cuenta')
+  await expect(cb.getByRole('button',{name:'Entrar',exact:true})).toBeVisible()
+  await callback.close()
+
+  const oauth=await context()
+  const google=await oauth.newPage()
+  await google.goto(origin+'/cuenta')
+  await google.getByRole('button',{name:'Continuar con Google'}).click()
+  await expect(google).toHaveTitle('Proveedor simulado')
+  const authorize=requests.find(r=>r.url.pathname.endsWith('/authorize'))
+  assert.equal(authorize.url.searchParams.get('redirect_to'),origin+'/auth/callback')
+  assert.equal(authorize.url.searchParams.get('provider'),'google')
+  assert.equal(authorize.url.searchParams.get('code_challenge_method'),'s256')
+  await oauth.close()
+  assert.deepEqual(errors,[])
+  console.log('PASS: shared game/modes, manifest/icons, private cache, offline notice, password login/signup/recovery, local logout, PKCE/OAuth, session isolation and mobile/dark views. Auth/API entirely mocked; no external writes.')
+} finally {
+  await browser?.close()
+  await new Promise(resolve=>server.httpServer.close(resolve))
+}

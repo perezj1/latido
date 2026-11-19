@@ -1,0 +1,190 @@
+import { createClient } from '@supabase/supabase-js'
+import { resilientAuthStorage } from '../../../src/lib/authStorage.js'
+import { connectSuizamenteSession } from '../../../src/lib/suizamenteSessionBridge.js'
+import { publicConfig } from './config.js'
+import './style.css'
+
+const root = document.getElementById('app')
+const esc = text => String(text ?? '').replace(/[&<>"]/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[c]))
+let session = null, client, config, disposeFrame, installPrompt, booted = false
+let accountMode = 'login'
+
+const font = document.createElement('link')
+font.rel = 'stylesheet'; font.href = '/suizamente/fonts.css'; document.head.append(font)
+
+window.addEventListener('beforeinstallprompt', event => {
+  event.preventDefault()
+  installPrompt = event
+  if (path() === '/instalar') render()
+})
+window.addEventListener('appinstalled', () => { installPrompt = null; if (path() === '/instalar') render() })
+
+function path() { return location.pathname.replace(/\/+$/, '') || '/' }
+function message(text, error=false) {
+  const node = root.querySelector('#message')
+  if (node) { node.textContent = text; node.setAttribute('role', error ? 'alert' : 'status') }
+}
+function busy(form, value) { form.querySelectorAll('input,button').forEach(node => { node.disabled = value }) }
+function authError(error) {
+  if (error?.code === 'invalid_credentials') return 'El correo o la contraseña no son correctos.'
+  if (error?.code === 'email_not_confirmed') return 'Confirma tu correo antes de entrar.'
+  if (error?.status === 429) return 'Espera unos minutos antes de volver a intentarlo.'
+  return 'No se ha podido completar la solicitud. Revisa los datos y vuelve a intentarlo.'
+}
+function shell(title, content) {
+  root.innerHTML = `<section class="page"><a class="back" href="/">Volver al juego</a><img class="brand-icon" src="/favicon.svg" alt="Latido" width="64" height="64"><h1>${esc(title)}</h1>${content}<p class="legal"><a href="https://www.latido.ch/privacidad" target="_blank" rel="noopener">Privacidad</a> · <a href="https://www.latido.ch/terminos" target="_blank" rel="noopener">Términos de Latido</a></p></section>`
+}
+function metadata(privatePage) {
+  document.querySelector('meta[name="robots"]').content = privatePage || __SUIZAMENTE_PREVIEW__ ? 'noindex, nofollow' : 'index, follow'
+  if (privatePage) document.querySelector('meta[name="referrer"]').content = 'no-referrer'
+}
+function mountGame() {
+  metadata(false)
+  document.title = 'Suizamente · Un juego de Latido.ch'
+  const frame = document.createElement('iframe')
+  frame.className = 'game'
+  frame.src = '/suizamente/juego.html'
+  frame.title = 'Suizamente, un juego de Latido'
+  frame.allow = 'clipboard-write; web-share'
+  disposeFrame = connectSuizamenteSession({
+    getFrame:() => frame.isConnected ? frame.contentWindow : null,
+    getSession:() => client.auth.getSession(), api:config.api, standalone:true,
+  })
+  root.replaceChildren(frame)
+}
+function renderAccount() {
+  metadata(true)
+  document.title = 'Tu cuenta · Suizamente'
+  if (session?.user) {
+    shell('Tu cuenta', `<p>Has entrado con tu cuenta de Latido.</p><p class="email">${esc(session.user.email)}</p><p>Tus respuestas guardadas en esta cuenta se recuperan también al jugar desde Latido.ch.</p><a class="button primary" href="/">Seguir jugando</a><button class="button secondary" id="logout">Cerrar sesión en esta app</button><p id="message" class="message" role="status" aria-live="polite"></p>`)
+    root.querySelector('#logout').onclick = async event => {
+      event.currentTarget.disabled = true
+      try {
+        // Do not revoke the independent sessions on Latido or other devices.
+        const { error } = await client.auth.signOut({ scope:'local' })
+        if (error) { event.target.disabled = false; return message(authError(error), true) }
+        session = null; render()
+      } catch { event.target.disabled = false; message('No se ha podido cerrar la sesión. Vuelve a intentarlo.', true) }
+    }
+    return
+  }
+  const signup = accountMode === 'signup', recovery = accountMode === 'recovery'
+  const title = signup ? 'Crear cuenta' : recovery ? 'Recuperar contraseña' : 'Entrar a Suizamente'
+  shell(title, `<p>${recovery ? 'Te enviaremos un enlace para elegir una nueva contraseña.' : 'Usa la misma cuenta que en Latido.ch. Puedes seguir jugando sin registrarte.'}</p>
+    <form id="account-form">
+      ${signup ? '<label>Nombre<input name="name" autocomplete="name" maxlength="80" required></label>' : ''}
+      <label>Correo electrónico<input name="email" type="email" autocomplete="email" maxlength="254" required></label>
+      ${!recovery ? `<label>Contraseña<input name="password" type="password" autocomplete="${signup ? 'new-password' : 'current-password'}" ${signup ? 'minlength="8"' : ''} required></label>` : ''}
+      ${signup ? '<p class="hint">Usa al menos 8 caracteres.</p><label class="check"><input type="checkbox" name="terms" required><span>Acepto los <a href="https://www.latido.ch/terminos" target="_blank" rel="noopener">términos de Latido</a> y he leído su <a href="https://www.latido.ch/privacidad" target="_blank" rel="noopener">política de privacidad</a>.</span></label>' : ''}
+      <button class="button primary" type="submit">${signup ? 'Crear cuenta' : recovery ? 'Enviar enlace' : 'Entrar'}</button>
+    </form>
+    <p id="message" class="message" role="status" aria-live="polite"></p>
+    ${!recovery ? '<button id="google" class="button secondary" type="button">Continuar con Google</button>' : ''}
+    <div class="actions">${accountMode !== 'login' ? '<button data-mode="login">Ya tengo cuenta</button>' : '<button data-mode="signup">Crear una cuenta</button><button data-mode="recovery">He olvidado la contraseña</button>'}</div>
+    <p class="hint">Las sesiones de Suizamente y Latido.ch son independientes. Entrar en una no inicia sesión automáticamente en la otra.</p>`)
+  root.querySelectorAll('[data-mode]').forEach(button => { button.onclick = () => { accountMode = button.dataset.mode; render() } })
+  root.querySelector('#account-form').onsubmit = async event => {
+    event.preventDefault()
+    const form = event.currentTarget, values = new FormData(form)
+    const email = String(values.get('email')).trim().toLowerCase()
+    busy(form, true); message('Un momento…')
+    try {
+      let result
+      if (recovery) {
+        result = await client.auth.resetPasswordForEmail(email, { redirectTo:location.origin + '/auth/restablecer' })
+      } else if (signup) {
+        result = await client.auth.signUp({
+          email, password:String(values.get('password')),
+          options:{ emailRedirectTo:location.origin + '/auth/callback', data:{ name:String(values.get('name')).trim(), latido_onboarding_completed:false } },
+        })
+      } else result = await client.auth.signInWithPassword({ email, password:String(values.get('password')) })
+      if (result.error) return message(authError(result.error), true)
+      if (result.data?.session) { location.replace('/'); return }
+      message(recovery ? 'Si existe una cuenta con ese correo, recibirás un enlace para cambiar la contraseña. Ábrelo en este mismo navegador y dispositivo.' : 'Revisa tu correo para confirmar la cuenta. Abre el enlace en este mismo navegador y dispositivo.')
+    } catch { message('No se ha podido conectar. Comprueba tu conexión y vuelve a intentarlo.', true) }
+    finally { if (form.isConnected) busy(form, false) }
+  }
+  const google = root.querySelector('#google')
+  if (google) google.onclick = async () => {
+    google.disabled = true
+    try {
+      const { error } = await client.auth.signInWithOAuth({ provider:'google', options:{ redirectTo:location.origin + '/auth/callback', queryParams:{ prompt:'select_account' } } })
+      if (error) { google.disabled = false; message(authError(error), true) }
+    } catch { google.disabled = false; message('No se ha podido abrir Google. Vuelve a intentarlo.', true) }
+  }
+}
+function renderRecovery() {
+  metadata(true)
+  document.title = 'Cambiar contraseña · Suizamente'
+  history.replaceState(null, '', '/auth/restablecer')
+  if (!session?.user) {
+    shell('Enlace no disponible', '<p>Abre el enlace de recuperación desde tu correo. Si ha caducado, solicita otro desde tu cuenta.</p><a class="button primary" href="/cuenta">Volver a tu cuenta</a>')
+    return
+  }
+  shell('Nueva contraseña', '<form id="password-form"><label>Nueva contraseña<input name="password" type="password" autocomplete="new-password" minlength="8" required></label><label>Repite la contraseña<input name="confirmation" type="password" autocomplete="new-password" minlength="8" required></label><button class="button primary">Guardar contraseña</button></form><p id="message" class="message" role="status" aria-live="polite"></p>')
+  root.querySelector('#password-form').onsubmit = async event => {
+    event.preventDefault()
+    const form = event.currentTarget, values = new FormData(form)
+    if (values.get('password') !== values.get('confirmation')) return message('Las contraseñas no coinciden.', true)
+    busy(form, true)
+    try {
+      const { error } = await client.auth.updateUser({ password:String(values.get('password')) })
+      if (error) { busy(form,false); return message(authError(error),true) }
+      location.replace('/cuenta')
+    } catch { busy(form,false); message('No se ha podido guardar. Vuelve a intentarlo.',true) }
+  }
+}
+function renderInstall() {
+  metadata(false)
+  document.title = 'Instalar Suizamente · Latido.ch'
+  const installed = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true
+  shell('Suizamente en tu móvil', `<p>Instala Suizamente para abrir el juego directamente desde tu pantalla de inicio.</p>
+    ${installed ? '<p>Ya estás usando Suizamente como aplicación.</p>' : '<button id="install" class="button primary" type="button">Instalar Suizamente</button><div class="install-help"><h2>Desde el navegador</h2><p>En Chrome o Edge, abre el menú y busca la opción para instalar la aplicación.</p><p>En iPhone o iPad, abre Suizamente en Safari, pulsa Compartir y elige «Añadir a pantalla de inicio».</p></div>'}
+    <p class="hint">La instalación es independiente de Latido. Necesitas conexión para entrar en tu cuenta y consultar los votos de la comunidad.</p><p id="message" class="message" role="status" aria-live="polite"></p>`)
+  const button = root.querySelector('#install')
+  if (button) button.onclick = async () => {
+    if (!installPrompt) return message('Usa la opción de instalación del menú de tu navegador. En iPhone, utiliza Compartir en Safari.')
+    const prompt = installPrompt
+    installPrompt = null
+    try { await prompt.prompt(); await prompt.userChoice } catch { message('Puedes volver a intentarlo desde el menú del navegador.') }
+  }
+}
+function render() {
+  disposeFrame?.(); disposeFrame = null
+  if (path() === '/') mountGame()
+  else if (path() === '/cuenta') renderAccount()
+  else if (path() === '/instalar') renderInstall()
+  else if (path() === '/auth/restablecer') renderRecovery()
+  else if (path() === '/auth/callback') {
+    metadata(true)
+    // getSession() has already awaited the SDK's single automatic PKCE exchange.
+    history.replaceState(null, '', '/auth/callback')
+    if (session?.user) location.replace('/')
+    else shell('No se ha podido entrar', '<p>El enlace puede haber caducado o haberse abierto en otro navegador. Vuelve a entrar con tu cuenta.</p><a class="button primary" href="/cuenta">Entrar de nuevo</a>')
+  } else {
+    metadata(true)
+    shell('Página no encontrada', '<p>Esta página no está disponible.</p><a class="button primary" href="/">Volver al juego</a>')
+  }
+}
+
+async function start() {
+  try {
+    config = publicConfig(import.meta.env)
+    client = createClient(config.url, config.key, {
+      auth:{ persistSession:true, autoRefreshToken:true, detectSessionInUrl:true, flowType:'pkce', storage:resilientAuthStorage },
+    })
+    client.auth.onAuthStateChange((_event, nextSession) => {
+      const changed = session?.user?.id !== nextSession?.user?.id
+      session = nextSession
+      if (booted && changed && path() === '/') setTimeout(render, 0)
+    })
+    session = (await client.auth.getSession()).data.session
+    booted = true
+    render()
+    if (import.meta.env.PROD && 'serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js', { scope:'/' }).catch(() => {})
+  } catch (error) {
+    console.error('Suizamente: ' + error.message)
+    shell('No se ha podido abrir Suizamente', '<p>Vuelve a intentarlo dentro de un momento.</p><a class="button primary" href="/">Volver a intentar</a>')
+  }
+}
+start()

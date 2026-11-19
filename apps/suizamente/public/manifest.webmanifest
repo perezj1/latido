@@ -1,0 +1,23 @@
+{
+  "id": "/",
+  "name": "Suizamente",
+  "short_name": "Suizamente",
+  "description": "Elige y aprende sobre Suiza con el juego de Latido.ch.",
+  "lang": "es",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "theme_color": "#4A76EF",
+  "background_color": "#FFFFFF",
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/maskable-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "/icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Jugar", "url": "/" },
+    { "name": "Tu cuenta", "url": "/cuenta" }
+  ]
+}

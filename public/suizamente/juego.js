@@ -126,6 +126,7 @@ function pintarInicio() {
     </div>
     <p class="note" id="nota">${esc(textoNota())}</p>
     <p class="foot">Suizamente · <a href="https://latido.ch" target="_blank" rel="noopener">latido.ch</a></p>
+    ${identidad.app === 'standalone' ? `<nav class="host-actions" aria-label="Aplicación"><a href="/cuenta" target="_top">${identidad.userId ? 'Tu cuenta' : 'Iniciar sesión'}</a><a href="/instalar" target="_top">Instalar app</a></nav>` : ''}
   </section>`;
   app.querySelectorAll('.mode').forEach(b => b.onclick = () => nuevaRonda(b.dataset.modo));
   window.scrollTo({ top: 0 });

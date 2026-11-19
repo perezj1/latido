@@ -63,7 +63,7 @@ export function createSuizamenteHttp({ getClient, questions, getSecret, allowedO
 }
 
 export function suizamenteAllowedOrigin(origin) {
-  return ['https://latido.ch', 'https://www.latido.ch'].includes(origin)
+  return ['https://latido.ch', 'https://www.latido.ch', 'https://suizamente.latido.ch'].includes(origin)
     || /^https:\/\/latidoch(?:-[a-z0-9-]+)?\.vercel\.app$/.test(origin)
     || /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)
 }

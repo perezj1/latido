@@ -83,7 +83,7 @@ try {
     getClient:() => ({ auth:{ getUser:async () => ({ error:new Error('Invalid') }) }, rpc:(_name, args) => rpc(args) }),
     questions:new Map(Object.entries(catalog)), getSecret:() => 'edge-test', allowedOrigin:suizamenteAllowedOrigin,
   })
-  for (const origin of ['https://latido.ch','https://www.latido.ch','https://latidoch-git-suizamente-team.vercel.app','http://localhost:8080']) {
+  for (const origin of ['https://latido.ch','https://www.latido.ch','https://suizamente.latido.ch','https://latidoch-git-suizamente-team.vercel.app','http://localhost:8080']) {
     const preflight = await edge({ method:'OPTIONS', url:'https://project.supabase.co/functions/v1/suizamente-votos/votos', headers:{ origin } })
     assert.equal(preflight.status, 204)
     assert.equal(preflight.headers['Access-Control-Allow-Origin'], origin)
