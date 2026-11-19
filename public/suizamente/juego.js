@@ -9,9 +9,9 @@ if (identidad.api && !window.SUIZAMENTE_CONFIG?.api) CONFIG.api = identidad.api;
 const CLAVE = identidad.userId ? 'suizamente:v1:' + identidad.userId : 'suizamente:v1';
 const TEMAS = ['t-red', 't-blue', 't-orange', 't-sea', 't-sky', 't-mint'];
 const MODOS = {
-  dilemas:   { nombre: '¿Qué prefieres?',        emoji: '🤔', desc: 'Dilemas suizos sin respuesta mala. ¿Piensas como la mayoría?', filtro: q => q.tipo === 'dilema' },
-  preguntas: { nombre: 'Preguntas y respuestas', emoji: '🕵️', desc: 'Situaciones reales: solo una respuesta es verdad. ¿Cuánta gente lo sabe?', filtro: q => q.tipo === 'real' },
-  mix:       { nombre: 'Mix',                    emoji: '🎲', desc: 'Un poco de todo: dilemas y preguntas mezclados.', filtro: () => true }
+  dilemas:   { nombre: '¿Qué prefieres?',        emoji: '🤔', desc: 'Dilemas suizos sin respuesta mala.', filtro: q => q.tipo === 'dilema' },
+  preguntas: { nombre: 'Preguntas y respuestas', emoji: '🕵️', desc: 'Solo una respuesta es verdad.', filtro: q => q.tipo === 'real' },
+  mix:       { nombre: 'Mix',                    emoji: '🎲', desc: 'Dilemas y preguntas mezclados.', filtro: () => true }
 };
 let PREG = [];
 const tema = q => TEMAS[[...q.id].reduce((a, c) => a + c.charCodeAt(0), 0) % TEMAS.length];
@@ -79,18 +79,17 @@ function nuevaRonda(modo = modoActual) {
 /* ---------- pantallas ---------- */
 function pintarInicio() {
   ronda = null; cerrarResultado();
-  const cuenta = m => { const p = PREG.filter(MODOS[m].filtro); return `${p.filter(q => local.resp[q.id]).length}/${p.length}`; };
   const reales = PREG.filter(q => q.tipo === 'real' && local.resp[q.id]);
   const ok = reales.filter(q => local.resp[q.id].o === q.correcta).length;
   const tarjeta = m => `<button class="mode m-${m}" type="button" data-modo="${m}">
       ${m === 'mix' ? `<span class="row"><span class="em">${MODOS[m].emoji}</span><span><b>${MODOS[m].nombre}</b><br><span class="d">${MODOS[m].desc}</span></span></span>`
                     : `<span class="em">${MODOS[m].emoji}</span><b>${MODOS[m].nombre}</b><span class="d">${MODOS[m].desc}</span>`}
-      <span class="go"><span>${cuenta(m)} respondidas</span><i>Jugar →</i></span></button>`;
+      <span class="go"><i>Jugar</i></span></button>`;
   app.innerHTML = `<section class="home">
     <div class="hero">
       <div class="lg">${logo()}</div>
-      <p class="kicker">Un juego de Latido</p>
       <h1 class="title"><span class="a">Suiza</span><span class="b">mente</span></h1>
+      <p class="kicker">Un juego de latido.ch</p>
       <p class="lead">Elige, mira qué eligió la comunidad y aprende algo de Suiza en cada pregunta.</p>
     </div>
     <div class="modes" role="group" aria-label="Modos de juego">${tarjeta('dilemas')}${tarjeta('preguntas')}${tarjeta('mix')}</div>
