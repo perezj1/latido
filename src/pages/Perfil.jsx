@@ -10,6 +10,7 @@ import { notifyZoneAlertsUpdated } from '../hooks/useZoneAlerts'
 import { PUSH_STATUS_EVENT, getPushStatus, subscribeToPushNotifications, syncPushPreferences, unsubscribeFromPushNotifications } from '../lib/pushNotifications'
 import { MAX_PUBLICATION_IMAGES, uploadAvatar, getStorageErrorMessage, uploadPublicationImage, uploadPublicationImages } from '../lib/storage'
 import { invalidateAvatarCache } from '../lib/profiles'
+import SuizamenteEntry from '../components/suizamente/SuizamenteEntry'
 import { C, PP } from '../lib/theme'
 import { Avatar, Btn, EmptyState, ImageUploadField, InfoBanner, Input, Modal, Select, Sheet, SkeletonCard, Tag } from '../components/UI'
 import BusinessPartnerContactsEditor from '../components/BusinessPartnerContactsEditor'
@@ -2320,6 +2321,7 @@ export default function Perfil() {
         </a>
       </div>
  */}
+      {!isCooperator && <SuizamenteEntry surface="profile" />}
       {menuSections.map(section => (
         <div key={section.title} style={{ marginBottom:20 }}>
           <p style={{ fontFamily:PP, fontSize:10, fontWeight:700, color:C.light, letterSpacing:1.2, marginBottom:8, paddingLeft:4 }}>{section.title.toUpperCase()}</p>

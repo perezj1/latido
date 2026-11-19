@@ -1,0 +1,2087 @@
+{
+  "version": 1,
+  "nombre": "Suizamente",
+  "descripcion": "Preguntas del juego Suizamente de Latido. tipo: dilema (¿Qué prefieres?, sin respuesta correcta) o real (Preguntas y respuestas: solo una es verdad; correcta = índice de la opción buena, desde 0). NUNCA cambies el orden ni el sentido de las opciones de una pregunta publicada: los votos guardan el índice de la opción. Para cambiarla, crea una pregunta nueva con otro id.",
+  "temas": [
+    "comida",
+    "casa",
+    "papeles",
+    "trabajo",
+    "dinero",
+    "salud",
+    "transporte",
+    "idioma",
+    "social",
+    "fiestas",
+    "naturaleza",
+    "cultura"
+  ],
+  "preguntas": [
+    {
+      "id": "cena_vida",
+      "tipo": "dilema",
+      "tema": "comida",
+      "emoji": "🧀",
+      "pregunta": "Para cenar el resto de tu vida en Suiza, ¿qué prefieres?",
+      "opciones": [
+        {
+          "e": "🫕",
+          "t": "Fondue todos los viernes"
+        },
+        {
+          "e": "🥔",
+          "t": "Raclette todos los sábados"
+        }
+      ],
+      "dato": "La fondue se convirtió en «plato nacional» en los años 30 gracias a una campaña de la Unión Suiza del Queso. Y raclette viene del francés «racler», rascar: se rasca el queso fundido directamente de la media rueda."
+    },
+    {
+      "id": "tren_pueblo",
+      "tipo": "dilema",
+      "tema": "transporte",
+      "emoji": "🏡",
+      "pregunta": "¿Dónde prefieres vivir?",
+      "opciones": [
+        {
+          "e": "🏔️",
+          "t": "En un pueblo de montaña con vacas, vistas y un tren cada hora"
+        },
+        {
+          "e": "🏙️",
+          "t": "En el centro de Zúrich pagando 2500 francos por un estudio"
+        }
+      ],
+      "dato": "La red de transporte público suiza llega a casi cualquier pueblo. Donde no llega el tren, suele llegar el autobús amarillo de Correos, famoso por su bocina de tres notas."
+    },
+    {
+      "id": "vecino_ruido",
+      "tipo": "dilema",
+      "tema": "casa",
+      "emoji": "🔔",
+      "pregunta": "¿Qué vecino ruidoso prefieres bajo tu ventana?",
+      "opciones": [
+        {
+          "e": "🐄",
+          "t": "Una vaca con un cencerro de 5 kilos"
+        },
+        {
+          "e": "⛪",
+          "t": "Un campanario que suena cada 15 minutos, también de noche"
+        }
+      ],
+      "dato": "En Suiza ha habido quejas y hasta juicios por el sonido de cencerros y campanas. Más de un pueblo ha votado para proteger sus cencerros como tradición."
+    },
+    {
+      "id": "votar_mucho",
+      "tipo": "dilema",
+      "tema": "cultura",
+      "emoji": "🗳️",
+      "pregunta": "¿Qué prefieres?",
+      "opciones": [
+        {
+          "e": "🗳️",
+          "t": "Votar 4 veces al año sobre lobos, pensiones y horarios de tiendas"
+        },
+        {
+          "e": "😴",
+          "t": "Votar cada 4 años y olvidarte de la política"
+        }
+      ],
+      "dato": "En Suiza hay votaciones populares unas cuatro veces al año. Con 100 000 firmas recogidas en 18 meses, la ciudadanía puede proponer un cambio en la Constitución."
+    },
+    {
+      "id": "domingo_monte",
+      "tipo": "dilema",
+      "tema": "naturaleza",
+      "emoji": "🥾",
+      "pregunta": "Domingo de sol. ¿Qué haces?",
+      "opciones": [
+        {
+          "e": "🥾",
+          "t": "Subir 1200 metros a pie saludando a 200 desconocidos"
+        },
+        {
+          "e": "🛋️",
+          "t": "Sofá, persianas bajadas y serie entera"
+        }
+      ],
+      "dato": "Suiza tiene unos 65 000 km de senderos señalizados. Sus carteles amarillos no indican kilómetros, sino el tiempo a pie hasta cada destino."
+    },
+    {
+      "id": "choco_queso",
+      "tipo": "dilema",
+      "tema": "comida",
+      "emoji": "🍫",
+      "pregunta": "Solo puedes elegir uno para siempre:",
+      "opciones": [
+        {
+          "e": "🍫",
+          "t": "Chocolate suizo ilimitado, pero nunca más queso"
+        },
+        {
+          "e": "🧀",
+          "t": "Queso suizo ilimitado, pero nunca más chocolate"
+        }
+      ],
+      "dato": "En Suiza se comen unos 10 kilos de chocolate por persona al año, y más de 20 kilos de queso. Ambos van muy en serio."
+    },
+    {
+      "id": "nota_vecino",
+      "tipo": "dilema",
+      "tema": "casa",
+      "emoji": "📝",
+      "pregunta": "¿Qué te molestaría más?",
+      "opciones": [
+        {
+          "e": "📝",
+          "t": "Una nota del vecino por ducharte a las 22:30"
+        },
+        {
+          "e": "👋",
+          "t": "Que el vecino te diga «Grüezi» cinco años sin saber tu nombre"
+        }
+      ],
+      "dato": "Es un mito que en Suiza esté prohibido ducharse de noche: ninguna ley lo prohíbe. Lo que sí existe es el descanso nocturno, normalmente de 22:00 a 7:00, para ruidos molestos."
+    },
+    {
+      "id": "fronterizo",
+      "tipo": "dilema",
+      "tema": "trabajo",
+      "emoji": "🚗",
+      "pregunta": "Cobras un sueldo suizo. ¿Dónde vives?",
+      "opciones": [
+        {
+          "e": "🇨🇭",
+          "t": "En Suiza, con precios suizos"
+        },
+        {
+          "e": "🛂",
+          "t": "Al otro lado de la frontera, con atasco diario"
+        }
+      ],
+      "dato": "Unas 400 000 personas cruzan cada día la frontera para trabajar en Suiza. Tienen un permiso especial para trabajadores fronterizos: el permiso G."
+    },
+    {
+      "id": "esqui_tarde",
+      "tipo": "dilema",
+      "tema": "naturaleza",
+      "emoji": "⛷️",
+      "pregunta": "Tu primer invierno en Suiza. ¿Qué prefieres?",
+      "opciones": [
+        {
+          "e": "⛷️",
+          "t": "Aprender a esquiar a los 35 entre niños de 4 años que te adelantan"
+        },
+        {
+          "e": "☕",
+          "t": "Quedarte en la cabaña con chocolate caliente y mantita"
+        }
+      ],
+      "dato": "En muchos colegios suizos hay una semana de esquí con la clase (Skilager, camp de ski). Por eso muchos niños esquían antes de saber montar en bici."
+    },
+    {
+      "id": "lavanderia",
+      "tipo": "dilema",
+      "tema": "casa",
+      "emoji": "🧺",
+      "pregunta": "¿Qué prefieres?",
+      "opciones": [
+        {
+          "e": "🧺",
+          "t": "Lavandería compartida con turnos estrictos y notas plastificadas"
+        },
+        {
+          "e": "💸",
+          "t": "Tu propia lavadora en un piso 300 francos más caro"
+        }
+      ],
+      "dato": "En muchos edificios suizos la lavandería es común y se reserva por turnos (Waschplan). Hay quien dice que es la mayor fuente de conflictos entre vecinos del país."
+    },
+    {
+      "id": "vaca_cisne",
+      "tipo": "dilema",
+      "tema": "naturaleza",
+      "emoji": "🐄",
+      "pregunta": "En otra vida, ¿qué prefieres ser?",
+      "opciones": [
+        {
+          "e": "🐄",
+          "t": "Vaca en los Alpes, con flores en la cabeza"
+        },
+        {
+          "e": "🦢",
+          "t": "Cisne en el lago, con turistas dándote pan"
+        }
+      ],
+      "dato": "En Suiza hay alrededor de 1,5 millones de vacas y bueyes. En septiembre, muchas bajan de los pastos de montaña adornadas con flores y cencerros enormes: es la bajada del ganado."
+    },
+    {
+      "id": "puntualidad",
+      "tipo": "dilema",
+      "tema": "social",
+      "emoji": "⏰",
+      "pregunta": "¿Qué tipo de persona eres en Suiza?",
+      "opciones": [
+        {
+          "e": "⏰",
+          "t": "Llego siempre 10 minutos antes y espero"
+        },
+        {
+          "e": "🏃",
+          "t": "Llego justo a la hora, viviendo al límite"
+        }
+      ],
+      "dato": "Más del 90 % de los trenes suizos llegan con menos de 3 minutos de retraso. En este país, llegar justo a la hora ya es casi llegar tarde."
+    },
+    {
+      "id": "dialecto",
+      "tipo": "dilema",
+      "tema": "idioma",
+      "emoji": "🗣️",
+      "pregunta": "¿Qué superpoder prefieres?",
+      "opciones": [
+        {
+          "e": "👂",
+          "t": "Entender todo el suizo alemán, pero no saber hablarlo"
+        },
+        {
+          "e": "👄",
+          "t": "Hablarlo perfecto, pero sin entender a nadie de Berna"
+        }
+      ],
+      "dato": "El suizo alemán no es un solo dialecto: cada región tiene el suyo y no hay una forma escrita oficial. Para escribir cartas, noticias o leyes se usa el alemán estándar."
+    },
+    {
+      "id": "domingo_tiendas",
+      "tipo": "dilema",
+      "tema": "casa",
+      "emoji": "🛒",
+      "pregunta": "¿Qué prefieres?",
+      "opciones": [
+        {
+          "e": "🛒",
+          "t": "Supermercados abiertos los domingos"
+        },
+        {
+          "e": "🌳",
+          "t": "Domingos de silencio, lago y paseo"
+        }
+      ],
+      "dato": "En la mayoría de cantones las tiendas cierran los domingos por ley. Las de las estaciones y aeropuertos son la excepción, y los domingos se llenan de gente en pijama."
+    },
+    {
+      "id": "niebla_wifi",
+      "tipo": "dilema",
+      "tema": "naturaleza",
+      "emoji": "🌫️",
+      "pregunta": "¿Qué prefieres?",
+      "opciones": [
+        {
+          "e": "🌫️",
+          "t": "Tres semanas seguidas de niebla en noviembre"
+        },
+        {
+          "e": "📵",
+          "t": "Tres semanas sin internet"
+        }
+      ],
+      "dato": "La niebla de la meseta (Hochnebel) puede durar días. Por encima de unos 1000 metros muchas veces brilla el sol sobre un «mar de niebla». Es la excursión de rescate favorita de noviembre."
+    },
+    {
+      "id": "herejia",
+      "tipo": "dilema",
+      "tema": "comida",
+      "emoji": "😱",
+      "pregunta": "Elige tu herejía:",
+      "opciones": [
+        {
+          "e": "🍍",
+          "t": "Fondue con piña"
+        },
+        {
+          "e": "🍅",
+          "t": "Raclette con kétchup"
+        }
+      ],
+      "dato": "La fondue tiene reglas no escritas: el pan se remueve haciendo un ocho y a quien se le cae le toca penitencia. Y la costra tostada del fondo, la «religieuse», es un manjar que se pelea."
+    },
+    {
+      "id": "billete_1000",
+      "tipo": "dilema",
+      "tema": "dinero",
+      "emoji": "💵",
+      "pregunta": "¿Qué prefieres llevar en la cartera?",
+      "opciones": [
+        {
+          "e": "💵",
+          "t": "Un billete de 1000 francos que nadie te acepta"
+        },
+        {
+          "e": "📱",
+          "t": "Solo el móvil y cero efectivo"
+        }
+      ],
+      "dato": "El billete de 1000 francos sigue circulando y es uno de los billetes de más valor del mundo. Aun así, cada vez más gente paga con el móvil."
+    },
+    {
+      "id": "1_agosto",
+      "tipo": "dilema",
+      "tema": "fiestas",
+      "emoji": "🎆",
+      "pregunta": "1 de agosto, fiesta nacional. ¿Cómo lo celebras?",
+      "opciones": [
+        {
+          "e": "🏮",
+          "t": "Barbacoa con vecinos, farolillos y fuegos artificiales"
+        },
+        {
+          "e": "💃",
+          "t": "Fiesta latina en el parque con música a tope"
+        }
+      ],
+      "dato": "El 1 de agosto recuerda el pacto de 1291 entre Uri, Schwyz y Unterwalden. Aunque se celebra desde hace mucho, es día festivo en todo el país solo desde 1994, tras una votación."
+    },
+    {
+      "id": "bandera",
+      "tipo": "dilema",
+      "tema": "cultura",
+      "emoji": "🇨🇭",
+      "pregunta": "¿Qué prefieres?",
+      "opciones": [
+        {
+          "e": "🟥",
+          "t": "Que la bandera suiza fuera rectangular, como las demás"
+        },
+        {
+          "e": "🔲",
+          "t": "Que todas las banderas del mundo fueran cuadradas"
+        }
+      ],
+      "dato": "Suiza y el Vaticano son los únicos países con bandera cuadrada. Curiosidad: en el mar, los barcos suizos usan una versión rectangular."
+    },
+    {
+      "id": "bici_tren",
+      "tipo": "dilema",
+      "tema": "transporte",
+      "emoji": "🚲",
+      "pregunta": "Lunes, 7:30, llueve. ¿Cómo vas al trabajo?",
+      "opciones": [
+        {
+          "e": "🚲",
+          "t": "En bici bajo lluvia horizontal"
+        },
+        {
+          "e": "🚆",
+          "t": "En un tren lleno con la cara pegada a una mochila"
+        }
+      ],
+      "dato": "En Suiza se viaja muchísimo en tren: de media, cada habitante recorre más de 2000 kilómetros al año sobre raíles, una de las cifras más altas del mundo."
+    },
+    {
+      "id": "yodel",
+      "tipo": "dilema",
+      "tema": "cultura",
+      "emoji": "🎶",
+      "pregunta": "Tienes que aprender una de estas dos cosas:",
+      "opciones": [
+        {
+          "e": "🎤",
+          "t": "Cantar yodel en el karaoke de la empresa"
+        },
+        {
+          "e": "📯",
+          "t": "Tocar el cuerno alpino de 3,5 metros en tu balcón"
+        }
+      ],
+      "dato": "El cuerno alpino (Alphorn) suele medir más de 3 metros y se fabrica en madera de abeto. Antes los pastores lo usaban para comunicarse de un valle a otro."
+    },
+    {
+      "id": "alquilar",
+      "tipo": "dilema",
+      "tema": "casa",
+      "emoji": "🏠",
+      "pregunta": "¿Qué prefieres?",
+      "opciones": [
+        {
+          "e": "🔑",
+          "t": "Alquilar toda la vida, como medio país"
+        },
+        {
+          "e": "🏚️",
+          "t": "Comprar un piso pequeño a precio de castillo"
+        }
+      ],
+      "dato": "Suiza es un país de inquilinos: casi el 60 % de los hogares vive de alquiler, uno de los porcentajes más altos de Europa."
+    },
+    {
+      "id": "zopf_gipfeli",
+      "tipo": "dilema",
+      "tema": "comida",
+      "emoji": "🥐",
+      "pregunta": "Para desayunar el domingo:",
+      "opciones": [
+        {
+          "e": "🥖",
+          "t": "Trenza de pan (Zopf) recién hecha con mantequilla"
+        },
+        {
+          "e": "🥐",
+          "t": "Gipfeli (el croissant suizo) con café"
+        }
+      ],
+      "dato": "El Zopf es el pan trenzado del domingo y se hace con mantequilla. El Gipfeli es primo del croissant francés, normalmente algo más denso."
+    },
+    {
+      "id": "cervino",
+      "tipo": "dilema",
+      "tema": "naturaleza",
+      "emoji": "🗻",
+      "pregunta": "Frente al Cervino, ¿qué haces?",
+      "opciones": [
+        {
+          "e": "🧗",
+          "t": "Intentar subir sus 4478 metros"
+        },
+        {
+          "e": "☕",
+          "t": "Mirarlo desde la terraza con un chocolate caliente"
+        }
+      ],
+      "dato": "La primera ascensión al Cervino fue en 1865 y terminó en tragedia: cuatro de los siete escaladores murieron en el descenso. Hoy es una de las montañas más fotografiadas del mundo."
+    },
+    {
+      "id": "du_sie",
+      "tipo": "dilema",
+      "tema": "trabajo",
+      "emoji": "🤝",
+      "pregunta": "En un trabajo nuevo, ¿qué prefieres?",
+      "opciones": [
+        {
+          "e": "👋",
+          "t": "Que todo el mundo te tutee desde el primer día"
+        },
+        {
+          "e": "🎩",
+          "t": "Usted hasta que te ofrezcan el tú con ceremonia"
+        }
+      ],
+      "dato": "En la Suiza alemana, pasar del «Sie» al «Du» es casi un ritual: normalmente lo propone la persona mayor o de más rango, a veces con un brindis."
+    },
+    {
+      "id": "aleman_frances",
+      "tipo": "dilema",
+      "tema": "idioma",
+      "emoji": "🧭",
+      "pregunta": "Si te mudaras mañana, ¿a qué parte de Suiza irías?",
+      "opciones": [
+        {
+          "e": "🥨",
+          "t": "A la Suiza alemana"
+        },
+        {
+          "e": "🥐",
+          "t": "A la Suiza francesa"
+        },
+        {
+          "e": "🍝",
+          "t": "A la Suiza italiana"
+        }
+      ],
+      "dato": "Para alrededor del 62 % de la población el idioma principal es el alemán, el 23 % el francés y el 8 % el italiano. El romanche lo habla menos del 1 %."
+    },
+    {
+      "id": "osos_cabras",
+      "tipo": "dilema",
+      "tema": "naturaleza",
+      "emoji": "🐻",
+      "pregunta": "Excursión de fin de semana:",
+      "opciones": [
+        {
+          "e": "🐻",
+          "t": "Ver los osos en pleno centro de Berna"
+        },
+        {
+          "e": "🐐",
+          "t": "Buscar cabras montesas en los Alpes"
+        }
+      ],
+      "dato": "Berna tiene osos en el centro de la ciudad desde hace siglos. El oso es el símbolo de la ciudad y aparece en su escudo."
+    },
+    {
+      "id": "reloj_viaje",
+      "tipo": "dilema",
+      "tema": "dinero",
+      "emoji": "⌚",
+      "pregunta": "Te sobran 8000 francos. ¿Qué haces?",
+      "opciones": [
+        {
+          "e": "⌚",
+          "t": "Un reloj suizo para toda la vida"
+        },
+        {
+          "e": "✈️",
+          "t": "Un mes de viaje por tu país con toda la familia"
+        }
+      ],
+      "dato": "Suiza exporta millones de relojes al año. La relojería se concentra en el arco del Jura, entre Ginebra y Basilea, conocido como «Watch Valley»."
+    },
+    {
+      "id": "agua_fuente",
+      "tipo": "dilema",
+      "tema": "casa",
+      "emoji": "⛲",
+      "pregunta": "Tienes sed en Zúrich. ¿Qué haces?",
+      "opciones": [
+        {
+          "e": "⛲",
+          "t": "Beber de una fuente de la calle"
+        },
+        {
+          "e": "🥤",
+          "t": "Comprar una botella de agua de 3 francos"
+        }
+      ],
+      "dato": "Zúrich tiene más de 1200 fuentes públicas y casi todas dan agua potable de la buena. Solo se evita la que lleva el cartel «Kein Trinkwasser» o «eau non potable»."
+    },
+    {
+      "id": "rosti_desayuno",
+      "tipo": "dilema",
+      "tema": "comida",
+      "emoji": "🍳",
+      "pregunta": "Domingo por la mañana. ¿Qué desayunas?",
+      "opciones": [
+        {
+          "e": "🥔",
+          "t": "Rösti dorada con huevo frito"
+        },
+        {
+          "e": "🥣",
+          "t": "Birchermüesli con manzana rallada"
+        }
+      ],
+      "dato": "La Rösti era el desayuno de los campesinos de Berna. El Birchermüesli lo inventó hacia 1900 el médico suizo Maximilian Bircher-Benner para sus pacientes."
+    },
+    {
+      "id": "apero_cena",
+      "tipo": "dilema",
+      "tema": "social",
+      "emoji": "🥂",
+      "pregunta": "Te invitan el sábado. ¿Qué prefieres?",
+      "opciones": [
+        {
+          "e": "🧀",
+          "t": "Un «Apéro riche» de tres horas que sustituye la cena"
+        },
+        {
+          "e": "🍝",
+          "t": "Una cena normal sentada a las 18:30"
+        }
+      ],
+      "dato": "Un «Apéro riche» es un aperitivo tan abundante (quesos, embutidos, tartitas, postres) que sustituye a la cena. Si te invitan a uno, no cenes antes."
+    },
+    {
+      "id": "jass_coro",
+      "tipo": "dilema",
+      "tema": "social",
+      "emoji": "🃏",
+      "pregunta": "Para hacer amigos en el pueblo, ¿qué prefieres?",
+      "opciones": [
+        {
+          "e": "🃏",
+          "t": "Aprender a jugar al Jass con los abuelos del bar"
+        },
+        {
+          "e": "🎶",
+          "t": "Apuntarte al coro del pueblo"
+        }
+      ],
+      "dato": "El Jass es el juego de cartas nacional suizo. Según la región se juega con baraja de palos alemanes (escudos, rosas, bellotas y cascabeles) o franceses."
+    },
+    {
+      "id": "sauna_lago",
+      "tipo": "dilema",
+      "tema": "social",
+      "emoji": "🧖",
+      "pregunta": "Plan de invierno. ¿Qué prefieres?",
+      "opciones": [
+        {
+          "e": "🧖",
+          "t": "Sauna suiza: mixta y sin bañador"
+        },
+        {
+          "e": "🥶",
+          "t": "Bañarte en el lago en enero, como hacen muchos suizos"
+        }
+      ],
+      "dato": "En muchas saunas de la Suiza alemana se entra sin bañador, con una toalla para sentarse. Y bañarse en lagos helados en invierno es cada vez más popular."
+    },
+    {
+      "id": "tren_coche",
+      "tipo": "dilema",
+      "tema": "transporte",
+      "emoji": "🚆",
+      "pregunta": "¿Cómo prefieres moverte por Suiza?",
+      "opciones": [
+        {
+          "e": "🎫",
+          "t": "Abono general: trenes, buses y barcos sin pensar en billetes"
+        },
+        {
+          "e": "🚗",
+          "t": "Coche propio, con viñeta y aparcamiento a 4 francos la hora"
+        }
+      ],
+      "dato": "El abono general (GA, AG) vale en casi todo el transporte público suizo, incluidos muchos barcos de los lagos. Para la autopista, el coche necesita una viñeta anual de 40 francos."
+    },
+    {
+      "id": "verein",
+      "tipo": "dilema",
+      "tema": "social",
+      "emoji": "⚽",
+      "pregunta": "¿Qué prefieres?",
+      "opciones": [
+        {
+          "e": "📜",
+          "t": "Entrar en un club con estatutos, cuota y asamblea anual"
+        },
+        {
+          "e": "🙋",
+          "t": "Hacer amigos por tu cuenta, sin papeles"
+        }
+      ],
+      "dato": "Suiza tiene clubes (Vereine, sociétés) para casi todo: deporte, música, tiro, jardinería, cocina… Son una de las formas más suizas de hacer amistades."
+    },
+    {
+      "id": "invierno_verano",
+      "tipo": "dilema",
+      "tema": "naturaleza",
+      "emoji": "🌡️",
+      "pregunta": "¿Qué prefieres?",
+      "opciones": [
+        {
+          "e": "❄️",
+          "t": "Un invierno largo con mucha nieve"
+        },
+        {
+          "e": "🥵",
+          "t": "Un verano de 35 grados en un piso sin aire acondicionado"
+        }
+      ],
+      "dato": "En las casas suizas el aire acondicionado es poco común, y en algunos cantones instalarlo necesita permiso. En verano, la solución nacional es el lago o el río."
+    },
+    {
+      "id": "carta_email",
+      "tipo": "dilema",
+      "tema": "papeles",
+      "emoji": "✉️",
+      "pregunta": "¿Qué prefieres?",
+      "opciones": [
+        {
+          "e": "✉️",
+          "t": "Recibirlo todo por carta, con sello y en papel"
+        },
+        {
+          "e": "📧",
+          "t": "Recibirlo todo por email"
+        }
+      ],
+      "dato": "En Suiza muchos trámites oficiales siguen llegando por carta. Ojo: una carta certificada que esperas y no recoges puede darse por entregada a los 7 días."
+    },
+    {
+      "id": "chocolate_tipo",
+      "tipo": "dilema",
+      "tema": "comida",
+      "emoji": "🍫",
+      "pregunta": "¿Qué chocolate prefieres?",
+      "opciones": [
+        {
+          "e": "🥛",
+          "t": "Chocolate con leche, cremoso"
+        },
+        {
+          "e": "🖤",
+          "t": "Chocolate negro al 85 %"
+        }
+      ],
+      "dato": "El chocolate con leche nació en Suiza: Daniel Peter lo creó en 1875 usando leche condensada. Y en 1879 Rodolphe Lindt inventó el conchado, que lo hace tan suave."
+    },
+    {
+      "id": "montana_lago",
+      "tipo": "dilema",
+      "tema": "naturaleza",
+      "emoji": "🏞️",
+      "pregunta": "Desde tu ventana, ¿qué prefieres ver?",
+      "opciones": [
+        {
+          "e": "🏔️",
+          "t": "Montañas nevadas"
+        },
+        {
+          "e": "🌊",
+          "t": "Un lago azul con barcos"
+        }
+      ],
+      "dato": "Suiza tiene unos 1500 lagos. El más grande que está entero en Suiza es el de Neuchâtel; el Lemán es más grande, pero lo comparte con Francia."
+    },
+    {
+      "id": "compra_frontera",
+      "tipo": "dilema",
+      "tema": "dinero",
+      "emoji": "🛒",
+      "pregunta": "¿Dónde haces la compra grande del mes?",
+      "opciones": [
+        {
+          "e": "🛂",
+          "t": "Al otro lado de la frontera, que es más barato"
+        },
+        {
+          "e": "🇨🇭",
+          "t": "En Suiza, y te ahorras el viaje"
+        }
+      ],
+      "dato": "Al volver puedes traer compras por valor de hasta 150 francos por persona y día sin pagar IVA, y como mucho 1 kg de carne sin aranceles. Lo que pase de ahí se declara."
+    },
+    {
+      "id": "septante",
+      "tipo": "dilema",
+      "tema": "idioma",
+      "emoji": "🔢",
+      "pregunta": "¿Cómo prefieres contar en francés?",
+      "opciones": [
+        {
+          "e": "🇨🇭",
+          "t": "A la suiza: «septante», «huitante», «nonante»"
+        },
+        {
+          "e": "🇫🇷",
+          "t": "A la francesa: «soixante-dix», «quatre-vingt-dix»"
+        }
+      ],
+      "dato": "En la Suiza francesa se dice «septante» (70) y «nonante» (90), y en Vaud y Valais también «huitante» (80). Mucho más lógico que en Francia."
+    },
+    {
+      "id": "fasnacht_elige",
+      "tipo": "dilema",
+      "tema": "fiestas",
+      "emoji": "🥁",
+      "pregunta": "¿A qué carnaval vas?",
+      "opciones": [
+        {
+          "e": "🏮",
+          "t": "Basilea: empieza un lunes a las 4:00 con la ciudad a oscuras"
+        },
+        {
+          "e": "🎭",
+          "t": "Lucerna: empieza un jueves a las 5:00 con un gran estallido"
+        }
+      ],
+      "dato": "La Fasnacht de Basilea arranca con el Morgestraich: se apagan las luces y salen farolillos, flautines y tambores. En Lucerna, la fiesta empieza el «jueves sucio» con Guggenmusik."
+    },
+    {
+      "id": "cabana_hotel",
+      "tipo": "dilema",
+      "tema": "naturaleza",
+      "emoji": "🛖",
+      "pregunta": "Excursión de dos días. ¿Dónde duermes?",
+      "opciones": [
+        {
+          "e": "🛖",
+          "t": "En una cabaña a 2500 metros, en literas con 20 desconocidos"
+        },
+        {
+          "e": "🏨",
+          "t": "En un hotel del valle con desayuno"
+        }
+      ],
+      "dato": "El Club Alpino Suizo tiene unas 150 cabañas de montaña. Se reserva con antelación, se cena pronto y a las 22:00 todo el mundo duerme."
+    },
+    {
+      "id": "tren_perdido",
+      "tipo": "dilema",
+      "tema": "transporte",
+      "emoji": "🚉",
+      "pregunta": "¿Qué prefieres?",
+      "opciones": [
+        {
+          "e": "🏃",
+          "t": "Correr como en una peli y perder el tren por 5 segundos"
+        },
+        {
+          "e": "🧘",
+          "t": "Ir con calma y coger el siguiente"
+        }
+      ],
+      "dato": "Los trenes suizos salen a su hora exacta y las puertas se cierran poco antes de la salida. En las líneas principales suele haber otro tren en 30 minutos."
+    },
+    {
+      "id": "regalo_casa",
+      "tipo": "dilema",
+      "tema": "social",
+      "emoji": "🎁",
+      "pregunta": "Te invitan a cenar a una casa suiza. ¿Qué llevas?",
+      "opciones": [
+        {
+          "e": "💐",
+          "t": "Flores"
+        },
+        {
+          "e": "🍫",
+          "t": "Chocolate"
+        },
+        {
+          "e": "🍷",
+          "t": "Una botella de vino"
+        }
+      ],
+      "dato": "Llevar un detalle es casi obligatorio, y cualquiera de los tres funciona. Otra costumbre: en muchas casas se quitan los zapatos al entrar, y algunas tienen zapatillas para invitados."
+    },
+    {
+      "id": "ventilar",
+      "tipo": "dilema",
+      "tema": "casa",
+      "emoji": "🪟",
+      "pregunta": "Es invierno. ¿Cómo ventilas tu piso?",
+      "opciones": [
+        {
+          "e": "🌬️",
+          "t": "Ventanas abiertas de par en par 5 minutos, varias veces al día"
+        },
+        {
+          "e": "🔥",
+          "t": "Calefacción a tope con la ventana entornada todo el día"
+        }
+      ],
+      "dato": "En Suiza se ventila «a golpes» (Stosslüften). La ventana entornada todo el día enfría la casa, gasta más calefacción y no evita el moho."
+    },
+    {
+      "id": "badi_rio",
+      "tipo": "dilema",
+      "tema": "naturaleza",
+      "emoji": "🏊",
+      "pregunta": "Hace 32 grados. ¿Dónde te bañas?",
+      "opciones": [
+        {
+          "e": "🏊",
+          "t": "En la piscina al aire libre (Badi)"
+        },
+        {
+          "e": "🐟",
+          "t": "En el río, dejándote llevar con tu ropa en una bolsa con forma de pez"
+        }
+      ],
+      "dato": "En Basilea y Berna es tradición nadar en el Rin y en el Aar, con la ropa en una bolsa impermeable (el Wickelfisch tiene forma de pez). Ojo con las corrientes."
+    },
+    {
+      "id": "palabra_suiza",
+      "tipo": "dilema",
+      "tema": "idioma",
+      "emoji": "🗣️",
+      "pregunta": "¿Qué palabra suiza te llevarías a tu idioma?",
+      "opciones": [
+        {
+          "e": "🙏",
+          "t": "«Merci vielmal» (muchas gracias)"
+        },
+        {
+          "e": "🍽️",
+          "t": "«En Guete» (buen provecho)"
+        },
+        {
+          "e": "🤬",
+          "t": "«Gopfriedstutz» (algo así como «¡caramba!»)"
+        }
+      ],
+      "dato": "El suizo alemán está lleno de palabras francesas, como «Merci», «Velo» (bici) o «Glace» (helado). Y tiene exclamaciones muy suyas, como «Gopfriedstutz»."
+    },
+    {
+      "id": "cervelat_raclette",
+      "tipo": "dilema",
+      "tema": "comida",
+      "emoji": "🔥",
+      "pregunta": "Barbacoa en el bosque. ¿Qué pones al fuego?",
+      "opciones": [
+        {
+          "e": "🌭",
+          "t": "Un cervelat con cortes en cruz"
+        },
+        {
+          "e": "🧀",
+          "t": "Queso de raclette fundiéndose junto a la brasa"
+        }
+      ],
+      "dato": "El cervelat es la salchicha nacional suiza: se le hacen cortes en cruz en las puntas para que se abra como una flor al asarse. En los bosques hay barbacoas públicas, a veces con leña."
+    },
+    {
+      "id": "idioma_extra",
+      "tipo": "dilema",
+      "tema": "idioma",
+      "emoji": "🧠",
+      "pregunta": "Si pudieras hablar perfecto uno de estos idiomas, ¿cuál eliges?",
+      "opciones": [
+        {
+          "e": "🥨",
+          "t": "Suizo alemán"
+        },
+        {
+          "e": "🥐",
+          "t": "Francés"
+        },
+        {
+          "e": "🏔️",
+          "t": "Romanche"
+        }
+      ],
+      "dato": "El romanche tiene cinco variantes regionales. En 1982 se creó una forma escrita común, el «rumantsch grischun». Y para saludar: «Allegra!»."
+    },
+    {
+      "id": "vidrio_domingo",
+      "tipo": "real",
+      "tema": "casa",
+      "emoji": "🍾",
+      "pregunta": "Domingo por la mañana. ¿Qué NO deberías hacer en Suiza?",
+      "opciones": [
+        {
+          "e": "🍾",
+          "t": "Tirar botellas al contenedor de vidrio"
+        },
+        {
+          "e": "🏃",
+          "t": "Salir a correr por el barrio"
+        },
+        {
+          "e": "🥐",
+          "t": "Comprar pan en la tienda de la estación"
+        }
+      ],
+      "correcta": 0,
+      "dato": "El vidrio no se tira ni en domingo ni de noche: hace un ruido tremendo. Muchos municipios ponen los horarios en el propio contenedor. Y se separa por colores: blanco, verde y marrón."
+    },
+    {
+      "id": "bolsa_negra",
+      "tipo": "real",
+      "tema": "casa",
+      "emoji": "🗑️",
+      "pregunta": "Tiras la basura en una bolsa negra normal en vez de la bolsa oficial. ¿Qué puede pasar?",
+      "opciones": [
+        {
+          "e": "🤷",
+          "t": "Nada, nadie se entera"
+        },
+        {
+          "e": "🕵️",
+          "t": "Te multan, y a veces encuentran tu nombre dentro"
+        },
+        {
+          "e": "💌",
+          "t": "Te la devuelven con una nota de ánimo"
+        }
+      ],
+      "correcta": 1,
+      "dato": "En casi todos los cantones la basura se paga con bolsas oficiales o etiquetas: quien más tira, más paga. Algunos municipios revisan las bolsas ilegales para encontrar al dueño."
+    },
+    {
+      "id": "seguro_basico",
+      "tipo": "real",
+      "tema": "salud",
+      "emoji": "🏥",
+      "pregunta": "¿Qué cubre el seguro médico básico obligatorio?",
+      "opciones": [
+        {
+          "e": "🦷",
+          "t": "El dentista"
+        },
+        {
+          "e": "👓",
+          "t": "Las gafas de adulto"
+        },
+        {
+          "e": "🩺",
+          "t": "Las visitas al médico, después de la franquicia"
+        }
+      ],
+      "correcta": 2,
+      "dato": "El seguro básico cubre lo mismo en todas las aseguradoras por ley, pero no el dentista. Por eso hay quien aprovecha las vacaciones en su país para ir al dentista."
+    },
+    {
+      "id": "registro_plazo",
+      "tipo": "real",
+      "tema": "papeles",
+      "emoji": "📅",
+      "pregunta": "Acabas de llegar a Suiza. ¿Cuánto tiempo tienes, normalmente, para registrarte en tu municipio?",
+      "opciones": [
+        {
+          "e": "⏱️",
+          "t": "14 días"
+        },
+        {
+          "e": "🗓️",
+          "t": "6 meses"
+        },
+        {
+          "e": "🦥",
+          "t": "Cuando te apetezca"
+        }
+      ],
+      "correcta": 0,
+      "dato": "En la mayoría de municipios el plazo es de 14 días. Sin ese registro no hay permiso de residencia, ni cuenta bancaria, ni casi nada."
+    },
+    {
+      "id": "pan_fondue",
+      "tipo": "real",
+      "tema": "comida",
+      "emoji": "🫕",
+      "pregunta": "En una fondue, se te cae el trozo de pan dentro del queso. ¿Qué dice la tradición?",
+      "opciones": [
+        {
+          "e": "🎤",
+          "t": "Te toca penitencia: pagar una ronda, cantar…"
+        },
+        {
+          "e": "🚫",
+          "t": "Se cancela la fondue para todos"
+        },
+        {
+          "e": "🥄",
+          "t": "Tienes que rascar la cacerola a solas"
+        }
+      ],
+      "correcta": 0,
+      "dato": "Otras reglas de la fondue: remover el pan haciendo un ocho para que el queso no se pegue y acompañar con vino blanco o té. Agua fría, mejor no: dicen que sienta fatal con el queso."
+    },
+    {
+      "id": "tarta_cumple",
+      "tipo": "real",
+      "tema": "trabajo",
+      "emoji": "🎂",
+      "pregunta": "Es tu cumpleaños y estás en la oficina, en Suiza. ¿Qué se espera?",
+      "opciones": [
+        {
+          "e": "🎁",
+          "t": "Que tus compañeros te traigan una tarta"
+        },
+        {
+          "e": "🍰",
+          "t": "Que lleves tú la tarta para todos"
+        },
+        {
+          "e": "🤐",
+          "t": "Que nadie diga nada"
+        }
+      ],
+      "correcta": 1,
+      "dato": "En Suiza, quien cumple años es quien invita: trae pastel o algo para picar. Y quien se va de la empresa suele organizar su propio Apéro de despedida."
+    },
+    {
+      "id": "besos",
+      "tipo": "real",
+      "tema": "social",
+      "emoji": "💋",
+      "pregunta": "¿Cuántos besos se suelen dar entre amigos en Suiza?",
+      "opciones": [
+        {
+          "e": "1️⃣",
+          "t": "Uno"
+        },
+        {
+          "e": "2️⃣",
+          "t": "Dos"
+        },
+        {
+          "e": "3️⃣",
+          "t": "Tres"
+        }
+      ],
+      "correcta": 2,
+      "dato": "Entre amigos se dan tres besos. En el trabajo o al conocer a alguien formalmente, mejor un apretón de manos. Y si dudas, deja que la otra persona marque el ritmo."
+    },
+    {
+      "id": "cena_hora",
+      "tipo": "real",
+      "tema": "social",
+      "emoji": "🍽️",
+      "pregunta": "Te invitan a cenar a casa de unos amigos suizos a las 19:00. ¿A qué hora llegas?",
+      "opciones": [
+        {
+          "e": "🕖",
+          "t": "A las 19:00"
+        },
+        {
+          "e": "🕢",
+          "t": "A las 19:30, para no llegar la primera persona"
+        },
+        {
+          "e": "🕘",
+          "t": "A las 21:00, como en casa"
+        }
+      ],
+      "correcta": 0,
+      "dato": "En casa ajena se llega a la hora (o, como mucho, un par de minutos después). Y se cena pronto: entre las 18:00 y las 19:30. Llevar un detalle (flores, vino o chocolate) es casi obligatorio."
+    },
+    {
+      "id": "descanso_noche",
+      "tipo": "real",
+      "tema": "casa",
+      "emoji": "🌙",
+      "pregunta": "¿A qué hora empieza normalmente el descanso nocturno en los edificios?",
+      "opciones": [
+        {
+          "e": "🌆",
+          "t": "A las 20:00"
+        },
+        {
+          "e": "🌙",
+          "t": "A las 22:00"
+        },
+        {
+          "e": "🌌",
+          "t": "A medianoche"
+        }
+      ],
+      "correcta": 1,
+      "dato": "El descanso nocturno suele ir de 22:00 a 7:00, y muchos edificios añaden el mediodía (12:00 a 13:00) y el domingo entero. Las normas exactas están en el reglamento de la casa (Hausordnung)."
+    },
+    {
+      "id": "agujeros",
+      "tipo": "real",
+      "tema": "comida",
+      "emoji": "🧀",
+      "pregunta": "¿Qué queso suizo es famoso por sus grandes agujeros?",
+      "opciones": [
+        {
+          "e": "🧀",
+          "t": "Gruyère"
+        },
+        {
+          "e": "🕳️",
+          "t": "Emmentaler"
+        },
+        {
+          "e": "🌿",
+          "t": "Appenzeller"
+        }
+      ],
+      "correcta": 1,
+      "dato": "Los agujeros del Emmentaler los hacen bacterias que producen gas durante la maduración. El Gruyère casi no tiene, aunque mucha gente lo dibuja lleno de agujeros."
+    },
+    {
+      "id": "capital",
+      "tipo": "real",
+      "tema": "cultura",
+      "emoji": "🏛️",
+      "pregunta": "¿Cuál es la capital de Suiza?",
+      "opciones": [
+        {
+          "e": "🏦",
+          "t": "Zúrich"
+        },
+        {
+          "e": "🕊️",
+          "t": "Ginebra"
+        },
+        {
+          "e": "🐻",
+          "t": "Berna, aunque oficialmente no se llama «capital»"
+        }
+      ],
+      "correcta": 2,
+      "dato": "La Constitución suiza no nombra ninguna capital: Berna es la «ciudad federal» (Bundesstadt), sede del Gobierno y del Parlamento. Zúrich es la ciudad más grande."
+    },
+    {
+      "id": "consejo_federal",
+      "tipo": "real",
+      "tema": "cultura",
+      "emoji": "👥",
+      "pregunta": "¿Cómo es el Gobierno suizo?",
+      "opciones": [
+        {
+          "e": "👑",
+          "t": "Un presidente con mucho poder"
+        },
+        {
+          "e": "7️⃣",
+          "t": "Siete personas, y la presidencia rota cada año"
+        },
+        {
+          "e": "🗺️",
+          "t": "26 personas, una por cantón"
+        }
+      ],
+      "correcta": 1,
+      "dato": "El Consejo Federal tiene 7 miembros de varios partidos que deciden en grupo. Cada año uno de ellos asume la presidencia de la Confederación, sin poderes extra."
+    },
+    {
+      "id": "idiomas",
+      "tipo": "real",
+      "tema": "idioma",
+      "emoji": "🗣️",
+      "pregunta": "¿Cuántos idiomas nacionales tiene Suiza?",
+      "opciones": [
+        {
+          "e": "2️⃣",
+          "t": "Dos"
+        },
+        {
+          "e": "3️⃣",
+          "t": "Tres"
+        },
+        {
+          "e": "4️⃣",
+          "t": "Cuatro"
+        }
+      ],
+      "correcta": 2,
+      "dato": "Alemán, francés, italiano y romanche. El romanche se habla en partes de Grisones y tiene varias variantes. Para saludar en romanche: «Allegra!»."
+    },
+    {
+      "id": "bunker",
+      "tipo": "real",
+      "tema": "cultura",
+      "emoji": "🛡️",
+      "pregunta": "Debajo de muchas casas suizas hay algo muy curioso. ¿Qué es?",
+      "opciones": [
+        {
+          "e": "☢️",
+          "t": "Un refugio antiatómico"
+        },
+        {
+          "e": "🧀",
+          "t": "Una bodega secreta de queso"
+        },
+        {
+          "e": "🏦",
+          "t": "Un túnel al banco más cercano"
+        }
+      ],
+      "correcta": 0,
+      "dato": "Desde los años 60, la ley suiza obliga a tener una plaza de refugio para cada habitante. Muchos refugios de edificios se usan hoy como trastero o bodega."
+    },
+    {
+      "id": "gotardo",
+      "tipo": "real",
+      "tema": "transporte",
+      "emoji": "🚇",
+      "pregunta": "¿Cuánto mide el túnel de base del San Gotardo, el túnel ferroviario más largo del mundo?",
+      "opciones": [
+        {
+          "e": "🚇",
+          "t": "15 kilómetros"
+        },
+        {
+          "e": "🚄",
+          "t": "57 kilómetros"
+        },
+        {
+          "e": "🌍",
+          "t": "120 kilómetros"
+        }
+      ],
+      "correcta": 1,
+      "dato": "El túnel de base del San Gotardo se inauguró en 2016 y mide 57 km. En algunos puntos tiene más de 2000 metros de montaña encima."
+    },
+    {
+      "id": "alpabzug",
+      "tipo": "real",
+      "tema": "fiestas",
+      "emoji": "🐄",
+      "pregunta": "¿Qué es el «Alpabzug» o «désalpe»?",
+      "opciones": [
+        {
+          "e": "🤼",
+          "t": "Un deporte de lucha en serrín"
+        },
+        {
+          "e": "🌸",
+          "t": "La bajada de las vacas de la montaña, adornadas con flores"
+        },
+        {
+          "e": "🫓",
+          "t": "Un pan típico de Navidad"
+        }
+      ],
+      "correcta": 1,
+      "dato": "En septiembre, las vacas bajan de los pastos alpinos con coronas de flores y cencerros enormes. Muchos pueblos lo celebran con mercado, música y queso recién hecho."
+    },
+    {
+      "id": "schwingen",
+      "tipo": "real",
+      "tema": "fiestas",
+      "emoji": "💪",
+      "pregunta": "¿Qué es el «Schwingen»?",
+      "opciones": [
+        {
+          "e": "💃",
+          "t": "Un baile típico de bodas"
+        },
+        {
+          "e": "🤼",
+          "t": "La lucha tradicional suiza, en un círculo de serrín"
+        },
+        {
+          "e": "🎠",
+          "t": "Un columpio gigante de feria"
+        }
+      ],
+      "correcta": 1,
+      "dato": "En el gran festival nacional de Schwingen, que se celebra cada tres años, el ganador se lleva de premio un toro. Y es tradición que el ganador limpie el serrín de la espalda del perdedor."
+    },
+    {
+      "id": "en_guete",
+      "tipo": "real",
+      "tema": "idioma",
+      "emoji": "🍴",
+      "pregunta": "Antes de comer, tus compañeros te dicen «En Guete!». ¿Qué significa?",
+      "opciones": [
+        {
+          "e": "😋",
+          "t": "Buen provecho"
+        },
+        {
+          "e": "🧼",
+          "t": "Lávate las manos"
+        },
+        {
+          "e": "🙋",
+          "t": "¿Me das un poco?"
+        }
+      ],
+      "correcta": 0,
+      "dato": "«En Guete» es el «buen provecho» suizo, y nadie empieza a comer hasta que se ha dicho. En la Suiza francesa dirás «Bon appétit» y en Ticino, «Buon appetito»."
+    },
+    {
+      "id": "natel",
+      "tipo": "real",
+      "tema": "idioma",
+      "emoji": "📱",
+      "pregunta": "En Suiza, ¿qué es un «Natel»?",
+      "opciones": [
+        {
+          "e": "🎄",
+          "t": "Un pastel de Navidad"
+        },
+        {
+          "e": "📱",
+          "t": "El teléfono móvil"
+        },
+        {
+          "e": "💸",
+          "t": "Un impuesto de basuras"
+        }
+      ],
+      "correcta": 1,
+      "dato": "«Natel» es como se llama al móvil en Suiza, tanto en alemán como en francés. Nació como nombre de la antigua red de telefonía móvil y se quedó para siempre."
+    },
+    {
+      "id": "rostigraben",
+      "tipo": "real",
+      "tema": "cultura",
+      "emoji": "🥔",
+      "pregunta": "¿Qué es el «Röstigraben»?",
+      "opciones": [
+        {
+          "e": "🍳",
+          "t": "Una receta de patatas"
+        },
+        {
+          "e": "〰️",
+          "t": "La frontera cultural entre la Suiza alemana y la francesa"
+        },
+        {
+          "e": "🌊",
+          "t": "Un río de Berna"
+        }
+      ],
+      "correcta": 1,
+      "dato": "El Röstigraben («la zanja de la Rösti») es la línea imaginaria entre la Suiza alemana y la francesa. Se nota en el humor, en la comida e incluso en cómo vota cada región."
+    },
+    {
+      "id": "iglesia",
+      "tipo": "real",
+      "tema": "papeles",
+      "emoji": "⛪",
+      "pregunta": "Al registrarte en el ayuntamiento marcas que tu religión es católica. ¿Qué puede pasar?",
+      "opciones": [
+        {
+          "e": "🙏",
+          "t": "Te invitan a misa cada domingo"
+        },
+        {
+          "e": "🧾",
+          "t": "Pagas un impuesto de la iglesia"
+        },
+        {
+          "e": "📊",
+          "t": "Nada, es solo para estadística"
+        }
+      ],
+      "correcta": 1,
+      "dato": "En casi todos los cantones, los miembros de las iglesias reconocidas (católica o protestante) pagan un impuesto eclesiástico. Se puede dejar la iglesia por escrito."
+    },
+    {
+      "id": "serafe",
+      "tipo": "real",
+      "tema": "papeles",
+      "emoji": "📺",
+      "pregunta": "No tienes tele ni radio. ¿Tienes que pagar la tasa de radio y televisión?",
+      "opciones": [
+        {
+          "e": "🙅",
+          "t": "No, nunca"
+        },
+        {
+          "e": "🏠",
+          "t": "Sí: se paga por hogar"
+        },
+        {
+          "e": "👀",
+          "t": "Solo si te pillan viendo series"
+        }
+      ],
+      "correcta": 1,
+      "dato": "La tasa de radio y televisión se paga por hogar, tengas aparatos o no: unos 335 francos al año. Llega en una factura que muchas personas toman por un error."
+    },
+    {
+      "id": "carnet",
+      "tipo": "real",
+      "tema": "transporte",
+      "emoji": "🚗",
+      "pregunta": "Conduces con el carnet de tu país. ¿Cuánto tiempo vale en Suiza?",
+      "opciones": [
+        {
+          "e": "♾️",
+          "t": "Para siempre"
+        },
+        {
+          "e": "📆",
+          "t": "12 meses desde que vives aquí"
+        },
+        {
+          "e": "🗓️",
+          "t": "Una semana"
+        }
+      ],
+      "correcta": 1,
+      "dato": "El carnet extranjero vale 12 meses desde que fijas tu residencia en Suiza. Antes de ese plazo hay que canjearlo en la oficina de tráfico del cantón."
+    },
+    {
+      "id": "senderos",
+      "tipo": "real",
+      "tema": "naturaleza",
+      "emoji": "🪧",
+      "pregunta": "¿Qué indican los carteles amarillos de los senderos suizos?",
+      "opciones": [
+        {
+          "e": "📏",
+          "t": "Los kilómetros que faltan"
+        },
+        {
+          "e": "⏱️",
+          "t": "El tiempo a pie hasta cada destino"
+        },
+        {
+          "e": "🐄",
+          "t": "Cuántas vacas te vas a cruzar"
+        }
+      ],
+      "correcta": 1,
+      "dato": "Los carteles indican horas y minutos a pie. Además, el color de las marcas te dice la dificultad: amarillo es fácil, blanco-rojo-blanco es de montaña y blanco-azul-blanco, alpino."
+    },
+    {
+      "id": "onu_ue",
+      "tipo": "real",
+      "tema": "cultura",
+      "emoji": "🌍",
+      "pregunta": "¿De qué NO es miembro Suiza?",
+      "opciones": [
+        {
+          "e": "🇺🇳",
+          "t": "De la ONU"
+        },
+        {
+          "e": "🇪🇺",
+          "t": "De la Unión Europea"
+        },
+        {
+          "e": "🛂",
+          "t": "Del espacio Schengen"
+        }
+      ],
+      "correcta": 1,
+      "dato": "Suiza entró en la ONU en 2002 tras una votación popular y forma parte del espacio Schengen, pero no de la Unión Europea. Su relación con la UE va por acuerdos bilaterales."
+    },
+    {
+      "id": "kafi",
+      "tipo": "real",
+      "tema": "comida",
+      "emoji": "☕",
+      "pregunta": "Pides «un café» en una cafetería de Zúrich. ¿Qué te suelen traer?",
+      "opciones": [
+        {
+          "e": "☕",
+          "t": "Un expreso cortito"
+        },
+        {
+          "e": "🥛",
+          "t": "Un café largo con una tacita de crema"
+        },
+        {
+          "e": "🫖",
+          "t": "Un té, porque «Kafi» significa té"
+        }
+      ],
+      "correcta": 1,
+      "dato": "En la Suiza alemana el café estándar es el «Kafi Crème»: un café largo con crema. Si lo quieres corto e intenso, pide un «Espresso»."
+    },
+    {
+      "id": "orden_pago",
+      "tipo": "real",
+      "tema": "papeles",
+      "emoji": "⚖️",
+      "pregunta": "Te llega una orden de pago oficial de una empresa que no conoces. ¿Qué puedes hacer?",
+      "opciones": [
+        {
+          "e": "💳",
+          "t": "Pagar, no queda otra"
+        },
+        {
+          "e": "✋",
+          "t": "Oponerte en 10 días sin dar motivos"
+        },
+        {
+          "e": "🚚",
+          "t": "Mudarte a otro cantón"
+        }
+      ],
+      "correcta": 1,
+      "dato": "Ante una orden de pago (Zahlungsbefehl) puedes presentar oposición (Rechtsvorschlag) en 10 días, sin dar explicaciones. Después, la empresa tiene que demostrar que la deuda existe."
+    },
+    {
+      "id": "samichlaus",
+      "tipo": "real",
+      "tema": "fiestas",
+      "emoji": "🎅",
+      "pregunta": "¿Quién visita a los niños de la Suiza alemana el 6 de diciembre?",
+      "opciones": [
+        {
+          "e": "👑",
+          "t": "Los Reyes Magos"
+        },
+        {
+          "e": "🎅",
+          "t": "El Samichlaus (San Nicolás)"
+        },
+        {
+          "e": "👵",
+          "t": "Frau Keller, la vecina"
+        }
+      ],
+      "correcta": 1,
+      "dato": "El Samichlaus llega con su ayudante, el Schmutzli. Los niños recitan un poema y reciben mandarinas, nueces, chocolate y un pan con forma de muñeco (Grittibänz)."
+    },
+    {
+      "id": "escalade",
+      "tipo": "real",
+      "tema": "fiestas",
+      "emoji": "🍫",
+      "pregunta": "¿Qué ciudad rompe ollas de chocolate cada diciembre para celebrar una victoria de 1602?",
+      "opciones": [
+        {
+          "e": "⛲",
+          "t": "Ginebra"
+        },
+        {
+          "e": "🌴",
+          "t": "Lugano"
+        },
+        {
+          "e": "🥁",
+          "t": "Basilea"
+        }
+      ],
+      "correcta": 0,
+      "dato": "Es la Escalade: Ginebra celebra que rechazó un ataque nocturno en 1602. La olla (marmite) de chocolate la rompen juntas la persona más joven y la mayor de la mesa."
+    },
+    {
+      "id": "boogg",
+      "tipo": "real",
+      "tema": "fiestas",
+      "emoji": "🔥",
+      "pregunta": "¿Qué quema Zúrich cada abril para despedir el invierno?",
+      "opciones": [
+        {
+          "e": "⛄",
+          "t": "Un muñeco de nieve lleno de petardos"
+        },
+        {
+          "e": "🧾",
+          "t": "Las facturas del seguro médico"
+        },
+        {
+          "e": "🧀",
+          "t": "Una rueda de queso gigante"
+        }
+      ],
+      "correcta": 0,
+      "dato": "Es el Böögg, en la fiesta del Sechseläuten. Según la tradición, cuanto antes le explota la cabeza, mejor será el verano. Y sí, hay apuestas."
+    },
+    {
+      "id": "salario_minimo",
+      "tipo": "real",
+      "tema": "trabajo",
+      "emoji": "💰",
+      "pregunta": "¿Hay salario mínimo en Suiza?",
+      "opciones": [
+        {
+          "e": "🇨🇭",
+          "t": "Sí, el mismo en todo el país"
+        },
+        {
+          "e": "🗺️",
+          "t": "No hay uno nacional, pero algunos cantones sí lo tienen"
+        },
+        {
+          "e": "🚫",
+          "t": "No existe en ningún sitio"
+        }
+      ],
+      "correcta": 1,
+      "dato": "No hay salario mínimo nacional, pero sí en cantones como Ginebra, Neuchâtel, Jura, Tesino y Basilea-Ciudad. Además, muchos sectores tienen convenios colectivos con mínimos."
+    },
+    {
+      "id": "sin_billete",
+      "tipo": "real",
+      "tema": "transporte",
+      "emoji": "🎫",
+      "pregunta": "Te pillan en el tranvía sin billete por primera vez. ¿Cuánto pagas, más o menos?",
+      "opciones": [
+        {
+          "e": "🪙",
+          "t": "5 francos"
+        },
+        {
+          "e": "💵",
+          "t": "Unos 90 francos"
+        },
+        {
+          "e": "💎",
+          "t": "500 francos y una foto en la estación"
+        }
+      ],
+      "correcta": 1,
+      "dato": "Viajar sin billete cuesta unos 90 francos la primera vez y más si se repite, porque queda registrado. Con la app de transporte puedes comprar el billete antes de subir."
+    },
+    {
+      "id": "lavar_coche",
+      "tipo": "real",
+      "tema": "casa",
+      "emoji": "🚗",
+      "pregunta": "¿Se puede lavar el coche en la calle delante de casa?",
+      "opciones": [
+        {
+          "e": "🧽",
+          "t": "Sí, cuando quieras"
+        },
+        {
+          "e": "🚫",
+          "t": "En muchos sitios no, por el agua sucia que va al desagüe"
+        },
+        {
+          "e": "📅",
+          "t": "Solo los domingos por la mañana"
+        }
+      ],
+      "correcta": 1,
+      "dato": "En muchos municipios está prohibido lavar el coche en la calle: el agua con jabón y aceite va directa a los desagües de lluvia y a los ríos. Para eso están los lavaderos."
+    },
+    {
+      "id": "fianza_max",
+      "tipo": "real",
+      "tema": "casa",
+      "emoji": "🔑",
+      "pregunta": "¿Cuánto te pueden pedir como máximo de fianza por un piso de alquiler?",
+      "opciones": [
+        {
+          "e": "1️⃣",
+          "t": "Un mes de alquiler"
+        },
+        {
+          "e": "3️⃣",
+          "t": "Tres meses de alquiler"
+        },
+        {
+          "e": "💸",
+          "t": "Un año entero"
+        }
+      ],
+      "correcta": 1,
+      "dato": "La fianza (Mietkaution, garantie de loyer) es como máximo de tres meses de alquiler y va a una cuenta bloqueada a tu nombre. Hay seguros que la sustituyen a cambio de una cuota anual."
+    },
+    {
+      "id": "certificado_deudas",
+      "tipo": "real",
+      "tema": "casa",
+      "emoji": "📄",
+      "pregunta": "Para alquilar un piso, casi siempre te piden…",
+      "opciones": [
+        {
+          "e": "🔮",
+          "t": "Tu carta astral"
+        },
+        {
+          "e": "📄",
+          "t": "Un certificado de que no tienes deudas"
+        },
+        {
+          "e": "👵",
+          "t": "Una carta de recomendación de tu abuela"
+        }
+      ],
+      "correcta": 1,
+      "dato": "El certificado de deudas (Betreibungsauszug, extrait de poursuites) se pide en la oficina de cobros de tu municipio y cuesta unos 20 francos. Sin él es difícil conseguir piso."
+    },
+    {
+      "id": "seguro_plazo",
+      "tipo": "real",
+      "tema": "salud",
+      "emoji": "🩺",
+      "pregunta": "Acabas de llegar. ¿Cuánto tiempo tienes para contratar el seguro médico obligatorio?",
+      "opciones": [
+        {
+          "e": "⏳",
+          "t": "3 meses"
+        },
+        {
+          "e": "📆",
+          "t": "1 año"
+        },
+        {
+          "e": "🙅",
+          "t": "No es obligatorio"
+        }
+      ],
+      "correcta": 0,
+      "dato": "Tienes 3 meses desde que llegas. Si lo contratas en ese plazo, te cubre desde el primer día. Si te pasas, puede haber recargos y el cantón puede asignarte uno."
+    },
+    {
+      "id": "franquicia",
+      "tipo": "real",
+      "tema": "salud",
+      "emoji": "🧾",
+      "pregunta": "¿Qué es la «franquicia» del seguro médico?",
+      "opciones": [
+        {
+          "e": "💳",
+          "t": "Lo que pagas tú cada año antes de que pague el seguro"
+        },
+        {
+          "e": "🏪",
+          "t": "Una cadena de farmacias"
+        },
+        {
+          "e": "🎁",
+          "t": "Un regalo por no ir al médico"
+        }
+      ],
+      "correcta": 0,
+      "dato": "La franquicia va de 300 a 2500 francos al año: cuanto más alta, más barata la cuota mensual. Después pagas además el 10 % de los gastos, hasta 700 francos al año."
+    },
+    {
+      "id": "cambio_seguro",
+      "tipo": "real",
+      "tema": "salud",
+      "emoji": "📬",
+      "pregunta": "¿Hasta cuándo puedes cambiar de seguro básico para el año siguiente?",
+      "opciones": [
+        {
+          "e": "🍂",
+          "t": "Hasta el 30 de noviembre"
+        },
+        {
+          "e": "🎄",
+          "t": "Hasta el 31 de diciembre"
+        },
+        {
+          "e": "🔒",
+          "t": "Solo cada 5 años"
+        }
+      ],
+      "correcta": 0,
+      "dato": "La carta de baja tiene que llegar a la aseguradora antes del 30 de noviembre para cambiar el 1 de enero. El seguro básico cubre lo mismo en todas: compara en el comparador oficial priminfo.ch."
+    },
+    {
+      "id": "emergencias",
+      "tipo": "real",
+      "tema": "salud",
+      "emoji": "🚑",
+      "pregunta": "¿Qué número llamas para pedir una ambulancia en Suiza?",
+      "opciones": [
+        {
+          "e": "🚑",
+          "t": "144"
+        },
+        {
+          "e": "📞",
+          "t": "911"
+        },
+        {
+          "e": "🚒",
+          "t": "118"
+        }
+      ],
+      "correcta": 0,
+      "dato": "Ambulancia: 144. Policía: 117. Bomberos: 118. Rescate en helicóptero (Rega): 1414. El número europeo 112 también funciona. Guárdalos en el móvil."
+    },
+    {
+      "id": "halbtax",
+      "tipo": "real",
+      "tema": "transporte",
+      "emoji": "🎫",
+      "pregunta": "¿Qué te da el abono de medio precio (Halbtax)?",
+      "opciones": [
+        {
+          "e": "🆓",
+          "t": "Viajar gratis los domingos"
+        },
+        {
+          "e": "½",
+          "t": "Pagar la mitad en casi todos los billetes"
+        },
+        {
+          "e": "🛋️",
+          "t": "Un asiento en primera clase"
+        }
+      ],
+      "correcta": 1,
+      "dato": "El abono de medio precio cuesta menos de 200 francos al año y muchísima gente lo tiene. Vale en trenes, autobuses, muchos barcos y remontes. Se amortiza en pocos viajes."
+    },
+    {
+      "id": "vineta",
+      "tipo": "real",
+      "tema": "transporte",
+      "emoji": "🛣️",
+      "pregunta": "¿Qué necesitas para conducir por las autopistas suizas?",
+      "opciones": [
+        {
+          "e": "🚧",
+          "t": "Pagar peaje en cada salida"
+        },
+        {
+          "e": "🏷️",
+          "t": "Una viñeta anual de 40 francos"
+        },
+        {
+          "e": "🤷",
+          "t": "Nada, son gratis"
+        }
+      ],
+      "correcta": 1,
+      "dato": "La viñeta de autopista cuesta 40 francos al año y existe en pegatina o en versión electrónica, ligada a la matrícula. Sin ella, la multa es bastante más cara."
+    },
+    {
+      "id": "pilas_tienda",
+      "tipo": "real",
+      "tema": "casa",
+      "emoji": "🔋",
+      "pregunta": "¿Dónde se tiran las pilas gastadas?",
+      "opciones": [
+        {
+          "e": "🗑️",
+          "t": "En la basura normal, son pequeñas"
+        },
+        {
+          "e": "🏪",
+          "t": "En cualquier tienda que venda pilas"
+        },
+        {
+          "e": "🌊",
+          "t": "En el contenedor de vidrio"
+        }
+      ],
+      "correcta": 1,
+      "dato": "Las tiendas que venden pilas tienen que recogerlas gratis, aunque no las compraras allí. Lo mismo pasa con los aparatos eléctricos: los devuelves gratis donde vendan ese tipo de aparato."
+    },
+    {
+      "id": "pet_super",
+      "tipo": "real",
+      "tema": "casa",
+      "emoji": "🧴",
+      "pregunta": "¿Dónde se reciclan las botellas de bebida de PET?",
+      "opciones": [
+        {
+          "e": "🍾",
+          "t": "En el contenedor de vidrio"
+        },
+        {
+          "e": "🛒",
+          "t": "En los contenedores de los supermercados"
+        },
+        {
+          "e": "📦",
+          "t": "Con el papel y el cartón"
+        }
+      ],
+      "correcta": 1,
+      "dato": "Las botellas de bebida de PET se devuelven en súpers y tiendas, que tienen contenedores de recogida. El resto de plásticos, según el municipio, va a la basura o a una recogida especial."
+    },
+    {
+      "id": "sueldo_13",
+      "tipo": "real",
+      "tema": "trabajo",
+      "emoji": "💰",
+      "pregunta": "¿Qué es el «sueldo número 13»?",
+      "opciones": [
+        {
+          "e": "🎄",
+          "t": "Un sueldo extra que muchas empresas pagan en diciembre"
+        },
+        {
+          "e": "🍀",
+          "t": "Un premio de lotería de la empresa"
+        },
+        {
+          "e": "🧾",
+          "t": "Una multa por llegar tarde 13 veces"
+        }
+      ],
+      "correcta": 0,
+      "dato": "Muchas empresas suizas pagan un decimotercer sueldo, normalmente en diciembre. No lo obliga la ley: tiene que estar en tu contrato."
+    },
+    {
+      "id": "vacaciones_min",
+      "tipo": "real",
+      "tema": "trabajo",
+      "emoji": "🏖️",
+      "pregunta": "¿Cuántas semanas de vacaciones al año marca la ley como mínimo?",
+      "opciones": [
+        {
+          "e": "2️⃣",
+          "t": "Dos semanas"
+        },
+        {
+          "e": "4️⃣",
+          "t": "Cuatro semanas"
+        },
+        {
+          "e": "8️⃣",
+          "t": "Ocho semanas"
+        }
+      ],
+      "correcta": 1,
+      "dato": "El mínimo legal son 4 semanas al año (5 si tienes menos de 20 años). Muchas empresas dan 5. Y se suelen planificar con meses de antelación."
+    },
+    {
+      "id": "periodo_prueba",
+      "tipo": "real",
+      "tema": "trabajo",
+      "emoji": "📝",
+      "pregunta": "En el periodo de prueba, ¿con cuánto preaviso se puede terminar el contrato?",
+      "opciones": [
+        {
+          "e": "7️⃣",
+          "t": "7 días"
+        },
+        {
+          "e": "📅",
+          "t": "3 meses"
+        },
+        {
+          "e": "🔒",
+          "t": "No se puede terminar"
+        }
+      ],
+      "correcta": 0,
+      "dato": "Durante el periodo de prueba (normalmente de 1 a 3 meses) el preaviso es de 7 días, para las dos partes. Después, el preaviso legal va de 1 a 3 meses según los años en la empresa."
+    },
+    {
+      "id": "garrapatas",
+      "tipo": "real",
+      "tema": "salud",
+      "emoji": "🌲",
+      "pregunta": "¿Qué vacuna se recomienda en casi toda Suiza por las garrapatas?",
+      "opciones": [
+        {
+          "e": "💉",
+          "t": "La de la encefalitis por garrapata (FSME)"
+        },
+        {
+          "e": "🐦",
+          "t": "La de la gripe aviar"
+        },
+        {
+          "e": "🙅",
+          "t": "Ninguna, aquí no hay garrapatas"
+        }
+      ],
+      "correcta": 0,
+      "dato": "Las garrapatas pueden transmitir encefalitis. La vacuna se recomienda en casi toda Suiza (excepto Ginebra y Tesino) y la cubre el seguro básico. Revísate después de ir al bosque."
+    },
+    {
+      "id": "setas",
+      "tipo": "real",
+      "tema": "naturaleza",
+      "emoji": "🍄",
+      "pregunta": "Vuelves del bosque con una cesta de setas. ¿Qué se recomienda?",
+      "opciones": [
+        {
+          "e": "🔬",
+          "t": "Llevarlas a un control de setas oficial"
+        },
+        {
+          "e": "😋",
+          "t": "Probar una cruda para ver si es buena"
+        },
+        {
+          "e": "🐄",
+          "t": "Preguntarle a una vaca"
+        }
+      ],
+      "correcta": 0,
+      "dato": "En muchos municipios hay controles de setas oficiales (Pilzkontrolle, contrôle des champignons), a menudo gratis. Además, hay límites de cantidad por persona y día."
+    },
+    {
+      "id": "perro_impuesto",
+      "tipo": "real",
+      "tema": "papeles",
+      "emoji": "🐕",
+      "pregunta": "Adoptas un perro. ¿Qué tienes que hacer?",
+      "opciones": [
+        {
+          "e": "🤷",
+          "t": "Nada, es tu perro"
+        },
+        {
+          "e": "🧾",
+          "t": "Registrarlo y pagar un impuesto anual por perro"
+        },
+        {
+          "e": "🎓",
+          "t": "Apuntarlo a clases de alemán"
+        }
+      ],
+      "correcta": 1,
+      "dato": "Los perros se registran en una base de datos nacional (AMICUS) y en el municipio, y se paga un impuesto anual por perro. Y antes, mira si tu contrato de alquiler los permite."
+    },
+    {
+      "id": "nacionalidad_anios",
+      "tipo": "real",
+      "tema": "papeles",
+      "emoji": "🇨🇭",
+      "pregunta": "¿Cuántos años de residencia pide normalmente la nacionalidad suiza?",
+      "opciones": [
+        {
+          "e": "2️⃣",
+          "t": "2 años"
+        },
+        {
+          "e": "🔟",
+          "t": "10 años"
+        },
+        {
+          "e": "👴",
+          "t": "25 años"
+        }
+      ],
+      "correcta": 1,
+      "dato": "Hacen falta 10 años de residencia y el permiso C, entre otros requisitos. Los años vividos en Suiza entre los 8 y los 18 cuentan doble. Y el municipio y el cantón también deciden."
+    }
+  ]
+}

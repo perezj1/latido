@@ -1,0 +1,99 @@
+openapi: 3.0.3
+info:
+  title: Suizamente · votos de la comunidad
+  version: 1.0.0
+  description: |
+    API mínima para los votos del juego Suizamente de Latido.
+    El jugador se identifica por la sesión de Latido (preferente) o, si se permiten votos sin sesión,
+    por la cabecera X-Jugador-Id (UUID v4 generado en el navegador).
+    Los índices de opción son los del archivo data/preguntas.json (0, 1, 2), nunca la posición en pantalla.
+servers:
+  - url: /api/suizamente
+components:
+  parameters:
+    JugadorId:
+      name: X-Jugador-Id
+      in: header
+      required: false
+      description: UUID v4 del jugador anónimo. Se ignora si hay sesión de Latido.
+      schema: { type: string, format: uuid }
+  schemas:
+    Reparto:
+      type: array
+      description: Votos por opción, en el orden original de la pregunta. Longitud 2 o 3.
+      items: { type: integer, minimum: 0 }
+      example: [132, 87]
+    Error:
+      type: object
+      properties:
+        error: { type: string, example: opcion_fuera_de_rango }
+        mensaje: { type: string, example: La pregunta solo tiene 2 opciones. }
+paths:
+  /votos/resumen:
+    get:
+      summary: Recuento de votos de todas las preguntas
+      description: Se puede cachear 30-60 segundos (Cache-Control) y servir desde CDN.
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  conteos:
+                    type: object
+                    additionalProperties: { $ref: '#/components/schemas/Reparto' }
+                    example: { cena_vida: [132, 87], capital: [12, 40, 211] }
+                  actualizado: { type: string, format: date-time }
+  /votos/mios:
+    get:
+      summary: Votos del jugador actual
+      description: Sirve para marcar como respondidas las preguntas ya votadas desde otro dispositivo.
+      parameters: [ { $ref: '#/components/parameters/JugadorId' } ]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  votos:
+                    type: object
+                    additionalProperties: { type: integer, minimum: 0, maximum: 2 }
+                    example: { cena_vida: 0, capital: 2 }
+        '401': { description: Si Latido exige sesión y no la hay. }
+  /votos:
+    post:
+      summary: Votar una pregunta
+      description: |
+        Solo cuenta el primer voto de cada jugador por pregunta (INSERT ... ON CONFLICT DO NOTHING).
+        Si ya había votado, responde 200 con yaVotado=true y su opción original.
+      parameters: [ { $ref: '#/components/parameters/JugadorId' } ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [preguntaId, opcion]
+              properties:
+                preguntaId: { type: string, pattern: '^[a-z0-9_]+$', example: cena_vida }
+                opcion: { type: integer, minimum: 0, maximum: 2, example: 0 }
+      responses:
+        '200':
+          description: Voto guardado o ya existente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  reparto: { $ref: '#/components/schemas/Reparto' }
+                  yaVotado: { type: boolean }
+                  opcion: { type: integer, description: Opción que cuenta (la primera que votó) }
+        '400':
+          description: Pregunta inexistente u opción fuera de rango
+          content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+        '401': { description: Si Latido exige sesión para votar y no la hay. }
+        '429': { description: Demasiadas peticiones (por ejemplo, más de 60 por minuto). }

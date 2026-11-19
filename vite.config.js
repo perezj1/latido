@@ -5,6 +5,7 @@ import react from '@vitejs/plugin-react'
 import gelatoHandler from './api/gelato.js'
 import { resolveTikTokLink } from './api/tiktok-resolve.js'
 import tiktokMetadataHandler from './api/tiktok-metadata.js'
+import suizamenteHandler from './api/suizamente.js'
 
 dns.setDefaultResultOrder('verbatim')
 
@@ -105,6 +106,15 @@ function scannerRoutingPlugin() {
   }
 }
 
+function suizamenteDevPlugin() {
+  return {
+    name:'latido-suizamente-votes',
+    configureServer(server) {
+      server.middlewares.use('/api/suizamente', suizamenteHandler)
+    },
+  }
+}
+
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
   // Vite reloads its config when an env file changes. Always copy the latest
@@ -115,6 +125,9 @@ export default defineConfig(({ mode }) => {
     'GELATO_PRODUCT_CATALOG_JSON',
     'GELATO_STORE_ID',
     'GELATO_STORE_NAME',
+    'SUPABASE_URL',
+    'SUPABASE_SERVICE_ROLE_KEY',
+    'VITE_SUPABASE_URL',
   ]) {
     if (env[key] !== undefined) process.env[key] = env[key]
   }
@@ -146,7 +159,7 @@ export default defineConfig(({ mode }) => {
   }
 
   return {
-    plugins: [react(), tiktokResolverPlugin(), gelatoDevPlugin(), scannerRoutingPlugin()],
+    plugins: [react(), tiktokResolverPlugin(), gelatoDevPlugin(), scannerRoutingPlugin(), suizamenteDevPlugin()],
     resolve: {
       alias: {
         react: path.resolve(process.cwd(), 'node_modules/react'),

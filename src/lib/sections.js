@@ -72,13 +72,14 @@ export const EXPLORE_SECTIONS = [
 // Superficies secundarias: no son secciones propias, pero en movil no habia
 // ninguna via para llegar a ellas.
 export const EXPLORE_EXTRAS = [
+  { id:'suizamente', emoji:'🎲', label:'Suizamente', desc:'Dilemas y preguntas para aprender sobre Suiza', to:'/suizamente' },
   { id:'paquetes', emoji:'📦', label:'Paquetes', desc:'Recursos según lo que necesitas ahora', to:'/paquetes' },
   { id:'grupos', emoji:'👥', label:'Grupos', desc:'Comunidades y chats por ciudad o interés', to:'/comunidades?view=comunidades' },
 ]
 
 // Rutas que pertenecen a Explorar. El area de perfil de creador (/creadores/alta
 // y /creadores/mi-perfil) queda fuera a proposito: vive en Perfil.
-const EXPLORE_ROUTE = /^\/(?:explorar|tablon|anuncios|empleos|comunidades|negocios|eventos|guias|creadores|colaboraciones|paquetes)(?:\/|$)/
+const EXPLORE_ROUTE = /^\/(?:explorar|tablon|anuncios|empleos|comunidades|negocios|eventos|guias|creadores|colaboraciones|paquetes|suizamente)(?:\/|$)/
 
 export function isCreatorProfileRoute(pathname='') {
   return pathname === '/creadores/alta' || pathname.startsWith('/creadores/mi-perfil')
@@ -86,6 +87,11 @@ export function isCreatorProfileRoute(pathname='') {
 
 export function isExploreRoute(pathname='') {
   return EXPLORE_ROUTE.test(pathname) && !isCreatorProfileRoute(pathname)
+}
+
+export function isSuizamenteRoute(pathname='') {
+  const path=pathname.replace(/\/+$/,'')
+  return path==='/perfil/suizometro'||/^\/suizamente(?:\/|$)/.test(path)
 }
 
 export function getActiveSection(pathname='', search='') {

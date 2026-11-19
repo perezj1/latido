@@ -51,7 +51,10 @@
     "card:invitations": "node scripts/send-latido-card-invitations.mjs",
     "test:card:browser": "node scripts/test-latido-card-browser.mjs",
     "test:card:webkit": "node scripts/test-latido-card-browser.mjs --webkit",
-    "vapid:keys": "node scripts/generate-vapid-keys.mjs"
+    "vapid:keys": "node scripts/generate-vapid-keys.mjs",
+    "suizamente:validar": "node scripts/validar-suizamente.cjs",
+    "test:suizamente:votos": "node scripts/test-suizamente-votos.mjs",
+    "test:suizamente:referencia": "node scripts/test-suizamente-referencia.mjs"
   },
   "dependencies": {
     "@fontsource/poppins": "^5.2.7",
