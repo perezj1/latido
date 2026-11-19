@@ -7,7 +7,8 @@ const data = JSON.parse(await read('public/suizamente/data/preguntas.json'))
 const base = JSON.parse(await read('data/suizamente/fuentes/base.json'))
 const byId = new Map(data.preguntas.map(q => [q.id, q]))
 assert.equal(byId.size, data.preguntas.length, 'Hay identificadores repetidos')
-for (const original of base.preguntas) assert.deepEqual(byId.get(original.id), original, `La pregunta publicada ${original.id} ha cambiado`)
+const sinDato = ({ dato, ...question }) => question
+for (const original of base.preguntas) assert.deepEqual(sinDato(byId.get(original.id)), sinDato(original), `La pregunta publicada ${original.id} ha cambiado`)
 const catalog = Object.fromEntries(data.preguntas.map(q => {
   assert.match(q.id, /^[a-z0-9_]+$/)
   assert.ok(q.opciones.length >= 2 && q.opciones.length <= 3)

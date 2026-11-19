@@ -175,6 +175,26 @@ for (const grupo of [manualR, vocabIda, ciudades, capitales, fechas, personasQ, 
   for (const q of grupo) { if (cuenta('real') >= OBJETIVO.real) break; anadir(q); }
 
 /* ---------- 8. comprobar y escribir ---------- */
+// La revisión editorial solo cambia explicaciones. Se aplica después de elegir
+// las preguntas y sus datos para conservar IDs, opciones y ambos datos de cada pareja.
+if (process.argv.includes('--json-original')) {
+  const metadata = JSON.parse(fs.readFileSync(path.join(F, 'base.json'), 'utf8'));
+  const preguntas = todas.slice().sort((a, b) => (a.tipo === 'dilema' ? 0 : 1) - (b.tipo === 'dilema' ? 0 : 1));
+  process.stdout.write(JSON.stringify({ ...metadata, version:metadata.version + 1, preguntas }));
+  process.exit(0);
+}
+const revisiones = new Map(JSON.parse(fs.readFileSync(path.join(RAIZ, 'data', 'suizamente', 'revision-redaccion.json'), 'utf8')).map(r => [r.original, r.revisado]));
+for (const q of todas) {
+  const partes = q.opciones.map(o => {
+    const titulo = `${o.e} ${o.t}:`;
+    return { titulo, inicio:q.dato.indexOf(titulo) };
+  }).filter(p => p.inicio >= 0).sort((a, b) => a.inicio - b.inicio);
+  if (!partes.length || partes[0].inicio !== 0) q.dato = revisiones.get(q.dato) || q.dato;
+  else q.dato = partes.map((p, i) => {
+    const texto = q.dato.slice(p.inicio + p.titulo.length, partes[i + 1]?.inicio ?? q.dato.length).trim();
+    return `${p.titulo} ${revisiones.get(texto) || texto}`;
+  }).join(' ');
+}
 for (const q of todas) {
   if (q.pregunta.length > LIM.pregunta) errores.push(`${q.id}: pregunta de ${q.pregunta.length} caracteres`);
   if (q.dato.length > LIM.dato) errores.push(`${q.id}: dato de ${q.dato.length} caracteres`);

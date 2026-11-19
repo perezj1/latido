@@ -57,6 +57,7 @@
     "suizamente:catalogo": "node scripts/sincronizar-suizamente-catalogo.mjs",
     "suizamente:generar": "node scripts/generar-suizamente-preguntas.cjs --escribir && node scripts/validar-suizamente.cjs && node scripts/sincronizar-suizamente-catalogo.mjs",
     "test:suizamente:votos": "node scripts/test-suizamente-votos.mjs",
+    "test:suizamente:redaccion": "node scripts/test-suizamente-redaccion.mjs",
     "test:suizamente:referencia": "node scripts/test-suizamente-referencia.mjs",
     "test:suizamente:produccion": "node scripts/test-suizamente-produccion.mjs"
   },

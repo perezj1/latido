@@ -19,6 +19,8 @@ base de datos, pero no se incluyen en las rondas. Hay 1.941 preguntas jugables.
 - `public/suizamente/data/preguntas.json`: banco de 2.000 preguntas del ZIP de Latido,
   incluidas las 100 anteriores intactas; no modificar los índices de sus opciones.
 - `data/suizamente/fuentes/`: fuentes editoriales originales entregadas en el ZIP.
+- `data/suizamente/revision-redaccion.json`: correcciones de redacción de las
+  explicaciones, con texto original y revisado; no añade datos ni modifica opciones.
 - `scripts/generar-suizamente-preguntas.cjs`: generador determinista entregado por
   Latido, adaptado a las rutas del repositorio; permite regenerar el mismo banco.
 - `src/pages/Suizamente.jsx`: ruta React y puente de sesión del mismo origen.
@@ -106,6 +108,7 @@ Los límites almacenan el hash de la IP, no su valor original, y expiran tras un
 ```powershell
 npm run suizamente:validar
 npm run suizamente:comprobar
+npm run test:suizamente:redaccion
 npm run test:suizamente:votos
 npm run test:suizamente:referencia
 npm run build
@@ -132,6 +135,13 @@ conservando `base.json`, y ejecutar `npm run suizamente:generar`. El comando
 genera el JSON público, lo valida y sincroniza el catálogo de la Edge Function
 y los SQL de instalación y actualización. `npm run suizamente:comprobar` verifica
 que el banco publicado coincide exactamente con sus fuentes sin escribir archivos.
+
+Las correcciones gramaticales de los datos se registran en
+`data/suizamente/revision-redaccion.json`. El generador las aplica al final,
+después de seleccionar las preguntas y sus explicaciones, para que una frase
+más larga no suprima el dato de la segunda opción. El test de redacción comprueba
+que solo cambian las explicaciones: conserva IDs, opciones, índices de respuestas
+correctas, cifras, fechas y la asociación de cada dato con su opción.
 
 Después se aplica `supabase/suizamente_actualizar_catalogo.sql` a la base de datos,
 se despliega de nuevo `suizamente-votos` y se publica la web. El ZIP importado
