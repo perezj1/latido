@@ -20,6 +20,21 @@ const pregunta = id => PREG.find(x => x.id === id);
 /* Logo oficial que ya utiliza Latido en la portada. */
 function logo() { return '<img class="logo beat" src="/favicon.svg" width="112" height="112" alt="Latido">'; }
 
+function datoPregunta(q) {
+  const partes = q.opciones.map(op => {
+    const titulo = `${op.e} ${op.t}:`;
+    return { op, titulo, inicio:q.dato.indexOf(titulo) };
+  }).filter(p => p.inicio >= 0).sort((a, b) => a.inicio - b.inicio);
+  if (!partes.length || partes[0].inicio !== 0) {
+    return `<div class="fact"><span class="fe" aria-hidden="true">💡</span><p><b>¿Sabías que…?</b>${esc(q.dato)}</p></div>`;
+  }
+  const entradas = partes.map((p, i) => {
+    const descripcion = q.dato.slice(p.inicio + p.titulo.length, partes[i + 1]?.inicio ?? q.dato.length).trim();
+    return `<div class="fact-entry"><div class="fact-entry-heading"><span aria-hidden="true">${esc(p.op.e)}</span><b>${esc(p.op.t)}:</b></div><p>${esc(descripcion)}</p></div>`;
+  }).join('');
+  return `<div class="fact fact-list"><b>💡 ¿Sabías que…?</b>${entradas}</div>`;
+}
+
 /* ---------- respuestas propias (en este dispositivo) ---------- */
 let local = { resp: {} };
 try {
@@ -171,7 +186,7 @@ function abrirResultado(q, o, punto, repetida) {
         <p class="votes" id="votos"></p>
       </div>
       <div class="panel rise" style="animation-delay:.3s">
-        <div class="fact"><span class="fe" aria-hidden="true">💡</span><p><b>¿Sabías que…?</b>${esc(q.dato)}</p></div>
+        ${datoPregunta(q)}
       </div>
       <div class="row2">
         <button class="btn light" id="sig" type="button">${ultima ? 'Ver resumen' : 'Siguiente'} →</button>
