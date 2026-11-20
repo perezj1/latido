@@ -4,7 +4,7 @@ Preparado el 20 de noviembre de 2026 en la rama `suizamente-social`, sobre `1210
 
 Esta versión incluye las pantallas sociales de Latido, Retos y Duelo, el panel para compartir, la búsqueda de amigos, resultados compactos con la elección del jugador primero y porcentajes estables, y los cinco iconos maskable de Suizamente para su PWA independiente. Antes de publicar se han comprobado el build, los iconos y la caché, la autenticación simulada, las funciones sociales con una base de pruebas y el juego de referencia en móvil y escritorio.
 
-El SQL social ya fue ejecutado manualmente por el propietario. La función `suizamente-social` se ha desplegado con autorización en el Supabase existente y admite el origen exacto `https://suizamente.latido.ch`: su preflight responde 204 y una solicitud sin identidad responde 401 con las cabeceras CORS correctas. El cliente espera la confirmación de Latido antes de enviar mensajes de conexión, usando el origen confirmado tras cualquier redirección. La ruta de conexión de cuenta en Latido sigue requiriendo su publicación en `main` para activar el acceso automático desde Latido; Google y correo funcionan de forma independiente.
+El SQL social ya fue ejecutado manualmente por el propietario. La función `suizamente-social` se ha desplegado con autorización en el Supabase existente y admite el origen exacto `https://suizamente.latido.ch`: su preflight responde 204 y una solicitud sin identidad responde 401 con las cabeceras CORS correctas. El cliente espera la confirmación de Latido antes de enviar mensajes de conexión, usando el origen confirmado tras cualquier redirección. La ruta de conexión de cuenta en Latido se publicó con autorización en `main` mediante el PR #5 (`b5eec3b`); Google y correo funcionan de forma independiente.
 
 ## Qué incluye
 
@@ -124,7 +124,7 @@ Los avisos de amistades, duelos y propuestas se guardan en `app_notifications` y
 
 ### Entrada y onboarding
 
-Al abrir Suizamente se muestra la animación mientras se recupera la sesión propia y se intenta conectar la cuenta de Latido. Si no hay sesión, se muestra la bienvenida con «Crear cuenta» y «Ya tengo una cuenta». El registro y el acceso ofrecen correo/contraseña, Google y conexión con una cuenta existente de Latido. La conexión automática en Latido requiere publicar la ruta preparada en [PR #5](https://github.com/perezj1/latido/pull/5).
+Al abrir Suizamente se muestra la animación mientras se recupera la sesión propia y se intenta conectar la cuenta de Latido. Si no hay sesión, se muestra la bienvenida con «Crear cuenta» y «Ya tengo una cuenta». El registro y el acceso ofrecen correo/contraseña, Google y conexión con una cuenta existente de Latido. La conexión automática en Latido utiliza la ruta publicada con autorización mediante el [PR #5](https://github.com/perezj1/latido/pull/5).
 
 Después del primer acceso autenticado aparecen cuatro pantallas explicativas adaptadas de los diseños de Latido. El quinto paso es el perfil: nombre obligatorio, país, cantón y años en Suiza. «Saltar» lleva al perfil y no permite omitir el nombre. «¡A jugar!» guarda el perfil mediante la API existente y marca `suizamente_onboarding_completed` en los metadatos de la cuenta. La configuración de Latido sigue siendo independiente. La sesión de un dispositivo antiguo consulta la cuenta antes de repetir un onboarding ya completado.
 
