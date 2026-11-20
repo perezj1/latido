@@ -8,3 +8,13 @@ form{display:flex;flex-direction:column;gap:16px;margin-top:24px}label{display:f
 .page .hint,.legal{font-size:14px;line-height:1.5}.message{min-height:24px;font-size:14px;line-height:1.5}.message[role=alert]{color:#C82732}.email{font-weight:700;overflow-wrap:anywhere}.legal{text-align:center;padding-top:20px}.install-help{padding:0 16px 8px;margin-top:18px;background:var(--wash);border:1px solid var(--line);border-radius:22px}
 @media(prefers-color-scheme:dark){:root{color-scheme:dark;color:#F2F5F9;background:#0D1118;--ink:#F2F5F9;--soft:#A2ACBB;--line:#273042;--wash:#121823;--card:#161C26}a,.actions button{color:#94B1FF}.message[role=alert]{color:#FF8B90}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation:none!important;transition:none!important}}
+
+/* Misma jerarquía y contraste que las pantallas sociales compartidas. */
+.page h1{font-size:28px;font-weight:800;line-height:1.2}
+.page .button{border-radius:18px;font-weight:700}
+.page .primary{background:#2563eb;color:#ffffff}
+.page .secondary{background:var(--card)}
+.page a:not(.button),.page .actions button{color:#1d4ed8}
+.page .back{color:var(--soft)}
+.page input:focus-visible,.page button:focus-visible,.page a:focus-visible{outline-color:#2563eb}
+@media(prefers-color-scheme:dark){.page a:not(.button),.page .actions button{color:#aecbff}.page .back{color:var(--soft)}}

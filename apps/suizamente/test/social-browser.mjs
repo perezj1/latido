@@ -57,10 +57,20 @@ async function answerRound(view,count=10){
  }
  await expect(view.game.locator('.done')).toBeVisible()
 }
+async function awardReadability(view){
+ const result=await view.game.locator('.s-award[aria-label]').evaluate(card=>{
+  const luminance=color=>{const rgb=color.match(/[\d.]+/g).slice(0,3).map(Number).map(v=>{v/=255;return v<=.04045?v/12.92:((v+.055)/1.055)**2.4});return rgb[0]*.2126+rgb[1]*.7152+rgb[2]*.0722}
+  const background=luminance(window.getComputedStyle(card).backgroundColor),bounds=card.getBoundingClientRect()
+  return {fits:bounds.left>=0&&bounds.right<=innerWidth,ratios:[...card.querySelectorAll('h2,p')].map(node=>{const text=luminance(window.getComputedStyle(node).color);return (Math.max(text,background)+.05)/(Math.min(text,background)+.05)})}
+ })
+ assert.ok(result.fits,'Achievement card must fit a narrow mobile screen')
+ assert.ok(result.ratios.every(ratio=>ratio>=4.5),'All achievement text must have at least 4.5:1 contrast')
+}
 let a,b,guest,ssoView
 try{
  a=await create(alice)
- await expect(a.game.locator('h1')).toHaveText('Hola, Nombre Latido')
+ await expect(a.game.locator('.s-greeting')).toHaveText('Hola, Nombre Latido 👋')
+ await expect(a.game.locator('h1')).toHaveText('¡A jugar!')
  await expect(a.game.locator('.s-nav button')).toHaveCount(5)
  await expect(a.game.locator('.s-nav button[aria-current=page]')).toContainText('Jugar')
  await a.page.screenshot({path:'test-results/social/inicio.png',fullPage:true})
@@ -156,6 +166,27 @@ try{
  await expect(b.game.locator('.social')).toContainText('Uri')
  assert.equal(await b.game.locator('body').evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true)
  await b.page.screenshot({path:'test-results/social/perfil-oscuro-320.png',fullPage:true})
+ // Earn an actual medal in the fixture and check its presentation in both themes.
+ const house=f.questions.filter(q=>q.tipo==='real'&&q.tema==='casa'),actor='user:'+alice
+ const previous=(await f.db.query('SELECT pregunta,acierto FROM suizamente_social.respuestas WHERE jugador=$1',[actor])).rows
+ const answered=new Set(previous.map(r=>r.pregunta)),target=house.find(q=>!answered.has(q.id))
+ const correct=house.filter(q=>previous.some(r=>r.pregunta===q.id&&r.acierto)).length
+ assert.ok(correct<10)
+ for(const q of house.filter(q=>q.id!==target.id&&!answered.has(q.id)).slice(0,9-correct))await f.db.query('INSERT INTO suizamente_social.respuestas(jugador,pregunta,opcion,acierto) VALUES($1,$2,$3,true)',[actor,q.id,q.correcta])
+ await f.db.query("UPDATE suizamente_social.jugadores SET ajustes=ajustes||'{\"apariencia\":\"light\"}'::jsonb WHERE id=$1",[actor])
+ await f.reset()
+ const ready=a.page.waitForResponse(r=>r.url().endsWith('/bootstrap')&&r.status()===200)
+ await a.page.goto(origin+'/jugar?p='+target.id);await ready
+ await a.page.mouse.move(0,0)
+ await a.game.locator('.opt[data-o="'+target.correcta+'"]').click()
+ await a.game.getByRole('dialog').waitFor();await a.game.locator('#sig').click()
+ await expect(a.game.locator('.s-award[aria-label]')).toContainText('Madrugón del reciclaje')
+ await awardReadability(a)
+ await a.page.screenshot({path:'test-results/social/medalla-nueva-clara.png',fullPage:true})
+ await a.page.setViewportSize({width:320,height:740})
+ await a.game.locator('html').evaluate(node=>{node.dataset.theme='dark'})
+ await awardReadability(a)
+ await a.page.screenshot({path:'test-results/social/medalla-nueva-oscura.png',fullPage:true})
  // Guest play still works, and private rankings/duel creation require an account.
  guest=await create(null)
  await navigate(guest,'/amigos')
@@ -166,7 +197,7 @@ try{
  await expect(guest.game.locator('.s-step')).toHaveCount(4)
  await f.reset()
  ssoView=await create(null,{sso:true})
- await expect(ssoView.game.locator('h1')).toHaveText('Hola, Nombre Latido')
+ await expect(ssoView.game.locator('.s-greeting')).toHaveText('Hola, Nombre Latido 👋')
  assert.equal(otpVerifications,1)
  const stored=await ssoView.page.evaluate(key=>localStorage.getItem(key),storageKey)
  assert.ok(stored.includes('fixture-refresh-'))
