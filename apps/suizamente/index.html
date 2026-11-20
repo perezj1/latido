@@ -4,7 +4,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <script>document.documentElement.classList.add('js')</script>
-  <style>.startup{display:none}.js .boot{display:none}.js .startup{display:flex;min-height:100dvh;align-items:center;justify-content:center;flex-direction:column;gap:12px;text-align:center;font:600 16px/1.5 Poppins,"Segoe UI",system-ui,sans-serif}.startup img{width:72px;height:72px;border-radius:20px}.startup h1,.startup p{margin:0}.startup h1{font-size:28px;font-weight:800;letter-spacing:-.035em}.startup .red{color:#FA2F35}.startup .blue{color:#4A76EF}.startup p{font-size:14px;color:#5A6577}@media(prefers-color-scheme:dark){.startup p{color:#A2ACBB}}</style>
+  <style>.startup{display:none}.js .boot{display:none}</style>
+  <link rel="stylesheet" href="/src/startup.css">
   <title>Suizamente · Un juego de Latido.ch</title>
   <meta name="description" content="Elige, descubre qué piensa la comunidad y aprende sobre Suiza. Juega a ¿Qué prefieres?, Preguntas y respuestas y Mix en Suizamente, de Latido.ch.">
   <meta name="robots" content="__ROBOTS__">
@@ -32,9 +33,27 @@
 <body>
   <main id="app">
     <section class="startup" role="status" aria-live="polite">
-      <img src="/icons/maskable-96.png" width="72" height="72" alt="">
-      <h1><span class="red">Suiza</span><span class="blue">mente</span></h1>
-      <p>Abriendo el juego…</p>
+      <div class="ap-todo">
+        <div class="ap-logo-wrap" aria-hidden="true">
+          <svg class="ap-logo" viewBox="100 80 1230 930" width="220" height="166">
+            <g fill="none" stroke-linecap="round" stroke-width="112">
+              <path class="ap-rayo ap-r1" d="M346 584 182 527" stroke="#03AA98"></path>
+              <path class="ap-rayo ap-r2" d="M483 373 377 247" stroke="#F9A719"></path>
+              <path class="ap-rayo ap-r3" d="M710 323V157" stroke="#FA2F35"></path>
+              <path class="ap-rayo ap-r4" d="M936 372 1045 243" stroke="#4A76EF"></path>
+              <path class="ap-rayo ap-r5" d="M1072 580 1245 525" stroke="#24BFE2"></path>
+            </g>
+            <g class="ap-cuadro">
+              <rect x="435" y="446" width="545" height="544" rx="135" fill="#FA2F35"></rect>
+              <path d="M649 543h118v117h117v118H767v117H649V778H532V660h117Z" fill="#FFFFFF"></path>
+            </g>
+          </svg>
+        </div>
+        <h1><span class="ap-suiza">Suiza</span><span class="ap-mente">mente</span></h1>
+        <p class="ap-lema">Un juego de <b>latido.ch</b></p>
+        <div class="ap-puntos" aria-hidden="true"><span class="ap-punto"></span><span class="ap-punto"></span><span class="ap-punto"></span><span class="ap-punto"></span><span class="ap-punto"></span><span class="ap-punto"></span></div>
+        <span class="ap-status">Comprobando tu sesión…</span>
+      </div>
     </section>
     <section class="page boot">
       <img class="brand-icon" src="/favicon.svg" width="72" height="72" alt="Latido">

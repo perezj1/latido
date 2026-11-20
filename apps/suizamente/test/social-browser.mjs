@@ -8,7 +8,7 @@ import { installLatidoSsoBridge } from '../../../src/lib/suizamenteSsoBridge.js'
 const f=await fixture(),origin='http://127.0.0.1:5271',env=loadEnv('production',process.cwd(),'VITE_')
 const storageKey='sb-'+new URL(env.VITE_SUPABASE_URL).hostname.split('.')[0]+'-auth-token'
 const server=await preview({preview:{host:'127.0.0.1',port:5271,strictPort:true}})
-const browser=await chromium.launch({headless:true}),errors=[],requests=[],ssoWarnings=[]
+const browser=await chromium.launch({headless:true}),errors=[],requests=[],ssoWarnings=[],logouts=[]
 let otpVerifications=0,slowPeople=false
 await mkdir('test-results/social',{recursive:true})
 async function create(id,options={}){
@@ -28,7 +28,7 @@ async function create(id,options={}){
     return route.fulfill({contentType:'text/html',body:'<!doctype html><script>'+script+'</script>'})
   }
   if(sso&&url.pathname==='/auth/v1/verify'){assert.equal(req.postDataJSON().token_hash,'fixture-one-use-otp');otpVerifications++;return route.fulfill({json:session(alice)})}
-  if(url.pathname==='/auth/v1/logout')return route.fulfill({status:204,body:''})
+  if(url.pathname==='/auth/v1/logout'){logouts.push(url.searchParams.get('scope'));return route.fulfill({status:204,body:''})}
   const social=url.pathname.includes('/functions/v1/suizamente-social'),votes=url.pathname.includes('/functions/v1/suizamente-votos')
   if(!social&&!votes)return route.fulfill({json:[]})
   let body={};try{body=req.postDataJSON()||{}}catch{}
@@ -39,7 +39,7 @@ async function create(id,options={}){
   return route.fulfill({status:result.status,headers:result.headers,...(result.status===204?{body:''}:{json:result.body})})
  })
  const page=await context.newPage();await page.goto(origin)
- if(ssoUnavailable)await expect(page.locator('iframe.game')).toBeVisible({timeout:2000})
+ if(ssoUnavailable){await expect(page.locator('.startup')).toBeVisible();await expect(page.locator('.boot')).toBeHidden();await expect(page.locator('iframe.game')).toBeVisible({timeout:7000})}
  const game=page.frameLocator('iframe.game')
  await expect(game.locator('.social')).toBeVisible()
  await expect(game.locator('.social')).toHaveAttribute('data-online','true')
@@ -288,6 +288,19 @@ try{
  const stored=await ssoView.page.evaluate(key=>localStorage.getItem(key),storageKey)
  assert.ok(stored.includes('fixture-refresh-'))
  assert.equal(stored.includes('root-refresh-must-never-be-copied'),false)
+ await navigate(ssoView,'/perfil')
+ await expect(ssoView.game.getByRole('button',{name:'Cerrar sesión',exact:true})).toBeVisible()
+ await ssoView.game.getByRole('button',{name:'Cerrar sesión',exact:true}).scrollIntoViewIfNeeded()
+ await ssoView.page.screenshot({path:'test-results/social/perfil-cerrar-sesion.png',fullPage:true})
+ await ssoView.game.getByRole('button',{name:'Cerrar sesión',exact:true}).click()
+ await expect(ssoView.page).toHaveURL(origin+'/cuenta')
+ await expect(ssoView.page.getByRole('button',{name:'Entrar',exact:true})).toBeVisible()
+ assert.equal(logouts.at(-1),'local')
+ assert.equal(await ssoView.page.evaluate(()=>localStorage.getItem('suizamente:sso-optout')),'true')
+ assert.equal(await ssoView.page.evaluate(key=>localStorage.getItem(key),storageKey),null)
+ await ssoView.page.reload()
+ await expect(ssoView.page.getByRole('button',{name:'Entrar',exact:true})).toBeVisible()
+ assert.equal(otpVerifications,1,'Logging out must suppress automatic Latido reconnection')
  await ssoView.context.close();ssoView=null
  ssoView=await create(null,{sso:true,ssoUnavailable:true})
  await expect(ssoView.game.locator('[data-play="dilemas"]')).toBeVisible()

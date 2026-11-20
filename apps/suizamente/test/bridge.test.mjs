@@ -9,6 +9,20 @@ function host() {
   const target = {location:{origin:'https://suizamente.latido.ch'},addEventListener:(_name,fn) => {listener=fn},removeEventListener:(_name,fn) => {assert.equal(fn,listener);listener=null}}
   return {frame,target,sent,dispatch:event => listener?.(event),event:{origin:target.location.origin,source:frame,data:{type:'suizamente:identity',requestId:'nonce'}}}
 }
+
+test('profile logout is accepted only from the standalone game frame and exact origin',async()=>{
+ const h=host();let calls=0
+ connectSuizamenteSession({target:h.target,getFrame:()=>h.frame,getSession:async()=>({}),api:'test',standalone:true,onLogout:async()=>{calls++}})
+ const event={...h.event,data:{type:'suizamente:logout'}}
+ await h.dispatch({...event,origin:'https://www.latido.ch'})
+ await h.dispatch({...event,source:{}})
+ assert.equal(calls,0)
+ await h.dispatch(event);assert.equal(calls,1)
+ const integrated=host()
+ connectSuizamenteSession({target:integrated.target,getFrame:()=>integrated.frame,getSession:async()=>({}),api:'test',onLogout:()=>{calls++}})
+ await integrated.dispatch({...integrated.event,data:{type:'suizamente:logout'}})
+ assert.equal(calls,1,'An embedded game cannot close the parent Latido session')
+})
 test('hands current sessions only to the exact same-origin game window', async () => {
   const h=host()
   let calls=0, token='first'

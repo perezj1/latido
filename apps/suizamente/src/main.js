@@ -8,7 +8,7 @@ import './style.css'
 const root = document.getElementById('app')
 const esc = text => String(text ?? '').replace(/[&<>"]/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[c]))
 let session = null, client, config, disposeFrame, installPrompt, booted = false
-let accountMode = 'login'
+let accountMode = 'login', signingOut = false
 
 window.addEventListener('beforeinstallprompt', event => {
   event.preventDefault()
@@ -48,9 +48,25 @@ function mountGame() {
     getFrame:() => frame.isConnected ? frame.contentWindow : null,
     getSession:() => client.auth.getSession(), api:config.api, standalone:true,
     experience:true,socialApi:config.socialApi,getPath:()=>location.pathname+location.search,
+    onLogout:logout,
     onNavigate:next=>{history.pushState(null,'',next);metadata(!['/','/bienvenida','/como-se-juega'].includes(new URL(next,location.origin).pathname))},
   })
   root.replaceChildren(frame)
+}
+async function logout() {
+  if(signingOut)return
+  signingOut=true
+  try {
+    const {error}=await client.auth.signOut({scope:'local'})
+    if(error)throw error
+    try{localStorage.setItem('suizamente:sso-optout','true')}catch{/* Storage may be unavailable. */}
+    session=null;accountMode='login'
+    history.replaceState(null,'','/cuenta');render()
+  }catch{
+    const frame=root.querySelector('iframe.game')
+    if(frame)frame.contentWindow.postMessage({type:'suizamente:logout-error'},location.origin)
+    else{const button=root.querySelector('#logout');if(button)button.disabled=false;message('No se ha podido cerrar la sesión. Vuelve a intentarlo.',true)}
+  }finally{signingOut=false}
 }
 function renderAccount() {
   metadata(true)
@@ -59,13 +75,7 @@ function renderAccount() {
     shell('Tu cuenta', `<p>Has entrado con tu cuenta de Latido.</p><p class="email">${esc(session.user.email)}</p><p>Tus respuestas guardadas en esta cuenta se recuperan también al jugar desde Latido.ch.</p><a class="button primary" href="/">Seguir jugando</a><button class="button secondary" id="logout">Cerrar sesión en esta app</button><p id="message" class="message" role="status" aria-live="polite"></p>`)
     root.querySelector('#logout').onclick = async event => {
       event.currentTarget.disabled = true
-      try {
-        // Do not revoke the independent sessions on Latido or other devices.
-        const { error } = await client.auth.signOut({ scope:'local' })
-        if (error) { event.target.disabled = false; return message(authError(error), true) }
-        try{localStorage.setItem('suizamente:sso-optout','true')}catch{/* Storage may be unavailable. */}
-        session = null; render()
-      } catch { event.target.disabled = false; message('No se ha podido cerrar la sesión. Vuelve a intentarlo.', true) }
+      await logout()
     }
     return
   }
@@ -181,15 +191,13 @@ async function start() {
     client.auth.onAuthStateChange((_event, nextSession) => {
       const changed = session?.user?.id !== nextSession?.user?.id
       session = nextSession
-      if (booted && changed && (isSuizamentePath(location.pathname+location.search)||path()==='/cuenta')) setTimeout(render, 0)
+      if (booted && changed && !signingOut && (isSuizamentePath(location.pathname+location.search)||path()==='/cuenta')) setTimeout(render, 0)
     })
     session = (await client.auth.getSession()).data.session
     let skipSso=false;try{skipSso=localStorage.getItem('suizamente:sso-optout')==='true'}catch{}
+    if(!session&&!path().startsWith('/auth/')&&!window.SUIZAMENTE_DISABLE_SSO&&!skipSso)session=await connectLatidoAccount({client,socialApi:config.socialApi})
     booted = true
     render()
-    // Mount the game immediately; a slow or unavailable Latido bridge must not
-    // hold the initial screen. verifyOtp triggers onAuthStateChange if connected.
-    if(!session&&!path().startsWith('/auth/')&&!window.SUIZAMENTE_DISABLE_SSO&&!skipSso)void connectLatidoAccount({client,socialApi:config.socialApi}).catch(()=>{})
     if (import.meta.env.PROD && 'serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js', { scope:'/' }).catch(() => {})
   } catch (error) {
     console.error('Suizamente: ' + error.message)

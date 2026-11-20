@@ -1,0 +1,34 @@
+/* Opening animation supplied by Latido, adapted to the actual loading state. */
+.js .startup{display:flex;min-height:100dvh;align-items:center;justify-content:center;background:var(--card,#fff);color:var(--ink,#0f1a2b);font-family:Poppins,"Segoe UI",system-ui,sans-serif;overflow:hidden}
+.ap-todo{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;width:100%;padding:24px 16px 40px}
+.ap-logo-wrap,.ap-logo{position:relative;width:220px;height:166px;overflow:visible;flex:none}
+.startup h1{margin:0;display:flex;overflow:hidden;padding:0 4px;font-size:clamp(36px,12.3vw,48px);line-height:1.2;font-weight:800;letter-spacing:-.02em}
+.ap-suiza,.ap-mente{display:inline-block}.ap-suiza{color:#FA2F35}.ap-mente{color:#4A76EF}
+.startup .ap-lema{margin:0;font-size:16px;font-weight:500;color:var(--soft,#5a6577)}.ap-lema b{font-weight:800;color:var(--ink,#0f1a2b)}
+.ap-puntos{display:flex;gap:8px;margin-top:6px}.ap-punto{width:10px;height:10px;border-radius:50%;background:#24E2C9}.ap-punto:nth-child(2){background:#03AA98;animation-delay:.06s}.ap-punto:nth-child(3){background:#F9A719;animation-delay:.12s}.ap-punto:nth-child(4){background:#FA2F35;animation-delay:.18s}.ap-punto:nth-child(5){background:#4A76EF;animation-delay:.24s}.ap-punto:nth-child(6){background:#24BFE2;animation-delay:.30s}
+.ap-status{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+@media(max-height:500px){.ap-todo{gap:12px;padding-bottom:20px}.ap-logo-wrap,.ap-logo{width:180px;height:136px}}
+.ap-cuadro{transform-box:fill-box;transform-origin:center;animation:ap-cuadro 4.2s cubic-bezier(.3,1.4,.5,1) both}
+.ap-rayo{stroke-dasharray:200;stroke-dashoffset:0}
+.ap-r1{animation:ap-r1 4.2s ease-out both}
+.ap-r2{animation:ap-r2 4.2s ease-out both}
+.ap-r3{animation:ap-r3 4.2s ease-out both}
+.ap-r4{animation:ap-r4 4.2s ease-out both}
+.ap-r5{animation:ap-r5 4.2s ease-out both}
+.ap-logo{transform-origin:49% 69%;animation:ap-latido 4.2s ease-in-out both}
+.ap-suiza{animation:ap-suiza 4.2s cubic-bezier(.2,.9,.3,1.2) both}
+.ap-mente{animation:ap-mente 4.2s cubic-bezier(.2,.9,.3,1.2) both}
+.ap-lema{animation:ap-lema 4.2s ease-out both}
+.ap-punto{animation:ap-punto 4.2s cubic-bezier(.3,1.6,.5,1) both}
+@keyframes ap-cuadro{0%{opacity:0;transform:scale(.3) rotate(-14deg)}10%{opacity:1;transform:scale(1.12) rotate(4deg)}15%{transform:scale(.95) rotate(0)}20%,100%{opacity:1;transform:scale(1) rotate(0)}}
+@keyframes ap-r1{0%,16%{stroke-dashoffset:200;opacity:0}17%{opacity:1}26%,100%{stroke-dashoffset:0;opacity:1}}
+@keyframes ap-r2{0%,19%{stroke-dashoffset:200;opacity:0}20%{opacity:1}29%,100%{stroke-dashoffset:0;opacity:1}}
+@keyframes ap-r3{0%,22%{stroke-dashoffset:200;opacity:0}23%{opacity:1}32%,100%{stroke-dashoffset:0;opacity:1}}
+@keyframes ap-r4{0%,25%{stroke-dashoffset:200;opacity:0}26%{opacity:1}35%,100%{stroke-dashoffset:0;opacity:1}}
+@keyframes ap-r5{0%,28%{stroke-dashoffset:200;opacity:0}29%{opacity:1}38%,100%{stroke-dashoffset:0;opacity:1}}
+@keyframes ap-latido{0%,38%{transform:scale(1)}42%{transform:scale(1.1)}46%{transform:scale(1)}50%{transform:scale(1.06)}55%,100%{transform:scale(1)}}
+@keyframes ap-suiza{0%,30%{opacity:0;transform:translateY(70%)}40%,100%{opacity:1;transform:translateY(0)}}
+@keyframes ap-mente{0%,34%{opacity:0;transform:translateY(70%)}44%,100%{opacity:1;transform:translateY(0)}}
+@keyframes ap-lema{0%,46%{opacity:0;transform:translateY(10px)}56%,100%{opacity:1;transform:translateY(0)}}
+@keyframes ap-punto{0%,50%{opacity:0;transform:scale(0)}55%{opacity:1;transform:scale(1.4)}58%,100%{opacity:1;transform:scale(1)}}
+@media (prefers-reduced-motion: reduce){.ap-todo,.ap-todo *{animation:none !important}}
