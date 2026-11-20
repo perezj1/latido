@@ -3,19 +3,15 @@ import { resilientAuthStorage } from '../../../src/lib/authStorage.js'
 import { connectSuizamenteSession,isSuizamentePath } from '../../../src/lib/suizamenteSessionBridge.js'
 import { connectLatidoAccount } from './latidoSso.js'
 import { publicConfig } from './config.js'
+import { createSuizamenteInstall } from './install.js'
 import './style.css'
 
 const root = document.getElementById('app')
 const esc = text => String(text ?? '').replace(/[&<>"]/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[c]))
-let session = null, client, config, disposeFrame, installPrompt, booted = false
+let session = null, client, config, disposeFrame, booted = false
 let accountMode = 'login', signingOut = false
 
-window.addEventListener('beforeinstallprompt', event => {
-  event.preventDefault()
-  installPrompt = event
-  if (path() === '/instalar') render()
-})
-window.addEventListener('appinstalled', () => { installPrompt = null; if (path() === '/instalar') render() })
+const installation=createSuizamenteInstall({navigate:next=>{history.pushState(null,'',next);render()}})
 
 function path() { return location.pathname.replace(/\/+$/, '') || '/' }
 function message(text, error=false) {
@@ -30,7 +26,7 @@ function authError(error) {
   return 'No se ha podido completar la solicitud. Revisa los datos y vuelve a intentarlo.'
 }
 function shell(title, content, {back=true}={}) {
-  root.innerHTML = `<section class="page">${back?'<a class="back" href="/">Volver al juego</a>':''}<img class="brand-icon" src="/favicon.svg" alt="Latido" width="64" height="64"><h1>${esc(title)}</h1>${content}<p class="legal"><a href="https://www.latido.ch/privacidad" target="_blank" rel="noopener">Privacidad</a> · <a href="https://www.latido.ch/terminos" target="_blank" rel="noopener">Términos de Latido</a></p></section>`
+  root.innerHTML = `<section class="page">${back?'<a class="back" href="/">Volver al juego</a>':''}<img class="brand-icon" src="/suizamente/icons/suizamente-circle-logo-192.png" alt="Suizamente" width="64" height="64"><h1>${esc(title)}</h1>${content}<p class="legal"><a href="https://www.latido.ch/privacidad" target="_blank" rel="noopener">Privacidad</a> · <a href="https://www.latido.ch/terminos" target="_blank" rel="noopener">Términos de Latido</a></p></section>`
 }
 function metadata(privatePage) {
   document.querySelector('meta[name="robots"]').content = privatePage || __SUIZAMENTE_PREVIEW__ ? 'noindex, nofollow' : 'index, follow'
@@ -49,7 +45,7 @@ function mountGame() {
     getSession:() => client.auth.getSession(), api:config.api, standalone:true,
     experience:true,socialApi:config.socialApi,getPath:()=>location.pathname+location.search,
     onLogout:logout,
-    onNavigate:next=>{history.pushState(null,'',next);metadata(!['/','/bienvenida','/como-se-juega'].includes(new URL(next,location.origin).pathname))},
+    onNavigate:next=>{history.pushState(null,'',next);installation.setRoute(new URL(next,location.origin).pathname);metadata(!['/','/bienvenida','/como-se-juega'].includes(new URL(next,location.origin).pathname))},
   })
   root.replaceChildren(frame)
 }
@@ -156,19 +152,10 @@ function renderRecovery() {
 function renderInstall() {
   metadata(false)
   document.title = 'Instalar Suizamente · Latido.ch'
-  const installed = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true
-  shell('Suizamente en tu móvil', `<p>Instala Suizamente para abrir el juego directamente desde tu pantalla de inicio.</p>
-    ${installed ? '<p>Ya estás usando Suizamente como aplicación.</p>' : '<button id="install" class="button primary" type="button">Instalar Suizamente</button><div class="install-help"><h2>Desde el navegador</h2><p>En Chrome o Edge, abre el menú y busca la opción para instalar la aplicación.</p><p>En iPhone o iPad, abre Suizamente en Safari, pulsa Compartir y elige «Añadir a pantalla de inicio».</p></div>'}
-    <p class="hint">La instalación es independiente de Latido. Necesitas conexión para entrar en tu cuenta y consultar los votos de la comunidad.</p><p id="message" class="message" role="status" aria-live="polite"></p>`)
-  const button = root.querySelector('#install')
-  if (button) button.onclick = async () => {
-    if (!installPrompt) return message('Usa la opción de instalación del menú de tu navegador. En iPhone, utiliza Compartir en Safari.')
-    const prompt = installPrompt
-    installPrompt = null
-    try { await prompt.prompt(); await prompt.userChoice } catch { message('Puedes volver a intentarlo desde el menú del navegador.') }
-  }
+  installation.renderGuide(root)
 }
 function render() {
+  installation.setRoute(path())
   disposeFrame?.(); disposeFrame = null
   if (isSuizamentePath(location.pathname+location.search)) mountGame()
   else if (path() === '/cuenta') renderAccount()
@@ -200,7 +187,7 @@ async function start() {
     })
     session = (await client.auth.getSession()).data.session
     let skipSso=false;try{skipSso=localStorage.getItem('suizamente:sso-optout')==='true'}catch{}
-    if(!session&&!path().startsWith('/auth/')&&!window.SUIZAMENTE_DISABLE_SSO&&!skipSso)session=await connectLatidoAccount({client,socialApi:config.socialApi})
+    if(!session&&path()!=='/instalar'&&!path().startsWith('/auth/')&&!window.SUIZAMENTE_DISABLE_SSO&&!skipSso)session=await connectLatidoAccount({client,socialApi:config.socialApi})
     booted = true
     render()
     if (import.meta.env.PROD && 'serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js', { scope:'/' }).catch(() => {})

@@ -18,3 +18,4 @@ form{display:flex;flex-direction:column;gap:16px;margin-top:24px}label{display:f
 .page .back{color:var(--soft)}
 .page input:focus-visible,.page button:focus-visible,.page a:focus-visible{outline-color:#2563eb}
 @media(prefers-color-scheme:dark){.page a:not(.button),.page .actions button{color:#aecbff}.page .back{color:var(--soft)}}
+.brand-icon{border-radius:50%;object-fit:contain}

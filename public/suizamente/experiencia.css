@@ -28,6 +28,7 @@
 .social a{color:var(--s-accent-text);text-underline-offset:3px}
 .social .s-soft,#social-summary .s-soft{color:var(--s-muted);font-size:14px;line-height:1.55}
 .s-brand{font-weight:800;letter-spacing:-.035em}
+.s-brand img,.s-welcome-brand>img{border-radius:50%;object-fit:contain}
 .s-brand .a{color:#e82d40}.s-brand .b{color:#3f6ee8}
 .s-title-row{align-items:flex-start}
 .s-title-row>div:first-child{min-width:0}

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { mkdir } from 'node:fs/promises'
-import { chromium,expect } from '@playwright/test'
+import { chromium,expect,devices } from '@playwright/test'
 import { loadEnv } from 'vite'
 import { fixture,alice,users,session } from '../apps/suizamente/test/social-db.mjs'
 
@@ -12,7 +12,7 @@ const f=await fixture(),browser=await chromium.launch({headless:true}),logouts=[
 try{
  const context=await browser.newContext({viewport:{width:375,height:667},reducedMotion:'reduce'})
  await context.addInitScript(({origin,key,value})=>{if(location.origin===origin){localStorage.setItem(key,JSON.stringify(value));localStorage.setItem('suizamente:bienvenida','true')}},{origin,key:storageKey,value:session(alice)})
- await context.route('**/*',async route=>{
+ const mockRoute=async route=>{
   const request=route.request(),url=new URL(request.url())
   if(url.origin===origin&&url.pathname.startsWith('/api/suizamente')){
    let body={};try{body=request.postDataJSON()||{}}catch{}
@@ -26,7 +26,8 @@ try{
   if(url.pathname==='/rest/v1/profiles')return route.fulfill({json:{id:alice,name:'Nombre Latido',canton:'Zürich',banned:false,interests:[]}})
   if(url.pathname==='/rest/v1/rpc/get_my_account_access')return route.fulfill({json:{role:'member'}})
   return route.fulfill({json:[]})
- })
+ }
+ await context.route('**/*',mockRoute)
  const page=await context.newPage();page.on('pageerror',error=>errors.push(error.message))
  await page.goto(origin+'/suizamente/perfil')
  const game=page.frameLocator('iframe[title="Suizamente, un juego de Latido"]')
@@ -49,6 +50,25 @@ try{
  await expect(game.locator('.s-home [data-go="/perfil"]')).toHaveCount(0)
  await expect(game.locator('.s-nav [data-go="/perfil"] .s-avatar')).toBeVisible()
  await page.screenshot({path:'output/suizamente-referencia/inicio-avatar-nav-local-8080.png',fullPage:true})
+ const mobile=await browser.newContext({...devices['iPhone 13'],reducedMotion:'reduce'})
+ await mobile.addInitScript(({origin,key,value})=>{if(location.origin===origin){localStorage.setItem(key,JSON.stringify(value));localStorage.setItem('suizamente:bienvenida','true')}},{origin,key:storageKey,value:session(alice)})
+ await mobile.route('**/*',mockRoute)
+ const ios=await mobile.newPage();ios.on('pageerror',error=>errors.push(error.message))
+ await ios.goto(origin+'/suizamente')
+ await expect(ios.locator('.suizamente-install-banner')).toHaveCount(1)
+ await expect(ios.locator('.suizamente-install-banner')).toContainText('Instala Suizamente')
+ await ios.screenshot({path:'output/suizamente-referencia/banner-instalacion-local-8080.png',fullPage:true})
+ await ios.locator('.suizamente-install-banner [data-install]').click()
+ await expect(ios).toHaveURL(origin+'/suizamente/instalar')
+ await expect(ios.getByRole('button',{name:'Abrir Suizamente para instalar'})).toBeVisible()
+ await expect(ios.locator('video')).toHaveAttribute('src','/videos/install-ios.mp4')
+ const video=await ios.request.get(origin+'/videos/install-ios.mp4',{headers:{Range:'bytes=0-127'}})
+ assert.equal(video.status(),206)
+ await ios.screenshot({path:'output/suizamente-referencia/guia-instalacion-local-8080.png',fullPage:true})
+ await mobile.route('https://suizamente.latido.ch/instalar',route=>route.fulfill({contentType:'text/html',body:'<h1>Destino de instalación de Suizamente</h1>'}))
+ await ios.getByRole('button',{name:'Abrir Suizamente para instalar'}).click()
+ await expect(ios).toHaveURL('https://suizamente.latido.ch/instalar')
+ await mobile.close()
  assert.deepEqual(errors,[])
  console.log('PASS: localhost:8080 profile logout, login without a back control, explicit guest play and a single profile avatar in the bottom navigation. Auth/API mocked, no production writes.')
  await context.close()

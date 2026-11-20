@@ -861,7 +861,7 @@ function AppShell() {
         </Suspense>
       </main>
       {!hideAppNavigation && !isSuizamente && <BottomNav />}
-      {!hideAppNavigation && (
+      {!hideAppNavigation && !isSuizamente && (
         <PWAInstallBanner
           canInstall={canInstall}
           promptInstall={promptInstall}
@@ -871,7 +871,7 @@ function AppShell() {
           onVisibilityChange={setInstallBannerVisible}
         />
       )}
-      {!hideAppNavigation && <LatidoUsefulnessBanner blocked={installBannerVisible} />}
+      {!hideAppNavigation && !isSuizamente && <LatidoUsefulnessBanner blocked={installBannerVisible} />}
     </>
   )
 }

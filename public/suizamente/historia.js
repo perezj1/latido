@@ -10,7 +10,7 @@ function lines(ctx,text,width){
 }
 let logoPromise
 function officialLogo(){
-  if(!logoPromise)logoPromise=new Promise(resolve=>{const img=new Image();img.onload=()=>resolve(img);img.onerror=()=>resolve(null);img.src='/favicon.svg'})
+  if(!logoPromise)logoPromise=new Promise(resolve=>{const img=new Image();img.onload=()=>resolve(img);img.onerror=()=>resolve(null);img.src='/suizamente/icons/suizamente-circle-logo-512.png'})
   return logoPromise
 }
 export async function crearHistoria({titulo,subtitulo='',pregunta=null,conteos=[],eleccion=null,enlace='https://suizamente.latido.ch/'}){

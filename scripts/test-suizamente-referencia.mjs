@@ -57,7 +57,7 @@ try {
     const game = page.frameLocator('iframe[title="Suizamente, un juego de Latido"]')
     await expect(game.locator('.title')).toHaveText('Suizamente')
     await expect(game.locator('#nota')).toHaveText('Tus votos cuentan para los porcentajes de la comunidad.')
-    assert.equal(await game.locator('.logo').getAttribute('src'), '/favicon.svg')
+    assert.equal(await game.locator('.logo').getAttribute('src'), '/suizamente/icons/suizamente-circle-logo-512.png')
     assert.equal(await game.locator('.logo').evaluate(el => el.complete && el.naturalWidth > 0), true)
     assert.equal(await game.locator('body').evaluate(el => getComputedStyle(el).backgroundColor), colorScheme === 'dark' ? 'rgb(13, 17, 24)' : 'rgb(255, 255, 255)')
     assert.equal(await game.locator('body').evaluate(() => document.documentElement.scrollWidth <= innerWidth), true)

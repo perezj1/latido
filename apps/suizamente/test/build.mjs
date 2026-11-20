@@ -11,6 +11,8 @@ assert.match(root,/<link rel="canonical" href="https:\/\/suizamente\.latido\.ch\
 assert.match(root,/<meta name="robots" content="index, follow">/)
 assert.equal(root.includes('__SITE_URL__'),false)
 const manifest=JSON.parse(await read('dist/manifest.webmanifest'))
+assert.equal(hash(await readFile('dist/videos/install-ios.mp4')),hash(await readFile('../../public/videos/install-ios.mp4')))
+for(const size of [128,192,512])assert.equal(hash(await readFile(`dist/suizamente/icons/suizamente-circle-logo-${size}.png`)),hash(await readFile(`../../public/suizamente/icons/suizamente-circle-logo-${size}.png`)))
 for(const size of [72,96,128,192,512]){
   const icon=manifest.icons.find(icon=>icon.sizes===`${size}x${size}`&&icon.purpose==='maskable')
   assert.ok(icon,`Missing supplied maskable icon: ${size}`)

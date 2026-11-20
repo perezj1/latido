@@ -1,0 +1,21 @@
+.suizamente-install-banner{position:fixed;z-index:80;bottom:calc(84px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%);display:flex;align-items:flex-start;gap:12px;width:min(calc(100% - 24px),456px);padding:15px;border-radius:22px;background:linear-gradient(135deg,#1e40af,#2563eb);color:#fff;box-shadow:0 8px 28px #14243b40;font-family:Poppins,"Segoe UI",system-ui,sans-serif;box-sizing:border-box}
+.suizamente-install-banner>img{border-radius:50%;background:#fff;flex:none}
+.suizamente-install-banner-copy{flex:1;min-width:0}.suizamente-install-banner b{font-size:14px;line-height:1.4;display:block}.suizamente-install-banner p{font-size:12px;line-height:1.5;margin:4px 0 10px;color:#e8efff}
+.suizamente-install-banner-copy>div{display:flex;gap:8px}.suizamente-install-banner button{flex:1;min-height:40px;padding:8px 10px;font:700 13px/1.35 Poppins,"Segoe UI",system-ui,sans-serif;border:1px solid #ffffff60;border-radius:12px;background:#fff;color:#1e40af;cursor:pointer}
+.suizamente-install-banner [data-dismiss]{background:#ffffff20;color:#fff}
+.suizamente-install-page{width:min(calc(100% - 32px),480px);margin:20px auto 0;padding-bottom:max(32px,env(safe-area-inset-bottom));font:500 16px/1.6 Poppins,"Segoe UI",system-ui,sans-serif;color:var(--ink,#0f1a2b)}
+.suizamente-install-back{display:inline-flex;align-items:center;min-height:44px;color:#1d4ed8;font-size:14px;font-weight:700;text-underline-offset:3px}
+.suizamente-install-logo{display:block;width:80px;height:80px;margin:12px auto 22px;border-radius:50%}
+.suizamente-install-page h1{font-size:28px;line-height:1.2;letter-spacing:-.025em;font-weight:800;margin:0 0 16px}.suizamente-install-page h2{font-size:18px;line-height:1.4;font-weight:800;margin:0 0 12px}
+.suizamente-install-page p{margin:0 0 18px;color:var(--soft,#5a6577)}
+.suizamente-install-primary{width:100%;min-height:44px;border:0;border-radius:18px;padding:12px 16px;background:#2563eb;color:#fff;font:700 15px/1.4 Poppins,"Segoe UI",system-ui,sans-serif;cursor:pointer;margin-bottom:20px}
+.suizamente-install-guide{padding:18px;margin:0 0 16px;border:1px solid var(--line,#e4e8ef);border-radius:23px;background:var(--wash,#f4f7fb)}
+.suizamente-install-guide.preferred{border-color:#8caef9}.suizamente-install-guide-grid{display:flex;flex-direction:column}.suizamente-install-guide.preferred{order:-1}
+.suizamente-install-guide ol{list-style:decimal;margin:0;padding-left:23px;font-size:14px;line-height:1.6}.suizamente-install-guide li+li{margin-top:8px}.suizamente-install-guide p{font-size:14px;line-height:1.6;margin:0 0 14px}
+.suizamente-install-guide video{display:block;width:100%;max-height:420px;object-fit:contain;border-radius:15px;background:#0f172a}
+.suizamente-install-guide summary{font-size:15px;font-weight:700;cursor:pointer;min-height:30px}.suizamente-install-guide[open] summary{margin-bottom:12px}
+.suizamente-install-page .suizamente-install-note,.suizamente-install-page [data-install-status]{font-size:13px;line-height:1.6}
+.suizamente-install-banner button:focus-visible,.suizamente-install-page :focus-visible{outline:3px solid #24bfe2;outline-offset:3px}
+@media(prefers-color-scheme:dark){.suizamente-install-page{--ink:#f2f5f9;--soft:#b8c6da;--line:#34445b;--wash:#172334}.suizamente-install-back{color:#aecbff}}
+.suizamente-install-host{position:fixed;inset:0;z-index:30;overflow-y:auto;background:#fff}
+@media(prefers-color-scheme:dark){.suizamente-install-host{background:#0d1118}}

@@ -18,8 +18,8 @@ let PREG = [];
 const tema = q => TEMAS[[...q.id].reduce((a, c) => a + c.charCodeAt(0), 0) % TEMAS.length];
 const pregunta = id => PREG.find(x => x.id === id);
 
-/* Logo oficial que ya utiliza Latido en la portada. */
-function logo() { return '<img class="logo beat" src="/favicon.svg" width="112" height="112" alt="Latido">'; }
+/* Logo circular de Suizamente. */
+function logo() { return '<img class="logo beat" src="/suizamente/icons/suizamente-circle-logo-512.png" width="112" height="112" alt="Suizamente">'; }
 
 function datosPorOpcion(q, elegida) {
   const partes = q.opciones.map((op, indice) => {

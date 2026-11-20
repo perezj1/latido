@@ -12,6 +12,8 @@ Inicio, bienvenida, ayuda, retos diarios, duelos y revancha, solicitudes de amis
 
 Las dos aplicaciones comparten `public/suizamente/`. No hay una segunda copia editable del juego ni otra base de datos. Los datos de ejemplo del ZIP no se incorporan.
 
+Los logos internos, el acceso, la bienvenida, la guía de instalación, la pantalla sin conexión y las historias compartidas usan los iconos circulares de Suizamente. Los iconos maskable de instalación se conservan. Al abrir desde Android o iPhone aparece un banner de Suizamente, que se puede cerrar para esa sesión y se oculta durante las preguntas y cuando la aplicación ya está instalada. Android usa el diálogo nativo cuando el navegador lo ofrece; en Safari se muestran los pasos manuales. La guía reutiliza el vídeo existente `public/videos/install-ios.mp4`, que el build de Suizamente publica sin duplicarlo en el repositorio y sin incluirlo en la caché offline. Desde `localhost:8080/suizamente/instalar` se muestra la misma guía y la acción de instalar abre `https://suizamente.latido.ch/instalar`, para instalar Suizamente y no la PWA de Latido.
+
 La PWA independiente muestra la animación de apertura facilitada por Latido mientras comprueba la sesión existente. Se adapta a móvil y modo oscuro y respeta la preferencia de movimiento reducido. El perfil de una cuenta conectada incluye «Cerrar sesión»: cierra únicamente la sesión local de Suizamente, abre `/cuenta` para volver a entrar y desactiva la reconexión automática a Latido hasta que el jugador elija iniciar sesión otra vez. La sesión y los datos de Latido se conservan.
 
 Retos muestra la fecha abreviada y una sola etiqueta «Hoy» en la semana. El resultado de duelo presenta el marcador, la coincidencia en dilemas y cuatro preguntas iniciales, con un control para desplegar las diez. «Compartir» abre un panel con vista previa, imagen para historias, compartir mediante las aplicaciones del dispositivo, copiar texto y crear un duelo del mismo modo. Este último crea diez preguntas nuevas de ese modo; no promete reutilizar la ronda actual. Las imágenes usan los porcentajes reales, el logo oficial de Latido y «Juega en suizamente.latido.ch», sin el nombre del jugador. Si el dispositivo no permite compartir, se descarga la imagen o se copia el texto. Estos ajustes no requieren otro SQL ni alteran las preguntas y opciones publicadas.
@@ -140,6 +142,7 @@ npm --prefix apps/suizamente run build
 npm --prefix apps/suizamente run test:build
 npm --prefix apps/suizamente run test:social
 npm --prefix apps/suizamente run test:browser
+npm --prefix apps/suizamente run test:install
 ```
 
 El generador reconstruye los metadatos y el instalador a partir del banco publicado; no lo modifica. Las pruebas SQL y de navegador verifican puntos únicos, privacidad, permisos, dos jugadores, vinculación, media incluyendo ceros, formularios y móvil claro/oscuro. La función nueva está desplegada y su CORS se ha comprobado en producción sin crear cuentas ni respuestas de prueba.

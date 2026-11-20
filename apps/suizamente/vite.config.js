@@ -1,7 +1,8 @@
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { createHash } from 'node:crypto'
-import { cp, mkdir, readFile, readdir, writeFile } from 'node:fs/promises'
+import { createReadStream } from 'node:fs'
+import { cp, mkdir, readFile, readdir, stat, writeFile } from 'node:fs/promises'
 import { defineConfig, loadEnv } from 'vite'
 import { publicConfig } from './src/config.js'
 
@@ -25,10 +26,11 @@ const icons = {
   '/icons/maskable-512.png':'suizamente/icons/suizamente-logo-512.png',
   '/icons/apple-touch-icon.png':'suizamente/icons/suizamente-logo-192.png',
 }
+const media={'/videos/install-ios.mp4':'videos/install-ios.mp4'}
 const mime = { '.js':'text/javascript', '.json':'application/json', '.css':'text/css', '.html':'text/html', '.svg':'image/svg+xml', '.png':'image/png', '.woff2':'font/woff2' }
 
 async function sharedFiles() {
-  const entries = new Map(Object.entries(icons).map(([url, file]) => [url, path.join(sharedRoot, file)]))
+  const entries = new Map(Object.entries({...icons,...media}).map(([url, file]) => [url, path.join(sharedRoot, file)]))
   async function walk(directory, prefix) {
     for (const item of await readdir(directory, { withFileTypes:true })) {
       const file = path.join(directory, item.name), url = prefix + '/' + item.name
@@ -78,6 +80,17 @@ export default defineConfig(({ command, mode }) => {
           const file = files.get(url.pathname)
           if (!file) return next()
           try {
+            if(path.extname(file)==='.mp4'){
+              const {size}=await stat(file),range=/^bytes=(\d+)-(\d*)$/.exec(req.headers.range||'')
+              res.setHeader('Content-Type','video/mp4');res.setHeader('Accept-Ranges','bytes')
+              if(req.headers.range&&!range){res.statusCode=416;res.setHeader('Content-Range',`bytes */${size}`);return res.end()}
+              const start=range?Number(range[1]):0,end=range&&range[2]?Math.min(Number(range[2]),size-1):size-1
+              if(start>=size||end<start){res.statusCode=416;res.setHeader('Content-Range',`bytes */${size}`);return res.end()}
+              if(range){res.statusCode=206;res.setHeader('Content-Range',`bytes ${start}-${end}/${size}`)}
+              res.setHeader('Content-Length',end-start+1)
+              if(req.method==='HEAD')return res.end()
+              const stream=createReadStream(file,{start,end});stream.on('error',next);res.on('close',()=>stream.destroy());stream.pipe(res);return
+            }
             res.setHeader('Content-Type', (mime[path.extname(file)] || 'application/octet-stream') + (path.extname(file) === '.woff2' || path.extname(file) === '.png' ? '' : '; charset=utf-8'))
             res.setHeader('Cache-Control', 'no-store')
             res.end(await readFile(file))
@@ -87,7 +100,7 @@ export default defineConfig(({ command, mode }) => {
       async closeBundle() {
         if (command !== 'build') return
         await cp(path.join(sharedRoot, 'suizamente'), path.join(output, 'suizamente'), { recursive:true })
-        for (const [url, source] of Object.entries(icons)) {
+        for (const [url, source] of Object.entries({...icons,...media})) {
           const destination = path.join(output, url.slice(1))
           await mkdir(path.dirname(destination), { recursive:true })
           await cp(path.join(sharedRoot, source), destination)
@@ -104,7 +117,7 @@ export default defineConfig(({ command, mode }) => {
           if (privatePage) html = html.replace(/(<meta name="referrer" content=")[^"]+/, '$1no-referrer')
           let fallback = privatePage
             ? '<section class="page"><h1>Tu cuenta de Suizamente</h1><p>Abriendo tu cuenta…</p><noscript>Activa JavaScript para entrar.</noscript><a href="/">Volver al juego</a></section>'
-            : '<section class="page"><h1>Instalar Suizamente</h1><p>Un juego de Latido.ch para aprender sobre Suiza.</p><p>En Chrome o Edge, usa la opción de instalación del menú. En iPhone o iPad, abre Safari, pulsa Compartir y elige «Añadir a pantalla de inicio».</p><p>Necesitas conexión para abrir el juego y consultar la comunidad.</p><a href="/">Jugar a Suizamente</a></section>'
+            : '<section class="suizamente-install-page"><img class="suizamente-install-logo" src="/suizamente/icons/suizamente-circle-logo-192.png" width="80" height="80" alt="Suizamente"><h1>Suizamente en tu móvil</h1><p>Un juego de Latido.ch para aprender sobre Suiza.</p><h2>iPhone y iPad</h2><ol><li>Abre suizamente.latido.ch en Safari.</li><li>Pulsa Compartir; si está dentro del menú •••, ábrelo primero.</li><li>Elige Añadir a pantalla de inicio y confirma Añadir.</li></ol><h2>Android</h2><p>En Chrome, abre el menú ⋮ y elige Instalar aplicación o Añadir a pantalla de inicio.</p><h2>Vídeo de instalación</h2><p>El vídeo usa Latido como ejemplo. Sigue los mismos pasos en Suizamente.</p><video src="/videos/install-ios.mp4" controls playsinline preload="none" aria-label="Vídeo para instalar Suizamente en iPhone" style="width:100%;max-height:420px"></video><p>En Chrome o Edge en un ordenador, utiliza el icono de instalación de la barra de direcciones o el menú del navegador.</p><p>Necesitas conexión para jugar y consultar la comunidad.</p><a href="/">Jugar a Suizamente</a></section>'
           if (route==='/bienvenida'||route==='/como-se-juega') fallback='<section class="page"><h1>'+routeTitles[route]+'</h1><p>Elige entre dilemas suizos y preguntas con respuesta. Descubre qué eligió la comunidad, aprende un dato en cada respuesta y guarda tus favoritos.</p><p>Juega el reto diario o invita a tus amigos a un duelo con las mismas preguntas.</p><a href="/">Jugar a Suizamente</a></section>'
           html = html.replace(/(<main id="app">)[\s\S]*?(<\/main>)/, `$1${fallback}$2`)
           const directory = path.join(output, route.slice(1))

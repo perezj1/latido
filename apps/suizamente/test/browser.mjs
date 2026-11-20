@@ -181,7 +181,7 @@ try {
   await expect(page.getByRole('heading',{name:'Suizamente en tu móvil'})).toBeVisible()
   await expect(page.locator('meta[name=robots]')).toHaveAttribute('content','index, follow')
   await page.getByRole('button',{name:'Instalar Suizamente'}).click()
-  await expect(page.locator('#message')).toContainText('menú de tu navegador')
+  await expect(page.locator('[data-install-status]')).toContainText('menú de tu navegador')
   await guest.setOffline(true)
   await page.goto(origin+'/cuenta')
   await expect(page.locator('body')).toContainText('conexión')

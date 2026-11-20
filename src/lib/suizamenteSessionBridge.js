@@ -28,7 +28,7 @@ export function connectSuizamenteSession({ getFrame, getSession, api, standalone
       type:'suizamente:session', requestId:event.data.requestId,
       token:session?.access_token || null, userId:session?.user?.id || null,
       api, ...(standalone ? { app:'standalone' } : {}),
-      ...(experience ? {experience:true,socialApi,path:getPath(),userName:session?.user?.user_metadata?.name||null,accountPath:standalone?'/cuenta':'/auth?next=%2Fsuizamente',installPath:standalone?'/instalar':null,canLogout:allowLogout&&typeof onLogout==='function'} : {}),
+      ...(experience ? {experience:true,socialApi,path:getPath(),userName:session?.user?.user_metadata?.name||null,accountPath:standalone?'/cuenta':'/auth?next=%2Fsuizamente',installPath:standalone?'/instalar':'/suizamente/instalar',canLogout:allowLogout&&typeof onLogout==='function'} : {}),
     }, target.location.origin)
   }
   target.addEventListener('message', identify)
