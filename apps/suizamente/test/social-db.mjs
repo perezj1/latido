@@ -22,7 +22,7 @@ export async function fixture(){
  await db.exec(await file('supabase/suizamente_votos.sql'))
  await db.exec(await file('supabase/suizamente_social_instalar.sql'))
  const questions=JSON.parse(await file('public/suizamente/data/preguntas.json')).preguntas
- await db.exec(`ALTER TABLE public.profiles ADD COLUMN avatar_url text;UPDATE public.profiles SET avatar_url='https://avatars.example.test/latido-alice.svg' WHERE id='${alice}';`)
+ await db.exec(`ALTER TABLE public.profiles ADD COLUMN avatar_url text;UPDATE public.profiles SET avatar_url='https://avatars.example.test/latido-alice.svg' WHERE id='${alice}';UPDATE public.profiles SET avatar_url='https://avatars.example.test/suizamente-bob.svg' WHERE id='${bob}';`)
  const client={from:table=>({select:columns=>({in:async(_column,ids)=>{if(table!=='profiles'||columns!=='id,avatar_url')throw new Error('Unexpected public fields');return {data:(await db.query('SELECT id,avatar_url FROM public.profiles WHERE id=ANY($1::uuid[])',[ids])).rows}}})}),auth:{getUser:async access=>{const id=Object.keys(users).find(id=>token(id)===access);return id?{data:{user:users[id]}}:{error:{code:'invalid_token'}}},admin:{getUserById:async id=>({data:{user:users[id]}}),generateLink:async({email})=>{const user=Object.values(users).find(u=>u.email===email);return {data:{user,properties:{hashed_token:'fixture-one-use-otp'}}}}}},
   rpc:async(name,args)=>{try{
    const query=name==='suizamente_social_api'?'SELECT public.suizamente_social_api($1,$2,$3::jsonb,$4) r':'SELECT public.suizamente_votos_api($1,$2,$3,$4,$5) r'

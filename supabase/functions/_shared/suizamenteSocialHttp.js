@@ -69,7 +69,7 @@ export function createSuizamenteSocialHttp({getClient,getSecret,allowedOrigin=su
         if(generated.error||generated.data?.user?.id!==user.id||!generated.data?.properties?.hashed_token)return send(503,{error:'acceso_latido_no_disponible'})
         return send(200,{tokenHash:generated.data.properties.hashed_token,userId:user.id})
       }
-      return send(200,await enrichSuizamenteAvatars(data,client,user))
+      return send(200,await enrichSuizamenteAvatars(data,client))
     }catch{return send(503,{error:'social_no_disponible'})}
   }
 }
