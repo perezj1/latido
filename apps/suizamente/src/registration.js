@@ -54,13 +54,15 @@ export function mountSuizamenteRegistration(root, {client, socialApi, redirectTo
           `<label>Email<input name="email" type="email" autocomplete="email" maxlength="254" value="${escape(values.email)}" placeholder="tu@email.com" required></label><label>Contraseña<input name="password" type="password" autocomplete="new-password" minlength="8" maxlength="254" value="${escape(values.password)}" placeholder="Mínimo 8 caracteres" required></label><label class="suizamente-access__check"><input name="terms" type="checkbox" ${values.terms?'checked':''} required><span>Acepto los <a href="https://www.latido.ch/terminos" target="_blank" rel="noopener">términos</a> y he leído la <a href="https://www.latido.ch/privacidad" target="_blank" rel="noopener">política de privacidad</a>.</span></label>`}
         <button class="suizamente-access__primary" type="submit" ${step&&!choices?'disabled':''}>${step?'Guardar perfil':'Crear cuenta'}</button>
       </form><p id="message" class="suizamente-access__message" role="status" aria-live="polite"></p>
-      ${!step&&onGoogle?'<div class="suizamente-access__divider" aria-hidden="true">o</div><div class="suizamente-access__providers"><button type="button" id="register-google">Continuar con Google</button></div>':''}
+      ${!step&&onGoogle?'<div class="suizamente-access__divider" aria-hidden="true">o</div><div class="suizamente-access__providers"><button type="button" id="register-google">Continuar con Google</button><button type="button" id="register-latido">Entrar con mi cuenta de Latido</button></div>':''}
       ${!step||confirmationRequired?'<footer class="suizamente-access__footer"><button type="button" data-login>Ya tengo cuenta · Entrar</button></footer>':''}
     </div></section>`
     const login=root.querySelector('[data-login]')
     if(login)login.onclick=()=>{if(!submitting){values.password='';onLogin()}}
     const google=root.querySelector('#register-google')
     if(google)google.onclick=()=>onGoogle()
+    const latido=root.querySelector('#register-latido')
+    if(latido)latido.onclick=()=>{if(!submitting){values.password='';onLogin()}}
     root.querySelector('form').onsubmit=async event=>{
       event.preventDefault()
       if(submitting)return
