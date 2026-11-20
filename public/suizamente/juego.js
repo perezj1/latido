@@ -209,13 +209,13 @@ function abrirResultado(q, o, punto, repetida) {
       </div>
       <p class="copymsg" id="copymsg" aria-live="polite"></p>
     </div></div>`;
-  refrescarResultado(true);
+  refrescarResultado();
   $('#sig').onclick = siguiente;
   $('#compartir').onclick = () => copiar(textoPregunta(q), $('#copymsg'));
   experiencia?.decorateResult(q,o,{repetida,contexto:ronda.contexto});
   try { $('#sig').focus({ preventScroll: true }); } catch (_) { }
 }
-function refrescarResultado(primera = false) {
+function refrescarResultado() {
   if (!resultadoAbierto) return;
   const { q, o, repetida } = resultadoAbierto, real = q.tipo === 'real', acierto = real && o === q.correcta;
   const rep = reparto(q), hayDatos = Votos.estado === 'ok' && rep.total > 0;
@@ -234,25 +234,16 @@ function refrescarResultado(primera = false) {
   if (repetida) sub.textContent += ' (Ya la habías respondido: cuenta tu primer voto.)';
   const ordenOpciones = ronda ? ronda.orden[q.id] : q.opciones.map((_, i) => i);
   const orden = [o, ...ordenOpciones.filter(oi => oi !== o)];
-  const anima = primera && !RM;
   const datos = datosPorOpcion(q, o);
   $('#reparto').innerHTML = orden.map(oi => {
     const elegida = oi === o;
     const verdadera = real && oi === q.correcta ? '<div class="tags"><span class="tag true">✓ La verdadera</span></div>' : '';
     const dato = datos[oi] ? `<div class="answer-fact"><b><span aria-hidden="true">💡</span> ¿Sabías que…?</b><p>${esc(datos[oi])}</p></div>` : '';
-    return `<div class="res o${ordenOpciones.indexOf(oi) + 1}${elegida ? ' is-picked' : ''}">${elegida ? '<span class="tag mine">Tu elección</span>' : ''}<div class="res-top"><span class="res-t">${q.opciones[oi].e} ${esc(q.opciones[oi].t)}</span><span class="res-p" data-p="${hayDatos ? rep.pct[oi] : ''}">${hayDatos ? (anima ? 0 : rep.pct[oi]) + '%' : '—'}</span></div>
-      <div class="res-bar"><i style="width:${anima ? 0 : (hayDatos ? rep.pct[oi] : 0)}%" data-w="${hayDatos ? rep.pct[oi] : 0}"></i></div>${verdadera}${dato}</div>`;
+    return `<div class="res o${ordenOpciones.indexOf(oi) + 1}${elegida ? ' is-picked' : ''}">${elegida ? '<span class="tag mine">Tu elección</span>' : ''}<div class="res-top"><span class="res-t">${q.opciones[oi].e} ${esc(q.opciones[oi].t)}</span><span class="res-p" data-p="${hayDatos ? rep.pct[oi] : ''}">${hayDatos ? rep.pct[oi] + '%' : '—'}</span></div>
+      <div class="res-bar"><i style="width:${hayDatos ? rep.pct[oi] : 0}%" data-w="${hayDatos ? rep.pct[oi] : 0}"></i></div>${verdadera}${dato}</div>`;
   }).join('');
   $('#votos').textContent = hayDatos ? `${rep.total.toLocaleString('es-ES')} ${rep.total === 1 ? 'voto' : 'votos'}` : textoNota();
   experiencia?.decorateFacts(q,o);
-  if (anima) setTimeout(() => {
-    document.querySelectorAll('#reparto .res-bar i').forEach(i => i.style.width = i.dataset.w + '%');
-    document.querySelectorAll('#reparto .res-p').forEach(el => {
-      if (el.dataset.p === '') return; const fin = +el.dataset.p, t0 = performance.now();
-      const paso = t => { const k = Math.min(1, (t - t0) / 1000); el.textContent = Math.round(fin * (1 - Math.pow(1 - k, 3))) + '%'; if (k < 1) requestAnimationFrame(paso); };
-      requestAnimationFrame(paso);
-    });
-  }, 450);
 }
 function cerrarResultado() { clearTimeout(revealTimer); eligiendo = false; app.inert = false; resultadoAbierto = null; layer.innerHTML = ''; }
 function siguiente() {

@@ -5,6 +5,7 @@ const PUBLIC_FILES = [
   '/sin-conexion.html', '/manifest.webmanifest', '/favicon.svg',
   '/icons/icon-192.png', '/icons/icon-512.png', '/icons/apple-touch-icon.png',
   '/icons/maskable-192.png', '/icons/maskable-512.png',
+  '/icons/maskable-72.png', '/icons/maskable-96.png', '/icons/maskable-128.png',
 ]
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(PUBLIC_FILES)).then(() => self.skipWaiting()))

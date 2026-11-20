@@ -129,9 +129,9 @@ button{font:inherit;color:inherit}
 .panel h3{margin:0;font-weight:800;font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:var(--soft)}
 .res{position:relative;display:flex;flex-direction:column;gap:8px;border:2px solid transparent;border-radius:var(--r-lg);padding:16px 12px 12px}
 .res.is-picked{border-color:var(--oc)}
-.res-top{display:flex;align-items:flex-end;justify-content:space-between;gap:10px}
-.res-t{font-weight:700;font-size:15px;line-height:1.3;min-width:0}
-.res-p{font-weight:900;font-size:26px;line-height:1;font-variant-numeric:tabular-nums;flex:none}
+.res-top{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:10px}
+.res-t{font-weight:700;font-size:15px;line-height:1.3;min-width:0;overflow-wrap:anywhere}
+.res-p{font-weight:900;font-size:26px;line-height:1;font-variant-numeric:tabular-nums;inline-size:4ch;text-align:right;white-space:nowrap}
 .res-bar{height:14px;border-radius:99px;background:var(--wash);overflow:hidden}
 .res-bar i{display:block;height:100%;width:0;border-radius:99px;background:var(--oc);transition:width 1.1s cubic-bezier(.2,.9,.25,1)}
 .res.o1{--oc:var(--blue)} .res.o2{--oc:var(--orange)} .res.o3{--oc:var(--sky)}

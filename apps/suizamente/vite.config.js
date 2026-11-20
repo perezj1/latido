@@ -14,11 +14,14 @@ const routeTitles={'/instalar':'Instalar Suizamente','/bienvenida':'Bienvenido a
 const knownPath=pathname=>routes.has(pathname)||/^\/duelo\/[A-Fa-f0-9]{8}$/.test(pathname)
 const icons = {
   '/favicon.svg':'favicon.svg',
-  '/icons/icon-192.png':'icon-192.png',
-  '/icons/icon-512.png':'icon-512.png',
-  '/icons/maskable-192.png':'maskable_icon_192.png',
-  '/icons/maskable-512.png':'maskable_icon_512.png',
-  '/icons/apple-touch-icon.png':'apple-touch-icon-180.png',
+  '/icons/icon-192.png':'suizamente/icons/suizamente-logo-192.png',
+  '/icons/icon-512.png':'suizamente/icons/suizamente-logo-512.png',
+  '/icons/maskable-72.png':'suizamente/icons/suizamente-logo-72.png',
+  '/icons/maskable-96.png':'suizamente/icons/suizamente-logo-96.png',
+  '/icons/maskable-128.png':'suizamente/icons/suizamente-logo-128.png',
+  '/icons/maskable-192.png':'suizamente/icons/suizamente-logo-192.png',
+  '/icons/maskable-512.png':'suizamente/icons/suizamente-logo-512.png',
+  '/icons/apple-touch-icon.png':'suizamente/icons/suizamente-logo-192.png',
 }
 const mime = { '.js':'text/javascript', '.json':'application/json', '.css':'text/css', '.html':'text/html', '.svg':'image/svg+xml', '.png':'image/png', '.woff2':'font/woff2' }
 
@@ -111,7 +114,9 @@ export default defineConfig(({ command, mode }) => {
         await writeFile(path.join(output, 'sitemap.xml'), `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>${site.replace(/\/$/,'')}/</loc></url><url><loc>${site.replace(/\/$/,'')}/instalar</loc></url></urlset>\n`)
         await writeFile(path.join(output, '404.html'), '<!doctype html><html lang="es"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>Página no encontrada · Suizamente</title><h1>Página no encontrada</h1><p><a href="/">Volver a Suizamente</a></p></html>')
         const worker = await readFile(path.join(output, 'sw.js'), 'utf8')
-        const build = createHash('sha256').update(index).update(worker).update(await readFile(path.join(output, 'suizamente/data/preguntas.json'))).digest('hex').slice(0,12)
+        const version = createHash('sha256').update(index).update(worker).update(await readFile(path.join(output, 'suizamente/data/preguntas.json'))).update(await readFile(path.join(output,'manifest.webmanifest')))
+        for (const url of Object.keys(icons)) version.update(await readFile(path.join(output,url.slice(1))))
+        const build = version.digest('hex').slice(0,12)
         await writeFile(path.join(output, 'sw.js'), worker.replaceAll('__BUILD_ID__', build))
       },
     }],

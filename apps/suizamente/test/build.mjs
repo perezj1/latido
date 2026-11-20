@@ -10,6 +10,14 @@ assert.match(root,/<title>Suizamente/)
 assert.match(root,/<link rel="canonical" href="https:\/\/suizamente\.latido\.ch\/">/)
 assert.match(root,/<meta name="robots" content="index, follow">/)
 assert.equal(root.includes('__SITE_URL__'),false)
+const manifest=JSON.parse(await read('dist/manifest.webmanifest'))
+for(const size of [72,96,128,192,512]){
+  const icon=manifest.icons.find(icon=>icon.sizes===`${size}x${size}`&&icon.purpose==='maskable')
+  assert.ok(icon,`Missing supplied maskable icon: ${size}`)
+  assert.equal(hash(await readFile('dist'+icon.src)),hash(await readFile(`../../public/suizamente/icons/suizamente-logo-${size}.png`)))
+}
+assert.equal(hash(await readFile('dist/icons/apple-touch-icon.png')),hash(await readFile('../../public/suizamente/icons/suizamente-logo-192.png')))
+assert.match(root,/<link rel="icon" href="\/icons\/maskable-96.png"/)
 for (const route of ['cuenta','auth/callback','auth/restablecer','retos','ranking','libreta','perfil','perfil/editar','amigos','medallas','ajustes','proponer','moderacion','avisos','jugar']) {
   const html=await read(`dist/${route}/index.html`)
   assert.match(html,/<meta name="robots" content="noindex, nofollow">/)

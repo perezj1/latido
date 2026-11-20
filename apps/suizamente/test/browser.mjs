@@ -107,7 +107,7 @@ try {
     for (const name of await caches.keys()) for (const req of await (await caches.open(name)).keys()) result.push(new URL(req.url).pathname)
     return result
   })
-  assert.equal(cached.length,8)
+  assert.equal(cached.length,11)
   assert.ok(cached.every(path=>path.startsWith('/icons/')||['/manifest.webmanifest','/favicon.svg','/sin-conexion.html'].includes(path)))
   await page.goto(origin+'/cuenta')
   await expect(page.getByRole('heading',{name:'Entrar a Suizamente'})).toBeVisible()
@@ -168,6 +168,38 @@ try {
   await expect(page.locator('body')).toContainText('conexión')
   await expect(page.locator('input')).toHaveCount(0)
   await guest.close()
+
+  // Delayed real totals must not animate digits or reflow long answer labels.
+  const percentages=await context({reducedMotion:'no-preference',viewport:{width:320,height:740}})
+  const longQuestion=data.preguntas.find(q=>q.opciones.some(op=>op.t==='Multinacional en Ginebra'))
+  await percentages.route('**/suizamente/data/preguntas.json',route=>route.fulfill({json:{preguntas:[longQuestion]}}))
+  await percentages.route('**/functions/v1/suizamente-votos/**',async route=>{
+    const req=route.request(),url=new URL(req.url())
+    const headers={'access-control-allow-origin':origin,'access-control-allow-headers':'*'}
+    if(req.method()==='OPTIONS')return route.fulfill({status:204,headers})
+    if(url.pathname.endsWith('/resumen'))return route.fulfill({headers,json:{conteos:{[longQuestion.id]:[8,2,0]}}})
+    if(url.pathname.endsWith('/mios'))return route.fulfill({headers,json:{votos:{}}})
+    await new Promise(resolve=>setTimeout(resolve,900))
+    return route.fulfill({headers,json:{reparto:[9,2,0],opcion:0,yaVotado:false}})
+  })
+  const stable=await percentages.newPage();await stable.goto(origin)
+  const stableGame=stable.frameLocator('iframe')
+  await expect(stableGame.locator('#nota')).toContainText('Tus votos cuentan')
+  await stableGame.locator('[data-modo="dilemas"]').click()
+  await stableGame.locator('body').evaluate(()=>{
+    window.__percentageSnapshots=[]
+    new window.MutationObserver(()=>{const el=document.querySelector('.is-picked .res-p');if(el)window.__percentageSnapshots.push(el.textContent)}).observe(document.body,{subtree:true,childList:true,characterData:true})
+  })
+  await stableGame.locator('.opt[data-o="0"]').click()
+  await expect(stableGame.locator('.is-picked .res-p')).toHaveText('80%')
+  const before=await stableGame.locator('.is-picked .res-t').boundingBox()
+  await expect(stableGame.locator('.is-picked .res-p')).toHaveText('82%')
+  const after=await stableGame.locator('.is-picked .res-t').boundingBox()
+  assert.equal(before.width,after.width);assert.equal(before.height,after.height)
+  const snapshots=await stableGame.locator('body').evaluate(()=>window.__percentageSnapshots)
+  assert.ok(snapshots.length>=2&&snapshots.every(text=>['80%','82%'].includes(text)),'Only real totals appear; no counting or flashing through intermediate percentages')
+  await stable.screenshot({path:'test-results/porcentaje-estable-320.png',fullPage:true})
+  await percentages.close()
 
   // A PKCE code is exchanged exactly once, then removed from the URL.
   const callback=await context({colorScheme:'dark',viewport:{width:320,height:740}})
