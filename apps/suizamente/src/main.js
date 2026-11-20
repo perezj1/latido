@@ -6,7 +6,7 @@ import { publicConfig } from './config.js'
 import { createSuizamenteInstall } from './install.js'
 import './style.css'
 import './access.css'
-import {mountSuizamenteRegistration,completeRegistrationProfile,needsRegistrationProfile} from './registration.js'
+import {mountSuizamenteRegistration,completeRegistrationProfile,needsRegistrationProfile,prepareSuizamenteAccount} from './registration.js'
 
 const root = document.getElementById('app')
 const esc = text => String(text ?? '').replace(/[&<>"]/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[c]))
@@ -71,7 +71,7 @@ function renderAccount() {
   metadata(true)
   document.title = 'Tu cuenta · Suizamente'
   if (session?.user) {
-    shell('Tu cuenta', `<p>Has entrado con tu cuenta de Latido.</p><p class="email">${esc(session.user.email)}</p><p>Tus respuestas guardadas en esta cuenta se recuperan también al jugar desde Latido.ch.</p><a class="button primary" href="/">Seguir jugando</a><button class="button secondary" id="logout">Cerrar sesión en esta app</button><p id="message" class="message" role="status" aria-live="polite"></p>`,{back:false})
+    shell('Tu cuenta de Suizamente', `<p>Has entrado en Suizamente.</p><p class="email">${esc(session.user.email)}</p><p>Tu progreso de Suizamente está vinculado a esta cuenta. También puedes usarla para entrar en Latido cuando quieras.</p><a class="button primary" href="/">Seguir jugando</a><button class="button secondary" id="logout">Cerrar sesión en esta app</button><p id="message" class="message" role="status" aria-live="polite"></p>`,{back:false})
     root.querySelector('#logout').onclick = async event => {
       event.currentTarget.disabled = true
       await logout()
@@ -88,7 +88,7 @@ function renderAccount() {
     return
   }
   const recovery = accountMode === 'recovery'
-  if(!recovery)root.innerHTML=`<section class="suizamente-access" data-theme="light"><div class="suizamente-access__inner"><a class="suizamente-access__back" href="/bienvenida" aria-label="Volver">←</a><header class="suizamente-access__heading"><img src="/suizamente/logo.svg" width="72" height="54" alt="Suizamente"><h1>Entra en Suizamente</h1><p>Con tu cuenta de Latido. Tus puntos, rachas y medallas te siguen a cualquier móvil.</p></header><form id="account-form"><label>Email<input name="email" type="email" autocomplete="email" maxlength="254" placeholder="tu@email.com" required></label><label>Contraseña<input name="password" type="password" autocomplete="current-password" maxlength="254" placeholder="Tu contraseña" required></label><button class="suizamente-access__forgot" type="button" data-mode="recovery">¿Has olvidado la contraseña?</button><button class="suizamente-access__primary" type="submit">Entrar</button></form><p id="message" class="suizamente-access__message" role="status" aria-live="polite"></p><div class="suizamente-access__divider" aria-hidden="true">o</div><div class="suizamente-access__providers"><button id="google" type="button">Continuar con Google</button><button id="latido-login" type="button">Entrar con mi cuenta de Latido</button></div><footer class="suizamente-access__footer"><p>¿No tienes cuenta en Latido? <button type="button" data-mode="signup">Crear cuenta</button></p></footer></div></section>`
+  if(!recovery)root.innerHTML=`<section class="suizamente-access" data-theme="light"><div class="suizamente-access__inner"><a class="suizamente-access__back" href="/bienvenida" aria-label="Volver">←</a><header class="suizamente-access__heading"><img src="/suizamente/logo.svg" width="72" height="54" alt="Suizamente"><h1>Entra en Suizamente</h1><p>Entra con tu cuenta de Suizamente o con tu cuenta de Latido.</p></header><form id="account-form"><label>Email<input name="email" type="email" autocomplete="email" maxlength="254" placeholder="tu@email.com" required></label><label>Contraseña<input name="password" type="password" autocomplete="current-password" maxlength="254" placeholder="Tu contraseña" required></label><button class="suizamente-access__forgot" type="button" data-mode="recovery">¿Has olvidado la contraseña?</button><button class="suizamente-access__primary" type="submit">Entrar</button></form><p id="message" class="suizamente-access__message" role="status" aria-live="polite"></p><div class="suizamente-access__divider" aria-hidden="true">o</div><div class="suizamente-access__providers"><button id="google" type="button">Continuar con Google</button><button id="latido-login" type="button">Entrar con mi cuenta de Latido</button></div><footer class="suizamente-access__footer"><p>¿Aún no tienes cuenta en Suizamente? <button type="button" data-mode="signup">Crear cuenta</button></p></footer></div></section>`
   else shell('Recuperar contraseña', `<p>Te enviaremos un enlace para elegir una nueva contraseña.</p><form id="account-form"><label>Correo electrónico<input name="email" type="email" autocomplete="email" maxlength="254" required></label><button class="button primary" type="submit">Enviar enlace</button></form><p id="message" class="message" role="status" aria-live="polite"></p><div class="actions"><button data-mode="login">Ya tengo cuenta · Entrar</button></div>`,{back:false})
   const latido=root.querySelector('#latido-login')
   if(latido)latido.onclick=async()=>{try{localStorage.removeItem('suizamente:sso-optout')}catch{}latido.disabled=true;message('Abre tu cuenta de Latido en la ventana que aparece.');const linked=await connectLatidoAccount({client,socialApi:config.socialApi,popup:true});if(linked)location.replace('/');else{latido.disabled=false;message('Puedes entrar también con Google o con tu correo y contraseña.',true)}}
@@ -115,6 +115,7 @@ function renderAccount() {
 async function googleLogin() {
   const google=root.querySelector('#google')||root.querySelector('#register-google')
     try{localStorage.removeItem('suizamente:sso-optout')}catch{}
+    try{sessionStorage.setItem('suizamente:oauth-inicio',String(Date.now()))}catch{}
     if(google)google.disabled = true
     try {
       const { error } = await client.auth.signInWithOAuth({ provider:'google', options:{ redirectTo:location.origin + '/auth/callback', queryParams:{ prompt:'select_account' } } })
@@ -186,6 +187,7 @@ async function start() {
       if (booted && changed && !signingOut && !registrationActive && (isSuizamentePath(location.pathname+location.search)||path()==='/cuenta')) setTimeout(render, 0)
     })
     session = (await client.auth.getSession()).data.session
+    session = await prepareSuizamenteAccount({client})
     let skipSso=false;try{skipSso=localStorage.getItem('suizamente:sso-optout')==='true'}catch{}
     if(!session&&path()!=='/cuenta'&&path()!=='/instalar'&&!path().startsWith('/auth/')&&!window.SUIZAMENTE_DISABLE_SSO&&!skipSso)session=await connectLatidoAccount({client,socialApi:config.socialApi})
     if(!needsRegistrationProfile(session?.user))try{await completeRegistrationProfile({client,socialApi:config.socialApi})}catch{booted=true;renderProfileSetup();return}

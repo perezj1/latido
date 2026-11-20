@@ -155,6 +155,7 @@ try {
   assert.equal(signup.body.data.latido_onboarding_completed,false)
   assert.equal(signup.body.data.name,undefined)
   assert.equal(signup.body.data.suizamente_necesita_perfil,true)
+  assert.equal(signup.body.data.registro_origen,'suizamente')
   assert.equal(signup.body.code_challenge_method,'s256')
   guest.pendingConfirmation=false
   await page.getByRole('button',{name:'Guardar perfil',exact:true}).click()
@@ -164,6 +165,9 @@ try {
   assert.deepEqual(profileSave.body,{pais:'ES',canton:'ZH',anosSuiza:'1a3'})
   const named=requests.find(r=>r.url.pathname==='/rest/v1/profiles'&&r.method==='POST')
   assert.equal(named.body.name,'Prueba')
+  const ownAccount=await page.evaluate(key=>JSON.parse(localStorage.getItem(key)).user.user_metadata,storageKey)
+  assert.equal(ownAccount.registro_origen,'suizamente')
+  assert.equal(ownAccount.latido_onboarding_completed,false)
   await page.goto(origin+'/cuenta')
   await page.getByRole('button',{name:'Cerrar sesión en esta app'}).click()
   await page.getByRole('button',{name:/Ya tengo cuenta/}).click()

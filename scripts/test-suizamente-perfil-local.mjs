@@ -133,7 +133,7 @@ try{
  await confirmed.close()
  const onboarding=await browser.newContext({viewport:{width:375,height:667},reducedMotion:'reduce'})
  const newAccount=session(alice)
- newAccount.user={...newAccount.user,user_metadata:{suizamente_necesita_perfil:true}}
+ newAccount.user={...newAccount.user,user_metadata:{registro_origen:'suizamente',suizamente_necesita_perfil:true,latido_onboarding_completed:false}}
  await onboarding.addInitScript(({key,value,testOrigin})=>{if(location.origin===testOrigin&&window===window.top&&!sessionStorage.getItem('new-account')){localStorage.setItem(key,JSON.stringify(value));sessionStorage.setItem('new-account','true')}},{key:storageKey,value:newAccount,testOrigin:origin})
  await onboarding.route('**/*',mockRoute)
  const setup=await onboarding.newPage();setup.on('pageerror',error=>errors.push(error.message))

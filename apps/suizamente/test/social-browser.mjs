@@ -294,7 +294,7 @@ try{
  // Guest play still works, and private rankings/duel creation require an account.
  guest=await create(null)
  await navigate(guest,'/amigos')
- await expect(guest.game.locator('.social')).toContainText('Entra con tu cuenta')
+ await expect(guest.game.locator('.social')).toContainText('Entra en Suizamente')
  await navigate(guest,'/bienvenida')
  await expect(guest.game.locator('h1')).toContainText('Suizamente')
  await expect(guest.game.getByText('Jugar sin cuenta',{exact:true})).toHaveCount(0)
@@ -308,7 +308,7 @@ try{
  await navigate(guest,'/como-se-juega')
  await expect(guest.game.locator('.s-step')).toHaveCount(4)
  await navigate(guest,'/perfil')
- await expect(guest.game.getByRole('button',{name:'Guardar mi progreso con mi cuenta de Latido'})).toBeVisible()
+ await expect(guest.game.getByRole('button',{name:'Guardar mi progreso con mi cuenta de Suizamente'})).toBeVisible()
  await expect(guest.game.getByRole('button',{name:'Cerrar sesión',exact:true})).toBeVisible()
  await guest.page.setViewportSize({width:390,height:844})
  await guest.game.locator('html').evaluate(node=>{node.dataset.theme='dark'})

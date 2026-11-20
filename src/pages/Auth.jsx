@@ -779,6 +779,7 @@ export default function Auth() {
   }
 
   const beginGoogleRedirect = async () => {
+    if(isSuizamenteAccess)try{sessionStorage.setItem('suizamente:oauth-inicio',String(Date.now()))}catch{}
     const callbackUrl = new URL('/auth', window.location.origin)
     callbackUrl.searchParams.set('next', nextPath)
     callbackUrl.searchParams.set('oauth', 'google')
@@ -839,7 +840,7 @@ export default function Auth() {
         user_id:persisted.session.user.id,
         metadata: { method:'google_id_token', entry_point:authEntryPoint },
       })
-      navigate(getGooglePostAuthPath(persisted.session.user, nextPath), { replace:true })
+      navigate(isSuizamenteAccess?nextPath:getGooglePostAuthPath(persisted.session.user, nextPath), { replace:true })
     } catch (error) {
       console.error('Google ID token sign-in failed:', error)
       toast.error(getGoogleAuthErrorMessage(error))
@@ -976,7 +977,7 @@ export default function Auth() {
   if(mode==='login'&&isSuizamenteAccess)return (
     <section className="suizamente-access" data-theme="light"><div className="suizamente-access__inner">
       <Link className="suizamente-access__back" to="/suizamente/bienvenida" aria-label="Volver">←</Link>
-      <header className="suizamente-access__heading"><img src="/suizamente/logo.svg" width="72" height="54" alt="Suizamente"/><h1>Entra en Suizamente</h1><p>Con tu cuenta de Latido. Tus puntos, rachas y medallas te siguen a cualquier móvil.</p></header>
+      <header className="suizamente-access__heading"><img src="/suizamente/logo.svg" width="72" height="54" alt="Suizamente"/><h1>Entra en Suizamente</h1><p>Entra con tu cuenta de Suizamente o con tu cuenta de Latido.</p></header>
       <form onSubmit={event=>{event.preventDefault();handleLogin()}}>
         <label>Email<input name="email" type="email" autoComplete="email" placeholder="tu@email.com" value={form.email} onChange={event=>s('email',event.target.value)} required/>{errors.email&&<span className="suizamente-access__field-error">{errors.email}</span>}</label>
         <label>Contraseña<input name="password" type="password" autoComplete="current-password" placeholder="Tu contraseña" value={form.password} onChange={event=>s('password',event.target.value)} required/>{errors.password&&<span className="suizamente-access__field-error">{errors.password}</span>}</label>
@@ -985,7 +986,7 @@ export default function Auth() {
       </form>
       <div className="suizamente-access__divider" aria-hidden="true">o</div>
       <div className="suizamente-access__providers"><button type="button" onClick={handleGoogleRedirect} disabled={loading||googleLoading}>Continuar con Google</button></div>
-      <footer className="suizamente-access__footer"><p>¿No tienes cuenta en Latido? <button type="button" onClick={()=>changeAuthMode('register')}>Crear cuenta</button></p></footer>
+      <footer className="suizamente-access__footer"><p>¿Aún no tienes cuenta en Suizamente? <button type="button" onClick={()=>changeAuthMode('register')}>Crear cuenta</button></p></footer>
     </div></section>
   )
 

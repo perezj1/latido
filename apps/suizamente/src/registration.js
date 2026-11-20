@@ -25,6 +25,26 @@ export async function completeRegistrationProfile({client, socialApi}) {
 
 export const needsRegistrationProfile = user => user?.user_metadata?.suizamente_necesita_perfil === true
 
+// A new Google account created from Suizamente completes this game's profile.
+// Existing Latido accounts keep their origin and their existing onboarding.
+export async function prepareSuizamenteAccount({client,storage,now=Date.now()}) {
+  const {data:{session}}=await client.auth.getSession()
+  if(!session?.user)return session
+  if(!storage)try{storage=globalThis.sessionStorage}catch{return session}
+  if(!storage)return session
+  let started=0
+  try{started=Number(storage.getItem('suizamente:oauth-inicio'))}catch{}
+  if(!started)return session
+  const user=session.user,meta=user.user_metadata||{},created=Date.parse(user.created_at||'')
+  const social=(user.app_metadata?.providers||[user.app_metadata?.provider]).some(p=>p==='google'||p==='apple')
+  if(social&&Number.isFinite(created)&&created>=started-5000&&now-created<600000&&meta.latido_onboarding_completed!==true&&!Object.hasOwn(meta,'suizamente_necesita_perfil')&&!meta.registro_origen){
+    const result=await client.auth.updateUser({data:{registro_origen:'suizamente',suizamente_necesita_perfil:true,latido_onboarding_completed:false}})
+    if(result.error)throw new Error('No se ha podido abrir tu perfil de Suizamente. Vuelve a intentarlo.')
+  }
+  try{storage.removeItem('suizamente:oauth-inicio')}catch{}
+  return (await client.auth.getSession()).data.session
+}
+
 export function mountSuizamenteRegistration(root, {client, socialApi, redirectTo, backHref, onLogin, onGoogle, onComplete, profileOnly=false, initialUser=null}) {
   let disposed=false, submitting=false, step=profileOnly?1:0, choices=null, accountUser=null, confirmationRequired=false
   const values={email:'',password:'',name:'',pais:'',canton:'',anosSuiza:'',terms:false}
@@ -45,9 +65,9 @@ export function mountSuizamenteRegistration(root, {client, socialApi, redirectTo
     if(disposed)return
     root.innerHTML=`<section class="suizamente-access" data-theme="light"><div class="suizamente-access__inner">
       ${!step?`<a class="suizamente-access__back" href="${escape(backHref)}" aria-label="Volver">←</a>`:''}
-      <header class="suizamente-access__heading"><img src="/suizamente/logo.svg" width="72" height="54" alt="Suizamente"><h1>${step?'Tu perfil en Suizamente':'Crea tu cuenta'}</h1><p>${step?'Tu cuenta está creada. Elige cómo te verá la comunidad.':'Una misma cuenta para Suizamente y Latido.'}</p></header>
+      <header class="suizamente-access__heading"><img src="/suizamente/logo.svg" width="72" height="54" alt="Suizamente"><h1>${step?'Tu perfil en Suizamente':'Crea tu cuenta'}</h1><p>${step?'Tu cuenta de Suizamente está creada. Elige cómo te verá la comunidad.':'Crea tu cuenta de Suizamente. También podrás usarla para entrar en Latido cuando quieras.'}</p></header>
       <form id="registration-form">
-        ${step?`<label>Nombre de usuario<input name="name" autocomplete="nickname" minlength="2" maxlength="80" value="${escape(values.name)}" placeholder="Tu nombre en el juego" required aria-describedby="name-hint"></label><p class="suizamente-access__hint" id="name-hint">Obligatorio. Será tu nombre visible en Suizamente y Latido.</p>
+        ${step?`<label>Nombre de usuario<input name="name" autocomplete="nickname" minlength="2" maxlength="80" value="${escape(values.name)}" placeholder="Tu nombre en el juego" required aria-describedby="name-hint"></label><p class="suizamente-access__hint" id="name-hint">Obligatorio. Será tu nombre visible en Suizamente.</p>
           <label>País de origen<select name="pais" aria-label="País de origen">${options(choices?.PAISES||{},values.pais,'Prefiero no indicarlo')}</select></label>
           <label>Cantón<select name="canton" aria-label="Cantón">${options(choices?.CANTONES||{},values.canton,'Elige tu cantón (opcional)')}</select></label>
           <label>¿Cuánto llevas en Suiza?<select name="anosSuiza" aria-label="¿Cuánto llevas en Suiza?">${options(choices?.ANOS||{},values.anosSuiza,'Prefiero no indicarlo')}</select></label>`:
@@ -75,10 +95,10 @@ export function mountSuizamenteRegistration(root, {client, socialApi, redirectTo
       try{
         if(!step){
           values.email=values.email.trim().toLowerCase()
-          const {data,error}=await client.auth.signUp({email:values.email,password:values.password,options:{emailRedirectTo:redirectTo,data:{latido_onboarding_completed:false,suizamente_necesita_perfil:true}}})
+          const {data,error}=await client.auth.signUp({email:values.email,password:values.password,options:{emailRedirectTo:redirectTo,data:{registro_origen:'suizamente',latido_onboarding_completed:false,suizamente_necesita_perfil:true}}})
           if(disposed)return
           if(error){message(registrationError(error),true);return}
-          if(!data?.user||(!data.session&&data.user.identities?.length===0)){message('Revisa tu correo. Si ya tienes una cuenta de Latido, pulsa «Ya tengo cuenta · Entrar».');values.password='';return}
+          if(!data?.user||(!data.session&&data.user.identities?.length===0)){message('Revisa tu correo. Si ya tienes cuenta en Suizamente o Latido, pulsa «Ya tengo cuenta · Entrar».');values.password='';return}
           accountUser=data.user;confirmationRequired=!data.session
           restoreDraft();step=1;await loaded
           if(disposed)return

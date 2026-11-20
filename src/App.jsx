@@ -606,7 +606,8 @@ function AppShell() {
     return <Suspense fallback={<AppLoading />}><ConversationFollowUpAnswer /></Suspense>
   }
 
-  if (isLoggedIn && !isAdmin && needsProfileOnboarding && pathname !== '/auth/onboarding' && !isPuntoHispanoPublisher) {
+  const isSuizamenteAuth=pathname==='/auth'&&/^\/suizamente(?:\/|$)/.test(getSafeNextPath(location.search))
+  if (isLoggedIn && !isAdmin && needsProfileOnboarding && pathname !== '/auth/onboarding' && !isPuntoHispanoPublisher && !isSuizamente && !isSuizamenteAuth) {
     const nextPath = pathname === '/auth'
       ? getSafeNextPath(location.search)
       : `${location.pathname}${location.search}`
