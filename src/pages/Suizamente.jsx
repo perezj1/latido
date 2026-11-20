@@ -48,7 +48,7 @@ export default function Suizamente() {
   useEffect(()=>{
     installation.current?.setRoute((!authUser&&!referenceMode)?'/bienvenida':needsProfile?'/onboarding':path)
     if(path==='/instalar'&&guide.current){document.title='Instalar Suizamente';installation.current?.renderGuide(guide.current,{back:'/suizamente'})}
-  },[path,authUser,referenceMode,needsProfile])
+  },[path,authUser,referenceMode,needsProfile,authLoading,checkingGoogle,checkedUser])
   useEffect(() => connectSuizamenteSession({
     getFrame:() => frame.current?.contentWindow,
     getSession:() => supabase.auth.getSession(),
@@ -76,7 +76,7 @@ export default function Suizamente() {
   if(path==='/instalar')return <div className="suizamente-install-host" ref={guide} />
   if(authLoading||checkingGoogle||(needsProfile&&checkedUser!==authUser?.id))return <SuizamenteLoading/>
   if(!authLoading&&!authUser&&!referenceMode)return <SuizamenteEntry key="welcome" onSignup={()=>navigate('/auth?mode=register&next=%2Fsuizamente')} onLogin={()=>navigate('/auth?mode=login&next=%2Fsuizamente')}/>
-  if(authUser&&(needsProfile||onboardingUser===authUser.id))return <SuizamenteEntry key={authUser.id} user={authUser} onComplete={()=>{setOnboardingUser(null);navigate('/suizamente',{replace:true})}}/>
+  if(authUser&&(needsProfile||onboardingUser===authUser.id))return <SuizamenteEntry key={authUser.id} user={authUser} onComplete={()=>installation.current.afterOnboarding(()=>{setOnboardingUser(null);navigate('/suizamente',{replace:true})})}/>
   if(checkingGoogle||pendingProfile||profileError)return <section className="suizamente-access suizamente-profile-sync" data-theme="light"><img src="/suizamente/logo.svg" width="100" height="76" alt="Suizamente"/>{profileError&&<><p role="alert">{profileError}</p><button className="suizamente-access__primary" onClick={()=>{setProfileError('');setProfileAttempt(n=>n+1)}}>Volver a intentarlo</button></>}</section>
   return <iframe key={authUser?.id || 'anon'} ref={frame} src="/suizamente/juego.html"
     title="Suizamente, un juego de Latido" allow="clipboard-write; web-share"

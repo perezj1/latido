@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import {mkdir} from 'node:fs/promises'
-import {chromium,expect} from '@playwright/test'
+import {chromium,expect,devices} from '@playwright/test'
 import {preview,loadEnv} from 'vite'
 import {fixture,alice,bob,users,session,token} from './social-db.mjs'
 import {installLatidoSsoBridge} from '../../../src/lib/suizamenteSsoBridge.js'
@@ -10,8 +10,8 @@ const key='sb-'+new URL(env.VITE_SUPABASE_URL).hostname.split('.')[0]+'-auth-tok
 const f=await fixture(),server=await preview({preview:{host:'127.0.0.1',port:5271,strictPort:true}})
 const browser=await chromium.launch({headless:true}),errors=[]
 await mkdir('test-results/onboarding',{recursive:true})
-async function open({allowSso=false,initialSession=null}={}){
-  const context=await browser.newContext({viewport:{width:390,height:844},reducedMotion:'reduce',colorScheme:'dark'})
+async function open({allowSso=false,initialSession=null,device}={}){
+  const context=await browser.newContext({viewport:{width:390,height:844},...(device?devices[device]:{}),reducedMotion:'reduce',colorScheme:'dark'})
   const state={allowSso,signup:0,confirmed:true,user:{...users[alice],user_metadata:{name:'Nombre Latido',latido_onboarding_completed:true}},profileWrites:[],bootstraps:0}
   const currentSession=()=>({...session(state.user.id),user:state.user})
   if(initialSession)state.user=initialSession.user
@@ -65,7 +65,7 @@ async function open({allowSso=false,initialSession=null}={}){
   await page.goto(origin,{waitUntil:'commit'})
   return {context,page,state,currentSession}
 }
-async function finish(view,{skip=false,name='Nombre Latido'}={}){
+async function finish(view,{skip=false,name='Nombre Latido',installReminder}={}){
   const {page,state}=view
   await expect(page.getByRole('progressbar')).toHaveAttribute('aria-valuenow','1')
   if(skip)await page.getByRole('button',{name:'Saltar',exact:true}).click()
@@ -95,6 +95,27 @@ async function finish(view,{skip=false,name='Nombre Latido'}={}){
   await expect(page.getByLabel('Cantón',{exact:true})).toHaveValue('ZH')
   await page.screenshot({path:'test-results/onboarding/paso-5-perfil.png',fullPage:true})
   await page.getByRole('button',{name:'¡A jugar!',exact:true}).click()
+  if(installReminder){
+    const dialog=page.getByRole('dialog',{name:'Instala Suizamente en tu móvil'})
+    await expect(dialog).toBeVisible()
+    if(installReminder==='ios'){
+      await expect(dialog.locator('video')).toHaveAttribute('src','/videos/install-ios.mp4')
+      await expect(dialog).toContainText('Añadir a pantalla de inicio')
+      await expect(dialog.locator('[data-install]')).toHaveCount(0)
+      await page.screenshot({path:'test-results/onboarding/instalar-iphone.png',fullPage:true})
+      await dialog.getByRole('button',{name:'Ahora no, ir a jugar'}).click()
+    }else{
+      await page.evaluate(()=>{
+        const event=new window.Event('beforeinstallprompt',{cancelable:true})
+        event.prompt=async()=>{window.__installs=(window.__installs||0)+1}
+        event.userChoice=Promise.resolve({outcome:'accepted'})
+        window.dispatchEvent(event)
+      })
+      await page.screenshot({path:'test-results/onboarding/instalar-android.png',fullPage:true})
+      await dialog.getByRole('button',{name:'Instalar Suizamente',exact:true}).click()
+    }
+    await expect(dialog).toHaveCount(0)
+  }else await expect(page.getByRole('dialog')).toHaveCount(0)
   await expect(page.frameLocator('iframe.game').locator('[data-play="dilemas"]')).toBeVisible()
   assert.equal(state.user.user_metadata.suizamente_onboarding_completed,true)
   assert.deepEqual(state.profileWrites.at(-1),{pais:'ES',canton:'ZH',anosSuiza:'1a3'})
@@ -147,6 +168,31 @@ try{
   await finish(google,{skip:true,name:'Perfil Google'})
   assert.equal(google.state.user.user_metadata.registro_origen,'suizamente')
   await google.context.close()
+  await f.reset()
+
+  // Dismissing on welcome resurfaces installation once, after the profile saves.
+  for(const device of ['iPhone 13','Pixel 5']){
+    const view=await open({device})
+    const {page}=view
+    await expect(page.locator('[data-install-banner-slot] .suizamente-install-banner')).toBeVisible({timeout:7000})
+    if(device==='Pixel 5'){
+      await page.evaluate(()=>{
+        const event=new window.Event('beforeinstallprompt',{cancelable:true})
+        event.prompt=async()=>{}
+        event.userChoice=Promise.resolve({outcome:'dismissed'})
+        window.dispatchEvent(event)
+      })
+      await page.locator('.suizamente-install-banner [data-install]').click()
+    }else await page.getByRole('button',{name:'Cerrar aviso de instalación'}).click()
+    await expect(page.locator('.suizamente-install-banner')).toHaveCount(0)
+    await page.getByRole('button',{name:'Ya tengo una cuenta',exact:true}).click()
+    await page.getByLabel('Email',{exact:true}).fill('alice@example.test')
+    await page.getByLabel('Contraseña',{exact:true}).fill('fixture-only-password')
+    await page.getByRole('button',{name:'Entrar',exact:true}).click()
+    await finish(view,{skip:true,installReminder:device==='Pixel 5'?'android':'ios'})
+    await expect(page.getByRole('dialog')).toHaveCount(0)
+    await view.context.close();await f.reset()
+  }
   assert.deepEqual(errors,[])
   console.log('PASS: Latido SSO, failed-session animation/welcome, email signup/confirmation/login, Google, all five tutorial pages, skip-to-profile, mandatory name, persisted drafts, server profile save and one-time onboarding across devices. No production writes.')
 }finally{await browser.close();await new Promise(resolve=>server.httpServer.close(resolve));await f.db.close()}

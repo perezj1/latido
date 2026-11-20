@@ -163,7 +163,7 @@ function renderInstall() {
 function renderOnboarding(){
   metadata(true);document.title='Bienvenido a Suizamente';registrationActive=true;installation.setRoute('/onboarding')
   history.replaceState(null,'','/onboarding')
-  disposeEntry=mountSuizamenteOnboarding(root,{client,socialApi:config.socialApi,user:session.user,onComplete:()=>location.replace('/')})
+  disposeEntry=mountSuizamenteOnboarding(root,{client,socialApi:config.socialApi,user:session.user,onComplete:()=>installation.afterOnboarding(()=>location.replace('/'))})
 }
 function renderWelcome(){
   metadata(false);document.title='Bienvenido a Suizamente';installation.setRoute('/bienvenida')
@@ -172,6 +172,7 @@ function renderWelcome(){
     onSignup:()=>{accountMode='signup';history.pushState(null,'','/cuenta');render()},
     onLogin:()=>{accountMode='login';history.pushState(null,'','/cuenta?mode=login');render()},
   })
+  installation.setRoute('/bienvenida')
 }
 function render() {
   installation.setRoute(path())
