@@ -7,6 +7,7 @@ import { connectSuizamenteSession } from '../lib/suizamenteSessionBridge'
 // Isolate the reference CSS and full-screen reveal from Latido's global styles.
 export default function Suizamente() {
   const frame = useRef(null)
+  const signingOut = useRef(false)
   const { authUser } = useAuth()
   const location=useLocation(),navigate=useNavigate()
   const path=location.pathname==='/perfil/suizometro'?'/perfil':location.pathname.startsWith('/admin/suizamente')?'/moderacion':location.pathname.replace(/^\/suizamente/,'')||'/'
@@ -16,6 +17,18 @@ export default function Suizamente() {
     getFrame:() => frame.current?.contentWindow,
     getSession:() => supabase.auth.getSession(),
     experience:true,
+    allowLogout:true,
+    onLogout:async()=>{
+      if(signingOut.current)return
+      signingOut.current=true
+      try{
+        const {error}=await supabase.auth.signOut({scope:'local'})
+        if(error)throw error
+        navigate('/auth?mode=login&next=%2Fsuizamente',{replace:true})
+      }catch{
+        frame.current?.contentWindow?.postMessage({type:'suizamente:logout-error'},window.location.origin)
+      }finally{signingOut.current=false}
+    },
     socialApi:import.meta.env.DEV?'/api/suizamente/social':import.meta.env.VITE_SUPABASE_URL?.replace(/\/$/,'')+'/functions/v1/suizamente-social',
     getPath:()=>pathRef.current,
     onNavigate:next=>navigate('/suizamente'+(next==='/'?'':next)),

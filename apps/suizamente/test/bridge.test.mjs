@@ -22,6 +22,12 @@ test('profile logout is accepted only from the standalone game frame and exact o
  connectSuizamenteSession({target:integrated.target,getFrame:()=>integrated.frame,getSession:async()=>({}),api:'test',onLogout:()=>{calls++}})
  await integrated.dispatch({...integrated.event,data:{type:'suizamente:logout'}})
  assert.equal(calls,1,'An embedded game cannot close the parent Latido session')
+ const local=host()
+ connectSuizamenteSession({target:local.target,getFrame:()=>local.frame,getSession:async()=>({data:{session:null}}),api:'test',experience:true,allowLogout:true,onLogout:()=>{calls++}})
+ await local.dispatch(local.event)
+ assert.equal(local.sent[0].message.canLogout,true,'The integrated host can explicitly enable its local logout')
+ await local.dispatch({...local.event,data:{type:'suizamente:logout'}})
+ assert.equal(calls,2)
 })
 test('hands current sessions only to the exact same-origin game window', async () => {
   const h=host()
