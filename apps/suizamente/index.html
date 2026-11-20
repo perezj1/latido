@@ -3,6 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <script>document.documentElement.classList.add('js')</script>
+  <style>.startup{display:none}.js .boot{display:none}.js .startup{display:flex;min-height:100dvh;align-items:center;justify-content:center;flex-direction:column;gap:12px;text-align:center;font:600 16px/1.5 Poppins,"Segoe UI",system-ui,sans-serif}.startup img{width:72px;height:72px;border-radius:20px}.startup h1,.startup p{margin:0}.startup h1{font-size:28px;font-weight:800;letter-spacing:-.035em}.startup .red{color:#FA2F35}.startup .blue{color:#4A76EF}.startup p{font-size:14px;color:#5A6577}@media(prefers-color-scheme:dark){.startup p{color:#A2ACBB}}</style>
   <title>Suizamente · Un juego de Latido.ch</title>
   <meta name="description" content="Elige, descubre qué piensa la comunidad y aprende sobre Suiza. Juega a ¿Qué prefieres?, Preguntas y respuestas y Mix en Suizamente, de Latido.ch.">
   <meta name="robots" content="__ROBOTS__">
@@ -15,6 +17,7 @@
   <link rel="icon" href="/icons/maskable-96.png" type="image/png" sizes="96x96">
   <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
   <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="stylesheet" href="/suizamente/fonts.css">
   <meta property="og:type" content="website">
   <meta property="og:locale" content="es_CH">
   <meta property="og:site_name" content="Suizamente">
@@ -28,6 +31,11 @@
 </head>
 <body>
   <main id="app">
+    <section class="startup" role="status" aria-live="polite">
+      <img src="/icons/maskable-96.png" width="72" height="72" alt="">
+      <h1><span class="red">Suiza</span><span class="blue">mente</span></h1>
+      <p>Abriendo el juego…</p>
+    </section>
     <section class="page boot">
       <img class="brand-icon" src="/favicon.svg" width="72" height="72" alt="Latido">
       <h1><span class="red">Suiza</span><span class="blue">mente</span></h1>

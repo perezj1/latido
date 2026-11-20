@@ -10,9 +10,6 @@ const esc = text => String(text ?? '').replace(/[&<>"]/g, c => ({ '&':'&amp;', '
 let session = null, client, config, disposeFrame, installPrompt, booted = false
 let accountMode = 'login'
 
-const font = document.createElement('link')
-font.rel = 'stylesheet'; font.href = '/suizamente/fonts.css'; document.head.append(font)
-
 window.addEventListener('beforeinstallprompt', event => {
   event.preventDefault()
   installPrompt = event
@@ -188,9 +185,11 @@ async function start() {
     })
     session = (await client.auth.getSession()).data.session
     let skipSso=false;try{skipSso=localStorage.getItem('suizamente:sso-optout')==='true'}catch{}
-    if(!session&&!path().startsWith('/auth/')&&!window.SUIZAMENTE_DISABLE_SSO&&!skipSso)session=await connectLatidoAccount({client,socialApi:config.socialApi})
     booted = true
     render()
+    // Mount the game immediately; a slow or unavailable Latido bridge must not
+    // hold the initial screen. verifyOtp triggers onAuthStateChange if connected.
+    if(!session&&!path().startsWith('/auth/')&&!window.SUIZAMENTE_DISABLE_SSO&&!skipSso)void connectLatidoAccount({client,socialApi:config.socialApi}).catch(()=>{})
     if (import.meta.env.PROD && 'serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js', { scope:'/' }).catch(() => {})
   } catch (error) {
     console.error('Suizamente: ' + error.message)

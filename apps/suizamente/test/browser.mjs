@@ -56,7 +56,14 @@ try {
   browser=await chromium.launch({headless:true})
   const guest=await context()
   const page=await guest.newPage()
-  await page.goto(origin)
+  let releaseBoot
+  const bootReady=new Promise(resolve=>{releaseBoot=resolve})
+  await page.route(origin+'/assets/index-*.js',async route=>{await bootReady;await route.continue()})
+  await page.goto(origin,{waitUntil:'commit'})
+  await expect(page.locator('.startup')).toBeVisible()
+  await expect(page.locator('.boot')).toBeHidden()
+  await page.screenshot({path:'test-results/arranque-movil.png',fullPage:true})
+  releaseBoot()
   const game=page.frameLocator('iframe')
   await expect(game.locator('.title')).toHaveText('Suizamente')
   await expect(game.locator('#nota')).toContainText('Tus votos cuentan')
@@ -200,6 +207,13 @@ try {
   assert.ok(snapshots.length>=2&&snapshots.every(text=>['80%','82%'].includes(text)),'Only real totals appear; no counting or flashing through intermediate percentages')
   await stable.screenshot({path:'test-results/porcentaje-estable-320.png',fullPage:true})
   await percentages.close()
+
+  const noJs=await context({javaScriptEnabled:false})
+  const fallback=await noJs.newPage();await fallback.goto(origin)
+  await expect(fallback.locator('.startup')).toBeHidden()
+  await expect(fallback.locator('.boot')).toBeVisible()
+  assert.match(await fallback.content(),/<noscript>Activa JavaScript para jugar a Suizamente\.<\/noscript>/)
+  await noJs.close()
 
   // A PKCE code is exchanged exactly once, then removed from the URL.
   const callback=await context({colorScheme:'dark',viewport:{width:320,height:740}})
