@@ -9,4 +9,8 @@ export const MODOS={dilemas:['🤔','¿Qué prefieres?','Dilemas sin respuesta m
 export const COLORES={menta:'#24E2C9',mar:'#03AA98',azul:'#4A76EF',rojo:'#FA2F35',naranja:'#F9A719',cielo:'#24BFE2'}
 export const esc=value=>String(value??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))
 export const numero=value=>Number(value||0).toLocaleString('es-CH',{maximumFractionDigits:2})
-export const avatar=(profile={},size='')=>`<span class="s-avatar ${size}" style="--avatar:${COLORES[profile.color]||COLORES.menta}" aria-hidden="true">${esc((profile.apodo||'?').trim().charAt(0).toUpperCase())}</span>`
+export const avatar=(profile={},size='')=>{
+  let photo=null;const value=profile.avatarUrl||profile.avatar_url
+  if(typeof value==='string'&&!/[\\\u0000-\u001f]/.test(value))try{if(/^\/(?!\/)/.test(value))photo=value;else{const url=new URL(value);if(url.protocol==='https:'&&!url.username&&!url.password)photo=url.href}}catch{}
+  return `<span class="s-avatar ${size}" style="--avatar:${COLORES[profile.color]||COLORES.menta}" aria-hidden="true">${esc((profile.apodo||'?').trim().charAt(0).toUpperCase())}${photo?`<img class="s-avatar-photo" src="${esc(photo)}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer">`:''}</span>`
+}

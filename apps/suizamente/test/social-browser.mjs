@@ -9,7 +9,7 @@ const f=await fixture(),origin='http://127.0.0.1:5271',env=loadEnv('production',
 const storageKey='sb-'+new URL(env.VITE_SUPABASE_URL).hostname.split('.')[0]+'-auth-token'
 const server=await preview({preview:{host:'127.0.0.1',port:5271,strictPort:true}})
 const browser=await chromium.launch({headless:true}),errors=[],requests=[]
-let otpVerifications=0
+let otpVerifications=0,slowPeople=false
 await mkdir('test-results/social',{recursive:true})
 async function create(id,options={}){
  const {sso=false,...browserOptions}=options
@@ -19,6 +19,7 @@ async function create(id,options={}){
  await context.route('**/*',async route=>{
   const req=route.request(),url=new URL(req.url())
   if(url.origin===origin)return route.continue()
+  if(url.origin==='https://avatars.example.test')return route.fulfill(url.pathname.includes('missing')?{status:404,body:''}:{contentType:'image/svg+xml',body:'<svg xmlns="http://www.w3.org/2000/svg" width="80" height="80"><rect width="80" height="80" fill="#b8e4d6"/><circle cx="40" cy="29" r="15" fill="#2563eb"/><path d="M10 80a30 30 0 0 1 60 0" fill="#2563eb"/></svg>'})
   if(sso&&['https://latido.ch','https://www.latido.ch'].includes(url.origin)&&url.pathname==='/suizamente/conectar'){
     const rootSession={access_token:token(alice),refresh_token:'root-refresh-must-never-be-copied',user:{id:alice}}
     const script=`(${installLatidoSsoBridge.toString()})({origins:[${JSON.stringify(origin)}],getSession:async()=>({data:{session:${JSON.stringify(rootSession)}}})});window.parent.postMessage({type:'suizamente:sso-ready'},${JSON.stringify(origin)});`
@@ -32,6 +33,7 @@ async function create(id,options={}){
   const result=await(social?f.social:f.votes)({method:req.method(),url:req.url(),headers:{...req.headers(),origin},body,address:id||'guest-browser'})
   requests.push({path:url.pathname,method:req.method(),status:result.status})
   if(result.status>=500)console.error('API fixture failure',url.pathname,result.body)
+  if(slowPeople&&url.searchParams.get('texto')==='Otr')await new Promise(resolve=>setTimeout(resolve,900))
   return route.fulfill({status:result.status,headers:result.headers,...(result.status===204?{body:''}:{json:result.body})})
  })
  const page=await context.newPage();await page.goto(origin)
@@ -71,6 +73,7 @@ try{
  a=await create(alice)
  await expect(a.game.locator('.s-greeting')).toHaveText('Hola, Nombre Latido 👋')
  await expect(a.game.locator('h1')).toHaveText('¡A jugar!')
+ await expect(a.game.locator('[aria-label="Tu perfil"] .s-avatar-photo')).toHaveAttribute('src','https://avatars.example.test/latido-alice.svg')
  await expect(a.game.locator('.s-nav button')).toHaveCount(5)
  await expect(a.game.locator('.s-nav button[aria-current=page]')).toContainText('Jugar')
  await a.page.screenshot({path:'test-results/social/inicio.png',fullPage:true})
@@ -99,7 +102,24 @@ try{
  await expect(a.game.locator('.s-stat').last()).toContainText('1')
  await navigate(a,'/amigos')
  await a.game.locator('#friends-search input').fill('Otra')
- await a.game.locator('#friends-search button').click()
+ await expect(a.game.locator('#people-results')).toContainText('Otra persona')
+ await expect(a.game.locator('#people-results .s-avatar-photo')).toHaveAttribute('src','https://avatars.example.test/suizamente-bob.svg')
+ await expect(a.game.locator('#people-results .s-avatar-photo')).toHaveClass(/is-loaded/)
+ await a.page.screenshot({path:'test-results/social/amigos-busqueda.png',fullPage:true})
+ await a.game.locator('#people-results .s-avatar-photo').evaluate(img=>{img.src='https://avatars.example.test/missing.svg'})
+ await expect(a.game.locator('#people-results .s-avatar-photo')).toHaveCount(0)
+ await expect(a.game.locator('#people-results .s-avatar')).toHaveText('O')
+ await a.game.locator('#friends-search input').fill('O')
+ await expect(a.game.locator('#people-results .s-person')).toHaveCount(0)
+ slowPeople=true
+ const slowRequest=a.page.waitForRequest(r=>new URL(r.url()).searchParams.get('texto')==='Otr')
+ await a.game.locator('#friends-search input').fill('Otr');await slowRequest
+ await a.game.locator('#friends-search input').fill('Nadie coincide con esta búsqueda')
+ await expect(a.game.locator('#people-status')).toContainText('No encontramos')
+ await a.page.waitForTimeout(950)
+ await expect(a.game.locator('#people-results .s-person')).toHaveCount(0)
+ slowPeople=false
+ await a.game.locator('#friends-search input').fill('Otra')
  await expect(a.game.locator('#people-results')).toContainText('Otra persona')
  await a.game.getByRole('button',{name:'Agregar',exact:true}).click()
  await expect(a.game.locator('.social')).toContainText('Solicitud enviada')

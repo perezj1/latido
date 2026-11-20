@@ -1,4 +1,5 @@
 import { suizamenteAllowedOrigin } from './suizamenteHttp.js'
+import { enrichSuizamenteAvatars } from './suizamenteAvatars.js'
 const uuid=/^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i
 async function addressHash(value,secret) {
   const encoder=new TextEncoder()
@@ -68,7 +69,7 @@ export function createSuizamenteSocialHttp({getClient,getSecret,allowedOrigin=su
         if(generated.error||generated.data?.user?.id!==user.id||!generated.data?.properties?.hashed_token)return send(503,{error:'acceso_latido_no_disponible'})
         return send(200,{tokenHash:generated.data.properties.hashed_token,userId:user.id})
       }
-      return send(200,data)
+      return send(200,await enrichSuizamenteAvatars(data,client,user))
     }catch{return send(503,{error:'social_no_disponible'})}
   }
 }

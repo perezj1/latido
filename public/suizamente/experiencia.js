@@ -12,19 +12,19 @@ export async function crearExperiencia({container,questions,identity,getIdentity
   const account=identity.userId||playerId,key='suizamente:experiencia:'+account
   const cached=read(key,{})
   const state={profile:cached.profile||null,books:cached.books||[],online:false,loading:true,route:identity.path||'/',authors:{},roundPoints:0,newMedals:[],levelUp:false}
-  const cache=new Map();let revision=0,poll,toastTimer,returnRoute='/'
+  const cache=new Map();let revision=0,poll,toastTimer,returnRoute='/',stopPeopleSearch=()=>{}
   const toastNode=document.createElement('div');toastNode.className='s-toast';toastNode.setAttribute('role','status');toastNode.setAttribute('aria-live','polite');document.body.append(toastNode)
   const question=id=>questions.find(q=>q.id===id)
   const remember=()=>write(key,{profile:state.profile,books:state.books})
   const toast=text=>{toastNode.textContent=text;clearTimeout(toastTimer);toastTimer=setTimeout(()=>toastNode.textContent='',4500)}
   function settings(){return state.profile?.ajustes||read('suizamente:ajustes',{})}
   function applySettings(){const prefs=settings();document.documentElement.dataset.theme=prefs.apariencia||'auto';document.documentElement.dataset.reducedMotion=String(!!prefs.menosAnimaciones);onSettings(prefs);write('suizamente:ajustes',prefs)}
-  async function api(path,{method='GET',body,force=false}={}) {
+  async function api(path,{method='GET',body,force=false,signal}={}) {
     if(method==='GET'&&!force&&cache.has(path)&&cache.get(path).until>Date.now())return cache.get(path).data
     const id=await getIdentity(),headers={'Content-Type':'application/json','X-Jugador-Id':playerId}
     if(id.token)headers.Authorization='Bearer '+id.token
     let response
-    try{response=await fetch(identity.socialApi+path,{method,headers,...(body?{body:JSON.stringify(body)}:{}),signal:AbortSignal.timeout(15000)})}catch{state.online=false;throw new Error('No podemos conectar ahora. Puedes seguir jugando y volver a intentarlo después.')}
+    try{response=await fetch(identity.socialApi+path,{method,headers,...(body?{body:JSON.stringify(body)}:{}),signal:signal||AbortSignal.timeout(15000)})}catch(error){if(signal?.aborted)throw error;state.online=false;throw new Error('No podemos conectar ahora. Puedes seguir jugando y volver a intentarlo después.')}
     const data=await response.json().catch(()=>({}))
     if(!response.ok){if(response.status>=500)state.online=false;throw new Error(response.status>=500?'No podemos conectar ahora. Puedes seguir jugando.':data.error||'No se ha podido completar la solicitud.')}
     state.online=true
@@ -37,11 +37,11 @@ export async function crearExperiencia({container,questions,identity,getIdentity
   const login=()=>{window.parent===window?location.assign('/cuenta'):window.top.location.assign(identity.accountPath||'/cuenta')}
   function requireAccount(){if(logged())return true;toast('Entra con tu cuenta de Latido para continuar.');login();return false}
   function notify(path){if(window.parent!==window)window.parent.postMessage({type:'suizamente:navigate',path},location.origin)}
-  function navigate(path,{fromHost=false}={}){if(!safePath(path))return;stopGame();state.route=path;if(!fromHost)notify(path);render()}
+  function navigate(path,{fromHost=false}={}){if(!safePath(path))return;stopPeopleSearch();stopGame();state.route=path;if(!fromHost)notify(path);render()}
   function startRound(options,path){returnRoute=state.route.startsWith('/jugar')?'/':state.route;state.route=path||('/jugar?modo='+options.modo);notify(state.route);play(options)}
   function header(title,{back='/',subtitle='',actions=''}={}){return `<div class="s-title-row"><div><h1>${esc(title)}</h1>${subtitle?`<p class="s-soft">${esc(subtitle)}</p>`:''}</div>${actions||button('×',`data-go="${back}" aria-label="Volver"`,'secondary small')}</div>`}
   function navigation(active){return `<nav class="s-nav" aria-label="Navegación de Suizamente">${[['/','🎮','Jugar'],['/retos','⚡','Retos'],['/ranking','🏆','Ranking'],['/libreta','📒','Libreta'],['/perfil','👤','Perfil']].map(([path,emoji,title])=>`<button type="button" data-go="${path}" ${path===active?'aria-current="page"':''}><span aria-hidden="true">${emoji}</span>${title}</button>`).join('')}</nav>`}
-  function page(content,{main=false,path=''}={}){container.classList.remove('playing');container.innerHTML=`<section class="social ${main?'':'detail'} ${path==='/'?'s-home':''}" data-online="${state.online}">${content}</section>${main?navigation(path):''}`;window.scrollTo({top:0});bind()}
+  function page(content,{main=false,path=''}={}){stopPeopleSearch();container.classList.remove('playing');container.innerHTML=`<section class="social ${main?'':'detail'} ${path==='/'?'s-home':''}" data-online="${state.online}">${content}</section>${main?navigation(path):''}`;window.scrollTo({top:0});bind()}
   function level(){const p=state.profile;if(!p)return '';return `<div><div class="s-row s-level"><b>Nivel ${p.nivel} · ${esc(p.nombreNivel)}</b><div class="s-progress"><i style="width:${Number(p.progreso)||0}%"></i></div></div><p class="s-level-note">${p.siguiente?`Te faltan ${numero(p.faltan)} puntos para ${esc(p.siguiente)}.`:'Has llegado a Leyenda alpina. Sigue aprendiendo.'}</p></div>`}
   function modes(){return `<nav class="s-modes" aria-label="Modos de juego">${Object.entries(MODOS).map(([id,[emoji,name,desc]])=>`<button type="button" class="s-mode" data-play="${id}" data-modo="${id}"><span class="s-mode-icon" aria-hidden="true">${emoji}</span><span class="s-mode-copy"><b>${name}</b><small>${desc}</small></span><span class="s-mode-play" aria-hidden="true">▶</span></button>`).join('')}</nav>`}
   function offline(){return state.online?'':state.loading?'<p class="s-note" role="status">Conectando con tu progreso…</p>':'<p class="s-note" role="status">Ahora no podemos conectar con la comunidad. Puedes seguir jugando; tus datos guardados se conservan en este dispositivo.</p>'}
@@ -106,7 +106,7 @@ export async function crearExperiencia({container,questions,identity,getIdentity
   function editProfile(){const p=state.profile||{apodo:'Invitado',color:'menta'};return `${header('Tu perfil',{back:'/perfil',subtitle:logged()?'Tu nombre viene de tu cuenta de Latido.':'Elige cómo quieres aparecer en el juego.'})}<form id="profile-form" class="s-form"><label>${logged()?'Nombre en Latido':'Tu nombre'}<input name="apodo" value="${esc(p.apodo)}" minlength="2" maxlength="${logged()?80:40}" required ${logged()?'readonly':''}></label><fieldset style="padding:0;border:0;margin:0"><legend style="font-size:14px;font-weight:700;margin-bottom:10px">Color de tu avatar</legend><div class="s-color-options">${Object.entries(COLORES).map(([id,color])=>`<label style="align-items:center"><span style="width:28px;height:28px;background:${color};border-radius:50%"></span><input type="radio" name="color" value="${id}" aria-label="${id}" ${id===p.color?'checked':''}></label>`).join('')}</div></fieldset><label>País de origen<select name="pais">${options(PAISES,p.pais,'Prefiero no indicarlo')}</select></label><label>Cantón<select name="canton">${options(CANTONES,p.canton,'Elige tu cantón')}</select></label><label>¿Cuánto llevas en Suiza?<select name="anosSuiza">${options(ANOS,p.anosSuiza,'Prefiero no indicarlo')}</select></label><p class="s-soft">Tus votos son anónimos. Los grupos por país o años solo se muestran cuando hay al menos 20 votos.</p><button class="s-button full" type="submit">Guardar perfil</button></form>`}
   async function friends(){if(!logged())return `${header('Amigos',{back:'/ranking?tab=amigos'})}${empty('👥','Entra con tu cuenta de Latido para agregar amigos y retarlos.')}${button('Entrar con mi cuenta','data-login','full')}`
     const data=await api('/friends')
-    return `${header('Amigos',{back:'/ranking?tab=amigos',subtitle:'Busca a tu gente por su nombre de Latido.'})}<form id="friends-search" class="s-form"><label>Nombre en Latido<input name="texto" type="search" minlength="2" maxlength="80" required placeholder="Buscar una persona"></label><button class="s-button secondary full">Buscar</button></form><div id="people-results" class="s-stack"></div><h2>Tu gente</h2>${data.amistades.length?`<div class="s-stack">${data.amistades.map(p=>`<div class="s-person s-stack"><div class="s-row">${avatar(p)}<div class="s-grow"><b>${esc(p.apodo)}</b><small>${p.estado==='aceptada'?'Amistad aceptada':p.recibida?'Quiere agregarte':'Solicitud enviada'}</small></div></div><div class="s-row">${p.estado==='aceptada'?button('⚔️ Retar',`data-new-duel="${p.id}"`,'small'):p.recibida?button('Aceptar',`data-friend-answer="${p.id}" data-response="aceptar"`,'small'):''}${button(p.estado==='aceptada'?'Quitar':p.recibida?'Rechazar':'Cancelar',`data-friend-remove="${p.id}"`,'secondary small')}${p.recibida?button('Bloquear',`data-friend-answer="${p.id}" data-response="bloquear"`,'secondary small'):''}</div></div>`).join('')}</div>`:empty('👥','Todavía no tienes amigos agregados. Busca un nombre o comparte un duelo.')}`
+    return `${header('Amigos',{back:'/ranking?tab=amigos',subtitle:'Busca a tu gente por su nombre de Latido.'})}<form id="friends-search" class="s-form" role="search"><label>Nombre en Latido<input name="texto" type="search" maxlength="80" autocomplete="off" placeholder="Buscar una persona" aria-describedby="people-status" aria-controls="people-results"></label></form><p id="people-status" class="s-soft" role="status">Escribe al menos 2 letras para buscar.</p><div id="people-results" class="s-stack" aria-busy="false"></div><h2>Tu gente</h2>${data.amistades.length?`<div class="s-stack">${data.amistades.map(p=>`<div class="s-person s-stack"><div class="s-row">${avatar(p)}<div class="s-grow"><b>${esc(p.apodo)}</b><small>${p.estado==='aceptada'?'Amistad aceptada':p.recibida?'Quiere agregarte':'Solicitud enviada'}</small></div></div><div class="s-row">${p.estado==='aceptada'?button('⚔️ Retar',`data-new-duel="${p.id}"`,'small'):p.recibida?button('Aceptar',`data-friend-answer="${p.id}" data-response="aceptar"`,'small'):''}${button(p.estado==='aceptada'?'Quitar':p.recibida?'Rechazar':'Cancelar',`data-friend-remove="${p.id}"`,'secondary small')}${p.recibida?button('Bloquear',`data-friend-answer="${p.id}" data-response="bloquear"`,'secondary small'):''}</div></div>`).join('')}</div>`:empty('👥','Todavía no tienes amigos agregados. Busca un nombre o comparte un duelo.')}`
   }
   async function proposals(params){if(!logged())return `${header('Propón tu pregunta',{back:'/retos'})}${empty('❤️','Entra con tu cuenta de Latido para enviar propuestas al equipo.')}${button('Entrar con mi cuenta','data-login','full')}`
     const data=await api('/proposals'),report=question(params.get('corregir'))
@@ -157,6 +157,7 @@ export async function crearExperiencia({container,questions,identity,getIdentity
     }catch(error){if(stamp===revision)page(`${header('Volvamos a intentarlo',{back:'/'})}${empty('📡',error.message)}${button('Volver al juego','data-go="/"','full')}`)}
   }
   function bind(){
+    bindPeopleSearch()
     container.onclick=async event=>{
       const target=event.target.closest('button,[data-go]');if(!target||target.disabled)return
       const data=target.dataset
@@ -186,9 +187,35 @@ export async function crearExperiencia({container,questions,identity,getIdentity
     }
     const search=container.querySelector('#book-search');if(search)search.oninput=()=>container.querySelector('#book-list').innerHTML=bookCards(search.value,container.querySelector('[data-book-topic].active')?.dataset.bookTopic||'')
     const type=container.querySelector('#proposal-type');if(type)type.onchange=()=>container.querySelector('#proposal-options').innerHTML=proposalOptions(type.value)
-    const forms=[['#profile-form',async values=>{await api('/profile',{method:'PUT',body:Object.fromEntries(values)});toast('Perfil guardado.');navigate('/perfil')}],['#settings-form',async values=>{const ajustes={apariencia:values.get('apariencia'),...Object.fromEntries(['sonidos','vibracion','menosAnimaciones','avisos'].map(k=>[k,values.has(k)]))};await api('/profile',{method:'PUT',body:{ajustes,enRanking:values.has('enRanking')}});toast('Ajustes guardados.');navigate('/ajustes')}],['#friends-search',async values=>{const result=await api('/people?texto='+encodeURIComponent(values.get('texto')),{force:true});container.querySelector('#people-results').innerHTML=result.personas.length?result.personas.map(p=>`<div class="s-person s-row">${avatar(p)}<div class="s-grow"><b>${esc(p.apodo)}</b></div>${button('Agregar',`data-friend-add="${p.id}"`,'small')}</div>`).join(''):empty('🔎','No encontramos ese nombre. Prueba con otra parte del nombre de Latido.')}],['#proposal-form',async values=>{const data=Object.fromEntries(values),tipo=data.tipo;data.opciones=tipo==='mito'?['Verdad','Mito']:tipo==='correccion'?null:[data.opcion0,data.opcion1,data.opcion2].filter(Boolean);data.correcta=data.correcta===undefined?null:Number(data.correcta);await api('/proposals',{method:'POST',body:data});toast('¡Gracias! Te avisamos cuando la revisemos.');navigate('/retos')}]]
+    const forms=[['#profile-form',async values=>{await api('/profile',{method:'PUT',body:Object.fromEntries(values)});toast('Perfil guardado.');navigate('/perfil')}],['#settings-form',async values=>{const ajustes={apariencia:values.get('apariencia'),...Object.fromEntries(['sonidos','vibracion','menosAnimaciones','avisos'].map(k=>[k,values.has(k)]))};await api('/profile',{method:'PUT',body:{ajustes,enRanking:values.has('enRanking')}});toast('Ajustes guardados.');navigate('/ajustes')}],['#proposal-form',async values=>{const data=Object.fromEntries(values),tipo=data.tipo;data.opciones=tipo==='mito'?['Verdad','Mito']:tipo==='correccion'?null:[data.opcion0,data.opcion1,data.opcion2].filter(Boolean);data.correcta=data.correcta===undefined?null:Number(data.correcta);await api('/proposals',{method:'POST',body:data});toast('¡Gracias! Te avisamos cuando la revisemos.');navigate('/retos')}]]
     for(const [selector,submit] of forms){const form=container.querySelector(selector);if(form)form.onsubmit=event=>submitForm(event,submit)}
     container.querySelectorAll('.moderation-form').forEach(form=>{form.onsubmit=event=>submitForm(event,async values=>{const contenido={pregunta:values.get('pregunta'),dato:values.get('dato'),fuente:values.get('fuente')};if(values.has('opcion0'))contenido.opciones=[values.get('opcion0'),values.get('opcion1'),values.get('opcion2')].filter(Boolean);if(values.has('correcta'))contenido.correcta=Number(values.get('correcta'));await api('/moderation/'+form.dataset.id,{method:'POST',body:{estado:values.get('estado'),nota:values.get('nota'),preguntaId:values.get('preguntaId'),contenido}});toast('Revisión guardada.');navigate('/moderacion')})})
+  }
+  function bindPeopleSearch(){
+    const form=container.querySelector('#friends-search');if(!form)return
+    const input=form.querySelector('input'),results=container.querySelector('#people-results'),status=container.querySelector('#people-status')
+    let timer,controller,version=0,people=[]
+    const normalize=text=>String(text).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('es').trim()
+    const show=rows=>{results.innerHTML=rows.map(p=>`<div class="s-person s-row">${avatar(p)}<div class="s-grow"><b>${esc(p.apodo)}</b></div>${button('Agregar',`data-friend-add="${p.id}"`,'small')}</div>`).join('')}
+    function search(immediate=false){
+      clearTimeout(timer);controller?.abort();const stamp=++version,text=input.value.trim()
+      results.setAttribute('aria-busy','false')
+      if(text.length<2){people=[];show([]);status.textContent='Escribe al menos 2 letras para buscar.';return}
+      show(people.filter(p=>normalize(p.apodo).includes(normalize(text))))
+      status.textContent='Buscando personas…';results.setAttribute('aria-busy','true')
+      timer=setTimeout(async()=>{
+        controller=new AbortController();const signal=controller.signal
+        try{
+          const data=await api('/people?texto='+encodeURIComponent(text),{signal})
+          if(stamp!==version||!results.isConnected||signal.aborted)return
+          people=data.personas;show(people)
+          status.textContent=people.length?`${people.length} ${people.length===1?'persona encontrada':'personas encontradas'}`:'No encontramos ese nombre. Prueba con otra parte del nombre de Latido.'
+        }catch(error){if(stamp===version&&results.isConnected&&!signal.aborted)status.textContent=error.message}
+        finally{if(stamp===version&&results.isConnected)results.setAttribute('aria-busy','false')}
+      },immediate?0:300)
+    }
+    input.oninput=()=>search();form.onsubmit=event=>{event.preventDefault();search(true)}
+    stopPeopleSearch=()=>{version++;clearTimeout(timer);controller?.abort()}
   }
   async function submitForm(event,submit){event.preventDefault();const form=event.currentTarget,values=new FormData(form),button=form.querySelector('button[type=submit],button:not([type])');if(button)button.disabled=true;try{await submit(values)}catch(error){toast(error.message)}finally{if(button?.isConnected)button.disabled=false}}
   function duelPicker(rival=null,mode='mix'){page(`${header('Retar a alguien',{back:'/retos'})}<p class="s-soft">Diez preguntas, las mismas para los dos. Elige el modo y comparte tu invitación${rival?' con tu amigo':''}.</p><form id="duel-form" class="s-form"><label>Modo<select name="modo">${options(Object.fromEntries(Object.entries(MODOS).map(([id,[,name]])=>[id,name])),mode)}</select></label><button class="s-button full">Crear duelo</button></form>`);container.querySelector('#duel-form').onsubmit=event=>submitForm(event,async values=>{const d=await api('/duels',{method:'POST',body:{modo:values.get('modo'),...(rival?{rival}:{})}});navigate('/duelo/'+d.codigo);toast('Duelo creado. Ya puedes compartir la invitación.')})}
@@ -230,7 +257,11 @@ export async function crearExperiencia({container,questions,identity,getIdentity
   }
   window.addEventListener('message',event=>{if(event.origin===location.origin&&event.source===window.parent&&event.data?.type==='suizamente:route'&&safePath(event.data.path)&&event.data.path!==state.route)navigate(event.data.path,{fromHost:true})})
   window.addEventListener('online',async()=>{await boot();if(!container.classList.contains('playing'))render()})
-  window.addEventListener('pagehide',()=>{clearInterval(poll);clearTimeout(toastTimer)},{once:true})
+  const photoError=event=>{if(event.target?.matches?.('img.s-avatar-photo'))event.target.remove()}
+  const photoLoaded=event=>{if(event.target?.matches?.('img.s-avatar-photo'))event.target.classList.add('is-loaded')}
+  document.addEventListener('error',photoError,true)
+  document.addEventListener('load',photoLoaded,true)
+  window.addEventListener('pagehide',()=>{clearInterval(poll);clearTimeout(toastTimer);stopPeopleSearch();document.removeEventListener('error',photoError,true);document.removeEventListener('load',photoLoaded,true)},{once:true})
   if(state.route==='/'&&!logged()&&!read('suizamente:bienvenida',false)&&!Object.keys(getSaved()).length)state.route='/bienvenida'
   boot().then(()=>{if(!container.classList.contains('playing')&&!container.querySelector('form'))render()})
   poll=setInterval(()=>{if(!document.hidden&&!container.classList.contains('playing')&&!container.querySelector('form')&&state.online&&(/^\/(retos|duelo|avisos)/.test(state.route))){cache.clear();render()}},30000)

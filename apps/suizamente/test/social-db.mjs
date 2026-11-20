@@ -5,7 +5,7 @@ import { createSuizamenteHttp,suizamenteAllowedOrigin } from '../../../supabase/
 export const alice='11111111-1111-4111-8111-111111111111',bob='22222222-2222-4222-8222-222222222222'
 export const users={
  [alice]:{id:alice,email:'alice@example.test',email_confirmed_at:'2026-01-01T00:00:00Z',aud:'authenticated',role:'authenticated',app_metadata:{provider:'email'},user_metadata:{name:'Nombre Latido'}},
- [bob]:{id:bob,email:'bob@example.test',email_confirmed_at:'2026-01-01T00:00:00Z',aud:'authenticated',role:'authenticated',app_metadata:{provider:'email'},user_metadata:{name:'Otra persona'}},
+ [bob]:{id:bob,email:'bob@example.test',email_confirmed_at:'2026-01-01T00:00:00Z',aud:'authenticated',role:'authenticated',app_metadata:{provider:'email'},user_metadata:{name:'Otra persona',avatar_url:'https://avatars.example.test/suizamente-bob.svg'}},
 }
 const issued=Math.floor(Date.now()/1000)
 export const token=id=>Buffer.from('{"alg":"HS256","typ":"JWT"}').toString('base64url')+'.'+Buffer.from(JSON.stringify({sub:id,aud:'authenticated',role:'authenticated',email:users[id].email,exp:issued+3600,iat:issued})).toString('base64url')+'.fixture-signature'
@@ -22,7 +22,8 @@ export async function fixture(){
  await db.exec(await file('supabase/suizamente_votos.sql'))
  await db.exec(await file('supabase/suizamente_social_instalar.sql'))
  const questions=JSON.parse(await file('public/suizamente/data/preguntas.json')).preguntas
- const client={auth:{getUser:async access=>{const id=Object.keys(users).find(id=>token(id)===access);return id?{data:{user:users[id]}}:{error:{code:'invalid_token'}}},admin:{generateLink:async({email})=>{const user=Object.values(users).find(u=>u.email===email);return {data:{user,properties:{hashed_token:'fixture-one-use-otp'}}}}}},
+ await db.exec(`ALTER TABLE public.profiles ADD COLUMN avatar_url text;UPDATE public.profiles SET avatar_url='https://avatars.example.test/latido-alice.svg' WHERE id='${alice}';`)
+ const client={from:table=>({select:columns=>({in:async(_column,ids)=>{if(table!=='profiles'||columns!=='id,avatar_url')throw new Error('Unexpected public fields');return {data:(await db.query('SELECT id,avatar_url FROM public.profiles WHERE id=ANY($1::uuid[])',[ids])).rows}}})}),auth:{getUser:async access=>{const id=Object.keys(users).find(id=>token(id)===access);return id?{data:{user:users[id]}}:{error:{code:'invalid_token'}}},admin:{getUserById:async id=>({data:{user:users[id]}}),generateLink:async({email})=>{const user=Object.values(users).find(u=>u.email===email);return {data:{user,properties:{hashed_token:'fixture-one-use-otp'}}}}}},
   rpc:async(name,args)=>{try{
    const query=name==='suizamente_social_api'?'SELECT public.suizamente_social_api($1,$2,$3::jsonb,$4) r':'SELECT public.suizamente_votos_api($1,$2,$3,$4,$5) r'
    const params=name==='suizamente_social_api'?[args.p_accion,args.p_jugador,JSON.stringify(args.p_datos),args.p_direccion]:[args.accion,args.jugador,args.pregunta,args.eleccion,args.direccion]
