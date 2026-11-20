@@ -267,15 +267,16 @@ function pintarFinal() {
     <p class="big">${frase}</p>
     <div class="squares" aria-label="Resumen de la ronda">${cuadros}</div>
     <div class="score">${cajas}</div>
-    <button class="btn red" id="otra" type="button">Otra ronda →</button>
-    <div class="row2" style="width:100%"><button class="btn line" id="comp" type="button">Copiar resultado</button><button class="btn line" id="inicio" type="button">Cambiar de modo</button></div>
+    <div class="s-round-actions"><button class="btn s-round-primary" id="otra" type="button">Otra ronda</button>
+    <div class="row2"><button class="btn s-round-secondary" id="comp" type="button">📤 Compartir</button><button class="btn s-round-secondary" id="inicio" type="button">Inicio</button></div></div>
     <p class="copymsg" id="copymsg" aria-live="polite"></p>
   </section>`;
   $('#otra').onclick = () => nuevaRonda(ronda.modo);
-  $('#inicio').onclick = () => experiencia?experiencia.exit():pintarInicio();
+  $('#inicio').onclick = () => experiencia?experiencia.navigate('/'):pintarInicio();
   experiencia?.decorateSummary();
   const lineas = [reales.length ? `Verdades: ${ok}/${reales.length}` : '', dilemas.length ? `Como la mayoría: ${mayoria}/${dilemas.length}` : ''].filter(Boolean).join(' · ');
-  $('#comp').onclick = () => copiar(`Suizamente · ${MODOS[ronda.modo].nombre}\n${cuadros}\n${lineas}\n¿Cuánto sabes de Suiza? Juega en https://suizamente.latido.ch`, $('#copymsg'));
+  const texto=`Suizamente · ${MODOS[ronda.modo].nombre}\n${cuadros}\n${lineas}\n¿Cuánto sabes de Suiza? Juega en https://suizamente.latido.ch`;
+  $('#comp').onclick = () => experiencia?experiencia.shareSummary({modo:ronda.modo,texto,titulo:frase,resultado:lineas||'Ronda completada.'}):copiar(texto,$('#copymsg'));
   window.scrollTo({ top: 0 });
 }
 
