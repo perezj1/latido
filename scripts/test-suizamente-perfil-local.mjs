@@ -8,7 +8,7 @@ import { fixture,alice,users,session } from '../apps/suizamente/test/social-db.m
 // All authentication and API operations use fixtures; production receives no writes.
 const origin='http://localhost:8080',env=loadEnv('development',process.cwd(),'VITE_')
 const storageKey='sb-'+new URL(env.VITE_SUPABASE_URL).hostname.split('.')[0]+'-auth-token'
-const f=await fixture(),browser=await chromium.launch({headless:true}),logouts=[],errors=[]
+const f=await fixture(),browser=await chromium.launch({headless:true}),logouts=[],errors=[],signups=[]
 try{
  const context=await browser.newContext({viewport:{width:375,height:667},reducedMotion:'reduce'})
  await context.addInitScript(({origin,key,value})=>{if(location.origin===origin){localStorage.setItem(key,JSON.stringify(value));localStorage.setItem('suizamente:bienvenida','true')}},{origin,key:storageKey,value:session(alice)})
@@ -22,6 +22,7 @@ try{
   if(url.origin===origin)return route.continue()
   if(url.hostname==='avatars.example.test')return route.fulfill({contentType:'image/svg+xml',body:'<svg xmlns="http://www.w3.org/2000/svg" width="80" height="80"><rect width="80" height="80" fill="#b8e4d6"/><circle cx="40" cy="30" r="15" fill="#2563eb"/></svg>'})
   if(url.pathname==='/auth/v1/logout'){logouts.push(url.searchParams.get('scope'));return route.fulfill({status:204,body:''})}
+  if(url.pathname==='/auth/v1/signup'){signups.push(request.postDataJSON());return route.fulfill({json:{...users[alice],identities:[]}})}
   if(url.pathname==='/auth/v1/user')return route.fulfill({json:users[alice]})
   if(url.pathname==='/auth/v1/token')return route.fulfill({json:session(alice)})
   if(url.pathname==='/rest/v1/profiles')return route.fulfill({json:{id:alice,name:'Nombre Latido',canton:'Zürich',banned:false,interests:[]}})
@@ -38,7 +39,7 @@ try{
  await mkdir('output/suizamente-referencia',{recursive:true})
  await page.screenshot({path:'output/suizamente-referencia/perfil-local-8080.png',fullPage:true})
  await logout.click()
- await expect(page).toHaveURL(origin+'/auth?mode=login&next=%2Fsuizamente')
+ await expect(page).toHaveURL(origin+'/auth?mode=register&next=%2Fsuizamente')
  await expect(page.locator('input[type="email"]')).toBeVisible()
  assert.deepEqual(logouts,['local'])
  assert.equal(await page.evaluate(key=>localStorage.getItem(key),storageKey),null)
@@ -59,6 +60,26 @@ try{
  await page.screenshot({path:'output/suizamente-referencia/inicio-avatar-nav-local-8080.png',fullPage:true})
  await game.locator('.s-nav [data-go="/perfil"]').click()
  await game.getByRole('button',{name:'Cerrar sesión',exact:true}).click()
+ await expect(page.getByRole('heading',{name:'Crea tu cuenta'})).toBeVisible()
+ await page.getByLabel('Email',{exact:true}).fill('new@example.test')
+ await page.getByLabel('Contraseña',{exact:true}).fill('password-only-for-fixture')
+ await page.getByRole('button',{name:'Crear cuenta',exact:true}).click()
+ await expect(page.getByRole('heading',{name:'Tu perfil en Suizamente'})).toBeVisible()
+ assert.equal(signups.length,0)
+ await page.getByRole('checkbox').check()
+ await page.getByLabel('Nombre de usuario',{exact:true}).fill('  ')
+ await page.getByRole('button',{name:'Guardar perfil y crear cuenta'}).click()
+ await expect(page.locator('#message')).toContainText('Introduce un nombre de usuario')
+ assert.equal(signups.length,0)
+ await page.getByLabel('Nombre de usuario',{exact:true}).fill(' Nuevo nombre ')
+ await page.getByLabel('Cantón',{exact:true}).selectOption('BE')
+ await page.screenshot({path:'output/suizamente-referencia/registro-perfil-local-8080.png',fullPage:true})
+ await page.getByRole('button',{name:'Guardar perfil y crear cuenta'}).click()
+ await expect(page.locator('#message')).toContainText('Revisa tu correo')
+ assert.equal(signups.length,1)
+ assert.equal(signups[0].data.name,'Nuevo nombre')
+ assert.equal(signups[0].data.suizamente_perfil_pendiente.canton,'BE')
+ await page.getByRole('button',{name:/Ya tengo cuenta/}).click()
  await page.getByLabel('Email',{exact:true}).fill('alice@example.test')
  await page.getByLabel('Contraseña',{exact:true}).fill('password-only-for-fixture')
  await page.getByRole('button',{name:'Entrar',exact:true}).click()
@@ -98,6 +119,18 @@ try{
  await ios.getByRole('button',{name:'Abrir Suizamente para instalar'}).click()
  await expect(ios).toHaveURL('https://suizamente.latido.ch/instalar')
  await mobile.close()
+ const confirmed=await browser.newContext({viewport:{width:375,height:667},reducedMotion:'reduce'})
+ const pendingSession=session(alice)
+ pendingSession.user={...pendingSession.user,user_metadata:{...pendingSession.user.user_metadata,suizamente_perfil_pendiente:{pais:'ES',canton:'BE',anosSuiza:'1a3'}}}
+ await confirmed.addInitScript(({key,value,testOrigin})=>{if(location.origin===testOrigin&&window===window.top&&!sessionStorage.getItem('profile-confirmed')){localStorage.setItem(key,JSON.stringify(value));sessionStorage.setItem('profile-confirmed','true')}},{key:storageKey,value:pendingSession,testOrigin:origin})
+ await confirmed.route('**/*',mockRoute)
+ const confirmation=await confirmed.newPage();confirmation.on('pageerror',error=>errors.push(error.message))
+ await confirmation.goto(origin+'/suizamente/perfil')
+ await expect(confirmation.frameLocator('iframe').getByRole('button',{name:'Cerrar sesión',exact:true})).toBeVisible()
+ const savedProfile=(await f.db.query('SELECT pais,canton,anos_suiza FROM suizamente_social.jugadores WHERE usuario_id=$1',[alice])).rows[0]
+ assert.deepEqual(savedProfile,{pais:'ES',canton:'BE',anos_suiza:'1a3'})
+ assert.equal(await confirmation.evaluate(key=>JSON.parse(localStorage.getItem(key)).user.user_metadata.suizamente_perfil_pendiente,storageKey),undefined)
+ await confirmed.close()
  assert.deepEqual(errors,[])
  console.log('PASS: localhost:8080 profile logout, login without a back control, reference login/welcome without guest buttons and a single profile avatar in the bottom navigation. Auth/API mocked, no production writes.')
  await context.close()

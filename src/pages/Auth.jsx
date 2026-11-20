@@ -13,6 +13,7 @@ import { getGooglePostAuthPath } from '../lib/oauthOnboarding'
 import toast from 'react-hot-toast'
 import './Auth.css'
 import '../../apps/suizamente/src/access.css'
+import { mountSuizamenteRegistration } from '../../apps/suizamente/src/registration.js'
 
 const GOOGLE_AUTH_ENABLED = true
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID
@@ -577,6 +578,16 @@ function AuthFormScreen({ onBack, variant='', children }) {
     </section>
   )
 }
+function SuizamenteRegistration({onLogin,onGoogle,onComplete}) {
+  const root=useRef(null),actions=useRef(null)
+  actions.current={onLogin,onGoogle,onComplete}
+  useEffect(()=>mountSuizamenteRegistration(root.current,{
+    client:supabase,redirectTo:window.location.origin+'/suizamente/perfil',backHref:'/suizamente/bienvenida',
+    onLogin:()=>actions.current.onLogin(),onGoogle:()=>actions.current.onGoogle(),onComplete:()=>actions.current.onComplete(),
+  }),[])
+  return <div ref={root}/>
+}
+
 export default function Auth() {
   const { signIn, signInWithGoogle, signInWithGoogleIdToken, signUp } = useAuth()
   const navigate = useNavigate()
@@ -590,7 +601,7 @@ export default function Auth() {
     const requestedMode = searchParams.get('mode')
     if (requestedMode === 'login' || requestedMode === 'register') return requestedMode
     if (searchParams.get('oauth') === 'google' || searchParams.get('password') === 'updated') return 'login'
-    return 'welcome'
+    return isSuizamenteAccess ? 'register' : 'welcome'
   })
   const [step, setStep] = useState(0)
   const [loading, setLoading] = useState(false)
@@ -611,10 +622,10 @@ export default function Auth() {
       ? requestedMode
       : searchParams.get('oauth') === 'google' || searchParams.get('password') === 'updated'
         ? 'login'
-        : 'welcome'
+        : isSuizamenteAccess ? 'register' : 'welcome'
 
     setMode(currentMode => currentMode === 'forgot' && routeMode === 'login' ? currentMode : routeMode)
-  }, [searchParams])
+  }, [searchParams,isSuizamenteAccess])
 
   useEffect(() => {
     if (searchParams.get('password') !== 'updated' || passwordNoticeShownRef.current) return
@@ -955,6 +966,9 @@ export default function Auth() {
       setRegistrationIntent('')
     }
   }
+
+  if(mode==='register'&&isSuizamenteAccess)return <SuizamenteRegistration
+    onLogin={()=>changeAuthMode('login')} onGoogle={handleGoogleRedirect} onComplete={()=>navigate('/suizamente/perfil',{replace:true})}/>
 
   if (mode === 'welcome') return (
     <AuthWelcome

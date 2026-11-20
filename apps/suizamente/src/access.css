@@ -13,4 +13,11 @@
 .suizamente-access__footer{margin-top:auto;text-align:center;color:#5a6577;font-size:14px}.suizamente-access__footer p{margin:0}.suizamente-access__footer button{border:0;background:none;color:#4a76ef;font-size:14px;font-weight:700;padding:8px 0;min-height:40px}
 .suizamente-access__message{font-size:13px;line-height:1.5;color:#c82732;margin:0}.suizamente-access__message:empty{display:none}.suizamente-access__field-error{font-size:12px;color:#c82732}
 .suizamente-access :focus-visible{outline:3px solid #24bfe2;outline-offset:3px}
+.suizamente-access select{width:100%;min-height:50px;border:2px solid #e4e8ef;border-radius:16px;padding:10px 12px;background:#fff;color:#0f1a2b;font:500 15px Poppins,"Segoe UI",system-ui,sans-serif;box-sizing:border-box}
+.suizamente-access .suizamente-access__step{font-size:12px;font-weight:700;color:#4a76ef}
+.suizamente-access__hint{font-size:12px;color:#5a6577;margin:-4px 0 0}
+.suizamente-access label.suizamente-access__check{display:flex;flex-direction:row;align-items:flex-start;gap:10px;font-size:12px;font-weight:500}
+.suizamente-access__check input{width:18px;height:18px;flex:none;margin:3px 0;accent-color:#4a76ef}
+.suizamente-access__check a{color:#365ed0;text-decoration:underline}
+.suizamente-access button.suizamente-access__back{border:0;padding:0}
 @media(max-height:740px){.suizamente-access__inner{gap:12px;padding-top:14px}.suizamente-access__heading>img{width:64px;height:48px}.suizamente-access__heading p{font-size:14px}}
