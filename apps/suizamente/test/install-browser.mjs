@@ -6,19 +6,24 @@ import { preview } from 'vite'
 const origin='http://127.0.0.1:5273',server=await preview({preview:{host:'127.0.0.1',port:5273,strictPort:true}})
 const browser=await chromium.launch({headless:true}),errors=[]
 await mkdir('test-results/installation',{recursive:true})
-async function open(device,{installed=false}={}){
+async function open(device,{installed=false,firstVisit=false}={}){
  const context=await browser.newContext({...devices[device],reducedMotion:'reduce'})
- await context.addInitScript(({installed})=>{
+ await context.addInitScript(({installed,firstVisit})=>{
   window.SUIZAMENTE_DISABLE_SSO=true
-  localStorage.setItem('suizamente:bienvenida','true')
+  if(!firstVisit)localStorage.setItem('suizamente:bienvenida','true')
   if(installed)Object.defineProperty(navigator,'standalone',{value:true})
- },{installed})
+ },{installed,firstVisit})
  await context.route('**/*',route=>new URL(route.request().url()).origin===origin?route.continue():route.fulfill({status:503,json:{error:'fixture_offline'}}))
  const page=await context.newPage();page.on('pageerror',error=>errors.push(error.message))
  await page.goto(origin)
  return {page,context}
 }
 try{
+ const firstVisit=await open('iPhone 13',{firstVisit:true})
+ await expect(firstVisit.page).toHaveURL(origin+'/bienvenida')
+ await expect(firstVisit.page.frameLocator('iframe.game').getByRole('button',{name:'Empezar',exact:true})).toBeVisible()
+ await expect(firstVisit.page.locator('.suizamente-install-banner')).toHaveCount(0)
+ await firstVisit.context.close()
  const ios=await open('iPhone 13')
  const banner=ios.page.getByRole('complementary',{name:'Instalar Suizamente'})
  await expect(banner).toContainText('iPhone')

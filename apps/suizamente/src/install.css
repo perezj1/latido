@@ -16,6 +16,6 @@
 .suizamente-install-guide summary{font-size:15px;font-weight:700;cursor:pointer;min-height:30px}.suizamente-install-guide[open] summary{margin-bottom:12px}
 .suizamente-install-page .suizamente-install-note,.suizamente-install-page [data-install-status]{font-size:13px;line-height:1.6}
 .suizamente-install-banner button:focus-visible,.suizamente-install-page :focus-visible{outline:3px solid #24bfe2;outline-offset:3px}
-@media(prefers-color-scheme:dark){.suizamente-install-page{--ink:#f2f5f9;--soft:#b8c6da;--line:#34445b;--wash:#172334}.suizamente-install-back{color:#aecbff}}
+@media(prefers-color-scheme:dark){:root[data-theme=dark] .suizamente-install-page{--ink:#f2f5f9;--soft:#b8c6da;--line:#34445b;--wash:#172334}:root[data-theme=dark] .suizamente-install-back{color:#aecbff}}
 .suizamente-install-host{position:fixed;inset:0;z-index:30;overflow-y:auto;background:#fff}
-@media(prefers-color-scheme:dark){.suizamente-install-host{background:#0d1118}}
+@media(prefers-color-scheme:dark){:root[data-theme=dark] .suizamente-install-host{background:#0d1118}}

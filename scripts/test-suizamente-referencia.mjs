@@ -59,6 +59,8 @@ try {
     await expect(game.locator('#nota')).toHaveText('Tus votos cuentan para los porcentajes de la comunidad.')
     assert.equal(await game.locator('.logo').getAttribute('src'), '/suizamente/icons/suizamente-circle-logo-512.png')
     assert.equal(await game.locator('.logo').evaluate(el => el.complete && el.naturalWidth > 0), true)
+    assert.equal(await game.locator('body').evaluate(el=>getComputedStyle(el).backgroundColor),'rgb(255, 255, 255)')
+    if(colorScheme==='dark')await game.locator('html').evaluate(el=>{el.dataset.theme='dark'})
     assert.equal(await game.locator('body').evaluate(el => getComputedStyle(el).backgroundColor), colorScheme === 'dark' ? 'rgb(13, 17, 24)' : 'rgb(255, 255, 255)')
     assert.equal(await game.locator('body').evaluate(() => document.documentElement.scrollWidth <= innerWidth), true)
     await page.screenshot({ path:`${output}/${name}-inicio.png`, fullPage:true })

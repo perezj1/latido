@@ -1,0 +1,16 @@
+.suizamente-access{position:fixed;inset:0;z-index:35;overflow-y:auto;background:#fff;color:#0f1a2b;font:500 16px/1.5 Poppins,"Segoe UI",system-ui,sans-serif;color-scheme:light;scrollbar-width:none}
+.suizamente-access__inner{display:flex;flex-direction:column;gap:16px;max-width:480px;min-height:100dvh;margin:auto;padding:20px 24px max(24px,env(safe-area-inset-bottom));box-sizing:border-box}
+.suizamente-access__back{display:grid;place-items:center;width:44px;height:44px;border-radius:50%;background:#f4f7fb;color:#0f1a2b!important;font-size:22px;font-weight:800;line-height:1;text-decoration:none;flex:none;align-self:flex-start}
+.suizamente-access__heading{display:flex;flex-direction:column;gap:8px}.suizamente-access__heading>img{display:block;width:72px;height:54px;object-fit:contain}.suizamente-access h1{margin:0;font-size:28px;font-weight:800;line-height:1.15;letter-spacing:-.02em}
+.suizamente-access__heading p{margin:0;font-size:14.5px;line-height:1.5;color:#5a6577}
+.suizamente-access form{display:flex;flex-direction:column;gap:12px;margin:0}.suizamente-access label{display:flex;flex-direction:column;gap:6px;font-size:14px;font-weight:700;letter-spacing:0;text-transform:none}
+.suizamente-access input{width:100%;height:54px;box-sizing:border-box;border:2px solid #e4e8ef;border-radius:16px;padding:0 16px;background:#fff;color:#0f1a2b;font:500 16px Poppins,"Segoe UI",system-ui,sans-serif}.suizamente-access input::placeholder{color:#7a8494}
+.suizamente-access button{font-family:inherit;cursor:pointer}.suizamente-access button:disabled{opacity:.6;cursor:wait}
+.suizamente-access__forgot{align-self:flex-end;display:flex;align-items:center;min-height:28px;font-size:13.5px;font-weight:600;color:#4a76ef;background:none;border:0;padding:0;text-decoration:underline;text-underline-offset:3px}
+.suizamente-access__primary{display:flex;align-items:center;justify-content:center;min-height:56px;border:0;border-radius:999px;background:#4a76ef;color:#fff;font-size:17px;font-weight:800;padding:12px 16px;width:100%}
+.suizamente-access__divider{display:flex;align-items:center;gap:12px;color:#5a6577;font-size:13px;font-weight:600}.suizamente-access__divider::before,.suizamente-access__divider::after{content:"";flex:1;height:1px;background:#e4e8ef}
+.suizamente-access__providers{display:flex;flex-direction:column;gap:10px}.suizamente-access__providers button{display:flex;align-items:center;justify-content:center;min-height:52px;border-radius:999px;border:2px solid #e4e8ef;background:#fff;color:#0f1a2b;font-size:15px;font-weight:700;padding:10px 14px}
+.suizamente-access__footer{margin-top:auto;text-align:center;color:#5a6577;font-size:14px}.suizamente-access__footer p{margin:0}.suizamente-access__footer button{border:0;background:none;color:#4a76ef;font-size:14px;font-weight:700;padding:8px 0;min-height:40px}
+.suizamente-access__message{font-size:13px;line-height:1.5;color:#c82732;margin:0}.suizamente-access__message:empty{display:none}.suizamente-access__field-error{font-size:12px;color:#c82732}
+.suizamente-access :focus-visible{outline:3px solid #24bfe2;outline-offset:3px}
+@media(max-height:740px){.suizamente-access__inner{gap:12px;padding-top:14px}.suizamente-access__heading>img{width:64px;height:48px}.suizamente-access__heading p{font-size:14px}}

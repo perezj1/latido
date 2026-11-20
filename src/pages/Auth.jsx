@@ -12,6 +12,7 @@ import { ONBOARDING_INTEREST_OPTIONS } from '../lib/interests'
 import { getGooglePostAuthPath } from '../lib/oauthOnboarding'
 import toast from 'react-hot-toast'
 import './Auth.css'
+import '../../apps/suizamente/src/access.css'
 
 const GOOGLE_AUTH_ENABLED = true
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID
@@ -968,13 +969,28 @@ export default function Auth() {
     />
   )
 
+  if(mode==='login'&&isSuizamenteAccess)return (
+    <section className="suizamente-access" data-theme="light"><div className="suizamente-access__inner">
+      <Link className="suizamente-access__back" to="/suizamente/bienvenida" aria-label="Volver">←</Link>
+      <header className="suizamente-access__heading"><img src="/suizamente/logo.svg" width="72" height="54" alt="Suizamente"/><h1>Entra en Suizamente</h1><p>Con tu cuenta de Latido. Tus puntos, rachas y medallas te siguen a cualquier móvil.</p></header>
+      <form onSubmit={event=>{event.preventDefault();handleLogin()}}>
+        <label>Email<input name="email" type="email" autoComplete="email" placeholder="tu@email.com" value={form.email} onChange={event=>s('email',event.target.value)} required/>{errors.email&&<span className="suizamente-access__field-error">{errors.email}</span>}</label>
+        <label>Contraseña<input name="password" type="password" autoComplete="current-password" placeholder="Tu contraseña" value={form.password} onChange={event=>s('password',event.target.value)} required/>{errors.password&&<span className="suizamente-access__field-error">{errors.password}</span>}</label>
+        <button className="suizamente-access__forgot" type="button" onClick={()=>{setErrors({});setMode('forgot')}}>¿Has olvidado la contraseña?</button>
+        <button className="suizamente-access__primary" type="submit" disabled={loading||googleLoading}>{loading?'Entrando…':'Entrar'}</button>
+      </form>
+      <div className="suizamente-access__divider" aria-hidden="true">o</div>
+      <div className="suizamente-access__providers"><button type="button" onClick={handleGoogleRedirect} disabled={loading||googleLoading}>Continuar con Google</button></div>
+      <footer className="suizamente-access__footer"><p>¿No tienes cuenta en Latido? <button type="button" onClick={()=>changeAuthMode('register')}>Crear cuenta</button></p></footer>
+    </div></section>
+  )
+
   if (mode === 'login') return (
     <AuthFormScreen onBack={isSuizamenteAccess ? undefined : () => changeAuthMode('welcome')}>
       <header className="latido-auth-sheet-heading">
         <h1>Hola de nuevo</h1>
         <p>Entra y sigue donde lo dejaste.</p>
       </header>
-      {isSuizamenteAccess && <Btn variant="secondary" style={{marginBottom:20}} disabled={loading || googleLoading} onClick={() => navigate('/suizamente',{replace:true})}>Jugar sin cuenta</Btn>}
       {isPartnerAccess && (
         <p className="latido-auth-notice">
           Inicia sesión para acceder a la información y los servicios de nuestros colaboradores.

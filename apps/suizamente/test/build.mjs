@@ -10,6 +10,7 @@ assert.match(root,/<title>Suizamente/)
 assert.match(root,/<link rel="canonical" href="https:\/\/suizamente\.latido\.ch\/">/)
 assert.match(root,/<meta name="robots" content="index, follow">/)
 assert.equal(root.includes('__SITE_URL__'),false)
+assert.match(root,/<html lang="es" data-theme="light">/)
 const manifest=JSON.parse(await read('dist/manifest.webmanifest'))
 assert.equal(hash(await readFile('dist/videos/install-ios.mp4')),hash(await readFile('../../public/videos/install-ios.mp4')))
 for(const size of [128,192,512])assert.equal(hash(await readFile(`dist/suizamente/icons/suizamente-circle-logo-${size}.png`)),hash(await readFile(`../../public/suizamente/icons/suizamente-circle-logo-${size}.png`)))
@@ -29,7 +30,7 @@ for (const route of ['cuenta','auth/callback','auth/restablecer','retos','rankin
   assert.match(html,/<meta name="referrer" content="no-referrer">/)
   assert.match(html,new RegExp('href="https://suizamente.latido.ch/'+route+'"'))
 }
-for (const file of ['juego.js','juego.html','votos.js','fonts.css','data/preguntas.json','experiencia.js','experiencia.css','experiencia-datos.js','historia.js']) {
+for (const file of ['logo.svg','juego.js','juego.html','votos.js','fonts.css','data/preguntas.json','experiencia.js','experiencia.css','experiencia-datos.js','historia.js']) {
   assert.equal(hash(await readFile('dist/suizamente/'+file)),hash(await readFile('../../public/suizamente/'+file)),`Shared source drift: ${file}`)
 }
 const sitemap=await read('dist/sitemap.xml')

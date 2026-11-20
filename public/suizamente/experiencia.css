@@ -320,3 +320,24 @@ body .reveal{padding-top:calc(10px + env(safe-area-inset-top,0px));padding-botto
 .s-share-copy-text{width:100%;min-height:130px;border:1px solid var(--s-border);border-radius:16px;background:var(--s-surface);color:var(--s-ink);padding:12px;margin-top:12px;font:14px/1.5 var(--font)}
 .s-share-sheet :focus-visible{outline:3px solid var(--s-accent);outline-offset:3px}
 @media(max-width:350px){.s-week .s-week-dot{width:29px;height:29px;font-size:21px}.s-challenge{padding:14px}.s-challenge .s-kicker{font-size:10px}.s-share-sheet{padding-left:15px;padding-right:15px}.s-share-preview{grid-template-columns:65px minmax(0,1fr);gap:12px}.s-share-thumbnail{width:65px}.s-share-option{padding:12px;min-height:120px}.s-share-option b{font-size:15px}.s-duel-hero .s-match strong{font-size:35px}.s-duel-player .s-avatar{width:54px;height:54px;font-size:21px}}
+.app.welcoming{padding:0;min-height:100dvh}
+.social.s-welcome{display:flex;flex-direction:column;align-items:center;width:100%;min-height:100dvh;padding:64px 24px 28px;gap:0;background:#fff;color:#0f1a2b;box-sizing:border-box}
+.s-entry-brand{display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center}.s-entry-brand>img{width:140px;height:106px;object-fit:contain}
+.social.s-welcome h1{margin:0;font-size:clamp(38px,11.8vw,46px);line-height:1.05;font-weight:800;letter-spacing:-.02em;max-width:none}.s-entry-brand h1>span:first-child{color:#fa2f35}.s-entry-brand h1>span:last-child{color:#4a76ef}
+.s-entry-brand p{font-size:16px;line-height:1.5;color:#5a6577;max-width:300px}
+.s-entry-cards{position:relative;width:min(100%,342px);height:300px;flex:none;margin-top:28px}
+.s-entry-card{position:absolute;display:flex;flex-direction:column;gap:6px;padding:16px;border-radius:22px;box-shadow:0 10px 28px #0f1a2b1a;text-align:left;box-sizing:border-box}
+.s-entry-card.dilemma{left:0;top:6px;width:62%;background:#dfe7fc;transform:rotate(-5deg)}
+.s-entry-card.myth{right:0;top:74px;width:57.3%;background:#feedd1;transform:rotate(4deg);gap:8px}
+.s-entry-card>span{font-size:11px;line-height:1.5;font-weight:700;letter-spacing:.08em}.s-entry-card>b{font-size:17px;line-height:1.25;font-weight:800}
+.s-entry-card.myth>div{display:flex;gap:6px}.s-entry-card.myth>div>span{flex:1;text-align:center;padding:6px 0;border-radius:999px;background:#fff;font-size:13px;font-weight:700}
+.s-entry-card.community{left:7.6%;top:208px;width:79%;padding:16px 18px;background:#4a76ef;color:#fff;transform:rotate(-1.5deg);box-shadow:0 14px 30px #0f1a2b38;gap:10px}
+.s-entry-card.community p{font-size:14px;font-weight:600;line-height:1.6}.s-entry-card.community b{padding:0 6px;border-radius:8px;background:#24e2c9;color:#0f1a2b;font-size:17px;white-space:nowrap}
+.s-entry-progress{height:10px;border-radius:999px;background:#ffffff29;overflow:hidden}.s-entry-progress>i{display:block;width:54%;height:100%;border-radius:999px;background:#24e2c9}
+.s-entry-actions{display:flex;flex-direction:column;align-items:center;gap:6px;margin-top:auto;width:100%;padding-top:16px}
+.s-entry-primary{width:100%;min-height:58px;border:0;border-radius:999px;background:#4a76ef;color:#fff;font:800 18px/1.4 var(--font);cursor:pointer;padding:12px 18px}
+.s-entry-login{min-height:48px;padding:0 16px;background:none;border:0;color:#0f1a2b;font:700 16px/1.4 var(--font);cursor:pointer}
+.s-entry-actions>p{font-size:12px;color:#5a6577;margin-top:2px}
+@media(max-height:740px){.social.s-welcome{padding-top:32px;padding-bottom:22px}.s-entry-brand{gap:10px}.s-entry-brand>img{width:116px;height:88px}.social.s-welcome h1{font-size:40px}.s-entry-brand p{font-size:14px}.s-entry-cards{margin-top:22px;height:270px}.s-entry-card.community{top:184px}.s-entry-card.myth{top:64px}}
+@media(max-height:740px){.s-entry-card.community{padding:12px 16px;gap:8px}.s-entry-card.community p{font-size:13px;line-height:1.5}.s-entry-card.community b{font-size:15px;line-height:1.3}.s-entry-card.community .s-entry-progress{height:8px}}
+@media(max-width:350px){.social.s-welcome{padding-top:24px;padding-bottom:20px}.s-entry-brand{gap:8px}.s-entry-brand>img{width:96px;height:73px}.social.s-welcome h1{font-size:36px}.s-entry-cards{height:340px;margin-top:20px}.s-entry-card.dilemma{width:75%;top:0}.s-entry-card.myth{width:70%;top:116px}.s-entry-card.community{left:4%;width:92%;top:252px;padding:12px 16px;gap:8px}.s-entry-card.community p{font-size:13px;line-height:1.5}.s-entry-card.community b{font-size:15px;line-height:1.3}.s-entry-card.community .s-entry-progress{height:8px}}

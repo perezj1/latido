@@ -42,7 +42,7 @@ export function createSuizamenteInstall({integrated=false,navigate}) {
   }
   function renderBanner(){
     banner?.remove();banner=null
-    if(!active||isInstalled()||dismissed||!['/','/bienvenida'].includes(route)||(!ios&&!android&&!prompt))return
+    if(!active||isInstalled()||dismissed||route!=='/'||(!ios&&!android&&!prompt))return
     banner=document.createElement('aside');banner.className='suizamente-install-banner';banner.setAttribute('aria-label','Instalar Suizamente')
     if(route==='/bienvenida')banner.style.bottom='max(16px, env(safe-area-inset-bottom))'
     banner.innerHTML=`<img src="${ICON}" width="46" height="46" alt=""><div class="suizamente-install-banner-copy"><b>Instala Suizamente en tu ${ios?'iPhone':android?'móvil':'dispositivo'}</b><p>Gratis. Directo desde el navegador.</p><div><button type="button" data-install>${ios?'Cómo instalar':'Instalar'}</button><button type="button" data-dismiss>Ahora no</button></div></div>`
