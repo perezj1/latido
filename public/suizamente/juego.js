@@ -232,14 +232,15 @@ function refrescarResultado(primera = false) {
     sub.textContent = rep.n[o] === Math.max(...rep.n) ? 'Piensas como la mayoría de Latido.' : 'Eres de la minoría valiente.';
   }
   if (repetida) sub.textContent += ' (Ya la habías respondido: cuenta tu primer voto.)';
-  const orden = ronda ? ronda.orden[q.id] : q.opciones.map((_, i) => i);
+  const ordenOpciones = ronda ? ronda.orden[q.id] : q.opciones.map((_, i) => i);
+  const orden = [o, ...ordenOpciones.filter(oi => oi !== o)];
   const anima = primera && !RM;
   const datos = datosPorOpcion(q, o);
-  $('#reparto').innerHTML = orden.map((oi, k) => {
+  $('#reparto').innerHTML = orden.map(oi => {
     const elegida = oi === o;
     const verdadera = real && oi === q.correcta ? '<div class="tags"><span class="tag true">✓ La verdadera</span></div>' : '';
     const dato = datos[oi] ? `<div class="answer-fact"><b><span aria-hidden="true">💡</span> ¿Sabías que…?</b><p>${esc(datos[oi])}</p></div>` : '';
-    return `<div class="res o${k + 1}${elegida ? ' is-picked' : ''}">${elegida ? '<span class="tag mine">Tu elección</span>' : ''}<div class="res-top"><span class="res-t">${q.opciones[oi].e} ${esc(q.opciones[oi].t)}</span><span class="res-p" data-p="${hayDatos ? rep.pct[oi] : ''}">${hayDatos ? (anima ? 0 : rep.pct[oi]) + '%' : '—'}</span></div>
+    return `<div class="res o${ordenOpciones.indexOf(oi) + 1}${elegida ? ' is-picked' : ''}">${elegida ? '<span class="tag mine">Tu elección</span>' : ''}<div class="res-top"><span class="res-t">${q.opciones[oi].e} ${esc(q.opciones[oi].t)}</span><span class="res-p" data-p="${hayDatos ? rep.pct[oi] : ''}">${hayDatos ? (anima ? 0 : rep.pct[oi]) + '%' : '—'}</span></div>
       <div class="res-bar"><i style="width:${anima ? 0 : (hayDatos ? rep.pct[oi] : 0)}%" data-w="${hayDatos ? rep.pct[oi] : 0}"></i></div>${verdadera}${dato}</div>`;
   }).join('');
   $('#votos').textContent = hayDatos ? `${rep.total.toLocaleString('es-ES')} ${rep.total === 1 ? 'voto' : 'votos'}` : textoNota();
