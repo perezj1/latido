@@ -281,6 +281,23 @@
           "value": "no-referrer"
         }
       ]
+    },
+    {
+      "source": "/onboarding(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-store"
+        },
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow, noarchive"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "no-referrer"
+        }
+      ]
     }
   ],
   "rewrites": [
@@ -359,6 +376,10 @@
     {
       "source": "/duelo/:codigo([A-Fa-f0-9]{8})",
       "destination": "/duelo.html"
+    },
+    {
+      "source": "/onboarding",
+      "destination": "/onboarding/index.html"
     }
   ]
 }

@@ -4,8 +4,10 @@ import { useAuth } from '../hooks/useAuth'
 import { supabase } from '../lib/supabase'
 import { connectSuizamenteSession } from '../lib/suizamenteSessionBridge'
 import { createSuizamenteInstall } from '../../apps/suizamente/src/install'
-import { completeRegistrationProfile,needsRegistrationProfile,prepareSuizamenteAccount } from '../../apps/suizamente/src/registration.js'
-import SuizamenteRegistration from '../components/SuizamenteRegistration'
+import { completeRegistrationProfile,prepareSuizamenteAccount } from '../../apps/suizamente/src/registration.js'
+import {needsSuizamenteOnboarding} from '../../apps/suizamente/src/onboarding.js'
+import SuizamenteEntry from '../components/SuizamenteEntry'
+import SuizamenteLoading from '../components/SuizamenteLoading'
 import '../../apps/suizamente/src/access.css'
 
 // Isolate the reference CSS and full-screen reveal from Latido's global styles.
@@ -17,17 +19,21 @@ export default function Suizamente() {
   const [checkingGoogle,setCheckingGoogle]=useState(()=>{try{return !!sessionStorage.getItem('suizamente:oauth-inicio')}catch{return false}})
   const [profileError,setProfileError]=useState('')
   const [profileAttempt,setProfileAttempt]=useState(0)
+  const [onboardingUser,setOnboardingUser]=useState(null)
+  const [checkedUser,setCheckedUser]=useState(null)
+  const referenceMode=window.SUIZAMENTE_CONFIG?.experiencia===false
   const socialApi=import.meta.env.DEV?'/api/suizamente/social':import.meta.env.VITE_SUPABASE_URL?.replace(/\/$/,'')+'/functions/v1/suizamente-social'
   const pendingProfile=!!authUser?.user_metadata?.suizamente_perfil_pendiente
-  const needsProfile=needsRegistrationProfile(authUser)
+  const needsProfile=!referenceMode&&needsSuizamenteOnboarding(authUser)
   const location=useLocation(),navigate=useNavigate()
   const path=location.pathname==='/perfil/suizometro'?'/perfil':location.pathname.startsWith('/admin/suizamente')?'/moderacion':location.pathname.replace(/^\/suizamente/,'')||'/'
   const pathRef=useRef(path+location.search)
   pathRef.current=path+location.search
+  useEffect(()=>{if(needsProfile&&checkedUser===authUser.id)setOnboardingUser(authUser.id);else if(!authUser)setOnboardingUser(null)},[needsProfile,authUser,checkedUser])
   useEffect(()=>{
     if(authLoading)return
     let cancelled=false
-    prepareSuizamenteAccount({client:supabase}).catch(error=>{if(!cancelled)setProfileError(error.message)}).finally(()=>{if(!cancelled)setCheckingGoogle(false)})
+    prepareSuizamenteAccount({client:supabase}).catch(error=>{if(!cancelled)setProfileError(error.message)}).finally(()=>{if(!cancelled){setCheckingGoogle(false);setCheckedUser(authUser?.id||null)}})
     return ()=>{cancelled=true}
   },[authUser?.id,authLoading,profileAttempt])
   useEffect(()=>{
@@ -40,9 +46,9 @@ export default function Suizamente() {
     return ()=>{installation.current?.dispose();installation.current=null}
   },[navigate])
   useEffect(()=>{
-    installation.current?.setRoute(path)
+    installation.current?.setRoute((!authUser&&!referenceMode)?'/bienvenida':needsProfile?'/onboarding':path)
     if(path==='/instalar'&&guide.current){document.title='Instalar Suizamente';installation.current?.renderGuide(guide.current,{back:'/suizamente'})}
-  },[path])
+  },[path,authUser,referenceMode,needsProfile])
   useEffect(() => connectSuizamenteSession({
     getFrame:() => frame.current?.contentWindow,
     getSession:() => supabase.auth.getSession(),
@@ -54,7 +60,7 @@ export default function Suizamente() {
       try{
         const {error}=await supabase.auth.signOut({scope:'local'})
         if(error)throw error
-        navigate('/auth?mode=register&next=%2Fsuizamente',{replace:true})
+        navigate('/suizamente/bienvenida',{replace:true})
       }catch{
         frame.current?.contentWindow?.postMessage({type:'suizamente:logout-error'},window.location.origin)
       }finally{signingOut.current=false}
@@ -67,9 +73,11 @@ export default function Suizamente() {
       : '/api/suizamente',
   }), [navigate])
   useEffect(()=>{frame.current?.contentWindow?.postMessage({type:'suizamente:route',path:path+location.search},window.location.origin)},[path,location.search])
-  if(needsProfile)return <SuizamenteRegistration profileOnly onComplete={()=>navigate('/suizamente/perfil',{replace:true})}/>
-  if(checkingGoogle||pendingProfile||profileError)return <section className="suizamente-access suizamente-profile-sync" data-theme="light"><img src="/suizamente/logo.svg" width="100" height="76" alt="Suizamente"/>{profileError&&<><p role="alert">{profileError}</p><button className="suizamente-access__primary" onClick={()=>{setProfileError('');setProfileAttempt(n=>n+1)}}>Volver a intentarlo</button></>}</section>
   if(path==='/instalar')return <div className="suizamente-install-host" ref={guide} />
+  if(authLoading||checkingGoogle||(needsProfile&&checkedUser!==authUser?.id))return <SuizamenteLoading/>
+  if(!authLoading&&!authUser&&!referenceMode)return <SuizamenteEntry key="welcome" onSignup={()=>navigate('/auth?mode=register&next=%2Fsuizamente')} onLogin={()=>navigate('/auth?mode=login&next=%2Fsuizamente')}/>
+  if(authUser&&(needsProfile||onboardingUser===authUser.id))return <SuizamenteEntry key={authUser.id} user={authUser} onComplete={()=>{setOnboardingUser(null);navigate('/suizamente',{replace:true})}}/>
+  if(checkingGoogle||pendingProfile||profileError)return <section className="suizamente-access suizamente-profile-sync" data-theme="light"><img src="/suizamente/logo.svg" width="100" height="76" alt="Suizamente"/>{profileError&&<><p role="alert">{profileError}</p><button className="suizamente-access__primary" onClick={()=>{setProfileError('');setProfileAttempt(n=>n+1)}}>Volver a intentarlo</button></>}</section>
   return <iframe key={authUser?.id || 'anon'} ref={frame} src="/suizamente/juego.html"
     title="Suizamente, un juego de Latido" allow="clipboard-write; web-share"
     style={{ display:'block', border:0, position:'fixed', inset:0, width:'100%', height:'100dvh', zIndex:30, background:'#fff' }} />

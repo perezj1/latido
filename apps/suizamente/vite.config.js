@@ -9,7 +9,7 @@ import { publicConfig } from './src/config.js'
 const appRoot = fileURLToPath(new URL('.', import.meta.url))
 const repoRoot = path.resolve(appRoot, '../..')
 const sharedRoot = path.join(repoRoot, 'public')
-const routes = new Set(['/cuenta','/auth/callback','/auth/restablecer','/instalar','/bienvenida','/como-se-juega','/retos','/ranking','/libreta','/perfil','/perfil/editar','/amigos','/medallas','/ajustes','/proponer','/moderacion','/avisos','/jugar'])
+const routes = new Set(['/onboarding','/cuenta','/auth/callback','/auth/restablecer','/instalar','/bienvenida','/como-se-juega','/retos','/ranking','/libreta','/perfil','/perfil/editar','/amigos','/medallas','/ajustes','/proponer','/moderacion','/avisos','/jugar'])
 const publicRoutes=new Set(['/instalar','/bienvenida','/como-se-juega'])
 const routeTitles={'/instalar':'Instalar Suizamente','/bienvenida':'Bienvenido a Suizamente','/como-se-juega':'Cómo jugar a Suizamente','/retos':'Retos','/ranking':'Rankings','/libreta':'Tu libreta','/perfil':'Tu perfil','/perfil/editar':'Editar tu perfil','/amigos':'Amigos','/medallas':'Medallas','/ajustes':'Ajustes','/proponer':'Proponer una pregunta','/moderacion':'Revisar propuestas','/avisos':'Avisos','/jugar':'Jugar'}
 const knownPath=pathname=>routes.has(pathname)||/^\/duelo\/[A-Fa-f0-9]{8}$/.test(pathname)

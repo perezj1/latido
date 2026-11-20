@@ -1,18 +1,20 @@
 import assert from 'node:assert/strict'
 import { mkdir } from 'node:fs/promises'
 import { chromium,expect,devices } from '@playwright/test'
-import { preview } from 'vite'
+import { preview,loadEnv } from 'vite'
+import {session,alice} from './social-db.mjs'
 
 const origin='http://127.0.0.1:5273',server=await preview({preview:{host:'127.0.0.1',port:5273,strictPort:true}})
+const env=loadEnv('production',process.cwd(),'VITE_'),storageKey='sb-'+new URL(env.VITE_SUPABASE_URL).hostname.split('.')[0]+'-auth-token'
 const browser=await chromium.launch({headless:true}),errors=[]
 await mkdir('test-results/installation',{recursive:true})
 async function open(device,{installed=false,firstVisit=false}={}){
  const context=await browser.newContext({...devices[device],reducedMotion:'reduce'})
- await context.addInitScript(({installed,firstVisit})=>{
+ await context.addInitScript(({installed,firstVisit,key,value})=>{
   window.SUIZAMENTE_DISABLE_SSO=true
-  if(!firstVisit)localStorage.setItem('suizamente:bienvenida','true')
+  if(!firstVisit)localStorage.setItem(key,JSON.stringify(value))
   if(installed)Object.defineProperty(navigator,'standalone',{value:true})
- },{installed,firstVisit})
+ },{installed,firstVisit,key:storageKey,value:session(alice)})
  await context.route('**/*',route=>new URL(route.request().url()).origin===origin?route.continue():route.fulfill({status:503,json:{error:'fixture_offline'}}))
  const page=await context.newPage();page.on('pageerror',error=>errors.push(error.message))
  await page.goto(origin)
@@ -21,7 +23,7 @@ async function open(device,{installed=false,firstVisit=false}={}){
 try{
  const firstVisit=await open('iPhone 13',{firstVisit:true})
  await expect(firstVisit.page).toHaveURL(origin+'/bienvenida')
- await expect(firstVisit.page.frameLocator('iframe.game').getByRole('button',{name:'Crear cuenta',exact:true})).toBeVisible()
+ await expect(firstVisit.page.getByRole('button',{name:'Crear cuenta',exact:true})).toBeVisible()
  await expect(firstVisit.page.locator('.suizamente-install-banner')).toHaveCount(0)
  await firstVisit.context.close()
  const ios=await open('iPhone 13')

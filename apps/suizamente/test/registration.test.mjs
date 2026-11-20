@@ -26,3 +26,13 @@ test('using an existing Latido account never changes its origin, name or onboard
     assert.equal(f.changes.length,0)
   }
 })
+
+test('an older device session picks up completed onboarding from the verified account',async()=>{
+  let current={access_token:'own-access',refresh_token:'own-refresh',user:{id:'account',user_metadata:{name:'Nombre Latido'}}}
+  const verified={...current.user,user_metadata:{name:'Nombre Latido',suizamente_onboarding_completed:true}}
+  let stored=0
+  const client={auth:{getSession:async()=>({data:{session:current}}),getUser:async()=>({data:{user:verified}}),setSession:async tokens=>{assert.deepEqual(tokens,{access_token:'own-access',refresh_token:'own-refresh'});stored++;current={...current,user:verified};return {data:{session:current}}}}}
+  const result=await prepareSuizamenteAccount({client,storage:{getItem:()=>null},now})
+  assert.equal(result.user.user_metadata.suizamente_onboarding_completed,true)
+  assert.equal(stored,1)
+})

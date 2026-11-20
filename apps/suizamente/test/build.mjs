@@ -24,7 +24,7 @@ for(const size of [72,96]){
   assert.ok(root.includes(`rel="icon" href="/icons/favicon-circle-${size}.png"`))
   assert.equal(hash(await readFile(`dist/icons/favicon-circle-${size}.png`)),hash(await readFile(`../../public/suizamente/icons/suizamente-circle-logo-${size}.png`)))
 }
-for (const route of ['cuenta','auth/callback','auth/restablecer','retos','ranking','libreta','perfil','perfil/editar','amigos','medallas','ajustes','proponer','moderacion','avisos','jugar']) {
+for (const route of ['onboarding','cuenta','auth/callback','auth/restablecer','retos','ranking','libreta','perfil','perfil/editar','amigos','medallas','ajustes','proponer','moderacion','avisos','jugar']) {
   const html=await read(`dist/${route}/index.html`)
   assert.ok(html.includes('class="startup"'),'Missing startup animation: '+route)
   assert.ok(html.includes('class="page boot"'),'Text fallback must remain hidden when JS runs: '+route)
@@ -43,7 +43,7 @@ const worker=await read('dist/sw.js')
 assert.equal(worker.includes('__BUILD_ID__'),false)
 assert.doesNotMatch(worker,/access_token|refresh_token|Authorization|localStorage/)
 const vercel=JSON.parse(await read('vercel.json'))
-for (const source of ['/cuenta(.*)','/auth/(.*)','/retos(.*)','/ranking(.*)','/libreta(.*)','/perfil(.*)','/amigos(.*)','/medallas(.*)','/ajustes(.*)','/proponer(.*)','/moderacion(.*)','/avisos(.*)','/jugar(.*)','/duelo(.*)']) {
+for (const source of ['/onboarding(.*)','/cuenta(.*)','/auth/(.*)','/retos(.*)','/ranking(.*)','/libreta(.*)','/perfil(.*)','/amigos(.*)','/medallas(.*)','/ajustes(.*)','/proponer(.*)','/moderacion(.*)','/avisos(.*)','/jugar(.*)','/duelo(.*)']) {
   const headers=vercel.headers.find(rule=>rule.source===source).headers
   assert.equal(headers.find(h=>h.key==='Cache-Control').value,'no-store')
   assert.match(headers.find(h=>h.key==='X-Robots-Tag').value,/noindex/)

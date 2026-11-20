@@ -122,6 +122,14 @@ Los avisos de amistades, duelos y propuestas se guardan en `app_notifications` y
 
 ## Preview y desarrollo
 
+### Entrada y onboarding
+
+Al abrir Suizamente se muestra la animación mientras se recupera la sesión propia y se intenta conectar la cuenta de Latido. Si no hay sesión, se muestra la bienvenida con «Crear cuenta» y «Ya tengo una cuenta». El registro y el acceso ofrecen correo/contraseña, Google y conexión con una cuenta existente de Latido. La conexión automática en Latido requiere publicar la ruta preparada en [PR #5](https://github.com/perezj1/latido/pull/5).
+
+Después del primer acceso autenticado aparecen cuatro pantallas explicativas adaptadas de los diseños de Latido. El quinto paso es el perfil: nombre obligatorio, país, cantón y años en Suiza. «Saltar» lleva al perfil y no permite omitir el nombre. «¡A jugar!» guarda el perfil mediante la API existente y marca `suizamente_onboarding_completed` en los metadatos de la cuenta. La configuración de Latido sigue siendo independiente. La sesión de un dispositivo antiguo consulta la cuenta antes de repetir un onboarding ya completado.
+
+El progreso de las pantallas y el borrador del perfil se conservan por cuenta en `sessionStorage`, sin contraseñas. Los ejemplos interactivos del tutorial no emiten votos ni conceden puntos. La implementación no modifica preguntas, opciones ni pantallas de respuesta, y no requiere SQL nuevo. Se valida con `npm --prefix apps/suizamente run test:onboarding` y la prueba del anfitrión real `node scripts/test-suizamente-perfil-local.mjs` en el puerto 8080.
+
 La aplicación integrada puede abrirse en `http://localhost:8080/suizamente` ejecutando el servidor raíz en la carpeta de la rama `suizamente-social`. Vite sirve también `/api/suizamente/social` mediante un adaptador local del mismo handler de la Edge Function: permite probar el SQL instalado antes de desplegar esa función. Utiliza las credenciales de servidor existentes en `.env.local`, sin enviarlas al navegador. Las operaciones usan el Supabase configurado y pueden guardar datos reales; iniciar este servidor no publica la web ni despliega funciones. Los cambios de `public/suizamente/` se reflejan al recargar.
 
 Las pruebas locales usan los orígenes de desarrollo ya admitidos. Un Preview remoto necesita incluir su origen HTTPS exacto, sin rutas ni barra final, en `SUIZAMENTE_ALLOWED_ORIGINS` de la función nueva. Para probar también la conexión con Latido, añadir el mismo origen a `VITE_SUIZAMENTE_SSO_ORIGINS` del build de Latido y publicar ese build bajo autorización. Para Google o enlaces de correo, añadir además sus callbacks exactos a Supabase Auth. Evitar comodines que admitan previews de terceros.

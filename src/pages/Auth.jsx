@@ -959,7 +959,7 @@ export default function Auth() {
   }
 
   if(mode==='register'&&isSuizamenteAccess)return <SuizamenteRegistration
-    onLogin={()=>changeAuthMode('login')} onGoogle={handleGoogleRedirect} onComplete={()=>navigate('/suizamente/perfil',{replace:true})}/>
+    onLogin={()=>changeAuthMode('login')} onGoogle={handleGoogleRedirect} onComplete={()=>navigate('/suizamente',{replace:true})}/>
 
   if (mode === 'welcome') return (
     <AuthWelcome
@@ -985,7 +985,7 @@ export default function Auth() {
         <button className="suizamente-access__primary" type="submit" disabled={loading||googleLoading}>{loading?'Entrando…':'Entrar'}</button>
       </form>
       <div className="suizamente-access__divider" aria-hidden="true">o</div>
-      <div className="suizamente-access__providers"><button type="button" onClick={handleGoogleRedirect} disabled={loading||googleLoading}>Continuar con Google</button></div>
+      <div className="suizamente-access__providers"><button type="button" onClick={handleGoogleRedirect} disabled={loading||googleLoading}>Continuar con Google</button><button type="button" onClick={()=>document.querySelector('input[name="email"]')?.focus()} disabled={loading||googleLoading}>Entrar con mi cuenta de Latido</button></div>
       <footer className="suizamente-access__footer"><p>¿Aún no tienes cuenta en Suizamente? <button type="button" onClick={()=>changeAuthMode('register')}>Crear cuenta</button></p></footer>
     </div></section>
   )

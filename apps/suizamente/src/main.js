@@ -6,13 +6,15 @@ import { publicConfig } from './config.js'
 import { createSuizamenteInstall } from './install.js'
 import './style.css'
 import './access.css'
-import {mountSuizamenteRegistration,completeRegistrationProfile,needsRegistrationProfile,prepareSuizamenteAccount} from './registration.js'
+import {mountSuizamenteRegistration,completeRegistrationProfile,prepareSuizamenteAccount} from './registration.js'
+import {mountSuizamenteOnboarding,mountSuizamenteWelcome,needsSuizamenteOnboarding} from './onboarding.js'
 
 const root = document.getElementById('app')
 const esc = text => String(text ?? '').replace(/[&<>"]/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[c]))
 let session = null, client, config, disposeFrame, booted = false
 let accountMode = new URLSearchParams(location.search).get('mode') === 'login' ? 'login' : 'signup', signingOut = false
-let disposeRegistration,registrationActive=false
+let disposeRegistration,disposeEntry,registrationActive=false
+const referenceMode=()=>window.SUIZAMENTE_CONFIG?.experiencia===false
 
 const installation=createSuizamenteInstall({navigate:next=>{history.pushState(null,'',next);render()}})
 
@@ -60,7 +62,7 @@ async function logout() {
     if(error)throw error
     try{localStorage.setItem('suizamente:sso-optout','true')}catch{/* Storage may be unavailable. */}
     session=null;accountMode='signup'
-    history.replaceState(null,'','/cuenta');render()
+    history.replaceState(null,'','/bienvenida');render()
   }catch{
     const frame=root.querySelector('iframe.game')
     if(frame)frame.contentWindow.postMessage({type:'suizamente:logout-error'},location.origin)
@@ -83,7 +85,7 @@ function renderAccount() {
     registrationActive=true
     disposeRegistration=mountSuizamenteRegistration(root,{
       client,socialApi:config.socialApi,redirectTo:location.origin+'/auth/callback',backHref:'/bienvenida',
-      onLogin:()=>changeMode('login'),onGoogle:()=>googleLogin(),onComplete:()=>location.replace('/perfil'),
+      onLogin:()=>changeMode('login'),onGoogle:()=>googleLogin(),onLatido:()=>latidoLogin(),onComplete:()=>location.replace('/'),
     })
     return
   }
@@ -91,7 +93,7 @@ function renderAccount() {
   if(!recovery)root.innerHTML=`<section class="suizamente-access" data-theme="light"><div class="suizamente-access__inner"><a class="suizamente-access__back" href="/bienvenida" aria-label="Volver">←</a><header class="suizamente-access__heading"><img src="/suizamente/logo.svg" width="72" height="54" alt="Suizamente"><h1>Entra en Suizamente</h1><p>Entra con tu cuenta de Suizamente o con tu cuenta de Latido.</p></header><form id="account-form"><label>Email<input name="email" type="email" autocomplete="email" maxlength="254" placeholder="tu@email.com" required></label><label>Contraseña<input name="password" type="password" autocomplete="current-password" maxlength="254" placeholder="Tu contraseña" required></label><button class="suizamente-access__forgot" type="button" data-mode="recovery">¿Has olvidado la contraseña?</button><button class="suizamente-access__primary" type="submit">Entrar</button></form><p id="message" class="suizamente-access__message" role="status" aria-live="polite"></p><div class="suizamente-access__divider" aria-hidden="true">o</div><div class="suizamente-access__providers"><button id="google" type="button">Continuar con Google</button><button id="latido-login" type="button">Entrar con mi cuenta de Latido</button></div><footer class="suizamente-access__footer"><p>¿Aún no tienes cuenta en Suizamente? <button type="button" data-mode="signup">Crear cuenta</button></p></footer></div></section>`
   else shell('Recuperar contraseña', `<p>Te enviaremos un enlace para elegir una nueva contraseña.</p><form id="account-form"><label>Correo electrónico<input name="email" type="email" autocomplete="email" maxlength="254" required></label><button class="button primary" type="submit">Enviar enlace</button></form><p id="message" class="message" role="status" aria-live="polite"></p><div class="actions"><button data-mode="login">Ya tengo cuenta · Entrar</button></div>`,{back:false})
   const latido=root.querySelector('#latido-login')
-  if(latido)latido.onclick=async()=>{try{localStorage.removeItem('suizamente:sso-optout')}catch{}latido.disabled=true;message('Abre tu cuenta de Latido en la ventana que aparece.');const linked=await connectLatidoAccount({client,socialApi:config.socialApi,popup:true});if(linked)location.replace('/');else{latido.disabled=false;message('Puedes entrar también con Google o con tu correo y contraseña.',true)}}
+  if(latido)latido.onclick=()=>latidoLogin()
   root.querySelectorAll('[data-mode]').forEach(button => { button.onclick = () => { changeMode(button.dataset.mode) } })
   root.querySelector('#account-form').onsubmit = async event => {
     event.preventDefault()
@@ -111,6 +113,16 @@ function renderAccount() {
   }
   const google = root.querySelector('#google')
   if (google) google.onclick = () => googleLogin()
+}
+async function latidoLogin(){
+  const button=root.querySelector('#latido-login')||root.querySelector('#register-latido')
+  try{localStorage.removeItem('suizamente:sso-optout')}catch{}
+  if(button)button.disabled=true
+  message('Abre tu cuenta de Latido en la ventana que aparece.')
+  const linked=await connectLatidoAccount({client,socialApi:config.socialApi,popup:true})
+  if(linked){location.replace('/');return}
+  if(button)button.disabled=false
+  message('Puedes entrar también con el correo y la contraseña de tu cuenta de Latido.',true)
 }
 async function googleLogin() {
   const google=root.querySelector('#google')||root.querySelector('#register-google')
@@ -148,20 +160,31 @@ function renderInstall() {
   document.title = 'Instalar Suizamente · Latido.ch'
   installation.renderGuide(root)
 }
-function renderProfileSetup(){
-  metadata(true);document.title='Tu perfil · Suizamente';registrationActive=true
-  if(path().startsWith('/auth/'))history.replaceState(null,'','/cuenta')
-  disposeRegistration=mountSuizamenteRegistration(root,{client,socialApi:config.socialApi,profileOnly:true,initialUser:session?.user,onComplete:()=>location.replace('/perfil')})
+function renderOnboarding(){
+  metadata(true);document.title='Bienvenido a Suizamente';registrationActive=true;installation.setRoute('/onboarding')
+  history.replaceState(null,'','/onboarding')
+  disposeEntry=mountSuizamenteOnboarding(root,{client,socialApi:config.socialApi,user:session.user,onComplete:()=>location.replace('/')})
+}
+function renderWelcome(){
+  metadata(false);document.title='Bienvenido a Suizamente';installation.setRoute('/bienvenida')
+  history.replaceState(null,'','/bienvenida')
+  disposeEntry=mountSuizamenteWelcome(root,{
+    onSignup:()=>{accountMode='signup';history.pushState(null,'','/cuenta');render()},
+    onLogin:()=>{accountMode='login';history.pushState(null,'','/cuenta?mode=login');render()},
+  })
 }
 function render() {
   installation.setRoute(path())
   disposeFrame?.(); disposeFrame = null
   disposeRegistration?.();disposeRegistration=null;registrationActive=false
-  if(needsRegistrationProfile(session?.user)){renderProfileSetup();return}
+  disposeEntry?.();disposeEntry=null
+  if(path()==='/instalar'){renderInstall();return}
+  if(path()==='/auth/restablecer'){renderRecovery();return}
+  if(path()==='/cuenta'&&(!session?.user||referenceMode()||!needsSuizamenteOnboarding(session.user))){renderAccount();return}
+  if(!referenceMode()&&!session?.user){renderWelcome();return}
+  if(!referenceMode()&&needsSuizamenteOnboarding(session?.user)){renderOnboarding();return}
+  if(path()==='/onboarding'){history.replaceState(null,'','/');mountGame();return}
   if (isSuizamentePath(location.pathname+location.search)) mountGame()
-  else if (path() === '/cuenta') renderAccount()
-  else if (path() === '/instalar') renderInstall()
-  else if (path() === '/auth/restablecer') renderRecovery()
   else if (path() === '/auth/callback') {
     metadata(true)
     // getSession() has already awaited the SDK's single automatic PKCE exchange.
@@ -184,13 +207,13 @@ async function start() {
     client.auth.onAuthStateChange((_event, nextSession) => {
       const changed = session?.user?.id !== nextSession?.user?.id
       session = nextSession
-      if (booted && changed && !signingOut && !registrationActive && (isSuizamentePath(location.pathname+location.search)||path()==='/cuenta')) setTimeout(render, 0)
+      if (booted && changed && !signingOut && (!registrationActive||!nextSession?.user) && (isSuizamentePath(location.pathname+location.search)||path()==='/cuenta'||path()==='/onboarding')) setTimeout(render, 0)
     })
     session = (await client.auth.getSession()).data.session
     session = await prepareSuizamenteAccount({client})
     let skipSso=false;try{skipSso=localStorage.getItem('suizamente:sso-optout')==='true'}catch{}
     if(!session&&path()!=='/cuenta'&&path()!=='/instalar'&&!path().startsWith('/auth/')&&!window.SUIZAMENTE_DISABLE_SSO&&!skipSso)session=await connectLatidoAccount({client,socialApi:config.socialApi})
-    if(!needsRegistrationProfile(session?.user))try{await completeRegistrationProfile({client,socialApi:config.socialApi})}catch{booted=true;renderProfileSetup();return}
+    if(!needsSuizamenteOnboarding(session?.user))try{await completeRegistrationProfile({client,socialApi:config.socialApi})}catch{booted=true;renderOnboarding();return}
     booted = true
     render()
     if (import.meta.env.PROD && 'serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js', { scope:'/' }).catch(() => {})

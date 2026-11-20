@@ -8,6 +8,7 @@ import { usePWA } from './hooks/usePWA'
 import { supabase } from './lib/supabase'
 import { CARD_MEMBERS_ENABLED } from './lib/latidoCardLaunch'
 import LatidoCardBusinessGate from './components/LatidoCardBusinessGate'
+import SuizamenteLoading from './components/SuizamenteLoading'
 import { startUserPresence, trackUserPresence } from './lib/presence'
 import {
   getAnalyticsRoute,
@@ -384,6 +385,7 @@ function ScrollToTop() {
 }
 
 function AppLoading() {
+  if(isSuizamenteRoute(window.location.pathname)||(window.location.pathname==='/auth'&&/^\/suizamente(?:\/|$)/.test(getSafeNextPath(window.location.search))))return <SuizamenteLoading/>
   return (
     <div className="latido-loading-screen" style={{ minHeight:'100vh', display:'grid', placeItems:'center', background:`linear-gradient(180deg, ${C.bg} 0%, #fff 100%)`, padding:'24px var(--latido-page-gutter)' }}>
       <div className="latido-loading-screen__content" style={{ textAlign:'center' }}>
