@@ -71,6 +71,7 @@ const Legal = lazy(() => import('./pages/Legal'))
 const Mensajes = lazy(() => import('./pages/Mensajes'))
 const ConversationFollowUpAnswer = lazy(() => import('./pages/ConversationFollowUpAnswer'))
 const ResetPassword = lazy(() => import('./pages/ResetPassword'))
+const SuizamenteConnect = lazy(() => import('./pages/SuizamenteConnect'))
 const Admin = lazy(() => import('./pages/Admin'))
 const PartnerContact = lazy(() => import('./pages/PartnerContact'))
 const PuntoHispanoContact = lazy(() => import('./pages/PuntoHispanoContact'))
@@ -602,7 +603,8 @@ function AppShell() {
     return <Suspense fallback={<AppLoading />}><ConversationFollowUpAnswer /></Suspense>
   }
 
-  if (isLoggedIn && !isAdmin && needsProfileOnboarding && pathname !== '/auth/onboarding' && !isPuntoHispanoPublisher) {
+  const isSuizamenteConnection=pathname==='/suizamente/conectar'||(pathname==='/auth'&&/^\/suizamente\/conectar(?:\?|$)/.test(getSafeNextPath(location.search)))
+  if (isLoggedIn && !isAdmin && needsProfileOnboarding && pathname !== '/auth/onboarding' && !isPuntoHispanoPublisher && !isSuizamenteConnection) {
     const nextPath = pathname === '/auth'
       ? getSafeNextPath(location.search)
       : `${location.pathname}${location.search}`
@@ -829,6 +831,7 @@ function AppShell() {
             <Route path="/perfil" element={<ProtectedRoute><Perfil /></ProtectedRoute>} />
             <Route path="/auth/onboarding" element={<ProtectedRoute><OAuthOnboarding /></ProtectedRoute>} />
             <Route path="/auth" element={<AuthRoute />} />
+            <Route path="/suizamente/conectar" element={<SuizamenteConnect />} />
             <Route path="/publicar-evento" element={<ProtectedRoute><PublicarEvento /></ProtectedRoute>} />
             <Route path="/registrar-negocio" element={<ProtectedRoute><RegistrarNegocio /></ProtectedRoute>} />
             <Route path="/registrar-comunidad" element={<ProtectedRoute><RegistrarComunidad /></ProtectedRoute>} />
