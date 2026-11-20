@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { resilientAuthStorage } from '../../../src/lib/authStorage.js'
-import { connectSuizamenteSession } from '../../../src/lib/suizamenteSessionBridge.js'
+import { connectSuizamenteSession,isSuizamentePath } from '../../../src/lib/suizamenteSessionBridge.js'
+import { connectLatidoAccount } from './latidoSso.js'
 import { publicConfig } from './config.js'
 import './style.css'
 
@@ -39,7 +40,7 @@ function metadata(privatePage) {
   if (privatePage) document.querySelector('meta[name="referrer"]').content = 'no-referrer'
 }
 function mountGame() {
-  metadata(false)
+  metadata(!['/','/bienvenida','/como-se-juega'].includes(path()))
   document.title = 'Suizamente · Un juego de Latido.ch'
   const frame = document.createElement('iframe')
   frame.className = 'game'
@@ -49,6 +50,8 @@ function mountGame() {
   disposeFrame = connectSuizamenteSession({
     getFrame:() => frame.isConnected ? frame.contentWindow : null,
     getSession:() => client.auth.getSession(), api:config.api, standalone:true,
+    experience:true,socialApi:config.socialApi,getPath:()=>location.pathname+location.search,
+    onNavigate:next=>{history.pushState(null,'',next);metadata(!['/','/bienvenida','/como-se-juega'].includes(new URL(next,location.origin).pathname))},
   })
   root.replaceChildren(frame)
 }
@@ -63,6 +66,7 @@ function renderAccount() {
         // Do not revoke the independent sessions on Latido or other devices.
         const { error } = await client.auth.signOut({ scope:'local' })
         if (error) { event.target.disabled = false; return message(authError(error), true) }
+        try{localStorage.setItem('suizamente:sso-optout','true')}catch{/* Storage may be unavailable. */}
         session = null; render()
       } catch { event.target.disabled = false; message('No se ha podido cerrar la sesión. Vuelve a intentarlo.', true) }
     }
@@ -79,9 +83,11 @@ function renderAccount() {
       <button class="button primary" type="submit">${signup ? 'Crear cuenta' : recovery ? 'Enviar enlace' : 'Entrar'}</button>
     </form>
     <p id="message" class="message" role="status" aria-live="polite"></p>
-    ${!recovery ? '<button id="google" class="button secondary" type="button">Continuar con Google</button>' : ''}
+    ${!recovery ? '<button id="latido-login" class="button secondary" type="button">Entrar con mi cuenta de Latido</button><button id="google" class="button secondary" type="button">Continuar con Google</button>' : ''}
     <div class="actions">${accountMode !== 'login' ? '<button data-mode="login">Ya tengo cuenta</button>' : '<button data-mode="signup">Crear una cuenta</button><button data-mode="recovery">He olvidado la contraseña</button>'}</div>
-    <p class="hint">Las sesiones de Suizamente y Latido.ch son independientes. Entrar en una no inicia sesión automáticamente en la otra.</p>`)
+    <p class="hint">Tu cuenta y tu nombre de Latido sirven aquí. Si ya tienes sesión en Latido, conectamos tu cuenta automáticamente cuando el navegador lo permite.</p>`)
+  const latido=root.querySelector('#latido-login')
+  if(latido)latido.onclick=async()=>{try{localStorage.removeItem('suizamente:sso-optout')}catch{}latido.disabled=true;message('Abre tu cuenta de Latido en la ventana que aparece.');const linked=await connectLatidoAccount({client,socialApi:config.socialApi,popup:true});if(linked)location.replace('/');else{latido.disabled=false;message('Puedes entrar también con Google o con tu correo y contraseña.',true)}}
   root.querySelectorAll('[data-mode]').forEach(button => { button.onclick = () => { accountMode = button.dataset.mode; render() } })
   root.querySelector('#account-form').onsubmit = async event => {
     event.preventDefault()
@@ -99,13 +105,14 @@ function renderAccount() {
         })
       } else result = await client.auth.signInWithPassword({ email, password:String(values.get('password')) })
       if (result.error) return message(authError(result.error), true)
-      if (result.data?.session) { location.replace('/'); return }
+      if (result.data?.session) { try{localStorage.removeItem('suizamente:sso-optout')}catch{}location.replace('/'); return }
       message(recovery ? 'Si existe una cuenta con ese correo, recibirás un enlace para cambiar la contraseña. Ábrelo en este mismo navegador y dispositivo.' : 'Revisa tu correo para confirmar la cuenta. Abre el enlace en este mismo navegador y dispositivo.')
     } catch { message('No se ha podido conectar. Comprueba tu conexión y vuelve a intentarlo.', true) }
     finally { if (form.isConnected) busy(form, false) }
   }
   const google = root.querySelector('#google')
   if (google) google.onclick = async () => {
+    try{localStorage.removeItem('suizamente:sso-optout')}catch{}
     google.disabled = true
     try {
       const { error } = await client.auth.signInWithOAuth({ provider:'google', options:{ redirectTo:location.origin + '/auth/callback', queryParams:{ prompt:'select_account' } } })
@@ -151,7 +158,7 @@ function renderInstall() {
 }
 function render() {
   disposeFrame?.(); disposeFrame = null
-  if (path() === '/') mountGame()
+  if (isSuizamentePath(location.pathname+location.search)) mountGame()
   else if (path() === '/cuenta') renderAccount()
   else if (path() === '/instalar') renderInstall()
   else if (path() === '/auth/restablecer') renderRecovery()
@@ -170,15 +177,18 @@ function render() {
 async function start() {
   try {
     config = publicConfig(import.meta.env)
+    config.socialApi=config.url+'/functions/v1/suizamente-social'
     client = createClient(config.url, config.key, {
       auth:{ persistSession:true, autoRefreshToken:true, detectSessionInUrl:true, flowType:'pkce', storage:resilientAuthStorage },
     })
     client.auth.onAuthStateChange((_event, nextSession) => {
       const changed = session?.user?.id !== nextSession?.user?.id
       session = nextSession
-      if (booted && changed && path() === '/') setTimeout(render, 0)
+      if (booted && changed && (isSuizamentePath(location.pathname+location.search)||path()==='/cuenta')) setTimeout(render, 0)
     })
     session = (await client.auth.getSession()).data.session
+    let skipSso=false;try{skipSso=localStorage.getItem('suizamente:sso-optout')==='true'}catch{}
+    if(!session&&!path().startsWith('/auth/')&&!window.SUIZAMENTE_DISABLE_SSO&&!skipSso)session=await connectLatidoAccount({client,socialApi:config.socialApi})
     booted = true
     render()
     if (import.meta.env.PROD && 'serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js', { scope:'/' }).catch(() => {})
@@ -187,4 +197,9 @@ async function start() {
     shell('No se ha podido abrir Suizamente', '<p>Vuelve a intentarlo dentro de un momento.</p><a class="button primary" href="/">Volver a intentar</a>')
   }
 }
+window.addEventListener('popstate',()=>{
+  const frame=root.querySelector('iframe.game')
+  if(frame&&isSuizamentePath(location.pathname+location.search))frame.contentWindow.postMessage({type:'suizamente:route',path:location.pathname+location.search},location.origin)
+  else render()
+})
 start()

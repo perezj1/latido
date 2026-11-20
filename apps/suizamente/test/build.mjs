@@ -10,13 +10,13 @@ assert.match(root,/<title>Suizamente/)
 assert.match(root,/<link rel="canonical" href="https:\/\/suizamente\.latido\.ch\/">/)
 assert.match(root,/<meta name="robots" content="index, follow">/)
 assert.equal(root.includes('__SITE_URL__'),false)
-for (const route of ['cuenta','auth/callback','auth/restablecer']) {
+for (const route of ['cuenta','auth/callback','auth/restablecer','retos','ranking','libreta','perfil','perfil/editar','amigos','medallas','ajustes','proponer','moderacion','avisos','jugar']) {
   const html=await read(`dist/${route}/index.html`)
   assert.match(html,/<meta name="robots" content="noindex, nofollow">/)
   assert.match(html,/<meta name="referrer" content="no-referrer">/)
   assert.match(html,new RegExp('href="https://suizamente.latido.ch/'+route+'"'))
 }
-for (const file of ['juego.js','juego.html','votos.js','fonts.css','data/preguntas.json']) {
+for (const file of ['juego.js','juego.html','votos.js','fonts.css','data/preguntas.json','experiencia.js','experiencia.css','experiencia-datos.js','historia.js']) {
   assert.equal(hash(await readFile('dist/suizamente/'+file)),hash(await readFile('../../public/suizamente/'+file)),`Shared source drift: ${file}`)
 }
 const sitemap=await read('dist/sitemap.xml')
@@ -26,10 +26,17 @@ const worker=await read('dist/sw.js')
 assert.equal(worker.includes('__BUILD_ID__'),false)
 assert.doesNotMatch(worker,/access_token|refresh_token|Authorization|localStorage/)
 const vercel=JSON.parse(await read('vercel.json'))
-for (const source of ['/cuenta(.*)','/auth/(.*)']) {
+for (const source of ['/cuenta(.*)','/auth/(.*)','/retos(.*)','/ranking(.*)','/libreta(.*)','/perfil(.*)','/amigos(.*)','/medallas(.*)','/ajustes(.*)','/proponer(.*)','/moderacion(.*)','/avisos(.*)','/jugar(.*)','/duelo(.*)']) {
   const headers=vercel.headers.find(rule=>rule.source===source).headers
   assert.equal(headers.find(h=>h.key==='Cache-Control').value,'no-store')
   assert.match(headers.find(h=>h.key==='X-Robots-Tag').value,/noindex/)
+}
+const duel=await read('dist/duelo.html')
+assert.match(duel,/<meta name="robots" content="noindex, nofollow">/)
+for(const route of ['bienvenida','como-se-juega']) {
+ const html=await read(`dist/${route}/index.html`)
+ assert.match(html,/<meta name="robots" content="index, follow">/)
+ assert.doesNotMatch(html,/<title>Tu cuenta|<h1>Instalar/)
 }
 assert.equal(vercel.rewrites.some(rule=>rule.source.includes('(.*)')),false)
 // Check actual locally configured server secrets without printing any values.

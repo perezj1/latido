@@ -141,6 +141,14 @@ const ROUTE_SEO = [
 ]
 
 const PRIVATE_PATHS = [
+  '/suizamente/conectar',
+  '/suizamente/perfil',
+  '/suizamente/amigos',
+  '/suizamente/libreta',
+  '/suizamente/ajustes',
+  '/suizamente/duelo',
+  '/suizamente/moderacion',
+  '/admin/suizamente',
   '/suizamente/progreso',
   '/suizamente/partida',
   '/auth',

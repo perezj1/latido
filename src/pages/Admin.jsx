@@ -6251,6 +6251,7 @@ export default function Admin() {
       {/* ── Moderación ─────────────────────────────────── */}
       {tab === 'moderation' && isTabDataReady('moderation') && (
         <div className="adm-stack" style={{ gap: 12 }}>
+          <a href="/admin/suizamente/propuestas" style={{fontFamily:PP,fontSize:14,fontWeight:700,color:C.primary,padding:'12px 0'}}>🎮 Revisar propuestas de Suizamente</a>
           <AdminNotice tone="info" title="Qué significa revisión">
             Aquí aparecen publicaciones retenidas por filtros automáticos o marcadas para decisión manual. El objetivo es aprobar contenido válido, eliminar contenido problemático o bloquear al autor si el caso lo requiere.
           </AdminNotice>

@@ -1,10 +1,11 @@
 (async () => {
-const RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
+let RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const $ = (s, r = document) => r.querySelector(s);
 const app = $('#app'), layer = $('#layer');
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const CONFIG = Object.assign({ api: '/api/suizamente', jugadorId: null, datos: '/suizamente/data/preguntas.json', ronda: 10 }, window.SUIZAMENTE_CONFIG || {});
 const identidad = await identidadLatido();
+let experiencia = null, arrancando = true;
 if (identidad.api && !window.SUIZAMENTE_CONFIG?.api) CONFIG.api = identidad.api;
 const CLAVE = identidad.userId ? 'suizamente:v1:' + identidad.userId : 'suizamente:v1';
 const TEMAS = ['t-red', 't-blue', 't-orange', 't-sea', 't-sky', 't-mint'];
@@ -60,7 +61,12 @@ function idAnonimo() {
     return id;
   } catch (_) { return null; }
 }
-const Votos = CONFIG.api ? votosApi(CONFIG.api, CONFIG.jugadorId || idAnonimo()) : { estado:"sin", puedeVotar:false, conteo:()=>[0,0,0], votar(){}, iniciar(c){c.alCambiar();} };
+const jugadorAnonimo = CONFIG.jugadorId || idAnonimo();
+const Votos = CONFIG.api ? votosApi(CONFIG.api, jugadorAnonimo, {
+  socialApi:()=>experiencia?.online?identidad.socialApi:null,
+  onAnswer:data=>experiencia?.answer(data),
+  account:identidad.userId||jugadorAnonimo,
+}) : { estado:"sin", puedeVotar:false, conteo:()=>[0,0,0], votar(){}, iniciar(c){c.alCambiar();} };
 
 function reparto(q) {
   const n = Votos.conteo(q.id).slice(0, q.opciones.length).map(v => v || 0);
@@ -75,14 +81,14 @@ function textoNota() {
   if (e === 'lento') return 'Los votos de la comunidad tardan en llegar. Puedes jugar igual.';
   return 'Ahora mismo no se pueden cargar los votos de la comunidad: verás tu elección y el dato, pero no los porcentajes.';
 }
-function alCambiar() { if (!ronda && PREG.length) { pintarInicio(); return; } const n = $('#nota'); if (n) n.textContent = textoNota(); refrescarResultado(); }
+function alCambiar() { if(arrancando)return; if (!ronda && PREG.length) { pintarInicio(); return; } const n = $('#nota'); if (n) n.textContent = textoNota(); refrescarResultado(); }
 
 /* ---------- ronda ---------- */
 let ronda = null, resultadoAbierto = null, modoActual = 'mix', eligiendo = false, revealTimer;
 const mezcla = a => { const copy = a.slice(); for (let i = copy.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [copy[i], copy[j]] = [copy[j], copy[i]]; } return copy; };
-function nuevaRonda(modo = modoActual) {
+function nuevaRonda(modo = modoActual, opciones = {}) {
   modoActual = modo;
-  const pool = PREG.filter(MODOS[modo].filtro);
+  const pool = PREG.filter(q=>MODOS[modo].filtro(q)&&(!opciones.tema||q.tema===opciones.tema));
   const priorizar = preguntas => [...mezcla(preguntas.filter(q => !local.resp[q.id])), ...mezcla(preguntas.filter(q => local.resp[q.id]))];
   let elegidas;
   if (modo === 'mix') {
@@ -94,16 +100,25 @@ function nuevaRonda(modo = modoActual) {
     }
     elegidas = priorizar(elegidas);
   } else elegidas = priorizar(pool).slice(0, CONFIG.ronda);
-  const ids = elegidas.map(q => q.id);
+  const ids = opciones.ids ? opciones.ids.filter(id=>pregunta(id)&&MODOS.mix.filtro(pregunta(id))) : elegidas.map(q => q.id);
+  if(!ids.length){if(experiencia)experiencia.exit();return;}
   const orden = {}; for (const id of ids) orden[id] = mezcla(pregunta(id).opciones.map((_, i) => i));
-  ronda = { modo, ids, i: 0, orden, marcas: [], res: [] };
+  ronda = { modo, ids, i: 0, orden, marcas: [], res: [], contexto:opciones.contexto||null };
+  experiencia?.resetRound();
   pintarPregunta();
+  if(opciones.verResultado&&ids.length===1&&local.resp[ids[0]]){
+    const q=pregunta(ids[0]),o=local.resp[q.id].o;
+    ronda.marcas[0]=q.tipo==='real'?(o===q.correcta?'ok':'ko'):'op';
+    ronda.res[0]={id:q.id,o,real:q.tipo==='real',acierto:q.tipo==='real'?o===q.correcta:null};
+    abrirResultado(q,o,{x:innerWidth/2,y:innerHeight/2},true);
+  }
 }
 
 /* ---------- pantallas ---------- */
 function pintarInicio() {
   app.classList.remove('playing');
   ronda = null; cerrarResultado();
+  if(experiencia){experiencia.render();return;}
   const jugables = PREG.filter(MODOS.mix.filtro);
   const reales = PREG.filter(q => q.tipo === 'real' && local.resp[q.id]);
   const ok = reales.filter(q => local.resp[q.id].o === q.correcta).length;
@@ -146,9 +161,10 @@ function pintarPregunta() {
       <div class="bubble"><span class="q-em" aria-hidden="true">${q.emoji}</span>
         <span class="kind">${real ? '🕵️ Solo una es verdad' : '🤔 ¿Qué prefieres?'}</span>
         <h2 class="q">${esc(q.pregunta)}</h2></div>
+      ${experiencia?.authors[q.id]?`<p class="social-credit">Propuesta por ${esc(experiencia.authors[q.id])}</p>`:''}
       <div class="opts${q.opciones.length === 2 ? ' with-or' : ''}">${q.opciones.length === 2 ? ops.join('<span class="vs" aria-hidden="true">O</span>') : ops.join('')}</div>
     </section>`;
-  $('#salir').onclick = pintarInicio;
+  $('#salir').onclick = () => experiencia?experiencia.exit():pintarInicio();
   $('#saltar').onclick = () => { ronda.marcas[ronda.i] = 'sk'; siguiente(); };
   app.querySelectorAll('.opt').forEach(b => b.onclick = () => elegir(q, +b.dataset.o, b));
   window.scrollTo({ top: 0 });
@@ -158,7 +174,9 @@ function elegir(q, o, boton) {
   if (resultadoAbierto || eligiendo) return;
   eligiendo = true;
   const repetida = !!local.resp[q.id];
-  if (!repetida) { local.resp[q.id] = { o, t: Date.now() }; guardarLocal(); Votos.votar(q.id, o); }
+  if (!repetida) { local.resp[q.id] = { o, t: Date.now() }; guardarLocal(); }
+  if(!repetida||ronda.contexto)Votos.votar(q.id,o,ronda.contexto);
+  experiencia?.choose();
   boton.classList.add('picked');
   app.querySelectorAll('.opt, #saltar').forEach(b => b.disabled = true);
   const real = q.tipo === 'real', rep = reparto(q);
@@ -194,6 +212,7 @@ function abrirResultado(q, o, punto, repetida) {
   refrescarResultado(true);
   $('#sig').onclick = siguiente;
   $('#compartir').onclick = () => copiar(textoPregunta(q), $('#copymsg'));
+  experiencia?.decorateResult(q,o,{repetida,contexto:ronda.contexto});
   try { $('#sig').focus({ preventScroll: true }); } catch (_) { }
 }
 function refrescarResultado(primera = false) {
@@ -260,7 +279,8 @@ function pintarFinal() {
     <p class="copymsg" id="copymsg" aria-live="polite"></p>
   </section>`;
   $('#otra').onclick = () => nuevaRonda(ronda.modo);
-  $('#inicio').onclick = pintarInicio;
+  $('#inicio').onclick = () => experiencia?experiencia.exit():pintarInicio();
+  experiencia?.decorateSummary();
   const lineas = [reales.length ? `Verdades: ${ok}/${reales.length}` : '', dilemas.length ? `Como la mayoría: ${mayoria}/${dilemas.length}` : ''].filter(Boolean).join(' · ');
   $('#comp').onclick = () => copiar(`Suizamente · ${MODOS[ronda.modo].nombre}\n${cuadros}\n${lineas}\n¿Cuánto sabes de Suiza? latido.ch`, $('#copymsg'));
   window.scrollTo({ top: 0 });
@@ -293,13 +313,22 @@ document.addEventListener('keydown', e => {
 /* Si las preguntas vienen dentro de la página (<script type="application/json" id="preguntas-embebidas">), se usan;
    si no, se cargan de CONFIG.datos (data/preguntas.json). */
 const embebidas = document.getElementById('preguntas-embebidas');
-(embebidas ? Promise.resolve(JSON.parse(embebidas.textContent)) : fetch(CONFIG.datos).then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })).then(d => {
+(embebidas ? Promise.resolve(JSON.parse(embebidas.textContent)) : fetch(CONFIG.datos).then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })).then(async d => {
   PREG = d.preguntas || [];
   for (const [id, value] of Object.entries(local.resp)) {
     const q = pregunta(id);
     if (!q || !Number.isInteger(value?.o) || value.o < 0 || value.o >= q.opciones.length) delete local.resp[id];
   }
-  pintarInicio();
+  if(identidad.experience&&CONFIG.experiencia!==false){
+    const {crearExperiencia}=await import('/suizamente/experiencia.js');
+    experiencia=await crearExperiencia({container:app,questions:PREG,identity:identidad,getIdentity:identidadLatido,playerId:jugadorAnonimo,
+      play:({modo,...opciones})=>nuevaRonda(modo,opciones),stopGame:()=>{ronda=null;cerrarResultado();app.classList.remove('playing');},
+      getCounts:id=>Votos.conteo(id),getSaved:()=>local.resp,
+      importAnswers:respuestas=>{for(const [id,r]of Object.entries(respuestas))if(!local.resp[id]&&pregunta(id)&&Number.isInteger(r?.o)&&r.o>=0&&r.o<pregunta(id).opciones.length)local.resp[id]=r;guardarLocal();},
+      onSettings:prefs=>{RM=matchMedia('(prefers-reduced-motion: reduce)').matches||!!prefs.menosAnimaciones;},
+    });
+  }
+  arrancando=false;pintarInicio();
   Votos.iniciar({ alCambiar, misVotos, recuperar });
 }).catch(() => {
   app.innerHTML = `<div class="loading"><div class="lg">${logo()}</div><p class="big">No se han podido cargar las preguntas</p><p class="note">Si abriste el archivo directamente desde el ordenador, sírvelo con un servidor local (lo explica INTEGRACION.md).</p></div>`;

@@ -55,6 +55,8 @@
     "suizamente:validar": "node scripts/validar-suizamente.cjs",
     "suizamente:comprobar": "node scripts/generar-suizamente-preguntas.cjs --comprobar && node scripts/validar-suizamente.cjs",
     "suizamente:catalogo": "node scripts/sincronizar-suizamente-catalogo.mjs",
+    "suizamente:social:generar": "node scripts/generar-suizamente-social.mjs",
+    "test:suizamente:social": "node scripts/test-suizamente-social.mjs",
     "suizamente:generar": "node scripts/generar-suizamente-preguntas.cjs --escribir && node scripts/validar-suizamente.cjs && node scripts/sincronizar-suizamente-catalogo.mjs",
     "test:suizamente:votos": "node scripts/test-suizamente-votos.mjs",
     "test:suizamente:redaccion": "node scripts/test-suizamente-redaccion.mjs",

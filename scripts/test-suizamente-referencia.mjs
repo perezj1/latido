@@ -49,6 +49,7 @@ try {
   ]) {
     votes.clear()
     const context = await browser.newContext({ viewport, colorScheme, reducedMotion:'reduce', permissions:['clipboard-read','clipboard-write'] })
+    await context.addInitScript(()=>{window.SUIZAMENTE_CONFIG={experiencia:false}})
     await context.route('**/*', route => new URL(route.request().url()).origin === origin ? route.continue() : route.fulfill({ json:[] }))
     const page = await context.newPage()
     page.on('pageerror', e => errors.push(e.message))

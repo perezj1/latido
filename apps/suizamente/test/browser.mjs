@@ -17,6 +17,7 @@ const server=await preview({preview:{host:'127.0.0.1',port:5271,strictPort:true}
 await mkdir('test-results',{recursive:true})
 async function context(options={}) {
   const ctx=await browser.newContext({viewport:{width:390,height:844},reducedMotion:'reduce',...options})
+  await ctx.addInitScript(()=>{window.SUIZAMENTE_CONFIG={experiencia:false};window.SUIZAMENTE_DISABLE_SSO=true})
   ctx.on('page',page=>page.on('pageerror',e=>errors.push(e.message)))
   await ctx.route('**/*',async route=>{
     const req=route.request(), url=new URL(req.url())

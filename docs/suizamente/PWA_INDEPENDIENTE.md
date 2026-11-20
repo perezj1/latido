@@ -1,12 +1,12 @@
 # Suizamente como PWA independiente
 
-Preparación de código: 19 de noviembre de 2026. Destino: `https://suizamente.latido.ch`. Repositorio: `perezj1/latido`. No se ha publicado esta PWA, creado un proyecto externo, cambiado DNS, aplicado SQL ni modificado la configuración de Auth en esta tarea.
+Actualizado el 20 de noviembre de 2026. Destino: `https://suizamente.latido.ch`. Repositorio: `perezj1/latido`. La PWA base ya está publicada, el dominio está validado y sus retornos de Auth y CORS están configurados. La ampliación social de la rama `suizamente-social` todavía no está publicada: seguir [ACTIVAR_SOCIAL.md](ACTIVAR_SOCIAL.md) para el SQL, la función nueva y el orden de activación.
 
 ## Arquitectura y alcance real
 
 Latido conserva su aplicación Vite/React, sus dependencias, sus rutas y su configuración de despliegue. Suizamente añade una aplicación Vite con JavaScript en `apps/suizamente/`, con `package.json`, lockfile, compilación y configuración Vercel propios. No introduce workspaces, Turborepo ni una reorganización del repositorio. Su configuración CSS evita heredar PostCSS/Tailwind de Latido, por lo que no necesita instalar las dependencias de la raíz.
 
-El juego ya está implementado en HTML/JavaScript y aislado en un iframe. Ambos anfitriones usan exactamente esos archivos. La nueva aplicación solo añade la instalación y las pantallas de cuenta; mantiene el diseño del juego. El acceso integrado en Latido sigue en `/suizamente/*` y `/perfil/suizometro`, con los enlaces actuales. Los enlaces nuevos de cuenta/instalación en el pie solo aparecen cuando el anfitrión es la aplicación independiente.
+El juego está implementado en HTML/JavaScript y aislado en un iframe. Ambos anfitriones usan exactamente esos archivos. La aplicación independiente añade instalación y cuenta; la ampliación compartida incorpora las pantallas sociales y conserva el diseño de preguntas y respuestas. El acceso integrado sigue en `/suizamente/*` y `/perfil/suizometro`.
 
 | Recurso | Fuente compartida / comportamiento |
 | --- | --- |
@@ -18,19 +18,20 @@ El juego ya está implementado en HTML/JavaScript y aislado en un iframe. Ambos 
 | Identidad del iframe | `src/lib/suizamenteSessionBridge.js`, compartido entre React y la app independiente |
 | Almacenamiento de sesión | `src/lib/authStorage.js` y `storageBudget.js`, reutilizados sin modificar su implementación |
 | Usuarios | Supabase Auth del proyecto `zmievixfjefjppofebbh`, los mismos identificadores de usuario |
-| Votos y respuestas | Edge Function existente `suizamente-votos`, misma RPC y tablas |
+| Votos y respuestas | `suizamente-votos`, misma RPC y tablas; la función nueva `suizamente-social` integra votos y puntos en una transacción |
+| Retos, duelos, amigos y progreso | Esquema privado `suizamente_social`, compartido por ambos anfitriones tras su instalación |
 
-En la implementación activa de esta rama no existen niveles ni rankings: hay respuestas, aciertos y votos. La inspección de la base de datos encontró las tablas activas `public.suizamente_catalogo_votos`, `public.suizamente_votos` y `public.suizamente_votos_limites`. No se han inventado tablas, convertido datos ni recuperado sistemas antiguos de otras ramas.
+La versión publicada tiene respuestas, aciertos y votos en `public.suizamente_catalogo_votos`, `public.suizamente_votos` y `public.suizamente_votos_limites`. La ampliación prepara las tablas privadas de niveles, rankings, retos, duelos, amistades y libreta en el instalador social; todavía no se han aplicado en producción.
 
-La edición del banco sigue realizándose con los generadores y fuentes existentes en la raíz. Antes de compilar ambas aplicaciones, ejecutar `npm run suizamente:comprobar`. Una modificación futura del catálogo de IDs/opciones requiere el procedimiento de catálogo existente; esta separación de PWA no cambia el catálogo ni requiere SQL.
+La edición del banco sigue realizándose con los generadores y fuentes existentes en la raíz. Antes de compilar ambas aplicaciones, ejecutar `npm run suizamente:comprobar`. Los IDs y el orden de opciones no cambian. La ampliación social sí requiere su instalador SQL, que añade metadatos sin sustituir el banco ni sus votos.
 
 ## Sesiones, progreso y permisos
 
-`https://www.latido.ch` y `https://suizamente.latido.ch` son orígenes diferentes. Tener sesión en uno no inicia sesión en el otro. Cada aplicación conserva su sesión local y utiliza las mismas cuentas de Supabase. No hay tokens en enlaces entre dominios, cookies compartidas ni una falsa promesa de inicio automático.
+`https://www.latido.ch` y `https://suizamente.latido.ch` son orígenes diferentes y conservan sesiones independientes de las mismas cuentas Supabase. La ampliación prepara una conexión verificada con Latido mediante `/suizamente/conectar` y la función social: intenta acceder automáticamente cuando el navegador permite el iframe y ofrece una ventana de conexión si lo bloquea. No copia el refresh token ni coloca credenciales en enlaces. Requiere publicar también la ruta de conexión de Latido.
 
 La nueva app permite jugar como invitado, entrar con correo/contraseña o Google, crear una cuenta y recuperar la contraseña. Usa PKCE y el intercambio automático del SDK; no duplica el intercambio del código. El código se elimina de la URL al terminar. Los enlaces de confirmación/recuperación deben abrirse en el mismo navegador y dispositivo donde se inició el proceso; una PWA instalada y otro navegador pueden tener almacenes distintos. Esto es una [limitación del flujo PKCE](https://supabase.com/docs/guides/auth/sessions/pkce-flow).
 
-Al entrar con la misma cuenta, `/votos/mios` recupera las respuestas registradas en el servidor y permite reconstruir las estadísticas existentes en ambos orígenes. El estado de una ronda abierta, respuestas aún pendientes de sincronizar y progreso de un invitado permanecen en su origen/dispositivo. No se fusionan automáticamente los votos anónimos con una cuenta ni se transfieren entre subdominios. Cerrar sesión en la nueva app usa `scope: local` para conservar las demás sesiones.
+Al entrar con la misma cuenta, `/votos/mios` recupera las respuestas registradas y permite reconstruir las estadísticas existentes en ambos orígenes. La ampliación vincula una vez el progreso invitado del mismo dispositivo, conservando la respuesta de la cuenta si hay conflicto. Una ronda abierta y respuestas pendientes siguen siendo locales hasta sincronizarse; no se transfieren invitados entre dominios. Cerrar sesión usa `scope: local`, conserva las demás sesiones y evita una reconexión automática no solicitada.
 
 El iframe solo recibe la sesión de su anfitrión cuando coinciden origen, ventana y solicitud; obtiene una sesión actualizada antes de cada petición. La API verifica el JWT y toma el usuario real del token. El identificador anónimo no sustituye a un usuario autenticado.
 
@@ -44,11 +45,11 @@ El service worker `/sw.js` se registra únicamente en la compilación de producc
 
 La portada tiene HTML público con título, descripción, canonical, Open Graph, favicon y explicación de los modos. `sitemap.xml` incluye `/` y `/instalar`. Cuenta y callbacks tienen HTML propio `noindex`, política `no-referrer` y cabeceras `no-store`/`X-Robots-Tag` en Vercel. Las URL desconocidas no se reescriben a la portada: mantienen el 404. Los Preview de Vercel usan `noindex` y `robots.txt` bloqueante; el canonical siempre apunta al dominio de producción.
 
-No se modificaron en esta tarea el manifest, service worker, SEO ni `vercel.json` de la raíz de Latido.
+El manifest de Latido se conserva. Su service worker excluye la ruta de conexión de cuenta de la caché; SEO y cabeceras de Vercel la marcan privada y no almacenable. Las demás modificaciones raíz se limitan a rutas de Suizamente, conexión, avisos sociales y enlace de moderación.
 
-## Configuración exacta del futuro proyecto Vercel
+## Configuración del proyecto Vercel existente
 
-Crear el segundo proyecto **solo cuando se autorice** y en el equipo propietario de Latido. No reutilizar un proyecto vacío de otra cuenta ni cambiar los ajustes del proyecto actual. La CLI local no está vinculada al proyecto de producción de Latido.
+El proyecto `suizamente` ya existe en el equipo propietario de Latido. Conservar sus ajustes; no crear otro proyecto ni cambiar el proyecto principal.
 
 | Ajuste | Valor |
 | --- | --- |
@@ -62,12 +63,12 @@ Crear el segundo proyecto **solo cuando se autorice** y en el equipo propietario
 | Output Directory | `dist` |
 | Include source files outside of the Root Directory in the Build Step | **Activado**: necesita `public/suizamente`, iconos y `src/lib` de la raíz |
 | Configuración de rutas/cabeceras | `apps/suizamente/vercel.json` |
-| Dominio final | `suizamente.latido.ch`, únicamente al autorizar la publicación |
-| Production Branch final | `main`, después de integrar y aprobar esta rama |
+| Dominio | `suizamente.latido.ch`, ya validado |
+| Production Branch actual | `suizamente` |
 
 Vercel documenta la [inclusión de archivos fuera del Root Directory](https://vercel.com/docs/monorepos/monorepo-faq) y las [versiones de Node disponibles](https://vercel.com/docs/functions/runtimes/node-js/node-js-versions). No hace falta ejecutar `npm ci` en la raíz para construir Suizamente.
 
-Mientras `apps/suizamente/` solo esté en la rama `suizamente`, una compilación de `main` todavía no encontrará esa carpeta. Validar la rama como Preview antes de promoverla; no cambiar la rama de producción del proyecto Latido. Integrar en `main` puede activar sus despliegues automáticos, de modo que esa integración queda pendiente de autorización.
+La ampliación está en `suizamente-social`. Integrarla en `suizamente` puede activar el despliegue de Suizamente; integrar en `main` puede activar Latido. Ambas publicaciones requieren autorización. No modificar la rama de producción de Latido para probar el juego.
 
 Variables para Production y, si se prueba, Preview, en el proyecto **suizamente**:
 
@@ -81,11 +82,11 @@ La tercera es opcional, con ese valor por defecto. No usar el dominio de Preview
 
 ## Configuración manual pendiente en Supabase
 
-Proyecto existente: **latido**, referencia `zmievixfjefjppofebbh`. No crear otro proyecto. **No hay SQL que ejecutar para esta separación.**
+Proyecto existente: **latido**, referencia `zmievixfjefjppofebbh`. No crear otro proyecto. La separación base no requirió SQL; las funciones sociales sí necesitan [el instalador y los pasos nuevos](ACTIVAR_SOCIAL.md).
 
-La inspección de Auth fue de solo lectura. El `Site URL` actual es `https://latido.ch`; la lista actual permite `http://localhost:8080/reset-password`, `https://latido.ch/**` y `https://www.latido.ch/**`. Todavía no incluye los retornos de Suizamente. Google está habilitado y tiene cliente y secreto configurados; no se mostraron ni copiaron esos secretos.
+La inspección de Auth fue de solo lectura. El `Site URL` sigue siendo `https://latido.ch`; la lista conserva las URL de Latido y ya incluye los dos retornos de Suizamente siguientes. Google está habilitado y tiene sus credenciales existentes; no se mostraron ni copiaron esos secretos.
 
-1. En **Authentication → URL Configuration → Redirect URLs**, añadir estas dos URL sin eliminar las actuales y sin sustituir el **Site URL** de Latido:
+1. En **Authentication → URL Configuration → Redirect URLs**, conservar estas dos URL sin eliminar las actuales ni sustituir el **Site URL** de Latido:
 
    ```text
    https://suizamente.latido.ch/auth/callback
@@ -107,13 +108,7 @@ La inspección de Auth fue de solo lectura. El `Site URL` actual es `https://lat
 
 5. Las plantillas actuales de confirmación y recuperación usan `{{ .ConfirmationURL }}` y no fuerzan `{{ .SiteURL }}`: se conserva el enlace de verificación de Supabase y su retorno. No necesitan editarse para esta preparación. Comprobar con correos reales en el Preview autorizado que mantienen los retornos nuevos y los flujos existentes de Latido. No se han enviado correos ni editado plantillas. Si se personalizan en el futuro, evitar una ruta exclusiva de Latido que ignore el retorno. Véase la [documentación de redirecciones y plantillas](https://supabase.com/docs/guides/auth/redirect-urls).
 
-6. Publicar, **solo después de autorización**, el cambio de CORS de la función existente. El código acepta el origen exacto `https://suizamente.latido.ch` y conserva los orígenes previos. No se ha desplegado este cambio:
-
-   ```powershell
-   supabase functions deploy suizamente-votos --project-ref zmievixfjefjppofebbh --no-verify-jwt
-   ```
-
-   `--no-verify-jwt` mantiene el modo actual, necesario para invitados. El handler sigue verificando los JWT de usuarios y no confía en un identificador de usuario enviado por el cliente. No desplegar el resto de funciones ni aplicar migraciones.
+6. El CORS de `suizamente-votos` ya se desplegó con autorización para el origen exacto `https://suizamente.latido.ch`, conservando los orígenes previos. No hace falta volver a desplegarlo. Para esta ampliación se prepara una función distinta, `suizamente-social`; su despliegue todavía está pendiente y se documenta en la guía de activación.
 
 7. Solo para permitir votos en Preview remotos, la función admite el secreto opcional `SUIZAMENTE_ALLOWED_ORIGINS`: lista separada por comas de **orígenes HTTPS exactos**, sin rutas ni barra final. Configurarlo manualmente tras autorización con los dominios de Preview realmente utilizados. No hacen falta orígenes extra para producción o desarrollo local. Un Preview sin esa configuración permite ver el juego, pero los votos mostrarán el aviso de indisponibilidad; no es un error de variables Vite.
 
@@ -142,13 +137,13 @@ Ejecutado localmente con Node 22:
 
 No hay un comprobador TypeScript de frontend en estos paquetes JavaScript; ESLint y las compilaciones validan ese código. La entrada TypeScript de la Edge Function sí se comprobó con Deno. El build de Latido mantiene avisos existentes por tamaño de algunos chunks y antigüedad de Browserslist; no impiden compilar. El navegador de la prueba raíz puede advertir sobre fuentes externas por la unión local de `node_modules` del worktree; el juego carga sus propias fuentes compartidas y la prueba funcional pasa.
 
-Las pruebas de autenticación y votos de la nueva PWA usan respuestas simuladas: no crean usuarios, no mandan correos y no escriben en producción. La instalación real en Android/iOS, Google real, correos de Auth y cabeceras/rutas en Vercel requieren validación final después de configurar un Preview autorizado. Hasta desplegar CORS, el dominio nuevo no puede usar la API desde producción.
+Las pruebas de autenticación usan respuestas simuladas y las sociales ejecutan SQL real en PostgreSQL local mediante PGlite: no crean usuarios reales, no mandan correos ni escriben en producción. La ampliación añade pruebas de dos jugadores, amigos, duelos, retos, puntos, media por cantón, libreta y SSO. La instalación real en Android/iOS, Google real, correos de Auth y cabeceras/rutas en Vercel requieren validación final tras la publicación autorizada.
 
-Orden para la puesta en marcha autorizada: preparar el proyecto Vercel con estas variables; habilitar retornos exactos de Auth; habilitar CORS del Preview; probar invitados y una cuenta existente en ambos sitios; comprobar confirmación/recuperación; verificar instalación móvil y ausencia de cachés privadas; autorizar integración/promoción y dominio final; aplicar únicamente el DNS indicado por Vercel para el subdominio. No cambiar registros o dominios del sitio principal. No se ha ejecutado ninguna de esas operaciones externas.
+Orden actual de activación: ejecutar el instalador social, desplegar únicamente la función nueva y publicar los cambios revisados de Latido y Suizamente. Los detalles están en [ACTIVAR_SOCIAL.md](ACTIVAR_SOCIAL.md). El proyecto, DNS y retornos de producción ya existen; no hay que repetir su creación.
 
-## Archivos de esta implementación
+## Archivos de la separación base
 
 - Nuevos en `apps/suizamente/`: `package.json`/lock, `.env.example`, `.gitignore`, `index.html`, `vite.config.js`, `vercel.json`, `eslint.config.js`, `src/main.js`, `src/config.js`, `src/style.css`, `public/manifest.webmanifest`, `public/sw.js`, `public/sin-conexion.html`, pruebas y README.
 - Nuevo compartido: `src/lib/suizamenteSessionBridge.js`.
 - Ajustados: `src/pages/Suizamente.jsx` para usar el mismo puente, `public/suizamente/juego.js`/`juego.html` para los enlaces exclusivos de la nueva app, el CORS de `supabase/functions/_shared/suizamenteHttp.js` y `supabase/functions/suizamente-votos/index.ts`, y la prueba HTTP correspondiente.
-- Sin modificación en esta tarea: usuarios, datos, migraciones, preguntas, reglas RLS, configuración raíz de Vercel, manifest y service worker de Latido.
+- La ampliación social añade `public/suizamente/experiencia*`, el módulo de compartir historias, la función `suizamente-social`, su instalador privado y los puentes de conexión de cuenta. Conserva las preguntas y el manifest de Latido. Los cambios concretos de permisos, rutas y caché están explicados en la guía de activación.

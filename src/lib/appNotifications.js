@@ -1,4 +1,5 @@
 export const APP_NOTIFICATION_KINDS = Object.freeze({
+  SUIZAMENTE:'suizamente',
   CONVERSATION_FOLLOWUP:'conversation_followup',
   STORE_ORDER:'store_order',
   CARD_BUSINESS:'card_business',
@@ -73,6 +74,8 @@ function describeNotificationGroup(kind, rows) {
   const targetTitle = String(data.target_title || '').trim()
 
   switch (kind) {
+    case APP_NOTIFICATION_KINDS.SUIZAMENTE:
+      return {icon:'🎮',title:count===1?data.title||'Novedades de Suizamente':`${count} novedades de Suizamente`,body:count===1?data.body||'Abre el juego para ver las novedades.':'Consulta tus amigos, duelos y propuestas.',href:data.href||'/suizamente/retos'}
     case APP_NOTIFICATION_KINDS.CONVERSATION_FOLLOWUP:
       return { icon:'💬', title:count === 1 ? '¿Cómo fue tu consulta?' : `¿Cómo fueron tus ${count} consultas?`, body:'Cuéntanos si conseguiste lo que buscabas.', href:count === 1 ? data.href || '/mensajes' : '/mensajes' }
     case APP_NOTIFICATION_KINDS.STORE_ORDER:

@@ -5,6 +5,10 @@ verify_jwt = false
 # Anonymous UUID players are allowed; signed-in tokens are verified in the handler.
 verify_jwt = false
 
+[functions.suizamente-social]
+# Guests use UUIDs; signed-in users and SSO are verified inside the handler.
+verify_jwt = false
+
 [functions.latido_message_email]
 verify_jwt = false
 

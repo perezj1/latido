@@ -61,6 +61,7 @@ const CreadorAlta = lazy(() => import('./pages/CreadorAlta'))
 const CreadorPanel = lazy(() => import('./pages/CreadorPanel'))
 const Perfil = lazy(() => import('./pages/Perfil'))
 const Suizamente = lazy(() => import('./pages/Suizamente'))
+const SuizamenteConnect = lazy(() => import('./pages/SuizamenteConnect'))
 const Suizometro = lazy(() => import('./pages/Suizamente').then(module => ({ default:module.Suizometro })))
 const Auth = lazy(() => import('./pages/Auth'))
 const OAuthOnboarding = lazy(() => import('./pages/OAuthOnboarding'))
@@ -524,7 +525,7 @@ function AppShell() {
   const isSantiagoCruzLanding = pathname === '/santiago-cruz' || pathname === '/santiago-cruz/'
   const isBusinessPartnerLanding = pathname.startsWith('/latido-x/')
   const isPuntoHispanoPublisher = pathname.startsWith('/publicar/punto-hispano/')
-  const isSuizamente = isSuizamenteRoute(pathname)
+  const isSuizamente = isSuizamenteRoute(pathname) || pathname.startsWith('/admin/suizamente')
   const showLanding = isRoot && !isPWA && !isLoggedIn
   const isCardLanding = pathname === '/club' || pathname === '/club/'
   const hideAppNavigation = isCardLanding || pathname.startsWith('/auth') || pathname === '/reset-password' || pathname === '/tienda' || (pathname === '/card' || pathname.startsWith('/card/')) || isPuntoHispanoPublisher || isSuizamente
@@ -831,6 +832,8 @@ function AppShell() {
             <Route path="/creadores/:creatorSlug" element={<CreadorPerfil />} />
             <Route path="/perfil" element={<ProtectedRoute><Perfil /></ProtectedRoute>} />
             <Route path="/perfil/suizometro" element={<ProtectedRoute><Suizometro /></ProtectedRoute>} />
+            <Route path="/suizamente/conectar" element={<SuizamenteConnect />} />
+            <Route path="/admin/suizamente/propuestas" element={<ProtectedRoute><Suizamente /></ProtectedRoute>} />
             <Route path="/suizamente/partida/:sessionId" element={<Suizamente />} />
             <Route path="/suizamente/*" element={<Suizamente />} />
             <Route path="/auth/onboarding" element={<ProtectedRoute><OAuthOnboarding /></ProtectedRoute>} />

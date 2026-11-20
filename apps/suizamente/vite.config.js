@@ -8,7 +8,10 @@ import { publicConfig } from './src/config.js'
 const appRoot = fileURLToPath(new URL('.', import.meta.url))
 const repoRoot = path.resolve(appRoot, '../..')
 const sharedRoot = path.join(repoRoot, 'public')
-const routes = new Set(['/cuenta', '/auth/callback', '/auth/restablecer', '/instalar'])
+const routes = new Set(['/cuenta','/auth/callback','/auth/restablecer','/instalar','/bienvenida','/como-se-juega','/retos','/ranking','/libreta','/perfil','/perfil/editar','/amigos','/medallas','/ajustes','/proponer','/moderacion','/avisos','/jugar'])
+const publicRoutes=new Set(['/instalar','/bienvenida','/como-se-juega'])
+const routeTitles={'/instalar':'Instalar Suizamente','/bienvenida':'Bienvenido a Suizamente','/como-se-juega':'Cómo jugar a Suizamente','/retos':'Retos','/ranking':'Rankings','/libreta':'Tu libreta','/perfil':'Tu perfil','/perfil/editar':'Editar tu perfil','/amigos':'Amigos','/medallas':'Medallas','/ajustes':'Ajustes','/proponer':'Proponer una pregunta','/moderacion':'Revisar propuestas','/avisos':'Avisos','/jugar':'Jugar'}
+const knownPath=pathname=>routes.has(pathname)||/^\/duelo\/[A-Fa-f0-9]{8}$/.test(pathname)
 const icons = {
   '/favicon.svg':'favicon.svg',
   '/icons/icon-192.png':'icon-192.png',
@@ -56,7 +59,7 @@ export default defineConfig(({ command, mode }) => {
       configurePreviewServer(server) {
         server.middlewares.use((req, _res, next) => {
           const url = new URL(req.url || '/', 'http://localhost'), pathname = url.pathname.replace(/\/$/, '') || '/'
-          if (routes.has(pathname)) req.url = pathname + '/index.html' + url.search
+          if (knownPath(pathname)) req.url = (routes.has(pathname)?pathname+'/index.html':'/duelo.html') + url.search
           next()
         })
       },
@@ -66,7 +69,7 @@ export default defineConfig(({ command, mode }) => {
         server.watcher.on('change', file => { if ([...files.values()].includes(file)) server.ws.send({ type:'full-reload' }) })
         server.middlewares.use(async (req, res, next) => {
           const url = new URL(req.url || '/', 'http://localhost'), pathname = url.pathname.replace(/\/$/, '') || '/'
-          if (routes.has(pathname)) { req.url = '/index.html' + url.search; return next() }
+          if (knownPath(pathname)) { req.url = '/index.html' + url.search; return next() }
           const file = files.get(url.pathname)
           if (!file) return next()
           try {
@@ -87,21 +90,23 @@ export default defineConfig(({ command, mode }) => {
         // Private routes have their own noindex HTML as well as HTTP headers.
         const index = await readFile(path.join(output, 'index.html'), 'utf8')
         for (const route of routes) {
-          const privatePage = route !== '/instalar'
-          const title = route === '/instalar' ? 'Instalar Suizamente · Latido.ch' : 'Tu cuenta · Suizamente'
+          const privatePage = !publicRoutes.has(route)
+          const title = routeTitles[route] ? routeTitles[route]+' · Latido.ch' : 'Tu cuenta · Suizamente'
           let html = index.replace(/<title>.*?<\/title>/, `<title>${title}</title>`)
             .replace(/(<link rel="canonical" href=")[^"]+/, `$1${site.replace(/\/$/,'')}${route}`)
             .replace(/(<meta property="og:url" content=")[^"]+/, `$1${site.replace(/\/$/,'')}${route}`)
             .replace(/(<meta name="robots" content=")[^"]+/, `$1${privatePage || preview ? 'noindex, nofollow' : 'index, follow'}`)
           if (privatePage) html = html.replace(/(<meta name="referrer" content=")[^"]+/, '$1no-referrer')
-          const fallback = privatePage
+          let fallback = privatePage
             ? '<section class="page"><h1>Tu cuenta de Suizamente</h1><p>Abriendo tu cuenta…</p><noscript>Activa JavaScript para entrar.</noscript><a href="/">Volver al juego</a></section>'
             : '<section class="page"><h1>Instalar Suizamente</h1><p>Un juego de Latido.ch para aprender sobre Suiza.</p><p>En Chrome o Edge, usa la opción de instalación del menú. En iPhone o iPad, abre Safari, pulsa Compartir y elige «Añadir a pantalla de inicio».</p><p>Necesitas conexión para abrir el juego y consultar la comunidad.</p><a href="/">Jugar a Suizamente</a></section>'
+          if (route==='/bienvenida'||route==='/como-se-juega') fallback='<section class="page"><h1>'+routeTitles[route]+'</h1><p>Elige entre dilemas suizos y preguntas con respuesta. Descubre qué eligió la comunidad, aprende un dato en cada respuesta y guarda tus favoritos.</p><p>Juega el reto diario o invita a tus amigos a un duelo con las mismas preguntas.</p><a href="/">Jugar a Suizamente</a></section>'
           html = html.replace(/(<main id="app">)[\s\S]*?(<\/main>)/, `$1${fallback}$2`)
           const directory = path.join(output, route.slice(1))
           await mkdir(directory, { recursive:true })
           await writeFile(path.join(directory, 'index.html'), html)
         }
+        await writeFile(path.join(output,'duelo.html'),index.replace(/(<meta name="robots" content=")[^"]+/,'$1noindex, nofollow').replace(/(<meta name="referrer" content=")[^"]+/,'$1no-referrer'))
         await writeFile(path.join(output, 'robots.txt'), preview ? 'User-agent: *\nDisallow: /\n' : `User-agent: *\nAllow: /\nDisallow: /cuenta\nDisallow: /auth/\nDisallow: /suizamente/\nDisallow: /sin-conexion.html\nSitemap: ${site.replace(/\/$/,'')}/sitemap.xml\n`)
         await writeFile(path.join(output, 'sitemap.xml'), `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>${site.replace(/\/$/,'')}/</loc></url><url><loc>${site.replace(/\/$/,'')}/instalar</loc></url></urlset>\n`)
         await writeFile(path.join(output, '404.html'), '<!doctype html><html lang="es"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>Página no encontrada · Suizamente</title><h1>Página no encontrada</h1><p><a href="/">Volver a Suizamente</a></p></html>')

@@ -34,3 +34,12 @@ npm --prefix apps/suizamente run test:browser
 `test:build` y `test:browser` requieren compilar antes. La prueba de navegador necesita Chromium instalado mediante Playwright y simula toda la autenticación y los votos: no crea usuarios ni envía correos. Guarda capturas en `test-results/`, excluido de Git. Las pruebas de artefactos esperan el dominio canónico de producción y una compilación normal, sin `VERCEL_ENV=preview`.
 
 El manual completo de arquitectura, Vercel, Supabase y puesta en marcha está en [PWA_INDEPENDIENTE.md](../../docs/suizamente/PWA_INDEPENDIENTE.md). No se ha creado ni desplegado ningún proyecto externo durante esta preparación.
+
+La ampliación social añade retos, duelos, amigos, liga de cantones por media, libreta, niveles y medallas. Conserva el diseño de preguntas y respuestas. Su instalación requiere el SQL y la función nuevos: sigue [ACTIVAR_SOCIAL.md](../../docs/suizamente/ACTIVAR_SOCIAL.md) antes de publicar esta versión. Las variables públicas de Vercel son las mismas; no hace falta otra cuenta ni otro proyecto Supabase.
+
+```powershell
+npm run test:suizamente:social
+npm --prefix apps/suizamente run test:social
+```
+
+El primer comando prueba el SQL completo en PostgreSQL local mediante PGlite. El segundo comprueba las pantallas en Chromium con dos cuentas y esa base de pruebas; necesita una compilación previa. Ninguno escribe en producción ni envía correos.
