@@ -8,6 +8,7 @@ import { completeRegistrationProfile,prepareSuizamenteAccount } from '../../apps
 import {needsSuizamenteOnboarding} from '../../apps/suizamente/src/onboarding.js'
 import SuizamenteEntry from '../components/SuizamenteEntry'
 import SuizamenteLoading from '../components/SuizamenteLoading'
+import {connectSuizamenteAppearance} from '../lib/suizamenteAppearance'
 import '../../apps/suizamente/src/access.css'
 
 // Isolate the reference CSS and full-screen reveal from Latido's global styles.
@@ -28,6 +29,7 @@ export default function Suizamente() {
   const location=useLocation(),navigate=useNavigate()
   const path=location.pathname==='/perfil/suizometro'?'/perfil':location.pathname.startsWith('/admin/suizamente')?'/moderacion':location.pathname.replace(/^\/suizamente/,'')||'/'
   const pathRef=useRef(path+location.search)
+  useEffect(()=>connectSuizamenteAppearance({getFrame:()=>frame.current?.contentWindow}),[])
   pathRef.current=path+location.search
   useEffect(()=>{if(needsProfile&&checkedUser===authUser.id)setOnboardingUser(authUser.id);else if(!authUser)setOnboardingUser(null)},[needsProfile,authUser,checkedUser])
   useEffect(()=>{

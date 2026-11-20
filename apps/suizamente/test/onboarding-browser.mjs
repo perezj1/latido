@@ -15,7 +15,7 @@ async function open({allowSso=false,initialSession=null,device}={}){
   const state={allowSso,signup:0,confirmed:true,user:{...users[alice],user_metadata:{name:'Nombre Latido',latido_onboarding_completed:true}},profileWrites:[],bootstraps:0}
   const currentSession=()=>({...session(state.user.id),user:state.user})
   if(initialSession)state.user=initialSession.user
-  await context.addInitScript(({origin,key,value})=>{if(location.origin!==origin)return;if(value&&!sessionStorage.getItem('seeded')){localStorage.setItem(key,JSON.stringify(value));sessionStorage.setItem('seeded','true')}},{origin,key,value:initialSession})
+  await context.addInitScript(({origin,key,value,device})=>{if(location.origin!==origin)return;if(!device)localStorage.setItem('suizamente:pwa-installed','1');if(value&&!sessionStorage.getItem('seeded')){localStorage.setItem(key,JSON.stringify(value));sessionStorage.setItem('seeded','true')}},{origin,key,value:initialSession,device})
   await context.route('**/*',async route=>{
     const req=route.request(),url=new URL(req.url())
     if(url.origin===origin)return route.continue()
@@ -174,7 +174,7 @@ try{
   for(const device of ['iPhone 13','Pixel 5']){
     const view=await open({device})
     const {page}=view
-    await expect(page.locator('[data-install-banner-slot] .suizamente-install-banner')).toBeVisible({timeout:7000})
+    await expect(page.locator('.suizamente-install-banner')).toBeVisible({timeout:7000})
     if(device==='Pixel 5'){
       await page.evaluate(()=>{
         const event=new window.Event('beforeinstallprompt',{cancelable:true})

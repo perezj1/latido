@@ -112,7 +112,8 @@ try {
         assert.equal(types.filter(t => t === 'dilema').length, 5)
         assert.equal(types.filter(t => t === 'real').length, 5)
       }
-      assert.equal(await game.locator('.squares').textContent(), mode === 'dilemas' ? '🟦'.repeat(10) : await game.locator('.squares').textContent())
+      await expect(game.locator('.s-round-cell')).toHaveCount(10)
+      if(mode==='dilemas')await expect(game.locator('.s-round-cell.op')).toHaveCount(10)
       await game.locator('#comp').click()
       await expect(game.locator('#copymsg')).toContainText('Copiado.')
       await game.locator('#inicio').click()
@@ -168,7 +169,8 @@ try {
   await page.keyboard.press('Escape')
   await page.locator('#otra').click()
   await page.locator('#saltar').click()
-  await expect(page.locator('.squares')).toHaveText('⬜')
+  await expect(page.locator('.s-round-cell.sk')).toHaveCount(1)
+  await expect(page.locator('.s-round-cell.sk')).toHaveAttribute('aria-label','Pregunta 1: Saltada')
   await context.close()
   // With motion enabled, the reveal starts at the tapped button and locks input
   // during its delay, so rapid taps cannot create extra responses.

@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { resilientAuthStorage } from '../../../src/lib/authStorage.js'
 import { connectSuizamenteSession,isSuizamentePath } from '../../../src/lib/suizamenteSessionBridge.js'
+import {connectSuizamenteAppearance} from '../../../src/lib/suizamenteAppearance.js'
 import { connectLatidoAccount } from './latidoSso.js'
 import { publicConfig } from './config.js'
 import { createSuizamenteInstall } from './install.js'
@@ -10,6 +11,7 @@ import {mountSuizamenteRegistration,completeRegistrationProfile,prepareSuizament
 import {mountSuizamenteOnboarding,mountSuizamenteWelcome,needsSuizamenteOnboarding} from './onboarding.js'
 
 const root = document.getElementById('app')
+connectSuizamenteAppearance({getFrame:()=>root.querySelector('iframe.game')?.contentWindow})
 const esc = text => String(text ?? '').replace(/[&<>"]/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[c]))
 let session = null, client, config, disposeFrame, booted = false
 let accountMode = new URLSearchParams(location.search).get('mode') === 'login' ? 'login' : 'signup', signingOut = false

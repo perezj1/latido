@@ -5,6 +5,8 @@ const app = $('#app'), layer = $('#layer');
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const CONFIG = Object.assign({ api: '/api/suizamente', jugadorId: null, datos: '/suizamente/data/preguntas.json', ronda: 10 }, window.SUIZAMENTE_CONFIG || {});
 const identidad = await identidadLatido();
+const {separarDatos}=await import('/suizamente/datos-opciones.js');
+const demo=identidad.experience&&CONFIG.experiencia!==false?await import('/suizamente/demostracion.js'):null;
 let experiencia = null, arrancando = true;
 if (identidad.api && !window.SUIZAMENTE_CONFIG?.api) CONFIG.api = identidad.api;
 const CLAVE = identidad.userId ? 'suizamente:v1:' + identidad.userId : 'suizamente:v1';
@@ -20,20 +22,6 @@ const pregunta = id => PREG.find(x => x.id === id);
 
 /* Logo circular de Suizamente. */
 function logo() { return '<img class="logo beat" src="/suizamente/icons/suizamente-circle-logo-512.png" width="112" height="112" alt="Suizamente">'; }
-
-function datosPorOpcion(q, elegida) {
-  const partes = q.opciones.map((op, indice) => {
-    const titulo = `${op.e} ${op.t}:`;
-    return { indice, titulo, inicio:q.dato.indexOf(titulo) };
-  }).filter(p => p.inicio >= 0).sort((a, b) => a.inicio - b.inicio);
-  if (!partes.length || partes[0].inicio !== 0) {
-    return { [q.tipo === 'real' ? q.correcta : elegida]:q.dato };
-  }
-  return Object.fromEntries(partes.map((p, i) => {
-    const descripcion = q.dato.slice(p.inicio + p.titulo.length, partes[i + 1]?.inicio ?? q.dato.length).trim();
-    return [p.indice, descripcion];
-  }));
-}
 
 /* ---------- respuestas propias (en este dispositivo) ---------- */
 let local = { resp: {} };
@@ -68,9 +56,13 @@ const Votos = CONFIG.api ? votosApi(CONFIG.api, jugadorAnonimo, {
   account:identidad.userId||jugadorAnonimo,
 }) : { estado:"sin", puedeVotar:false, conteo:()=>[0,0,0], votar(){}, iniciar(c){c.alCambiar();} };
 
-function reparto(q) {
+function reparto(q,{ejemplos=true}={}) {
   const n = Votos.conteo(q.id).slice(0, q.opciones.length).map(v => v || 0);
   const total = n.reduce((a, b) => a + b, 0);
+  if(ejemplos&&demo&&Votos.estado==='ok'){
+    const rep=demo.repartoDemo(q,n);
+    return {...rep,pct:rep.n.map(v=>rep.total?Math.round(v/rep.total*100):0)};
+  }
   return { n, total, pct: n.map(v => total ? Math.round(v / total * 100) : 0) };
 }
 function textoNota() {
@@ -179,7 +171,7 @@ function elegir(q, o, boton) {
   experiencia?.choose();
   boton.classList.add('picked');
   app.querySelectorAll('.opt, #saltar').forEach(b => b.disabled = true);
-  const real = q.tipo === 'real', rep = reparto(q);
+  const real = q.tipo === 'real', rep = reparto(q,{ejemplos:false});
   ronda.marcas[ronda.i] = real ? (o === q.correcta ? 'ok' : 'ko') : 'op';
   ronda.res[ronda.i] = { id: q.id, o, real, acierto: real ? o === q.correcta : null, conMayoria: rep.total > 1 && rep.n[o] === Math.max(...rep.n) };
   const r = boton.getBoundingClientRect();
@@ -200,7 +192,7 @@ function abrirResultado(q, o, punto, repetida) {
       </div>
       <div class="panel rise" style="animation-delay:.15s">
         <h3>Lo que eligió la comunidad</h3>
-        <div id="reparto" style="display:flex;flex-direction:column;gap:20px"></div>
+        <div id="reparto" style="display:flex;flex-direction:column;gap:20px"></div><div id="dato-comun"></div>
         <p class="votes" id="votos"></p>
       </div>
       <div class="row2">
@@ -232,9 +224,10 @@ function refrescarResultado() {
     sub.textContent = rep.n[o] === Math.max(...rep.n) ? 'Piensas como la mayoría de Latido.' : 'Eres de la minoría valiente.';
   }
   if (repetida) sub.textContent += ' (Ya la habías respondido: cuenta tu primer voto.)';
+  if(rep.demo)sub.textContent='Datos de demostración: este reparto es un ejemplo, no representa votos reales.';
   const ordenOpciones = ronda ? ronda.orden[q.id] : q.opciones.map((_, i) => i);
   const orden = [o, ...ordenOpciones.filter(oi => oi !== o)];
-  const datos = datosPorOpcion(q, o);
+  const {opciones:datos,comun}=separarDatos(q);
   $('#reparto').innerHTML = orden.map(oi => {
     const elegida = oi === o;
     const verdadera = real && oi === q.correcta ? '<div class="tags"><span class="tag true">✓ La verdadera</span></div>' : '';
@@ -242,7 +235,8 @@ function refrescarResultado() {
     return `<div class="res o${ordenOpciones.indexOf(oi) + 1}${elegida ? ' is-picked' : ''}">${elegida ? '<span class="tag mine">Tu elección</span>' : ''}<div class="res-top"><span class="res-t">${q.opciones[oi].e} ${esc(q.opciones[oi].t)}</span><span class="res-p" data-p="${hayDatos ? rep.pct[oi] : ''}">${hayDatos ? rep.pct[oi] + '%' : '—'}</span></div>
       <div class="res-bar"><i style="width:${hayDatos ? rep.pct[oi] : 0}%" data-w="${hayDatos ? rep.pct[oi] : 0}"></i></div>${verdadera}${dato}</div>`;
   }).join('');
-  $('#votos').textContent = hayDatos ? `${rep.total.toLocaleString('es-ES')} ${rep.total === 1 ? 'voto' : 'votos'}` : textoNota();
+  $('#dato-comun').innerHTML=comun?`<div class="answer-fact s-common-fact"><b><span aria-hidden="true">💡</span> Sobre este dilema</b><p>${esc(comun)}</p></div>`:'';
+  $('#votos').textContent = rep.demo?`Ejemplo con ${rep.total} votos ficticios · ${rep.realTotal} ${rep.realTotal===1?'voto real':'votos reales'}`:hayDatos ? `${rep.total.toLocaleString('es-ES')} ${rep.total === 1 ? 'voto' : 'votos'}` : textoNota();
   experiencia?.decorateFacts(q,o);
 }
 function cerrarResultado() { clearTimeout(revealTimer); eligiendo = false; app.inert = false; resultadoAbierto = null; layer.innerHTML = ''; }
@@ -257,15 +251,15 @@ function siguiente() {
 function pintarFinal() {
   app.classList.remove('playing');
   const res = ronda.res.filter(Boolean), reales = res.filter(r => r.real), dilemas = res.filter(r => !r.real);
-  const ok = reales.filter(r => r.acierto).length, mayoria = dilemas.filter(r => { const rep = reparto(pregunta(r.id)); return Votos.estado === 'ok' && rep.total > 1 && rep.n[r.o] === Math.max(...rep.n); }).length;
-  const cuadros = ronda.ids.map((_, i) => ({ ok: '🟩', ko: '🟥', op: '🟦', sk: '⬜' }[ronda.marcas[i]] || '⬜')).join('');
-  const frase = !reales.length ? '¡Ronda completada!' : ok === reales.length ? '¡Sabes un montón de Suiza!' : ok >= reales.length / 2 ? '¡Vas muy bien!' : 'Hoy has aprendido mucho';
-  const cajas = [reales.length ? `<div><b>${ok}/${reales.length}</b><span>verdades acertadas</span></div>` : '', dilemas.length ? `<div><b>${mayoria}/${dilemas.length}</b><span>veces pensaste como la mayoría</span></div>` : ''].join('');
+  const ok = reales.filter(r => r.acierto).length, mayoria = dilemas.filter(r => { const rep = reparto(pregunta(r.id),{ejemplos:false}); return Votos.estado === 'ok' && rep.total > 1 && rep.n[r.o] === Math.max(...rep.n); }).length;
+  const marcas={ok:['✓','Acierto'],ko:['✕','Fallo'],op:['🤔','Dilema'],sk:['⏭️','Saltada']};
+  const cuadros = ronda.ids.map((_,i)=>{const mark=ronda.marcas[i]||'sk';return `<span class="s-round-cell ${mark}" aria-label="Pregunta ${i+1}: ${marcas[mark][1]}">${marcas[mark][0]}</span>`}).join('');
+  const frase='¡Ronda terminada!';
+  const cajas = `<div><b>${ok} de ${reales.length}</b><span>🎯 Aciertos</span></div><div><b>${mayoria} de ${dilemas.length}</b><span>🤝 Como la mayoría</span></div><div><b id="round-points">+${experiencia?.roundPoints||0}</b><span>⭐ Puntos</span></div>`;
   app.innerHTML = `<section class="done">
-    <div class="lg">${logo()}</div>
-    <p class="kicker">${esc(MODOS[ronda.modo].emoji + ' ' + MODOS[ronda.modo].nombre)}</p>
-    <p class="big">${frase}</p>
-    <div class="squares" aria-label="Resumen de la ronda">${cuadros}</div>
+    <button class="icon-btn s-round-close" id="cerrar-ronda" type="button" aria-label="Volver al inicio">✕</button>
+    <header><h1>${frase}</h1><p>Hoy te llevas ${res.length} ${res.length===1?'dato nuevo':'datos nuevos'} sobre Suiza.</p></header>
+    <div class="squares" aria-label="Resumen de la ronda">${cuadros}</div><div class="s-round-legend">${Object.entries(marcas).map(([id,[,label]])=>`<span><i class="${id}"></i>${label}</span>`).join('')}</div>
     <div class="score">${cajas}</div>
     <div class="s-round-actions"><button class="btn s-round-primary" id="otra" type="button">Otra ronda</button>
     <div class="row2"><button class="btn s-round-secondary" id="comp" type="button">📤 Compartir</button><button class="btn s-round-secondary" id="inicio" type="button">Inicio</button></div></div>
@@ -273,9 +267,10 @@ function pintarFinal() {
   </section>`;
   $('#otra').onclick = () => nuevaRonda(ronda.modo);
   $('#inicio').onclick = () => experiencia?experiencia.navigate('/'):pintarInicio();
+  $('#cerrar-ronda').onclick=$('#inicio').onclick;
   experiencia?.decorateSummary();
   const lineas = [reales.length ? `Verdades: ${ok}/${reales.length}` : '', dilemas.length ? `Como la mayoría: ${mayoria}/${dilemas.length}` : ''].filter(Boolean).join(' · ');
-  const texto=`Suizamente · ${MODOS[ronda.modo].nombre}\n${cuadros}\n${lineas}\n¿Cuánto sabes de Suiza? Juega en https://suizamente.latido.ch`;
+  const texto=`Suizamente · ${MODOS[ronda.modo].nombre}\n${ronda.ids.map((_,i)=>marcas[ronda.marcas[i]||'sk'][0]).join(' ')}\n${lineas}\n¿Cuánto sabes de Suiza? Juega en https://suizamente.latido.ch`;
   $('#comp').onclick = () => experiencia?experiencia.shareSummary({modo:ronda.modo,texto,titulo:frase,resultado:lineas||'Ronda completada.'}):copiar(texto,$('#copymsg'));
   window.scrollTo({ top: 0 });
 }
@@ -318,7 +313,7 @@ const embebidas = document.getElementById('preguntas-embebidas');
     const {crearExperiencia}=await import('/suizamente/experiencia.js');
     experiencia=await crearExperiencia({container:app,questions:PREG,identity:identidad,getIdentity:identidadLatido,playerId:jugadorAnonimo,
       play:({modo,...opciones})=>nuevaRonda(modo,opciones),stopGame:()=>{ronda=null;cerrarResultado();app.classList.remove('playing');},
-      getCounts:id=>Votos.conteo(id),getSaved:()=>local.resp,getRound:()=>ronda?{modo:ronda.modo,ids:ronda.ids.slice()}:null,
+      getCounts:id=>Votos.conteo(id),getDisplayCounts:id=>reparto(pregunta(id)),getSaved:()=>local.resp,getRound:()=>ronda?{modo:ronda.modo,ids:ronda.ids.slice()}:null,
       importAnswers:respuestas=>{for(const [id,r]of Object.entries(respuestas))if(!local.resp[id]&&pregunta(id)&&Number.isInteger(r?.o)&&r.o>=0&&r.o<pregunta(id).opciones.length)local.resp[id]=r;guardarLocal();},
       onSettings:prefs=>{RM=matchMedia('(prefers-reduced-motion: reduce)').matches||!!prefs.menosAnimaciones;},
     });
