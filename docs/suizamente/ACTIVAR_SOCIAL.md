@@ -4,7 +4,7 @@ Preparado el 20 de noviembre de 2026 en la rama `suizamente-social`, sobre `1210
 
 Esta versión incluye las pantallas sociales de Latido, Retos y Duelo, el panel para compartir, la búsqueda de amigos, resultados compactos con la elección del jugador primero y porcentajes estables, y los cinco iconos maskable de Suizamente para su PWA independiente. Antes de publicar se han comprobado el build, los iconos y la caché, la autenticación simulada, las funciones sociales con una base de pruebas y el juego de referencia en móvil y escritorio.
 
-El SQL social ya fue ejecutado manualmente por el propietario. La función `suizamente-social` y la ruta de conexión de cuenta en Latido son pasos separados de esta publicación: deben verificarse antes de dar por activadas todas las funciones sociales y el acceso automático desde Latido.
+El SQL social ya fue ejecutado manualmente por el propietario. La función `suizamente-social` se ha desplegado con autorización en el Supabase existente y admite el origen exacto `https://suizamente.latido.ch`: su preflight responde 204 y una solicitud sin identidad responde 401 con las cabeceras CORS correctas. El cliente espera la confirmación de Latido antes de enviar mensajes de conexión, usando el origen confirmado tras cualquier redirección. La ruta de conexión de cuenta en Latido sigue requiriendo su publicación en `main` para activar el acceso automático desde Latido; Google y correo funcionan de forma independiente.
 
 ## Qué incluye
 
@@ -49,7 +49,7 @@ Desde la raíz de esta rama, con la CLI autenticada en la cuenta propietaria:
 supabase functions deploy suizamente-social --project-ref zmievixfjefjppofebbh --no-verify-jwt --use-api
 ```
 
-No desplegar todas las funciones ni volver a desplegar `suizamente-votos`. El modo `--no-verify-jwt` permite invitados; el handler verifica explícitamente los tokens de las cuentas con `auth.getUser`. El servidor calcula los puntos, valida respuestas y contextos, comprueba administradores, limita peticiones y oculta las respuestas del rival hasta terminar ambos.
+Este despliegue ya se ha realizado con autorización. No desplegar todas las funciones ni volver a desplegar `suizamente-votos`. El modo `--no-verify-jwt` permite invitados; el handler verifica explícitamente los tokens de las cuentas con `auth.getUser`. El servidor calcula los puntos, valida respuestas y contextos, comprueba administradores, limita peticiones y oculta las respuestas del rival hasta terminar ambos.
 
 Utiliza las variables de servicio que Supabase ya proporciona a sus funciones. No hay nuevos secretos que copiar a Vercel.
 
@@ -140,4 +140,4 @@ npm --prefix apps/suizamente run test:social
 npm --prefix apps/suizamente run test:browser
 ```
 
-El generador reconstruye los metadatos y el instalador a partir del banco publicado; no lo modifica. Las pruebas SQL y de navegador verifican puntos únicos, privacidad, permisos, dos jugadores, vinculación, media incluyendo ceros, formularios y móvil claro/oscuro. No se ha probado un despliegue real de la función nueva: ese paso queda pendiente de autorización.
+El generador reconstruye los metadatos y el instalador a partir del banco publicado; no lo modifica. Las pruebas SQL y de navegador verifican puntos únicos, privacidad, permisos, dos jugadores, vinculación, media incluyendo ceros, formularios y móvil claro/oscuro. La función nueva está desplegada y su CORS se ha comprobado en producción sin crear cuentas ni respuestas de prueba.

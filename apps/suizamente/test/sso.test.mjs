@@ -3,6 +3,31 @@ import test from 'node:test'
 import { installLatidoSsoBridge } from '../../../src/lib/suizamenteSsoBridge.js'
 import { isSuizamentePath } from '../../../src/lib/suizamenteSessionBridge.js'
 import { createSuizamenteSocialHttp } from '../../../supabase/functions/_shared/suizamenteSocialHttp.js'
+import { connectLatidoAccount } from '../src/latidoSso.js'
+
+test('standalone SSO waits for a trusted ready message and follows the actual redirected origin',async t=>{
+ let listener
+ const sent=[],frames=[]
+ const parentWindow={addEventListener:(_type,fn)=>{listener=fn},removeEventListener:()=>{listener=null}}
+ const documentStub={createElement:()=>{const frame={contentWindow:{postMessage:(data,origin)=>sent.push({data,origin})},remove(){this.removed=true}};frames.push(frame);return frame},body:{append(){}}}
+ for(const [name,value] of Object.entries({window:parentWindow,document:documentStub,location:{origin:'https://suizamente.latido.ch'}})){
+   const previous=Object.getOwnPropertyDescriptor(globalThis,name)
+   Object.defineProperty(globalThis,name,{value,configurable:true,writable:true})
+   t.after(()=>{if(previous)Object.defineProperty(globalThis,name,previous);else delete globalThis[name]})
+ }
+ const promise=connectLatidoAccount({client:{},socialApi:'https://api.test',timeout:50})
+ assert.equal(sent.length,0,'No message while an iframe is still about:blank or loading')
+ await listener({origin:'https://evil.test',source:frames[0].contentWindow,data:{type:'suizamente:sso-ready'}})
+ await listener({origin:'https://latido.ch',source:{},data:{type:'suizamente:sso-ready'}})
+ assert.equal(sent.length,0)
+ await listener({origin:'https://www.latido.ch',source:frames[0].contentWindow,data:{type:'suizamente:sso-ready'}})
+ assert.equal(sent.length,1)
+ assert.equal(sent[0].origin,'https://www.latido.ch','Use the confirmed origin after a Latido redirect')
+ assert.equal(sent[0].data.type,'suizamente:sso-request')
+ assert.equal(await promise,null)
+ assert.equal(sent.length,1,'No blind polling of windows that can navigate to another origin')
+ assert.ok(frames.every(frame=>frame.removed));assert.equal(listener,null)
+})
 
 test('Latido connection validates source, exact origin and nonce; never transfers refresh tokens',async()=>{
  let listener,calls=0

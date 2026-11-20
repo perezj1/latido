@@ -8,19 +8,20 @@ import { installLatidoSsoBridge } from '../../../src/lib/suizamenteSsoBridge.js'
 const f=await fixture(),origin='http://127.0.0.1:5271',env=loadEnv('production',process.cwd(),'VITE_')
 const storageKey='sb-'+new URL(env.VITE_SUPABASE_URL).hostname.split('.')[0]+'-auth-token'
 const server=await preview({preview:{host:'127.0.0.1',port:5271,strictPort:true}})
-const browser=await chromium.launch({headless:true}),errors=[],requests=[]
+const browser=await chromium.launch({headless:true}),errors=[],requests=[],ssoWarnings=[]
 let otpVerifications=0,slowPeople=false
 await mkdir('test-results/social',{recursive:true})
 async function create(id,options={}){
  const {sso=false,...browserOptions}=options
  const context=await browser.newContext({viewport:{width:390,height:844},reducedMotion:'reduce',...browserOptions})
  await context.addInitScript(({key,value,testOrigin,sso})=>{window.SUIZAMENTE_DISABLE_SSO=!sso;if(location.origin!==testOrigin)return;localStorage.setItem('suizamente:bienvenida','true');if(value&&!sessionStorage.getItem('fixture-seeded')){localStorage.setItem(key,JSON.stringify(value));sessionStorage.setItem('fixture-seeded','true')}},{key:storageKey,value:id?session(id):null,testOrigin:origin,sso})
- context.on('page',page=>page.on('pageerror',error=>errors.push(error.message)))
+ context.on('page',page=>{page.on('pageerror',error=>errors.push(error.message));if(sso)page.on('console',message=>{if(/target origin|recipient window.*origin/.test(message.text()))ssoWarnings.push(message.text())})})
  await context.route('**/*',async route=>{
   const req=route.request(),url=new URL(req.url())
   if(url.origin===origin)return route.continue()
   if(url.origin==='https://avatars.example.test')return route.fulfill(url.pathname.includes('missing')?{status:404,body:''}:{contentType:'image/svg+xml',body:'<svg xmlns="http://www.w3.org/2000/svg" width="80" height="80"><rect width="80" height="80" fill="#b8e4d6"/><circle cx="40" cy="29" r="15" fill="#2563eb"/><path d="M10 80a30 30 0 0 1 60 0" fill="#2563eb"/></svg>'})
   if(sso&&['https://latido.ch','https://www.latido.ch'].includes(url.origin)&&url.pathname==='/suizamente/conectar'){
+    if(url.origin==='https://latido.ch')return route.fulfill({status:307,headers:{location:'https://www.latido.ch'+url.pathname+url.search}})
     const rootSession={access_token:token(alice),refresh_token:'root-refresh-must-never-be-copied',user:{id:alice}}
     const script=`(${installLatidoSsoBridge.toString()})({origins:[${JSON.stringify(origin)}],getSession:async()=>({data:{session:${JSON.stringify(rootSession)}}})});window.parent.postMessage({type:'suizamente:sso-ready'},${JSON.stringify(origin)});`
     return route.fulfill({contentType:'text/html',body:'<!doctype html><script>'+script+'</script>'})
@@ -281,6 +282,7 @@ try{
  ssoView=await create(null,{sso:true})
  await expect(ssoView.game.locator('.s-greeting')).toHaveText('Hola, Nombre Latido 👋')
  assert.equal(otpVerifications,1)
+ assert.deepEqual(ssoWarnings,[],'Redirected Latido frames must not receive messages with an outdated target origin')
  const stored=await ssoView.page.evaluate(key=>localStorage.getItem(key),storageKey)
  assert.ok(stored.includes('fixture-refresh-'))
  assert.equal(stored.includes('root-refresh-must-never-be-copied'),false)
