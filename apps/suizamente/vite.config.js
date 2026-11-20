@@ -14,6 +14,8 @@ const routeTitles={'/instalar':'Instalar Suizamente','/bienvenida':'Bienvenido a
 const knownPath=pathname=>routes.has(pathname)||/^\/duelo\/[A-Fa-f0-9]{8}$/.test(pathname)
 const icons = {
   '/favicon.svg':'favicon.svg',
+  '/icons/favicon-circle-72.png':'suizamente/icons/suizamente-circle-logo-72.png',
+  '/icons/favicon-circle-96.png':'suizamente/icons/suizamente-circle-logo-96.png',
   '/icons/icon-192.png':'suizamente/icons/suizamente-logo-192.png',
   '/icons/icon-512.png':'suizamente/icons/suizamente-logo-512.png',
   '/icons/maskable-72.png':'suizamente/icons/suizamente-logo-72.png',

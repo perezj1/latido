@@ -120,7 +120,7 @@ try {
     for (const name of await caches.keys()) for (const req of await (await caches.open(name)).keys()) result.push(new URL(req.url).pathname)
     return result
   })
-  assert.equal(cached.length,11)
+  assert.equal(cached.length,13)
   assert.ok(cached.every(path=>path.startsWith('/icons/')||['/manifest.webmanifest','/favicon.svg','/sin-conexion.html'].includes(path)))
   await page.goto(origin+'/cuenta')
   await expect(page.getByRole('heading',{name:'Entrar a Suizamente'})).toBeVisible()

@@ -17,7 +17,10 @@ for(const size of [72,96,128,192,512]){
   assert.equal(hash(await readFile('dist'+icon.src)),hash(await readFile(`../../public/suizamente/icons/suizamente-logo-${size}.png`)))
 }
 assert.equal(hash(await readFile('dist/icons/apple-touch-icon.png')),hash(await readFile('../../public/suizamente/icons/suizamente-logo-192.png')))
-assert.match(root,/<link rel="icon" href="\/icons\/maskable-96.png"/)
+for(const size of [72,96]){
+  assert.ok(root.includes(`rel="icon" href="/icons/favicon-circle-${size}.png"`))
+  assert.equal(hash(await readFile(`dist/icons/favicon-circle-${size}.png`)),hash(await readFile(`../../public/suizamente/icons/suizamente-circle-logo-${size}.png`)))
+}
 for (const route of ['cuenta','auth/callback','auth/restablecer','retos','ranking','libreta','perfil','perfil/editar','amigos','medallas','ajustes','proponer','moderacion','avisos','jugar']) {
   const html=await read(`dist/${route}/index.html`)
   assert.match(html,/<meta name="robots" content="noindex, nofollow">/)
