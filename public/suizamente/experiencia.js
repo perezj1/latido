@@ -244,7 +244,7 @@ export async function crearExperiencia({container,questions,identity,getIdentity
     currentResult={q,selected}
     const points=document.createElement('span');points.className='s-point-chip s-result-points';points.id='social-points';points.textContent=state.online?'Guardando tu respuesta…':'Pendiente de conexión';points.dataset.preguntaId=q.id
     document.querySelector('.rv-top')?.append(points)
-    const row=document.createElement('div');row.className='social-result-tools';row.innerHTML=state.online?'<div class="s-card"><h3>'+(q.tipo==='real'?'¿Quién lo sabía?':'Eligieron lo mismo')+'</h3><div class="s-tabs"><button class="active" type="button" data-breakdown="pais">País</button><button type="button" data-breakdown="anos">Años en Suiza</button></div><div id="social-breakdown" class="s-stack"></div></div>':''
+    const row=document.createElement('div');row.className='social-result-tools';row.innerHTML=state.online?'<div class="s-card"><div class="s-breakdown-heading"><h3>'+(q.tipo==='real'?'¿Quién lo sabía?':'Eligieron lo mismo')+'</h3><div class="s-tabs"><button class="active" type="button" data-breakdown="pais">País</button><button type="button" data-breakdown="anos">Años en Suiza</button></div></div><div id="social-breakdown" class="s-stack"></div></div>':''
     document.querySelector('.rv .panel')?.after(row)
     if(state.lastAnswer?.preguntaId===q.id){const award=state.lastAnswer;points.textContent=award.puntos?`+${award.puntos} puntos`:'Respuesta guardada'}
     if(repetida&&!contexto)points.textContent='Ya respondida · sin puntos extra';
