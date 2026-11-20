@@ -242,11 +242,12 @@ export async function crearExperiencia({container,questions,identity,getIdentity
   function decorateSummary(){const node=document.createElement('div');node.id='social-summary';node.className='s-stack';node.innerHTML=summaryContent();container.querySelector('.score')?.after(node)}
   function decorateResult(q,selected,{repetida=false,contexto=null}={}){
     currentResult={q,selected}
-    const row=document.createElement('div');row.className='social-result-tools';row.innerHTML=`<div class="s-row"><span class="s-point-chip" id="social-points">${state.online?'Guardando tu respuesta…':'Pendiente de conexión'}</span></div>${state.online?'<div class="s-card"><h3>'+(q.tipo==='real'?'¿Quién lo sabía?':'Eligieron lo mismo')+'</h3><div class="s-tabs"><button class="active" type="button" data-breakdown="pais">País</button><button type="button" data-breakdown="anos">Años en Suiza</button></div><div id="social-breakdown" class="s-stack" style="margin-top:12px"></div></div>':''}`
+    const points=document.createElement('span');points.className='s-point-chip s-result-points';points.id='social-points';points.textContent=state.online?'Guardando tu respuesta…':'Pendiente de conexión';points.dataset.preguntaId=q.id
+    document.querySelector('.rv-top')?.append(points)
+    const row=document.createElement('div');row.className='social-result-tools';row.innerHTML=state.online?'<div class="s-card"><h3>'+(q.tipo==='real'?'¿Quién lo sabía?':'Eligieron lo mismo')+'</h3><div class="s-tabs"><button class="active" type="button" data-breakdown="pais">País</button><button type="button" data-breakdown="anos">Años en Suiza</button></div><div id="social-breakdown" class="s-stack"></div></div>':''
     document.querySelector('.rv .panel')?.after(row)
-    row.querySelector('#social-points').dataset.preguntaId=q.id;
-    if(state.lastAnswer?.preguntaId===q.id){const award=state.lastAnswer;row.querySelector('#social-points').textContent=award.puntos?`+${award.puntos} puntos`:'Respuesta guardada'}
-    if(repetida&&!contexto)row.querySelector('#social-points').textContent='Ya respondida · sin puntos extra';
+    if(state.lastAnswer?.preguntaId===q.id){const award=state.lastAnswer;points.textContent=award.puntos?`+${award.puntos} puntos`:'Respuesta guardada'}
+    if(repetida&&!contexto)points.textContent='Ya respondida · sin puntos extra';
     decorateFacts()
     const share=document.querySelector('#compartir'),next=document.querySelector('#sig'),bar=share?.parentElement
     if(bar){bar.classList.add('s-result-actions');bar.prepend(share);share.classList.add('s-result-share');next.classList.add('s-result-next');share.textContent='📤 Compartir';share.onclick=()=>shareQuestion(q,selected)}
@@ -260,10 +261,12 @@ export async function crearExperiencia({container,questions,identity,getIdentity
     const {q}=currentResult,fact=document.querySelector('.res.is-picked .answer-fact')||document.querySelector('.answer-fact')
     if(!fact||fact.querySelector('#social-bookmark'))return
     const heading=document.createElement('div');heading.className='s-fact-heading'
-    const title=fact.querySelector('b'),book=document.createElement('button');book.type='button';book.id='social-bookmark';book.className='s-save-fact';book.textContent=state.books.includes(q.id)?'🔖 Guardado':'🔖 Guardar'
+    const title=fact.querySelector('b'),book=document.createElement('button');book.type='button';book.id='social-bookmark';book.className='s-save-fact';book.innerHTML='<svg viewBox="0 0 24 24" width="21" height="21" aria-hidden="true"><path d="M6 4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v17l-6-4-6 4Z" fill="currentColor"/></svg>'
+    const updateBook=saved=>{book.setAttribute('aria-pressed',String(saved));book.setAttribute('aria-label',saved?'Quitar de la libreta':'Guardar en la libreta');book.title=saved?'Guardado en tu libreta':'Guardar en tu libreta'}
+    updateBook(state.books.includes(q.id))
     title.before(heading);heading.append(title,book)
-    book.onclick=async()=>{book.disabled=true;try{const saved=await toggleBook(q.id);book.textContent=saved?'🔖 Guardado':'🔖 Guardar'}catch(error){toast(error.message)}finally{if(book.isConnected)book.disabled=false}}
-    const report=document.createElement('button');report.type='button';report.id='social-report';report.className='s-report-fact';report.textContent='🚩 ¿Algo no cuadra? Avísanos';report.onclick=()=>navigate('/proponer?corregir='+q.id);fact.append(report)
+    book.onclick=async()=>{book.disabled=true;try{updateBook(await toggleBook(q.id))}catch(error){toast(error.message)}finally{if(book.isConnected)book.disabled=false}}
+    const report=document.createElement('button');report.type='button';report.id='social-report';report.className='s-report-fact';report.innerHTML='<span aria-hidden="true">🚩</span> Proponer corrección';report.onclick=()=>navigate('/proponer?corregir='+q.id);fact.append(report)
   }
   function shareQuestion(q,selected){
     const counts=getCounts(q.id),total=counts.reduce((sum,n)=>sum+Number(n||0),0),enlace='https://suizamente.latido.ch/jugar?p='+encodeURIComponent(q.id)

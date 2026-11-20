@@ -85,9 +85,31 @@ try{
  await a.game.locator('.opt').first().click()
  await expect(a.game.getByRole('dialog')).toBeVisible()
  await expect(a.game.locator('#social-points')).toContainText('+5 puntos')
+ await expect(a.game.locator('.rv-top #social-points')).toHaveCount(1)
  await expect(a.game.locator('.is-picked .tag.mine')).toHaveCount(1)
+ await expect(a.game.locator('#social-bookmark')).toHaveAttribute('aria-pressed','false')
  await a.game.locator('#social-bookmark').click()
- await expect(a.game.locator('#social-bookmark')).toContainText('Guardado')
+ await expect(a.game.locator('#social-bookmark')).toHaveAttribute('aria-pressed','true')
+ await expect(a.game.locator('#social-bookmark')).toHaveCSS('color','rgb(232, 45, 64)')
+ await a.game.locator('#social-bookmark').click()
+ await expect(a.game.locator('#social-bookmark')).toHaveAttribute('aria-pressed','false')
+ await expect(a.game.locator('#social-bookmark')).toHaveCSS('color','rgb(105, 119, 138)')
+ await a.game.locator('#social-bookmark').click()
+ await expect(a.game.locator('#social-bookmark')).toHaveAttribute('aria-pressed','true')
+ for(const viewport of [{width:375,height:667},{width:320,height:568}]){
+  await a.page.setViewportSize(viewport)
+  for(const bottom of [false,true]){
+   await a.game.locator('#reveal').evaluate((el,bottom)=>{el.scrollTop=bottom?el.scrollHeight:0},bottom)
+   const bounds=await a.game.locator('.s-result-actions').evaluate(el=>{const r=el.getBoundingClientRect(),share=el.querySelector('#compartir').getBoundingClientRect(),next=el.querySelector('#sig').getBoundingClientRect();return {top:r.top,bottom:r.bottom,height:window.innerHeight,share:share.width,buttonHeight:share.height,next:next.width,gap:window.innerHeight-next.bottom,visible:!!document.elementFromPoint(next.x+next.width/2,next.y+next.height/2)?.closest('#sig')}})
+   assert.ok(bounds.top>0&&bounds.bottom<=bounds.height+1&&bounds.visible,'Result controls remain visible at either scroll position')
+   assert.ok(bounds.share<bounds.next&&bounds.gap>=15,'Share is narrower and controls have space below')
+   assert.ok(bounds.buttonHeight<=46,'Compact controls stay on one line on small screens')
+   if(bottom){const content=await a.game.locator('.social-result-tools').boundingBox();assert.ok(content.y+content.height<bounds.top,'The last information card scrolls clear of the fixed controls')}
+  }
+  await a.page.screenshot({path:`test-results/social/resultado-compacto-${viewport.width}.png`,fullPage:true})
+ }
+ await a.page.setViewportSize({width:390,height:844})
+ await a.game.locator('#reveal').evaluate(el=>{el.scrollTop=0})
  await a.page.screenshot({path:'test-results/social/resultado.png',fullPage:true})
  await a.context.grantPermissions(['clipboard-read','clipboard-write'])
  await a.game.locator('#compartir').click()
