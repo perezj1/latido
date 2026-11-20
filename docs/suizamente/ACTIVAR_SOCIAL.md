@@ -1,6 +1,10 @@
 # Activar las nuevas pantallas y funciones de Suizamente
 
-Preparado el 20 de noviembre de 2026 en la rama `suizamente-social`, sobre `1210637`. La web publicada sigue usando la versión anterior. Esta preparación no aplica SQL, no despliega funciones ni publica cambios de producción.
+Preparado el 20 de noviembre de 2026 en la rama `suizamente-social`, sobre `1210637`. La publicación autorizada sincroniza `suizamente-social` y la rama de producción `suizamente` con el mismo código verificado. El push a `suizamente` activa el despliegue del proyecto Vercel existente; no modifica `main` ni despliega funciones de Supabase.
+
+Esta versión incluye las pantallas sociales de Latido, Retos y Duelo, el panel para compartir, la búsqueda de amigos, resultados compactos con la elección del jugador primero y porcentajes estables, y los cinco iconos maskable de Suizamente para su PWA independiente. Antes de publicar se han comprobado el build, los iconos y la caché, la autenticación simulada, las funciones sociales con una base de pruebas y el juego de referencia en móvil y escritorio.
+
+El SQL social ya fue ejecutado manualmente por el propietario. La función `suizamente-social` y la ruta de conexión de cuenta en Latido son pasos separados de esta publicación: deben verificarse antes de dar por activadas todas las funciones sociales y el acceso automático desde Latido.
 
 ## Qué incluye
 
