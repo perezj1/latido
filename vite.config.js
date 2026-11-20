@@ -1,11 +1,13 @@
 import dns from 'node:dns'
 import path from 'node:path'
+import { realpathSync } from 'node:fs'
 import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
 import gelatoHandler from './api/gelato.js'
 import { resolveTikTokLink } from './api/tiktok-resolve.js'
 import tiktokMetadataHandler from './api/tiktok-metadata.js'
 import suizamenteHandler from './api/suizamente.js'
+import { createSocialDevHandler } from './scripts/lib/suizamente-social-dev.mjs'
 
 dns.setDefaultResultOrder('verbatim')
 
@@ -110,6 +112,7 @@ function suizamenteDevPlugin() {
   return {
     name:'latido-suizamente-votes',
     configureServer(server) {
+      server.middlewares.use('/api/suizamente/social', createSocialDevHandler())
       server.middlewares.use('/api/suizamente', suizamenteHandler)
     },
   }
@@ -170,6 +173,7 @@ export default defineConfig(({ mode }) => {
     server: {
       host: 'localhost',
       port: 8080,
+      fs: { allow:[process.cwd(),realpathSync(path.resolve('node_modules'))] },
       watch: {
         // Windows + Deno's node-compat fs watcher can crash when Vite tries to
         // watch a path that was just removed during HMR. Polling is a little

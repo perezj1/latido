@@ -110,6 +110,8 @@ Los avisos de amistades, duelos y propuestas se guardan en `app_notifications` y
 
 ## Preview y desarrollo
 
+La aplicación integrada puede abrirse en `http://localhost:8080/suizamente` ejecutando el servidor raíz en la carpeta de la rama `suizamente-social`. Vite sirve también `/api/suizamente/social` mediante un adaptador local del mismo handler de la Edge Function: permite probar el SQL instalado antes de desplegar esa función. Utiliza las credenciales de servidor existentes en `.env.local`, sin enviarlas al navegador. Las operaciones usan el Supabase configurado y pueden guardar datos reales; iniciar este servidor no publica la web ni despliega funciones. Los cambios de `public/suizamente/` se reflejan al recargar.
+
 Las pruebas locales usan los orígenes de desarrollo ya admitidos. Un Preview remoto necesita incluir su origen HTTPS exacto, sin rutas ni barra final, en `SUIZAMENTE_ALLOWED_ORIGINS` de la función nueva. Para probar también la conexión con Latido, añadir el mismo origen a `VITE_SUIZAMENTE_SSO_ORIGINS` del build de Latido y publicar ese build bajo autorización. Para Google o enlaces de correo, añadir además sus callbacks exactos a Supabase Auth. Evitar comodines que admitan previews de terceros.
 
 No configurar esos permisos de Preview si no se necesita probar autenticación/API en un Preview remoto. Un build aislado conserva el modo de juego normal aunque el servicio social no esté disponible; los retos y duelos requieren conexión.

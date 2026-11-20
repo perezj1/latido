@@ -16,7 +16,7 @@ export default function Suizamente() {
     getFrame:() => frame.current?.contentWindow,
     getSession:() => supabase.auth.getSession(),
     experience:true,
-    socialApi:import.meta.env.VITE_SUPABASE_URL?.replace(/\/$/,'')+'/functions/v1/suizamente-social',
+    socialApi:import.meta.env.DEV?'/api/suizamente/social':import.meta.env.VITE_SUPABASE_URL?.replace(/\/$/,'')+'/functions/v1/suizamente-social',
     getPath:()=>pathRef.current,
     onNavigate:next=>navigate('/suizamente'+(next==='/'?'':next)),
     api:import.meta.env.PROD && import.meta.env.VITE_SUPABASE_URL
