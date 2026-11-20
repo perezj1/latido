@@ -191,6 +191,27 @@ try {
   assert.match(await reveal.evaluate(el => getComputedStyle(el).animationName), /reveal/)
   assert.equal(await reveal.evaluate(el => parseFloat(el.style.getPropertyValue('--x'))), rect.x + rect.width/2)
   await motion.close()
+  // The building-rule facts belong to their answer, regardless of the user's
+  // choice, the shuffled buttons or the selected answer appearing first.
+  const building = data.preguntas.find(q => q.id === 'd_199vdfc')
+  for (const selected of [0,1]) {
+    votes.clear()
+    const factsContext = await browser.newContext({ viewport:{ width:390, height:844 }, reducedMotion:'reduce' })
+    await factsContext.addInitScript(() => { window.SUIZAMENTE_CONFIG = { ronda:1, experiencia:false } })
+    await factsContext.route('**/suizamente/data/preguntas.json', route => route.fulfill({ json:{ ...data, preguntas:[building] } }))
+    const factsPage = await factsContext.newPage()
+    factsPage.on('pageerror', e => errors.push(e.message))
+    await factsPage.goto(origin + '/suizamente/juego.html')
+    await factsPage.locator('[data-modo="dilemas"]').click()
+    await factsPage.locator('.opt').filter({ hasText:building.opciones[selected].t }).click()
+    const laundry = factsPage.locator('.res').filter({ hasText:building.opciones[0].t })
+    const shower = factsPage.locator('.res').filter({ hasText:building.opciones[1].t })
+    await expect(laundry.locator('.answer-fact p')).toHaveText('En general, se puede tender ropa en el balcón, también los domingos.')
+    await expect(shower.locator('.answer-fact p')).toHaveText('No existe una prohibición general de ducharse de noche; hay que respetar el descanso vecinal.')
+    await expect(factsPage.locator('.res').first()).toContainText(building.opciones[selected].t)
+    await factsPage.screenshot({ path:`${output}/normas-edificio-opcion-${selected}.png`, fullPage:true })
+    await factsContext.close()
+  }
   assert.deepEqual(errors, [])
   console.log('PASS: reference UI, all modes, 10-question rounds, shuffled original indices, real percentages, sharing, persistence, keyboard, focus, mobile/desktop/dark mode.')
 } finally {

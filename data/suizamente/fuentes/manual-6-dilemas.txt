@@ -15,7 +15,10 @@ D|casa|🥵|¿Qué prefieres?|❄️ Un piso sin aire acondicionado en agosto|�
 D|casa|🔑|¿Qué prefieres perder?|🔑 La llave del piso, de un sistema de seguridad|📱 El móvil con todos tus billetes de tren|Perder una llave de seguridad puede obligar a cambiar varias cerraduras. El seguro de responsabilidad civil a veces lo cubre.
 D|casa|🐌|¿Con quién prefieres compartir el balcón?|🐌 Un caracol que se come tus lechugas|🕷️ Una araña que se come los mosquitos|Ninguno paga alquiler. En Suiza viven casi mil especies de arañas, y casi todas son inofensivas.
 D|casa|🧽|Al dejar el piso de alquiler:|🧽 Limpiar tú dos días enteros, horno incluido|💸 Pagar a una empresa con garantía de entrega|Las empresas de limpieza de mudanza suelen dar garantía: si la administración no acepta el piso, vuelven a limpiar.
-D|casa|📜|¿Qué norma del edificio prefieres?|🚫 Nada de ropa tendida en el balcón los domingos|🔇 Nada de ducharse después de las 22:00|Ninguna ley nacional prohíbe ducharse por la noche: es casi una leyenda urbana. Pero cada edificio tiene su reglamento.
+# Dato por opción contrastado con Mieterinnen- & Mieterverband (Hausordnung) y SRF, consultados el 20-11-2026:
+# https://www.mieterverband.ch/mietrecht/glossar_mietrecht/
+# https://www.srf.ch/sendungen/kassensturz-espresso/rechtsfragen/hauswart-spezial-darf-der-abwart-kleber-auf-dem-briefkasten-verbieten
+D|casa|📜|¿Qué norma del edificio prefieres?|🚫 Nada de ropa tendida en el balcón los domingos|🔇 Nada de ducharse después de las 22:00|🚫 Nada de ropa tendida en el balcón los domingos: En general, se puede tender ropa en el balcón, también los domingos. 🔇 Nada de ducharse después de las 22:00: No existe una prohibición general de ducharse de noche; hay que respetar el descanso vecinal.
 D|casa|🔥|Barbacoa en verano:|🔥 En la parrilla pública del bosque, con leña|⚡ En una parrilla eléctrica en el balcón|En Suiza hay miles de parrillas públicas gratuitas en bosques y orillas de lagos, muchas con leña preparada.
 D|casa|🏰|¿Qué piso prefieres?|🏰 Un ático antiguo con techos inclinados|🏢 Un piso nuevo con lavadora propia|Tener lavadora en el propio piso es un lujo en muchos edificios suizos antiguos.
 D|casa|🚲|¿Dónde guardas la bici?|🚲 En el cuarto de bicis del sótano|🏠 Colgada del techo del salón|Muchos edificios tienen un cuarto común para bicis. Y en Suiza se roban bastantes: candado siempre.
