@@ -243,6 +243,7 @@ function refrescarResultado(primera = false) {
       <div class="res-bar"><i style="width:${anima ? 0 : (hayDatos ? rep.pct[oi] : 0)}%" data-w="${hayDatos ? rep.pct[oi] : 0}"></i></div>${verdadera}${dato}</div>`;
   }).join('');
   $('#votos').textContent = hayDatos ? `${rep.total.toLocaleString('es-ES')} ${rep.total === 1 ? 'voto' : 'votos'}` : textoNota();
+  experiencia?.decorateFacts(q,o);
   if (anima) setTimeout(() => {
     document.querySelectorAll('#reparto .res-bar i').forEach(i => i.style.width = i.dataset.w + '%');
     document.querySelectorAll('#reparto .res-p').forEach(el => {
@@ -282,7 +283,7 @@ function pintarFinal() {
   $('#inicio').onclick = () => experiencia?experiencia.exit():pintarInicio();
   experiencia?.decorateSummary();
   const lineas = [reales.length ? `Verdades: ${ok}/${reales.length}` : '', dilemas.length ? `Como la mayoría: ${mayoria}/${dilemas.length}` : ''].filter(Boolean).join(' · ');
-  $('#comp').onclick = () => copiar(`Suizamente · ${MODOS[ronda.modo].nombre}\n${cuadros}\n${lineas}\n¿Cuánto sabes de Suiza? latido.ch`, $('#copymsg'));
+  $('#comp').onclick = () => copiar(`Suizamente · ${MODOS[ronda.modo].nombre}\n${cuadros}\n${lineas}\n¿Cuánto sabes de Suiza? Juega en https://suizamente.latido.ch`, $('#copymsg'));
   window.scrollTo({ top: 0 });
 }
 
@@ -290,7 +291,7 @@ function pintarFinal() {
 function textoPregunta(q) {
   const rep = reparto(q), hay = Votos.estado === 'ok' && rep.total > 1;
   const lineas = q.opciones.map((op, i) => `${op.e} ${op.t}${hay ? ` — ${rep.pct[i]} %` : ''}`).join('\n');
-  return `${q.emoji} ${q.pregunta}\n${lineas}\n¿Y tú qué eliges? Suizamente · latido.ch`;
+  return `${q.emoji} ${q.pregunta}\n${lineas}\n¿Y tú qué eliges? Suizamente · Juega en https://suizamente.latido.ch`;
 }
 function copiar(texto, msg) {
   const fallback = () => { const box = document.createElement('textarea'); box.className = 'copybox'; box.readOnly = true; box.value = texto; msg.after(box); box.focus(); box.select(); msg.textContent = 'Selecciona el texto y cópialo.'; };
@@ -299,6 +300,7 @@ function copiar(texto, msg) {
 
 /* ---------- teclado: 1-3 elige, Esc o Enter pasa ---------- */
 document.addEventListener('keydown', e => {
+  if(experiencia?.sharing)return;
   if (resultadoAbierto && e.key === 'Tab') {
     const controls = [...layer.querySelectorAll('button, textarea')];
     const edge = e.shiftKey ? controls[0] : controls.at(-1);
@@ -323,7 +325,7 @@ const embebidas = document.getElementById('preguntas-embebidas');
     const {crearExperiencia}=await import('/suizamente/experiencia.js');
     experiencia=await crearExperiencia({container:app,questions:PREG,identity:identidad,getIdentity:identidadLatido,playerId:jugadorAnonimo,
       play:({modo,...opciones})=>nuevaRonda(modo,opciones),stopGame:()=>{ronda=null;cerrarResultado();app.classList.remove('playing');},
-      getCounts:id=>Votos.conteo(id),getSaved:()=>local.resp,
+      getCounts:id=>Votos.conteo(id),getSaved:()=>local.resp,getRound:()=>ronda?{modo:ronda.modo,ids:ronda.ids.slice()}:null,
       importAnswers:respuestas=>{for(const [id,r]of Object.entries(respuestas))if(!local.resp[id]&&pregunta(id)&&Number.isInteger(r?.o)&&r.o>=0&&r.o<pregunta(id).opciones.length)local.resp[id]=r;guardarLocal();},
       onSettings:prefs=>{RM=matchMedia('(prefers-reduced-motion: reduce)').matches||!!prefs.menosAnimaciones;},
     });

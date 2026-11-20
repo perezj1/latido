@@ -8,6 +8,8 @@ Inicio, bienvenida, ayuda, retos diarios, duelos y revancha, solicitudes de amis
 
 Las dos aplicaciones comparten `public/suizamente/`. No hay una segunda copia editable del juego ni otra base de datos. Los datos de ejemplo del ZIP no se incorporan.
 
+Retos muestra la fecha abreviada y una sola etiqueta «Hoy» en la semana. El resultado de duelo presenta el marcador, la coincidencia en dilemas y cuatro preguntas iniciales, con un control para desplegar las diez. «Compartir» abre un panel con vista previa, imagen para historias, compartir mediante las aplicaciones del dispositivo, copiar texto y crear un duelo del mismo modo. Este último crea diez preguntas nuevas de ese modo; no promete reutilizar la ronda actual. Las imágenes usan los porcentajes reales, el logo oficial de Latido y «Juega en suizamente.latido.ch», sin el nombre del jugador. Si el dispositivo no permite compartir, se descarga la imagen o se copia el texto. Estos ajustes no requieren otro SQL ni alteran las preguntas y opciones publicadas.
+
 ## Orden de activación
 
 Los pasos siguientes modifican producción y se ejecutan únicamente con autorización. La autorización anterior para corregir CORS en `suizamente-votos` no publica esta ampliación.

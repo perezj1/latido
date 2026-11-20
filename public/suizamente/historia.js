@@ -1,36 +1,79 @@
-function lines(ctx,text,width){const result=[];let line='';for(const word of String(text).split(/\s+/)){const next=(line?line+' ':'')+word;if(line&&ctx.measureText(next).width>width){result.push(line);line=word}else line=next}if(line)result.push(line);return result}
-export async function crearHistoria({titulo,subtitulo='',pregunta=null,conteos=[],eleccion=null,enlace='https://suizamente.latido.ch/'}) {
+function lines(ctx,text,width){
+  const result=[];let line=''
+  for(const word of String(text).split(/\s+/)){
+    const next=(line?line+' ':'')+word
+    if(line&&ctx.measureText(next).width>width){result.push(line);line=''}
+    if(ctx.measureText(word).width>width){let part='';for(const char of word){if(part&&ctx.measureText(part+char).width>width){result.push(part);part=''}part+=char}line=part}
+    else line=(line?line+' ':'')+word
+  }
+  if(line)result.push(line);return result
+}
+let logoPromise
+function officialLogo(){
+  if(!logoPromise)logoPromise=new Promise(resolve=>{const img=new Image();img.onload=()=>resolve(img);img.onerror=()=>resolve(null);img.src='/favicon.svg'})
+  return logoPromise
+}
+export async function crearHistoria({titulo,subtitulo='',pregunta=null,conteos=[],eleccion=null,enlace='https://suizamente.latido.ch/'}){
   await document.fonts.ready
-  const canvas=document.createElement('canvas');canvas.width=1080;canvas.height=1920
-  const ctx=canvas.getContext('2d');ctx.fillStyle='#0F1A2B';ctx.fillRect(0,0,1080,1920)
-  ctx.fillStyle='#24E2C9';ctx.beginPath();ctx.arc(1050,100,300,0,Math.PI*2);ctx.fill()
-  ctx.font='800 66px Poppins, sans-serif';ctx.fillStyle='#FA2F35';ctx.fillText('Suiza',78,150);const x=78+ctx.measureText('Suiza').width;ctx.fillStyle='#7797FF';ctx.fillText('mente',x,150)
-  ctx.font='500 30px Poppins, sans-serif';ctx.fillStyle='#C3CFDD';ctx.fillText('Un juego de Latido.ch',80,205)
-  let y=320;ctx.font='800 66px Poppins, sans-serif';ctx.fillStyle='#FFFFFF'
-  for(const line of lines(ctx,titulo,910)){ctx.fillText(line,80,y);y+=82}
-  ctx.font='500 32px Poppins, sans-serif';ctx.fillStyle='#C3CFDD'
-  for(const line of lines(ctx,subtitulo,910)){ctx.fillText(line,80,y+20);y+=48}
+  const logo=await officialLogo(),canvas=document.createElement('canvas');canvas.width=1080;canvas.height=1920
+  const ctx=canvas.getContext('2d'),ink='#0F1A2B',total=conteos.reduce((sum,n)=>sum+Number(n||0),0)
+  const percent=total>1&&Number.isInteger(eleccion)?Math.round(100*(conteos[eleccion]||0)/total):null
+  const title=pregunta?.tipo==='dilema'?(percent===null?'¿Piensas como yo?':'El '+percent+'% de la comunidad piensa lo mismo que yo'):titulo
+  ctx.fillStyle='#3F68DF';ctx.fillRect(0,0,1080,1920)
+  ctx.fillStyle='#FFFFFF';ctx.beginPath();ctx.roundRect(66,66,146,146,42);ctx.fill()
+  if(logo)ctx.drawImage(logo,81,81,116,116)
+  ctx.font='800 68px Poppins, sans-serif';ctx.fillText('Suizamente',244,159)
+  let titleSize=78,titleLines
+  do{ctx.font='800 '+titleSize+'px Poppins, sans-serif';titleLines=lines(ctx,title,920);if(titleLines.length<=5)break;titleSize-=4}while(titleSize>58)
+  let y=340
+  for(const line of titleLines){
+    ctx.fillStyle='#FFFFFF'
+    const token=percent===null?null:percent+'%',at=token?line.indexOf(token):-1
+    if(at>=0){
+      const prefix=line.slice(0,at),suffix=line.slice(at+token.length),x=80+ctx.measureText(prefix).width,w=ctx.measureText(token).width
+      ctx.fillText(prefix,80,y);ctx.fillStyle='#24E2C9';ctx.beginPath();ctx.roundRect(x-6,y-titleSize*.88,w+14,titleSize*1.13,19);ctx.fill()
+      ctx.fillStyle=ink;ctx.fillText(token,x,y);ctx.fillStyle='#FFFFFF';ctx.fillText(suffix,x+w,y)
+    }else ctx.fillText(line,80,y)
+    y+=titleSize*1.22
+  }
+  if(subtitulo&&!pregunta){
+    y+=30;ctx.font='500 38px Poppins, sans-serif'
+    for(const line of lines(ctx,subtitulo,920)){ctx.fillText(line,80,y);y+=54}
+  }
   if(pregunta){
-    y+=90;ctx.fillStyle='#FFFFFF';ctx.font='800 44px Poppins, sans-serif'
-    for(const line of lines(ctx,pregunta.pregunta,910)){ctx.fillText(line,80,y);y+=59}
-    y+=35;const total=conteos.reduce((a,b)=>a+b,0)
-    pregunta.opciones.forEach((op,i)=>{
-      ctx.fillStyle=eleccion===i?'#24E2C9':'#FFFFFF';ctx.font='700 32px Poppins, sans-serif'
-      const labels=lines(ctx,op.e+' '+op.t,760)
-      for(const label of labels){ctx.fillText(label,80,y);y+=43}
-      ctx.font='800 40px Poppins, sans-serif';ctx.fillText(total?Math.round(100*(conteos[i]||0)/total)+'%':'—',890,y-45)
-      ctx.fillStyle='#27354A';ctx.beginPath();ctx.roundRect(80,y+12,920,23,12);ctx.fill()
-      ctx.fillStyle=eleccion===i?'#24E2C9':'#4A76EF';const width=total?920*(conteos[i]||0)/total:0
-      if(width>0){ctx.beginPath();ctx.roundRect(80,y+12,width,23,Math.min(12,width/2));ctx.fill()}
-      y+=100
+    const top=Math.max(720,y+55),available=1610-top
+    let questionSize=45,optionSize=34,qLines,options,height
+    do{
+      ctx.font='800 '+questionSize+'px Poppins, sans-serif';qLines=lines(ctx,pregunta.pregunta,900)
+      ctx.font='700 '+optionSize+'px Poppins, sans-serif';options=pregunta.opciones.map(op=>lines(ctx,op.e+' '+op.t,745))
+      height=84+qLines.length*questionSize*1.3+35+options.reduce((sum,row)=>sum+row.length*optionSize*1.35+67,0)
+      if(height<=available||optionSize<=25)break
+      questionSize-=2;optionSize-=2
+    }while(true)
+    ctx.fillStyle='#FFFFFF';ctx.beginPath();ctx.roundRect(56,top,968,height,62);ctx.fill()
+    let cursor=top+62;ctx.fillStyle=ink;ctx.font='800 '+questionSize+'px Poppins, sans-serif'
+    for(const line of qLines){ctx.fillText(line,94,cursor);cursor+=questionSize*1.3}
+    cursor+=32
+    options.forEach((labels,i)=>{
+      const start=cursor;ctx.fillStyle=ink;ctx.font='700 '+optionSize+'px Poppins, sans-serif'
+      for(const label of labels){ctx.fillText(label,94,cursor);cursor+=optionSize*1.35}
+      ctx.textAlign='right';ctx.font='800 38px Poppins, sans-serif';ctx.fillText(total?Math.round(100*(conteos[i]||0)/total)+'%':'—',985,start);ctx.textAlign='left'
+      ctx.fillStyle='#F0F3F8';ctx.beginPath();ctx.roundRect(94,cursor+5,890,24,12);ctx.fill()
+      const width=total?890*(conteos[i]||0)/total:0
+      if(width>0){ctx.fillStyle=['#4A76EF','#F9A719','#24BFE2'][i];ctx.beginPath();ctx.roundRect(94,cursor+5,width,24,Math.min(12,width/2));ctx.fill()}
+      cursor+=67
     })
   }
-  ctx.fillStyle='#24E2C9';ctx.font='800 45px Poppins, sans-serif';ctx.fillText('¿Y tú qué eliges?',80,1700)
-  ctx.fillStyle='#FFFFFF';ctx.font='500 34px Poppins, sans-serif';ctx.fillText('suizamente.latido.ch',80,1760)
-  return {blob:await new Promise(resolve=>canvas.toBlob(resolve,'image/png')),enlace}
+  ctx.fillStyle='#F9A719';ctx.beginPath();ctx.roundRect(865,1670,60,155,30);ctx.fill()
+  ctx.fillStyle='#FA2F35';ctx.beginPath();ctx.roundRect(952,1600,60,155,30);ctx.fill()
+  ctx.fillStyle='#FFFFFF';ctx.font='800 52px Poppins, sans-serif';ctx.fillText('¿Y tú qué eliges? 🤔',78,1745)
+  ctx.font='700 40px Poppins, sans-serif';ctx.fillText('👉 Juega en suizamente.latido.ch',78,1830)
+  const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/png'))
+  if(!blob)throw new Error('Image unavailable')
+  return {blob,enlace}
 }
-export async function compartirHistoria(options) {
-  const {blob,enlace}=await crearHistoria(options),file=new File([blob],'suizamente.png',{type:'image/png'})
+export async function compartirHistoria(options){
+  const {blob,enlace}=options.historia||await crearHistoria(options),file=new File([blob],'suizamente.png',{type:'image/png'})
   if(navigator.canShare?.({files:[file]})&&navigator.share){try{await navigator.share({files:[file],title:'Suizamente'});return 'Imagen compartida.'}catch(error){if(error.name==='AbortError')return ''}}
   const url=URL.createObjectURL(blob),link=document.createElement('a');link.href=url;link.download='suizamente.png';link.click();setTimeout(()=>URL.revokeObjectURL(url),10000)
   try{await navigator.clipboard.writeText(enlace);return 'Imagen descargada y enlace copiado.'}catch{return 'Imagen descargada.'}
