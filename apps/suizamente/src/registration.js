@@ -19,12 +19,14 @@ export async function completeRegistrationProfile({client, socialApi}) {
     body:JSON.stringify(body), signal:AbortSignal.timeout(15000),
   })
   if (!response.ok) throw new Error('No se ha podido guardar tu perfil. Tu cuenta ya está creada; vuelve a intentarlo.')
-  const {error} = await client.auth.updateUser({data:{suizamente_perfil_pendiente:null}})
+  const {error} = await client.auth.updateUser({data:{suizamente_perfil_pendiente:null,suizamente_necesita_perfil:false}})
   if (error) throw new Error('No se ha podido completar el perfil. Vuelve a intentarlo.')
 }
 
-export function mountSuizamenteRegistration(root, {client, redirectTo, backHref, onLogin, onGoogle, onComplete}) {
-  let disposed=false, submitting=false, step=0, choices=null
+export const needsRegistrationProfile = user => user?.user_metadata?.suizamente_necesita_perfil === true
+
+export function mountSuizamenteRegistration(root, {client, socialApi, redirectTo, backHref, onLogin, onGoogle, onComplete, profileOnly=false, initialUser=null}) {
+  let disposed=false, submitting=false, step=profileOnly?1:0, choices=null, accountUser=null, confirmationRequired=false
   const values={email:'',password:'',name:'',pais:'',canton:'',anosSuiza:'',terms:false}
   const message=(text,error=false)=>{
     const node=root.querySelector('#message')
@@ -32,30 +34,31 @@ export function mountSuizamenteRegistration(root, {client, redirectTo, backHref,
   }
   function remember(form) {
     const fields=new FormData(form)
-    for(const key of ['email','password','name','pais','canton','anosSuiza'])if(fields.has(key))values[key]=String(fields.get(key))
-    if(fields.has('name'))values.terms=fields.has('terms')
+    for(const key of ['email','password','name','pais','canton','anosSuiza'])if(fields.has(key)&&(choices||!['pais','canton','anosSuiza'].includes(key)))values[key]=String(fields.get(key))
+    if(form.elements.namedItem('terms'))values.terms=fields.has('terms')
   }
+  const draftKey=()=>accountUser?.id?'suizamente:registro:'+accountUser.id:null
+  function saveDraft(){try{const key=draftKey();if(key)sessionStorage.setItem(key,JSON.stringify(Object.fromEntries(['name','pais','canton','anosSuiza'].map(k=>[k,values[k]]))))}catch{/* The profile form also works without storage. */}}
+  function restoreDraft(){try{const saved=JSON.parse(sessionStorage.getItem(draftKey())||'{}');for(const k of ['name','pais','canton','anosSuiza'])if(typeof saved[k]==='string')values[k]=saved[k]}catch{}}
   const options=(list,selected,placeholder)=>'<option value="">'+placeholder+'</option>'+Object.entries(list).map(([id,label])=>`<option value="${escape(id)}" ${selected===id?'selected':''}>${escape(label)}</option>`).join('')
   function render() {
     if(disposed)return
     root.innerHTML=`<section class="suizamente-access" data-theme="light"><div class="suizamente-access__inner">
-      ${step?'<button class="suizamente-access__back" type="button" data-back aria-label="Volver al correo y contraseña">←</button>':`<a class="suizamente-access__back" href="${escape(backHref)}" aria-label="Volver">←</a>`}
-      <header class="suizamente-access__heading"><img src="/suizamente/logo.svg" width="72" height="54" alt="Suizamente"><p class="suizamente-access__step">Paso ${step+1} de 2</p><h1>${step?'Tu perfil en Suizamente':'Crea tu cuenta'}</h1><p>${step?'Elige el nombre con el que te verá la comunidad.':'Una misma cuenta para Suizamente y Latido. Guarda tus puntos, rachas y medallas.'}</p></header>
+      ${!step?`<a class="suizamente-access__back" href="${escape(backHref)}" aria-label="Volver">←</a>`:''}
+      <header class="suizamente-access__heading"><img src="/suizamente/logo.svg" width="72" height="54" alt="Suizamente"><h1>${step?'Tu perfil en Suizamente':'Crea tu cuenta'}</h1><p>${step?'Tu cuenta está creada. Elige cómo te verá la comunidad.':'Una misma cuenta para Suizamente y Latido.'}</p></header>
       <form id="registration-form">
         ${step?`<label>Nombre de usuario<input name="name" autocomplete="nickname" minlength="2" maxlength="80" value="${escape(values.name)}" placeholder="Tu nombre en el juego" required aria-describedby="name-hint"></label><p class="suizamente-access__hint" id="name-hint">Obligatorio. Será tu nombre visible en Suizamente y Latido.</p>
-          <label>País de origen<select name="pais" aria-label="País de origen">${options(choices.PAISES,values.pais,'Prefiero no indicarlo')}</select></label>
-          <label>Cantón<select name="canton" aria-label="Cantón">${options(choices.CANTONES,values.canton,'Elige tu cantón (opcional)')}</select></label>
-          <label>¿Cuánto llevas en Suiza?<select name="anosSuiza" aria-label="¿Cuánto llevas en Suiza?">${options(choices.ANOS,values.anosSuiza,'Prefiero no indicarlo')}</select></label>
-          <label class="suizamente-access__check"><input name="terms" type="checkbox" ${values.terms?'checked':''} required><span>Acepto los <a href="https://www.latido.ch/terminos" target="_blank" rel="noopener">términos</a> y he leído la <a href="https://www.latido.ch/privacidad" target="_blank" rel="noopener">política de privacidad</a>.</span></label>`:
-          `<label>Email<input name="email" type="email" autocomplete="email" maxlength="254" value="${escape(values.email)}" placeholder="tu@email.com" required></label><label>Contraseña<input name="password" type="password" autocomplete="new-password" minlength="8" maxlength="254" value="${escape(values.password)}" placeholder="Mínimo 8 caracteres" required></label>`}
-        <button class="suizamente-access__primary" type="submit">${step?'Guardar perfil y crear cuenta':'Crear cuenta'}</button>
+          <label>País de origen<select name="pais" aria-label="País de origen">${options(choices?.PAISES||{},values.pais,'Prefiero no indicarlo')}</select></label>
+          <label>Cantón<select name="canton" aria-label="Cantón">${options(choices?.CANTONES||{},values.canton,'Elige tu cantón (opcional)')}</select></label>
+          <label>¿Cuánto llevas en Suiza?<select name="anosSuiza" aria-label="¿Cuánto llevas en Suiza?">${options(choices?.ANOS||{},values.anosSuiza,'Prefiero no indicarlo')}</select></label>`:
+          `<label>Email<input name="email" type="email" autocomplete="email" maxlength="254" value="${escape(values.email)}" placeholder="tu@email.com" required></label><label>Contraseña<input name="password" type="password" autocomplete="new-password" minlength="8" maxlength="254" value="${escape(values.password)}" placeholder="Mínimo 8 caracteres" required></label><label class="suizamente-access__check"><input name="terms" type="checkbox" ${values.terms?'checked':''} required><span>Acepto los <a href="https://www.latido.ch/terminos" target="_blank" rel="noopener">términos</a> y he leído la <a href="https://www.latido.ch/privacidad" target="_blank" rel="noopener">política de privacidad</a>.</span></label>`}
+        <button class="suizamente-access__primary" type="submit" ${step&&!choices?'disabled':''}>${step?'Guardar perfil':'Crear cuenta'}</button>
       </form><p id="message" class="suizamente-access__message" role="status" aria-live="polite"></p>
       ${!step&&onGoogle?'<div class="suizamente-access__divider" aria-hidden="true">o</div><div class="suizamente-access__providers"><button type="button" id="register-google">Continuar con Google</button></div>':''}
-      <footer class="suizamente-access__footer"><button type="button" data-login>Ya tengo cuenta · Entrar</button></footer>
+      ${!step||confirmationRequired?'<footer class="suizamente-access__footer"><button type="button" data-login>Ya tengo cuenta · Entrar</button></footer>':''}
     </div></section>`
-    root.querySelector('[data-login]').onclick=()=>{if(!submitting){values.password='';onLogin()}}
-    const back=root.querySelector('[data-back]')
-    if(back)back.onclick=()=>{remember(root.querySelector('form'));step=0;render()}
+    const login=root.querySelector('[data-login]')
+    if(login)login.onclick=()=>{if(!submitting){values.password='';onLogin()}}
     const google=root.querySelector('#register-google')
     if(google)google.onclick=()=>onGoogle()
     root.querySelector('form').onsubmit=async event=>{
@@ -63,36 +66,53 @@ export function mountSuizamenteRegistration(root, {client, redirectTo, backHref,
       if(submitting)return
       const form=event.currentTarget
       remember(form)
-      if(!step){
-        values.email=values.email.trim().toLowerCase()
-        if(!choices)await loaded
-        if(disposed)return
-        if(!choices){message('No se han podido cargar las opciones del perfil. Recarga para volver a intentarlo.',true);return}
-        step=1;render();root.querySelector('[name="name"]').focus({preventScroll:true});return
-      }
-      values.name=values.name.trim().replace(/\s+/g,' ')
-      if(values.name.length<2){message('Introduce un nombre de usuario de al menos 2 caracteres.',true);root.querySelector('[name="name"]').focus();return}
+      if(step){values.name=values.name.trim().replace(/\s+/g,' ');if(values.name.length<2){message('Introduce un nombre de usuario de al menos 2 caracteres.',true);root.querySelector('[name="name"]').focus();return}}
       submitting=true
       root.querySelectorAll('input,select,button').forEach(node=>{node.disabled=true})
-      message('Creando tu cuenta…')
+      message(step?'Guardando tu perfil…':'Creando tu cuenta…')
       try{
-        const {data,error}=await client.auth.signUp({email:values.email,password:values.password,options:{emailRedirectTo:redirectTo,data:{name:values.name,canton:values.canton,languages:[],latido_onboarding_completed:false,suizamente_perfil_pendiente:{pais:values.pais,canton:values.canton,anosSuiza:values.anosSuiza}}}})
-        if(error){message(registrationError(error),true);return}
+        if(!step){
+          values.email=values.email.trim().toLowerCase()
+          const {data,error}=await client.auth.signUp({email:values.email,password:values.password,options:{emailRedirectTo:redirectTo,data:{latido_onboarding_completed:false,suizamente_necesita_perfil:true}}})
+          if(disposed)return
+          if(error){message(registrationError(error),true);return}
+          if(!data?.user||(!data.session&&data.user.identities?.length===0)){message('Revisa tu correo. Si ya tienes una cuenta de Latido, pulsa «Ya tengo cuenta · Entrar».');values.password='';return}
+          accountUser=data.user;confirmationRequired=!data.session
+          restoreDraft();step=1;await loaded
+          if(disposed)return
+          render();root.querySelector('[name="name"]').focus({preventScroll:true})
+          if(confirmationRequired)message('Confirma tu correo para guardar el perfil. Puedes rellenarlo mientras tanto.')
+          return
+        }
+        saveDraft()
+        let current=(await client.auth.getSession()).data.session
+        if(!current&&values.password){
+          const result=await client.auth.signInWithPassword({email:values.email,password:values.password})
+          if(result.error?.code==='email_not_confirmed'||/email not confirmed/i.test(result.error?.message||'')){message('Confirma tu correo y vuelve a pulsar «Guardar perfil». Tus opciones se conservan.',true);return}
+          if(result.error)throw new Error('Entra con tu cuenta para guardar el perfil.')
+          current=result.data.session
+        }
+        if(disposed)return
+        if(!current?.user)throw new Error('Confirma tu correo y entra con tu cuenta para guardar el perfil.')
+        if(accountUser?.id&&current.user.id!==accountUser.id)throw new Error('Entra con la cuenta que acabas de crear para guardar este perfil.')
+        const profile={pais:values.pais,canton:values.canton,anosSuiza:values.anosSuiza}
+        const saved=await client.from('profiles').upsert({id:current.user.id,email:current.user.email,name:values.name,canton:values.canton||null},{onConflict:'id'})
+        if(saved.error)throw new Error('No se ha podido guardar tu nombre. Vuelve a intentarlo.')
+        const updated=await client.auth.updateUser({data:{name:values.name,canton:values.canton,suizamente_necesita_perfil:true,suizamente_perfil_pendiente:profile}})
+        if(updated.error)throw new Error('No se ha podido guardar tu perfil. Vuelve a intentarlo.')
+        await completeRegistrationProfile({client,socialApi})
         values.password=''
-        if(data?.session){onComplete();return}
-        // Supabase deliberately obscures duplicate emails; never claim a new
-        // account exists until the email link has authenticated its owner.
-        root.querySelector('form').remove()
-        root.querySelector('[data-back]')?.remove()
-        message('Revisa tu correo para confirmar la cuenta. Si ya tienes una cuenta de Latido, pulsa «Ya tengo cuenta · Entrar».')
-      }catch{message('No se ha podido conectar. Comprueba tu conexión y vuelve a intentarlo.',true)}
+        try{sessionStorage.removeItem(draftKey())}catch{}
+        if(!disposed)onComplete()
+      }catch(error){if(!disposed)message(error.message||'No se ha podido conectar. Vuelve a intentarlo.',true)}
       finally{submitting=false;root.querySelectorAll('input,select,button').forEach(node=>{node.disabled=false})}
     }
-    root.querySelector('form').oninput=()=>message('')
+    root.querySelector('form').oninput=()=>{message('');if(step){remember(root.querySelector('form'));saveDraft()}}
   }
   // Load the same canonical choices used by the game, without copying lists.
   const choicesUrl=new URL('/suizamente/experiencia-datos.js',location.origin).href
-  const loaded=import(/* @vite-ignore */ choicesUrl).then(data=>{choices=data}).catch(()=>{})
+  const loaded=import(/* @vite-ignore */ choicesUrl).then(data=>{if(step&&!disposed)remember(root.querySelector('form'));choices=data;if(step&&!disposed)render()}).catch(()=>{})
+  if(profileOnly&&initialUser){accountUser=initialUser;values.name=accountUser.user_metadata?.name||'';values.email=accountUser.email;for(const k of ['pais','canton','anosSuiza']){const v=accountUser.user_metadata?.suizamente_perfil_pendiente?.[k];if(typeof v==='string')values[k]=v}restoreDraft()}
   render()
   return ()=>{disposed=true;values.password=''}
 }

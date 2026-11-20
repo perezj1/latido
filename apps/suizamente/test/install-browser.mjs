@@ -21,7 +21,7 @@ async function open(device,{installed=false,firstVisit=false}={}){
 try{
  const firstVisit=await open('iPhone 13',{firstVisit:true})
  await expect(firstVisit.page).toHaveURL(origin+'/bienvenida')
- await expect(firstVisit.page.frameLocator('iframe.game').getByRole('button',{name:'Empezar',exact:true})).toBeVisible()
+ await expect(firstVisit.page.frameLocator('iframe.game').getByRole('button',{name:'Crear cuenta',exact:true})).toBeVisible()
  await expect(firstVisit.page.locator('.suizamente-install-banner')).toHaveCount(0)
  await firstVisit.context.close()
  const ios=await open('iPhone 13')

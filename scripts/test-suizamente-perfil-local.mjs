@@ -2,16 +2,17 @@ import assert from 'node:assert/strict'
 import { mkdir } from 'node:fs/promises'
 import { chromium,expect,devices } from '@playwright/test'
 import { loadEnv } from 'vite'
-import { fixture,alice,users,session } from '../apps/suizamente/test/social-db.mjs'
+import { fixture,alice,bob,users,session } from '../apps/suizamente/test/social-db.mjs'
 
 // Exercise the running integrated host, rather than the standalone PWA preview.
 // All authentication and API operations use fixtures; production receives no writes.
 const origin='http://localhost:8080',env=loadEnv('development',process.cwd(),'VITE_')
 const storageKey='sb-'+new URL(env.VITE_SUPABASE_URL).hostname.split('.')[0]+'-auth-token'
+let updatedUser={...users[alice],user_metadata:{...users[alice].user_metadata}}
 const f=await fixture(),browser=await chromium.launch({headless:true}),logouts=[],errors=[],signups=[]
 try{
  const context=await browser.newContext({viewport:{width:375,height:667},reducedMotion:'reduce'})
- await context.addInitScript(({origin,key,value})=>{if(location.origin===origin){localStorage.setItem(key,JSON.stringify(value));localStorage.setItem('suizamente:bienvenida','true')}},{origin,key:storageKey,value:session(alice)})
+ await context.addInitScript(({origin,key,value})=>{if(location.origin===origin&&window===window.top&&!sessionStorage.getItem('fixture-seeded')){localStorage.setItem(key,JSON.stringify(value));localStorage.setItem('suizamente:bienvenida','true');sessionStorage.setItem('fixture-seeded','true')}},{origin,key:storageKey,value:session(alice)})
  const mockRoute=async route=>{
   const request=route.request(),url=new URL(request.url())
   if(url.origin===origin&&url.pathname.startsWith('/api/suizamente')){
@@ -22,9 +23,10 @@ try{
   if(url.origin===origin)return route.continue()
   if(url.hostname==='avatars.example.test')return route.fulfill({contentType:'image/svg+xml',body:'<svg xmlns="http://www.w3.org/2000/svg" width="80" height="80"><rect width="80" height="80" fill="#b8e4d6"/><circle cx="40" cy="30" r="15" fill="#2563eb"/></svg>'})
   if(url.pathname==='/auth/v1/logout'){logouts.push(url.searchParams.get('scope'));return route.fulfill({status:204,body:''})}
-  if(url.pathname==='/auth/v1/signup'){signups.push(request.postDataJSON());return route.fulfill({json:{...users[alice],identities:[]}})}
-  if(url.pathname==='/auth/v1/user')return route.fulfill({json:users[alice]})
+  if(url.pathname==='/auth/v1/signup'){signups.push(request.postDataJSON());return route.fulfill({json:{...users[bob],user_metadata:request.postDataJSON().data,identities:[{provider:'email'}]}})}
+  if(url.pathname==='/auth/v1/user'){if(request.method()==='PUT')updatedUser={...updatedUser,user_metadata:{...updatedUser.user_metadata,...request.postDataJSON().data}};return route.fulfill({json:updatedUser})}
   if(url.pathname==='/auth/v1/token')return route.fulfill({json:session(alice)})
+  if(url.pathname==='/rest/v1/profiles'&&request.method()==='POST'){const p=request.postDataJSON();await f.db.query('UPDATE public.profiles SET name=$1,canton=$2 WHERE id=$3',[p.name,p.canton,p.id]);return route.fulfill({status:201,json:{}})}
   if(url.pathname==='/rest/v1/profiles')return route.fulfill({json:{id:alice,name:'Nombre Latido',canton:'Zürich',banned:false,interests:[]}})
   if(url.pathname==='/rest/v1/rpc/get_my_account_access')return route.fulfill({json:{role:'member'}})
   return route.fulfill({json:[]})
@@ -51,8 +53,9 @@ try{
  await expect(game.locator('.s-entry-brand')).toBeVisible()
  await expect(game.getByText('Jugar sin cuenta',{exact:true})).toHaveCount(0)
  await page.screenshot({path:'output/suizamente-referencia/bienvenida-local-8080.png',fullPage:true})
- await game.getByRole('button',{name:'Empezar',exact:true}).click()
- await game.getByRole('button',{name:'Volver',exact:true}).click()
+ await game.getByRole('button',{name:'Crear cuenta',exact:true}).click()
+ await expect(page.getByRole('heading',{name:'Crea tu cuenta'})).toBeVisible()
+ await page.goto(origin+'/suizamente')
  await expect(page).toHaveURL(origin+'/suizamente')
  await expect(game.locator('[data-play="dilemas"]')).toBeVisible()
  await expect(game.locator('.s-home [data-go="/perfil"]')).toHaveCount(0)
@@ -63,22 +66,19 @@ try{
  await expect(page.getByRole('heading',{name:'Crea tu cuenta'})).toBeVisible()
  await page.getByLabel('Email',{exact:true}).fill('new@example.test')
  await page.getByLabel('Contraseña',{exact:true}).fill('password-only-for-fixture')
+ await page.getByRole('checkbox').check()
  await page.getByRole('button',{name:'Crear cuenta',exact:true}).click()
  await expect(page.getByRole('heading',{name:'Tu perfil en Suizamente'})).toBeVisible()
- assert.equal(signups.length,0)
- await page.getByRole('checkbox').check()
+ assert.equal(signups.length,1)
  await page.getByLabel('Nombre de usuario',{exact:true}).fill('  ')
- await page.getByRole('button',{name:'Guardar perfil y crear cuenta'}).click()
+ await page.getByRole('button',{name:'Guardar perfil'}).click()
  await expect(page.locator('#message')).toContainText('Introduce un nombre de usuario')
- assert.equal(signups.length,0)
+ assert.equal(signups.length,1)
  await page.getByLabel('Nombre de usuario',{exact:true}).fill(' Nuevo nombre ')
  await page.getByLabel('Cantón',{exact:true}).selectOption('BE')
  await page.screenshot({path:'output/suizamente-referencia/registro-perfil-local-8080.png',fullPage:true})
- await page.getByRole('button',{name:'Guardar perfil y crear cuenta'}).click()
- await expect(page.locator('#message')).toContainText('Revisa tu correo')
- assert.equal(signups.length,1)
- assert.equal(signups[0].data.name,'Nuevo nombre')
- assert.equal(signups[0].data.suizamente_perfil_pendiente.canton,'BE')
+ assert.equal(signups[0].data.name,undefined)
+ assert.equal(signups[0].data.suizamente_necesita_perfil,true)
  await page.getByRole('button',{name:/Ya tengo cuenta/}).click()
  await page.getByLabel('Email',{exact:true}).fill('alice@example.test')
  await page.getByLabel('Contraseña',{exact:true}).fill('password-only-for-fixture')
@@ -129,8 +129,26 @@ try{
  await expect(confirmation.frameLocator('iframe').getByRole('button',{name:'Cerrar sesión',exact:true})).toBeVisible()
  const savedProfile=(await f.db.query('SELECT pais,canton,anos_suiza FROM suizamente_social.jugadores WHERE usuario_id=$1',[alice])).rows[0]
  assert.deepEqual(savedProfile,{pais:'ES',canton:'BE',anos_suiza:'1a3'})
- assert.equal(await confirmation.evaluate(key=>JSON.parse(localStorage.getItem(key)).user.user_metadata.suizamente_perfil_pendiente,storageKey),undefined)
+ assert.equal(await confirmation.evaluate(key=>JSON.parse(localStorage.getItem(key)).user.user_metadata.suizamente_perfil_pendiente,storageKey),null)
  await confirmed.close()
+ const onboarding=await browser.newContext({viewport:{width:375,height:667},reducedMotion:'reduce'})
+ const newAccount=session(alice)
+ newAccount.user={...newAccount.user,user_metadata:{suizamente_necesita_perfil:true}}
+ await onboarding.addInitScript(({key,value,testOrigin})=>{if(location.origin===testOrigin&&window===window.top&&!sessionStorage.getItem('new-account')){localStorage.setItem(key,JSON.stringify(value));sessionStorage.setItem('new-account','true')}},{key:storageKey,value:newAccount,testOrigin:origin})
+ await onboarding.route('**/*',mockRoute)
+ const setup=await onboarding.newPage();setup.on('pageerror',error=>errors.push(error.message))
+ await setup.goto(origin+'/suizamente/perfil')
+ await expect(setup.getByRole('heading',{name:'Tu perfil en Suizamente'})).toBeVisible()
+ await setup.getByLabel('Nombre de usuario',{exact:true}).fill('  ')
+ await setup.getByRole('button',{name:'Guardar perfil',exact:true}).click()
+ await expect(setup.getByRole('alert')).toContainText('Introduce un nombre de usuario')
+ await setup.getByLabel('Nombre de usuario',{exact:true}).fill('Nombre nuevo')
+ await setup.getByLabel('Cantón',{exact:true}).selectOption('ZH')
+ await setup.getByRole('button',{name:'Guardar perfil',exact:true}).click()
+ await expect(setup.frameLocator('iframe').locator('h1').last()).toHaveText('Nombre nuevo')
+ assert.equal((await f.db.query('SELECT name FROM public.profiles WHERE id=$1',[alice])).rows[0].name,'Nombre nuevo')
+ assert.equal(await setup.evaluate(key=>JSON.parse(localStorage.getItem(key)).user.user_metadata.suizamente_necesita_perfil,storageKey),false)
+ await onboarding.close()
  assert.deepEqual(errors,[])
  console.log('PASS: localhost:8080 profile logout, login without a back control, reference login/welcome without guest buttons and a single profile avatar in the bottom navigation. Auth/API mocked, no production writes.')
  await context.close()

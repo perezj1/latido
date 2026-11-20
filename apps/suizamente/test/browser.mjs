@@ -16,6 +16,7 @@ let browser
 const server=await preview({preview:{host:'127.0.0.1',port:5271,strictPort:true}})
 await mkdir('test-results',{recursive:true})
 async function context(options={}) {
+  let authUser={...user,user_metadata:{...user.user_metadata}}
   const ctx=await browser.newContext({viewport:{width:390,height:844},reducedMotion:'reduce',...options})
   await ctx.addInitScript(()=>{window.SUIZAMENTE_CONFIG={experiencia:false};window.SUIZAMENTE_DISABLE_SSO=true})
   ctx.on('page',page=>page.on('pageerror',e=>errors.push(e.message)))
@@ -29,14 +30,16 @@ async function context(options={}) {
     try {body=req.postDataJSON()} catch {body=null}
     requests.push({url,method:req.method(),body,headers:req.headers()})
     if (url.pathname.includes('/auth/v1/')) {
-      if (url.pathname.endsWith('/token')) return send(session)
-      if (url.pathname.endsWith('/user')) return send(user)
+      if (url.pathname.endsWith('/token')) {if(ctx.pendingConfirmation)return send({code:'email_not_confirmed',message:'Email not confirmed'},400);return send({...session,user:authUser})}
+      if (url.pathname.endsWith('/user')) {if(req.method()==='PUT')authUser={...authUser,user_metadata:{...authUser.user_metadata,...body.data}};return send(authUser)}
       if (url.pathname.endsWith('/logout')) return send({})
-      if (url.pathname.endsWith('/signup')) return send({...user,identities:[]})
+      if (url.pathname.endsWith('/signup')) {ctx.pendingConfirmation=true;authUser={...user,user_metadata:{...body.data},identities:[{provider:'email'}]};return send(authUser)}
       if (url.pathname.endsWith('/recover')) return send({})
       if (url.pathname.endsWith('/authorize')) return route.fulfill({contentType:'text/html',body:'<title>Proveedor simulado</title>Google simulado'})
       return send({})
     }
+    if(url.pathname==='/rest/v1/profiles')return send({},201)
+    if(url.pathname.endsWith('/functions/v1/suizamente-social/profile')){assert.equal(req.method(),'PUT');return send({perfil:{}})}
     if (url.pathname.includes('/functions/v1/suizamente-votos/')) {
       const identity=req.headers().authorization===`Bearer ${access}` ? user.id : req.headers()['x-jugador-id']
       if (!votes.has(identity)) votes.set(identity,{})
@@ -132,27 +135,37 @@ try {
   await page.screenshot({path:'test-results/cuenta-movil.png',fullPage:true})
   await page.locator('input[type="email"]').fill(user.email)
   await page.getByLabel('Contraseña',{exact:true}).fill('password-only-for-mock')
+  await page.getByRole('checkbox').check()
   await page.getByRole('button',{name:'Crear cuenta',exact:true}).click()
   await expect(page.getByRole('heading',{name:'Tu perfil en Suizamente'})).toBeVisible()
-  assert.equal(requests.filter(r=>r.url.pathname.endsWith('/signup')).length,0)
+  assert.equal(requests.filter(r=>r.url.pathname.endsWith('/signup')).length,1)
   await page.getByLabel('Nombre de usuario',{exact:true}).fill('  ')
-  await page.getByRole('checkbox').check()
-  await page.getByRole('button',{name:'Guardar perfil y crear cuenta',exact:true}).click()
+  await page.getByRole('button',{name:'Guardar perfil',exact:true}).click()
   await expect(page.locator('#message')).toContainText('Introduce un nombre de usuario')
-  assert.equal(requests.filter(r=>r.url.pathname.endsWith('/signup')).length,0)
+  assert.equal(requests.filter(r=>r.url.pathname.endsWith('/signup')).length,1)
   await page.getByLabel('Nombre de usuario',{exact:true}).fill('  Prueba  ')
   await page.getByLabel('País de origen',{exact:true}).selectOption('ES')
   await page.getByLabel('Cantón',{exact:true}).selectOption('ZH')
   await page.getByLabel('¿Cuánto llevas en Suiza?',{exact:true}).selectOption('1a3')
   await page.screenshot({path:'test-results/registro-perfil.png',fullPage:true})
-  await page.getByRole('button',{name:'Guardar perfil y crear cuenta',exact:true}).click()
-  await expect(page.locator('#message')).toContainText('Revisa tu correo')
+  await page.getByRole('button',{name:'Guardar perfil',exact:true}).click()
+  await expect(page.locator('#message')).toContainText('Confirma tu correo')
   const signup=requests.find(r=>r.url.pathname.endsWith('/signup'))
   assert.equal(signup.url.searchParams.get('redirect_to'),origin+'/auth/callback')
   assert.equal(signup.body.data.latido_onboarding_completed,false)
-  assert.equal(signup.body.data.name,'Prueba')
-  assert.deepEqual(signup.body.data.suizamente_perfil_pendiente,{pais:'ES',canton:'ZH',anosSuiza:'1a3'})
+  assert.equal(signup.body.data.name,undefined)
+  assert.equal(signup.body.data.suizamente_necesita_perfil,true)
   assert.equal(signup.body.code_challenge_method,'s256')
+  guest.pendingConfirmation=false
+  await page.getByRole('button',{name:'Guardar perfil',exact:true}).click()
+  await expect(game.locator('.title')).toHaveText('Suizamente')
+  assert.equal(requests.filter(r=>r.url.pathname.endsWith('/signup')).length,1)
+  const profileSave=requests.find(r=>r.url.pathname.endsWith('/suizamente-social/profile'))
+  assert.deepEqual(profileSave.body,{pais:'ES',canton:'ZH',anosSuiza:'1a3'})
+  const named=requests.find(r=>r.url.pathname==='/rest/v1/profiles'&&r.method==='POST')
+  assert.equal(named.body.name,'Prueba')
+  await page.goto(origin+'/cuenta')
+  await page.getByRole('button',{name:'Cerrar sesión en esta app'}).click()
   await page.getByRole('button',{name:/Ya tengo cuenta/}).click()
   await page.getByRole('button',{name:'¿Has olvidado la contraseña?'}).click()
   await page.locator('input[type="email"]').fill(user.email)
@@ -177,13 +190,14 @@ try {
   await page.getByLabel('Nueva contraseña',{exact:true}).fill('new-password-for-mock')
   await page.getByLabel('Repite la contraseña').fill('different-password')
   const updates=()=>requests.filter(r=>r.url.pathname.endsWith('/user')&&r.method==='PUT').length
+  const updatesBeforePassword=updates()
   await page.getByRole('button',{name:'Guardar contraseña'}).click()
   await expect(page.locator('#message')).toContainText('no coinciden')
-  assert.equal(updates(),0)
+  assert.equal(updates(),updatesBeforePassword)
   await page.getByLabel('Repite la contraseña').fill('new-password-for-mock')
   await page.getByRole('button',{name:'Guardar contraseña'}).click()
   await expect(page.getByRole('button',{name:'Cerrar sesión en esta app'})).toBeVisible()
-  assert.equal(updates(),1)
+  assert.equal(updates(),updatesBeforePassword+1)
   await page.getByRole('button',{name:'Cerrar sesión en esta app'}).click()
   await expect(page.getByRole('button',{name:'Crear cuenta',exact:true})).toBeVisible()
   assert.equal(requests.find(r=>r.url.pathname.endsWith('/logout')).url.searchParams.get('scope'),'local')
@@ -197,6 +211,23 @@ try {
   await expect(page.locator('body')).toContainText('conexión')
   await expect(page.locator('input')).toHaveCount(0)
   await guest.close()
+
+  // The generated account/welcome HTML must show the supplied animation,
+  // never a plain placeholder page while JavaScript is downloading.
+  for(const route of ['/cuenta','/bienvenida']){
+    const loading=await context()
+    const loadingPage=await loading.newPage()
+    let release
+    const ready=new Promise(resolve=>{release=resolve})
+    await loadingPage.route(origin+'/assets/index-*.js',async request=>{await ready;await request.continue()})
+    await loadingPage.goto(origin+route,{waitUntil:'commit'})
+    await expect(loadingPage.locator('.startup')).toBeVisible()
+    await expect(loadingPage.locator('.boot')).toBeHidden()
+    await loadingPage.screenshot({path:'test-results/carga-'+route.slice(1)+'.png',fullPage:true})
+    release()
+    await expect(loadingPage.locator('.startup')).toHaveCount(0)
+    await loading.close()
+  }
 
   // Delayed real totals must not animate digits or reflow long answer labels.
   const percentages=await context({reducedMotion:'no-preference',viewport:{width:320,height:740}})
@@ -272,12 +303,12 @@ try {
   })
   const confirmation=await confirmed.newPage()
   await confirmation.goto(origin+'/auth/callback')
-  await expect(confirmation.getByRole('heading',{name:'Tu cuenta está creada'})).toBeVisible()
-  await expect(confirmation.getByRole('alert')).toContainText('vuelve a intentarlo')
-  await confirmation.getByRole('link',{name:'Volver a intentarlo'}).click()
+  await expect(confirmation.getByRole('heading',{name:'Tu perfil en Suizamente'})).toBeVisible()
+  await confirmation.getByLabel('Nombre de usuario',{exact:true}).fill('Prueba')
+  await confirmation.getByRole('button',{name:'Guardar perfil',exact:true}).click()
   await expect(confirmation.frameLocator('iframe').locator('.title')).toHaveText('Suizamente')
   assert.deepEqual(profileWrites,[pending,pending])
-  assert.equal(await confirmation.evaluate(key=>JSON.parse(localStorage.getItem(key)).user.user_metadata.suizamente_perfil_pendiente,storageKey),undefined)
+  assert.equal(await confirmation.evaluate(key=>JSON.parse(localStorage.getItem(key)).user.user_metadata.suizamente_perfil_pendiente,storageKey),null)
   await confirmed.close()
 
   const oauth=await context()

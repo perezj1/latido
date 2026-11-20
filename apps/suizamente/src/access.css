@@ -20,4 +20,9 @@
 .suizamente-access__check input{width:18px;height:18px;flex:none;margin:3px 0;accent-color:#4a76ef}
 .suizamente-access__check a{color:#365ed0;text-decoration:underline}
 .suizamente-access button.suizamente-access__back{border:0;padding:0}
+.suizamente-access__message[role="status"]{color:#5a6577}
+.suizamente-profile-sync{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;padding:24px}
+.suizamente-profile-sync>img{animation:suizamente-sync 1.3s ease-in-out infinite}
+@keyframes suizamente-sync{50%{opacity:.5}}
+@media(prefers-reduced-motion:reduce){.suizamente-profile-sync>img{animation:none}}
 @media(max-height:740px){.suizamente-access__inner{gap:12px;padding-top:14px}.suizamente-access__heading>img{width:64px;height:48px}.suizamente-access__heading p{font-size:14px}}

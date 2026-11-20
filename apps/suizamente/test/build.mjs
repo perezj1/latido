@@ -26,6 +26,9 @@ for(const size of [72,96]){
 }
 for (const route of ['cuenta','auth/callback','auth/restablecer','retos','ranking','libreta','perfil','perfil/editar','amigos','medallas','ajustes','proponer','moderacion','avisos','jugar']) {
   const html=await read(`dist/${route}/index.html`)
+  assert.ok(html.includes('class="startup"'),'Missing startup animation: '+route)
+  assert.ok(html.includes('class="page boot"'),'Text fallback must remain hidden when JS runs: '+route)
+  assert.equal(html.includes('Abriendo tu cuenta'),false)
   assert.match(html,/<meta name="robots" content="noindex, nofollow">/)
   assert.match(html,/<meta name="referrer" content="no-referrer">/)
   assert.match(html,new RegExp('href="https://suizamente.latido.ch/'+route+'"'))

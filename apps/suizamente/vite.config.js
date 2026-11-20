@@ -116,10 +116,12 @@ export default defineConfig(({ command, mode }) => {
             .replace(/(<meta name="robots" content=")[^"]+/, `$1${privatePage || preview ? 'noindex, nofollow' : 'index, follow'}`)
           if (privatePage) html = html.replace(/(<meta name="referrer" content=")[^"]+/, '$1no-referrer')
           let fallback = privatePage
-            ? '<section class="page"><h1>Tu cuenta de Suizamente</h1><p>Abriendo tu cuenta…</p><noscript>Activa JavaScript para entrar.</noscript><a href="/">Volver al juego</a></section>'
+            ? '<section class="page"><h1>Suizamente</h1><noscript>Activa JavaScript para crear tu cuenta o entrar.</noscript></section>'
             : '<section class="suizamente-install-page"><img class="suizamente-install-logo" src="/suizamente/icons/suizamente-circle-logo-192.png" width="80" height="80" alt="Suizamente"><h1>Suizamente en tu móvil</h1><p>Un juego de Latido.ch para aprender sobre Suiza.</p><h2>iPhone y iPad</h2><ol><li>Abre suizamente.latido.ch en Safari.</li><li>Pulsa Compartir; si está dentro del menú •••, ábrelo primero.</li><li>Elige Añadir a pantalla de inicio y confirma Añadir.</li></ol><h2>Android</h2><p>En Chrome, abre el menú ⋮ y elige Instalar aplicación o Añadir a pantalla de inicio.</p><h2>Vídeo de instalación</h2><p>El vídeo usa Latido como ejemplo. Sigue los mismos pasos en Suizamente.</p><video src="/videos/install-ios.mp4" controls playsinline preload="none" aria-label="Vídeo para instalar Suizamente en iPhone" style="width:100%;max-height:420px"></video><p>En Chrome o Edge en un ordenador, utiliza el icono de instalación de la barra de direcciones o el menú del navegador.</p><p>Necesitas conexión para jugar y consultar la comunidad.</p><a href="/">Jugar a Suizamente</a></section>'
           if (route==='/bienvenida'||route==='/como-se-juega') fallback='<section class="page"><h1>'+routeTitles[route]+'</h1><p>Elige entre dilemas suizos y preguntas con respuesta. Descubre qué eligió la comunidad, aprende un dato en cada respuesta y guarda tus favoritos.</p><p>Juega el reto diario o invita a tus amigos a un duelo con las mismas preguntas.</p><a href="/">Jugar a Suizamente</a></section>'
-          html = html.replace(/(<main id="app">)[\s\S]*?(<\/main>)/, `$1${fallback}$2`)
+          // Keep the real startup animation on every route. Text alternatives
+          // are for no-JavaScript readers and must never flash before the app.
+          html = html.replace(/<section class="page boot">[\s\S]*?<\/section>/, `<section class="page boot">${fallback}</section>`)
           const directory = path.join(output, route.slice(1))
           await mkdir(directory, { recursive:true })
           await writeFile(path.join(directory, 'index.html'), html)

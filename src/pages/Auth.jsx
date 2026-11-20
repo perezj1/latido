@@ -13,7 +13,7 @@ import { getGooglePostAuthPath } from '../lib/oauthOnboarding'
 import toast from 'react-hot-toast'
 import './Auth.css'
 import '../../apps/suizamente/src/access.css'
-import { mountSuizamenteRegistration } from '../../apps/suizamente/src/registration.js'
+import SuizamenteRegistration from '../components/SuizamenteRegistration'
 
 const GOOGLE_AUTH_ENABLED = true
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID
@@ -578,16 +578,6 @@ function AuthFormScreen({ onBack, variant='', children }) {
     </section>
   )
 }
-function SuizamenteRegistration({onLogin,onGoogle,onComplete}) {
-  const root=useRef(null),actions=useRef(null)
-  actions.current={onLogin,onGoogle,onComplete}
-  useEffect(()=>mountSuizamenteRegistration(root.current,{
-    client:supabase,redirectTo:window.location.origin+'/suizamente/perfil',backHref:'/suizamente/bienvenida',
-    onLogin:()=>actions.current.onLogin(),onGoogle:()=>actions.current.onGoogle(),onComplete:()=>actions.current.onComplete(),
-  }),[])
-  return <div ref={root}/>
-}
-
 export default function Auth() {
   const { signIn, signInWithGoogle, signInWithGoogleIdToken, signUp } = useAuth()
   const navigate = useNavigate()

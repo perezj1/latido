@@ -35,6 +35,7 @@ export async function crearExperiencia({container,questions,identity,getIdentity
   }
   const logged=()=>!!identity.userId
   const logoutButton=()=>identity.canLogout?button('Cerrar sesión','data-logout','secondary full'):''
+  const register=()=>{const url=new URL(identity.accountPath||'/cuenta',location.origin);url.searchParams.set('mode','register');window.top.location.assign(url.pathname+url.search)}
   const login=()=>{window.parent===window?location.assign('/cuenta'):window.top.location.assign(identity.accountPath||'/cuenta')}
   function requireAccount(){if(logged())return true;toast('Entra con tu cuenta de Latido para continuar.');login();return false}
   function notify(path){identity.path=path;if(window.parent!==window)window.parent.postMessage({type:'suizamente:navigate',path},location.origin)}
@@ -61,7 +62,7 @@ export async function crearExperiencia({container,questions,identity,getIdentity
       ${q&&c?`<button type="button" class="s-card s-row" data-question="${q.id}" style="text-align:left;color:var(--ink)"><span style="font-size:30px">👥</span><span><span class="s-kicker">La comunidad hoy</span><br><b>El ${c.pct}% eligió «${esc(q.opciones[c.opcion].t)}». ¿Y tú?</b></span></button>`:''}
       ${!logged()?button('Entrar con mi cuenta de Latido','data-login','secondary full'):''}<p class="s-soft" style="text-align:center">Un juego de <a href="https://latido.ch" target="_blank" rel="noopener">Latido.ch</a></p>`
   }
-  function welcome(){return `<div class="s-entry-brand"><img src="/suizamente/logo.svg" alt="Suizamente" width="140" height="106"><h1><span>Suiza</span><span>mente</span></h1><p>Aprende cómo funciona Suiza jugando con la comunidad hispanohablante.</p></div><div class="s-entry-cards" aria-hidden="true"><div class="s-entry-card dilemma"><span>🤔 ¿QUÉ PREFIERES?</span><b>¿Fondue o raclette en pleno agosto?</b></div><div class="s-entry-card myth"><span>🕵️ ¿VERDAD O MITO?</span><b>Zúrich tiene metro.</b><div><span>Verdad</span><span>Mito</span></div></div><div class="s-entry-card community"><p>Compara <b>tu elección</b> con la comunidad.</p><div class="s-entry-progress"><i></i></div></div></div><div class="s-entry-actions"><button class="s-entry-primary" type="button" data-go="/como-se-juega">Empezar</button><button class="s-entry-login" type="button" data-login>Ya tengo cuenta</button><p>Un juego de <b>latido.ch</b></p></div>`}
+  function welcome(){return `<div class="s-entry-brand"><img src="/suizamente/logo.svg" alt="Suizamente" width="140" height="106"><h1><span>Suiza</span><span>mente</span></h1><p>Aprende cómo funciona Suiza jugando con la comunidad hispanohablante.</p></div><div class="s-entry-cards" aria-hidden="true"><div class="s-entry-card dilemma"><span>🤔 ¿QUÉ PREFIERES?</span><b>¿Fondue o raclette en pleno agosto?</b></div><div class="s-entry-card myth"><span>🕵️ ¿VERDAD O MITO?</span><b>Zúrich tiene metro.</b><div><span>Verdad</span><span>Mito</span></div></div><div class="s-entry-card community"><p>Compara <b>tu elección</b> con la comunidad.</p><div class="s-entry-progress"><i></i></div></div></div><div class="s-entry-actions"><button class="s-entry-primary" type="button" data-register>Crear cuenta</button><button class="s-entry-login" type="button" data-login>Ya tengo cuenta</button><p>Un juego de <b>latido.ch</b></p></div>`}
 
   function how(){return `${header('Así se juega')}<div class="s-steps">${[['🤔','Elige tu respuesta','Dilemas sin respuesta mala y preguntas en las que solo una es verdad.'],['👥','Descubre a la comunidad','Mira los porcentajes reales de quienes han respondido.'],['💡','Aprende algo nuevo','Cada respuesta viene con un dato sobre Suiza. Guarda tus favoritos.'],['⚡','Juega a tu ritmo','Prueba el reto del día o reta a tus amigos a las mismas preguntas.']].map(([emoji,title,text])=>`<div class="s-step"><span aria-hidden="true">${emoji}</span><div><b>${title}</b><p>${text}</p></div></div>`).join('')}</div>${button('Empezar a jugar','data-welcome','full')}`}
   async function retos(){
@@ -180,6 +181,7 @@ export async function crearExperiencia({container,questions,identity,getIdentity
       try{
         if(data.go!==undefined){navigate(data.go);return}
         if('login'in data){login();return}
+        if('register'in data){register();return}
         if('logout'in data&&identity.canLogout){target.disabled=true;target.textContent='Cerrando sesión…';window.parent.postMessage({type:'suizamente:logout'},location.origin);return}
         if('welcome'in data){write('suizamente:bienvenida',true);navigate(!logged()&&state.online&&state.profile?.apodo==='Invitado'?'/perfil/editar':'/');return}
         if(data.play){startRound({modo:data.play});return}

@@ -6,13 +6,13 @@ import { publicConfig } from './config.js'
 import { createSuizamenteInstall } from './install.js'
 import './style.css'
 import './access.css'
-import {mountSuizamenteRegistration,completeRegistrationProfile} from './registration.js'
+import {mountSuizamenteRegistration,completeRegistrationProfile,needsRegistrationProfile} from './registration.js'
 
 const root = document.getElementById('app')
 const esc = text => String(text ?? '').replace(/[&<>"]/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[c]))
 let session = null, client, config, disposeFrame, booted = false
 let accountMode = new URLSearchParams(location.search).get('mode') === 'login' ? 'login' : 'signup', signingOut = false
-let disposeRegistration
+let disposeRegistration,registrationActive=false
 
 const installation=createSuizamenteInstall({navigate:next=>{history.pushState(null,'',next);render()}})
 
@@ -80,8 +80,9 @@ function renderAccount() {
   }
   function changeMode(mode) { accountMode=mode;history.replaceState(null,'','/cuenta'+(mode==='signup'?'':'?mode='+mode));render() }
   if(accountMode==='signup') {
+    registrationActive=true
     disposeRegistration=mountSuizamenteRegistration(root,{
-      client,redirectTo:location.origin+'/auth/callback',backHref:'/bienvenida',
+      client,socialApi:config.socialApi,redirectTo:location.origin+'/auth/callback',backHref:'/bienvenida',
       onLogin:()=>changeMode('login'),onGoogle:()=>googleLogin(),onComplete:()=>location.replace('/perfil'),
     })
     return
@@ -146,10 +147,16 @@ function renderInstall() {
   document.title = 'Instalar Suizamente · Latido.ch'
   installation.renderGuide(root)
 }
+function renderProfileSetup(){
+  metadata(true);document.title='Tu perfil · Suizamente';registrationActive=true
+  if(path().startsWith('/auth/'))history.replaceState(null,'','/cuenta')
+  disposeRegistration=mountSuizamenteRegistration(root,{client,socialApi:config.socialApi,profileOnly:true,initialUser:session?.user,onComplete:()=>location.replace('/perfil')})
+}
 function render() {
   installation.setRoute(path())
   disposeFrame?.(); disposeFrame = null
-  disposeRegistration?.();disposeRegistration=null
+  disposeRegistration?.();disposeRegistration=null;registrationActive=false
+  if(needsRegistrationProfile(session?.user)){renderProfileSetup();return}
   if (isSuizamentePath(location.pathname+location.search)) mountGame()
   else if (path() === '/cuenta') renderAccount()
   else if (path() === '/instalar') renderInstall()
@@ -176,16 +183,12 @@ async function start() {
     client.auth.onAuthStateChange((_event, nextSession) => {
       const changed = session?.user?.id !== nextSession?.user?.id
       session = nextSession
-      if (booted && changed && !signingOut && (isSuizamentePath(location.pathname+location.search)||path()==='/cuenta')) setTimeout(render, 0)
+      if (booted && changed && !signingOut && !registrationActive && (isSuizamentePath(location.pathname+location.search)||path()==='/cuenta')) setTimeout(render, 0)
     })
     session = (await client.auth.getSession()).data.session
     let skipSso=false;try{skipSso=localStorage.getItem('suizamente:sso-optout')==='true'}catch{}
-    if(!session&&path()!=='/instalar'&&!path().startsWith('/auth/')&&!window.SUIZAMENTE_DISABLE_SSO&&!skipSso)session=await connectLatidoAccount({client,socialApi:config.socialApi})
-    try{await completeRegistrationProfile({client,socialApi:config.socialApi})}catch(error){
-      shell('Tu cuenta está creada',`<p role="alert">${esc(error.message)}</p><a class="button primary" href="/perfil">Volver a intentarlo</a><button class="button secondary" id="logout">Cerrar sesión</button>`,{back:false})
-      root.querySelector('#logout').onclick=logout
-      return
-    }
+    if(!session&&path()!=='/cuenta'&&path()!=='/instalar'&&!path().startsWith('/auth/')&&!window.SUIZAMENTE_DISABLE_SSO&&!skipSso)session=await connectLatidoAccount({client,socialApi:config.socialApi})
+    if(!needsRegistrationProfile(session?.user))try{await completeRegistrationProfile({client,socialApi:config.socialApi})}catch{booted=true;renderProfileSetup();return}
     booted = true
     render()
     if (import.meta.env.PROD && 'serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js', { scope:'/' }).catch(() => {})
