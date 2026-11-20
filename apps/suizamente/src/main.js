@@ -29,8 +29,8 @@ function authError(error) {
   if (error?.status === 429) return 'Espera unos minutos antes de volver a intentarlo.'
   return 'No se ha podido completar la solicitud. Revisa los datos y vuelve a intentarlo.'
 }
-function shell(title, content) {
-  root.innerHTML = `<section class="page"><a class="back" href="/">Volver al juego</a><img class="brand-icon" src="/favicon.svg" alt="Latido" width="64" height="64"><h1>${esc(title)}</h1>${content}<p class="legal"><a href="https://www.latido.ch/privacidad" target="_blank" rel="noopener">Privacidad</a> · <a href="https://www.latido.ch/terminos" target="_blank" rel="noopener">Términos de Latido</a></p></section>`
+function shell(title, content, {back=true}={}) {
+  root.innerHTML = `<section class="page">${back?'<a class="back" href="/">Volver al juego</a>':''}<img class="brand-icon" src="/favicon.svg" alt="Latido" width="64" height="64"><h1>${esc(title)}</h1>${content}<p class="legal"><a href="https://www.latido.ch/privacidad" target="_blank" rel="noopener">Privacidad</a> · <a href="https://www.latido.ch/terminos" target="_blank" rel="noopener">Términos de Latido</a></p></section>`
 }
 function metadata(privatePage) {
   document.querySelector('meta[name="robots"]').content = privatePage || __SUIZAMENTE_PREVIEW__ ? 'noindex, nofollow' : 'index, follow'
@@ -72,7 +72,7 @@ function renderAccount() {
   metadata(true)
   document.title = 'Tu cuenta · Suizamente'
   if (session?.user) {
-    shell('Tu cuenta', `<p>Has entrado con tu cuenta de Latido.</p><p class="email">${esc(session.user.email)}</p><p>Tus respuestas guardadas en esta cuenta se recuperan también al jugar desde Latido.ch.</p><a class="button primary" href="/">Seguir jugando</a><button class="button secondary" id="logout">Cerrar sesión en esta app</button><p id="message" class="message" role="status" aria-live="polite"></p>`)
+    shell('Tu cuenta', `<p>Has entrado con tu cuenta de Latido.</p><p class="email">${esc(session.user.email)}</p><p>Tus respuestas guardadas en esta cuenta se recuperan también al jugar desde Latido.ch.</p><a class="button primary" href="/">Seguir jugando</a><button class="button secondary" id="logout">Cerrar sesión en esta app</button><p id="message" class="message" role="status" aria-live="polite"></p>`,{back:false})
     root.querySelector('#logout').onclick = async event => {
       event.currentTarget.disabled = true
       await logout()
@@ -82,6 +82,7 @@ function renderAccount() {
   const signup = accountMode === 'signup', recovery = accountMode === 'recovery'
   const title = signup ? 'Crear cuenta' : recovery ? 'Recuperar contraseña' : 'Entrar a Suizamente'
   shell(title, `<p>${recovery ? 'Te enviaremos un enlace para elegir una nueva contraseña.' : 'Usa la misma cuenta que en Latido.ch. Puedes seguir jugando sin registrarte.'}</p>
+    <button class="button secondary" id="guest-play" type="button">Jugar sin cuenta</button>
     <form id="account-form">
       ${signup ? '<label>Nombre<input name="name" autocomplete="name" maxlength="80" required></label>' : ''}
       <label>Correo electrónico<input name="email" type="email" autocomplete="email" maxlength="254" required></label>
@@ -92,7 +93,11 @@ function renderAccount() {
     <p id="message" class="message" role="status" aria-live="polite"></p>
     ${!recovery ? '<button id="latido-login" class="button secondary" type="button">Entrar con mi cuenta de Latido</button><button id="google" class="button secondary" type="button">Continuar con Google</button>' : ''}
     <div class="actions">${accountMode !== 'login' ? '<button data-mode="login">Ya tengo cuenta</button>' : '<button data-mode="signup">Crear una cuenta</button><button data-mode="recovery">He olvidado la contraseña</button>'}</div>
-    <p class="hint">Tu cuenta y tu nombre de Latido sirven aquí. Si ya tienes sesión en Latido, conectamos tu cuenta automáticamente cuando el navegador lo permite.</p>`)
+    <p class="hint">Tu cuenta y tu nombre de Latido sirven aquí. Si ya tienes sesión en Latido, conectamos tu cuenta automáticamente cuando el navegador lo permite.</p>`,{back:false})
+  root.querySelector('#guest-play').onclick=()=>{
+    try{localStorage.setItem('suizamente:sso-optout','true');localStorage.setItem('suizamente:bienvenida','true')}catch{/* Guest play also works without storage. */}
+    history.pushState(null,'','/');render()
+  }
   const latido=root.querySelector('#latido-login')
   if(latido)latido.onclick=async()=>{try{localStorage.removeItem('suizamente:sso-optout')}catch{}latido.disabled=true;message('Abre tu cuenta de Latido en la ventana que aparece.');const linked=await connectLatidoAccount({client,socialApi:config.socialApi,popup:true});if(linked)location.replace('/');else{latido.disabled=false;message('Puedes entrar también con Google o con tu correo y contraseña.',true)}}
   root.querySelectorAll('[data-mode]').forEach(button => { button.onclick = () => { accountMode = button.dataset.mode; render() } })

@@ -147,6 +147,8 @@
 .s-nav button>span{font-size:23px;line-height:1}
 .s-nav button[aria-current=page]{color:var(--s-accent-text);font-weight:700}
 .s-nav button[aria-current=page]>span{background:var(--s-blue)}
+.s-nav .s-nav-profile>.s-avatar{width:30px;height:30px;font-size:13px;line-height:1}
+.s-nav button[aria-current=page] .s-nav-profile>.s-avatar{box-shadow:0 0 0 2px var(--s-accent)}
 .s-welcome{padding-top:20px;gap:20px;min-height:calc(100dvh - 40px);justify-content:flex-start}
 .s-welcome-brand{display:flex;flex-direction:column;align-items:center;gap:8px}
 .s-welcome-brand>img{width:76px;height:76px}

@@ -581,6 +581,7 @@ export default function Auth() {
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const nextPath = getSafeNextPath(searchParams.get('next'))
+  const isSuizamenteAccess = nextPath === '/suizamente' || nextPath.startsWith('/suizamente/')
   const [pwa] = useState(() => isStandalonePwa())
   const isPartnerAccess = nextPath.startsWith('/servicios-suiza') || nextPath.startsWith('/colaboradores/')
   const authEntryPoint = isPartnerAccess ? 'partner' : nextPath === '/' ? 'general' : 'protected_route'
@@ -968,11 +969,12 @@ export default function Auth() {
   )
 
   if (mode === 'login') return (
-    <AuthFormScreen onBack={() => changeAuthMode('welcome')}>
+    <AuthFormScreen onBack={isSuizamenteAccess ? undefined : () => changeAuthMode('welcome')}>
       <header className="latido-auth-sheet-heading">
         <h1>Hola de nuevo</h1>
         <p>Entra y sigue donde lo dejaste.</p>
       </header>
+      {isSuizamenteAccess && <Btn variant="secondary" style={{marginBottom:20}} disabled={loading || googleLoading} onClick={() => navigate('/suizamente',{replace:true})}>Jugar sin cuenta</Btn>}
       {isPartnerAccess && (
         <p className="latido-auth-notice">
           Inicia sesión para acceder a la información y los servicios de nuestros colaboradores.

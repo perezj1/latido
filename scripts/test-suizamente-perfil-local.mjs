@@ -20,6 +20,7 @@ try{
    return route.fulfill({status:result.status,headers:result.headers,...(result.status===204?{body:''}:{json:result.body})})
   }
   if(url.origin===origin)return route.continue()
+  if(url.hostname==='avatars.example.test')return route.fulfill({contentType:'image/svg+xml',body:'<svg xmlns="http://www.w3.org/2000/svg" width="80" height="80"><rect width="80" height="80" fill="#b8e4d6"/><circle cx="40" cy="30" r="15" fill="#2563eb"/></svg>'})
   if(url.pathname==='/auth/v1/logout'){logouts.push(url.searchParams.get('scope'));return route.fulfill({status:204,body:''})}
   if(url.pathname==='/auth/v1/user')return route.fulfill({json:users[alice]})
   if(url.pathname==='/rest/v1/profiles')return route.fulfill({json:{id:alice,name:'Nombre Latido',canton:'Zürich',banned:false,interests:[]}})
@@ -39,7 +40,16 @@ try{
  await expect(page.locator('input[type="email"]')).toBeVisible()
  assert.deepEqual(logouts,['local'])
  assert.equal(await page.evaluate(key=>localStorage.getItem(key),storageKey),null)
+ await expect(page.getByRole('button',{name:'Jugar sin cuenta',exact:true})).toBeVisible()
+ await expect(page.getByRole('button',{name:'Volver',exact:true})).toHaveCount(0)
+ await page.screenshot({path:'output/suizamente-referencia/acceso-local-8080.png',fullPage:true})
+ await page.getByRole('button',{name:'Jugar sin cuenta',exact:true}).click()
+ await expect(page).toHaveURL(origin+'/suizamente')
+ await expect(game.locator('[data-play="dilemas"]')).toBeVisible()
+ await expect(game.locator('.s-home [data-go="/perfil"]')).toHaveCount(0)
+ await expect(game.locator('.s-nav [data-go="/perfil"] .s-avatar')).toBeVisible()
+ await page.screenshot({path:'output/suizamente-referencia/inicio-avatar-nav-local-8080.png',fullPage:true})
  assert.deepEqual(errors,[])
- console.log('PASS: localhost:8080/suizamente/perfil shows Cerrar sesión; local logout opens the login form. Auth/API mocked, no production writes.')
+ console.log('PASS: localhost:8080 profile logout, login without a back control, explicit guest play and a single profile avatar in the bottom navigation. Auth/API mocked, no production writes.')
  await context.close()
 }finally{await browser.close();await f.db.close()}
