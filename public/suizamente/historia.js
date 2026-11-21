@@ -72,7 +72,7 @@ export async function crearHistoria({titulo,subtitulo='',pregunta=null,conteos=[
   ctx.save();ctx.translate(650,1900);ctx.rotate(.35);ctx.fillStyle='#03AA98';ctx.beginPath();ctx.roundRect(-90,-28,180,56,28);ctx.fill();ctx.restore()
   ctx.fillStyle='#FFFFFF';ctx.font='800 52px Poppins, sans-serif';ctx.fillText('¿Y tú qué eliges? 🤔',78,1745)
   ctx.font='700 32px Poppins, sans-serif'
-  for(const [i,line] of lines(ctx,enlace.replace(/^https:\/\//,''),920).entries())ctx.fillText(line,78,1815+i*44)
+  ctx.fillText('suizamente.latido.ch',78,1815)
   const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/png'))
   if(!blob)throw new Error('Image unavailable')
   return {blob,enlace}

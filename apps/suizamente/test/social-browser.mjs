@@ -206,6 +206,8 @@ try{
  await a.game.locator('#book-search').fill('not-a-real-fixture-match')
  await expect(a.game.locator('#book-list')).toContainText('No hay datos')
  await navigate(a,'/perfil')
+ await expect(a.game.getByRole('button',{name:'Compartir perfil',exact:true})).toHaveCount(0)
+ await expect(a.game.getByRole('button',{name:'Ajustes',exact:true})).toBeVisible()
  await expect(a.game.locator('h1').last()).toHaveText('Nombre Latido')
  await expect(a.game.locator('.s-stat').last()).toContainText('1')
  await navigate(a,'/amigos')
