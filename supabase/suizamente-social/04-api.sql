@@ -346,13 +346,20 @@ BEGIN
   ELSIF p_accion='desglose' THEN
     ref:=p_datos->>'preguntaId'; tipo:=coalesce(p_datos->>'por','pais');
     IF tipo NOT IN('pais','anos') THEN RAISE SQLSTATE 'PT400' USING MESSAGE='Desglose no válido'; END IF;
+    IF NOT EXISTS(SELECT 1 FROM suizamente_social.preguntas WHERE id=ref) THEN
+      RAISE SQLSTATE 'PT400' USING MESSAGE='Pregunta no válida';
+    END IF;
+    SELECT count(*) INTO contador FROM public.suizamente_votos WHERE pregunta_id=ref;
+    IF contador<20 AND to_regprocedure('suizamente_social.desglose_demo(text,text)') IS NOT NULL THEN
+      RETURN suizamente_social.desglose_demo(ref,tipo)||jsonb_build_object('tuGrupo',CASE WHEN tipo='pais' THEN j.pais ELSE j.anos_suiza END,'votosReales',contador);
+    END IF;
     SELECT coalesce(jsonb_agg(t ORDER BY votos DESC),'[]') INTO filas FROM (
       SELECT CASE WHEN tipo='pais' THEN g.pais ELSE g.anos_suiza END grupo,count(*) votos,
         jsonb_build_array(count(*) FILTER(WHERE v.opcion=0),count(*) FILTER(WHERE v.opcion=1),count(*) FILTER(WHERE v.opcion=2)) conteos
       FROM public.suizamente_votos v JOIN suizamente_social.jugadores g ON g.id=v.jugador_id WHERE v.pregunta_id=ref
       AND (CASE WHEN tipo='pais' THEN g.pais ELSE g.anos_suiza END) IS NOT NULL
       GROUP BY grupo HAVING count(*)>=20) t;
-    RETURN jsonb_build_object('grupos',filas,'tuGrupo',CASE WHEN tipo='pais' THEN j.pais ELSE j.anos_suiza END);
+    RETURN jsonb_build_object('grupos',filas,'demo',false,'minimo',20,'tuGrupo',CASE WHEN tipo='pais' THEN j.pais ELSE j.anos_suiza END);
   ELSIF p_accion='comunidad' THEN
     SELECT jsonb_build_object('preguntaId',pregunta_id,'opcion',opcion,'pct',round(100.0*n/total)::int,'votos',total) INTO resultado FROM (
       SELECT v.pregunta_id,v.opcion,count(*) n,sum(count(*)) OVER(PARTITION BY v.pregunta_id) total,

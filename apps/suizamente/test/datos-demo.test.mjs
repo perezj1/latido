@@ -22,6 +22,11 @@ test('all 2000 facts stay attached to their original answer or neutral question 
 test('320 deterministic demo profiles are isolated and canton ranks use their actual mean',()=>{
   const players=perfilesDemo(),cantons=cantonesDemo()
   assert.equal(players.length,320);assert.equal(new Set(players.map(p=>p.id)).size,320)
+  const countries=Object.groupBy(players,p=>p.pais),years=Object.groupBy(players,p=>p.anosSuiza)
+  assert.equal(Object.keys(countries).length,8);assert.equal(Object.keys(years).length,4)
+  assert.equal(countries.ES.length,80);assert.equal(countries.CO.length,64)
+  assert(Object.values(countries).every(group=>group.length>=20))
+  assert(Object.values(years).every(group=>group.length>=20))
   assert.equal(cantons.reduce((sum,c)=>sum+c.activos,0),320)
   for(const c of cantons){const members=players.filter(p=>p.canton===c.codigo);assert.equal(c.media,members.reduce((sum,p)=>sum+p.puntos,0)/members.length)}
   for(const q of preguntas){const sample=repartoDemo(q,[]);assert.equal(sample.total,DEMO.profiles);assert.equal(sample.n.reduce((sum,n)=>sum+n,0),320);assert(sample.n.every(n=>n>=0));assert.deepEqual(sample,repartoDemo(q,[]))}

@@ -7,6 +7,8 @@ const write=(key,value)=>{try{localStorage.setItem(key,JSON.stringify(value))}ca
 const empty=(emoji,text)=>`<div class="s-empty"><span class="emoji" aria-hidden="true">${emoji}</span>${esc(text)}</div>`
 const button=(label,attrs='',kind='')=>`<button class="s-button ${kind}" type="button" ${attrs}>${label}</button>`
 const options=(values,selected,placeholder='Elige una opción')=>`<option value="">${placeholder}</option>`+Object.entries(values).map(([id,label])=>`<option value="${id}" ${id===selected?'selected':''}>${esc(label)}</option>`).join('')
+const flag=country=>`<img class="s-country-flag" src="/suizamente/banderas/${Object.hasOwn(PAISES,country)&&/^[A-Z]{2}$/.test(country)?country.toLowerCase():'otro'}.svg" width="20" height="15" alt="" aria-hidden="true">`
+const yearOrder=['menos1','1a3','3a10','mas10']
 const safePath=value=>typeof value==='string'&&/^\/(?:retos|ranking|libreta|perfil(?:\/editar)?|amigos|bienvenida|como-se-juega|medallas|ajustes|proponer|moderacion|avisos|jugar|duelo\/[A-Fa-f0-9]{8})?(?:\?[^#]*)?$/.test(value)&&value.length<600
 
 export async function crearExperiencia({container,questions,identity,getIdentity,playerId,play,stopGame,getCounts,getDisplayCounts,getSaved,importAnswers,onSettings,getRound=()=>null}) {
@@ -256,14 +258,31 @@ export async function crearExperiencia({container,questions,identity,getIdentity
     currentResult={q,selected}
     const points=document.createElement('span');points.className='s-point-chip s-result-points';points.id='social-points';points.textContent=state.online?'Guardando tu respuesta…':'Pendiente de conexión';points.dataset.preguntaId=q.id
     document.querySelector('.rv-top')?.append(points)
-    const row=document.createElement('div');row.className='social-result-tools';row.innerHTML=state.online?'<div class="s-card"><div class="s-breakdown-heading"><h3>'+(q.tipo==='real'?'¿Quién lo sabía?':'Eligieron lo mismo')+'</h3><div class="s-tabs"><button class="active" type="button" data-breakdown="pais">País</button><button type="button" data-breakdown="anos">Años en Suiza</button></div></div><div id="social-breakdown" class="s-stack"></div></div>':''
+    const row=document.createElement('div');row.className='social-result-tools';row.innerHTML=state.online?'<div class="s-card"><div class="s-breakdown-heading"><h3>'+(q.tipo==='real'?'¿Quién lo sabía?':'Eligieron lo mismo')+'</h3><div class="s-tabs"><button class="active" type="button" data-breakdown="pais">País</button><button type="button" data-breakdown="anos">Años en Suiza</button></div></div><div id="social-breakdown" class="s-stack" role="region" aria-label="Respuestas por país" tabindex="0"></div></div>':''
     document.querySelector('.rv .panel')?.after(row)
     if(state.lastAnswer?.preguntaId===q.id){const award=state.lastAnswer;points.textContent=award.puntos?`+${award.puntos} puntos`:'Respuesta guardada'}
     if(repetida&&!contexto)points.textContent='Ya respondida · sin puntos extra';
     decorateFacts()
     const share=document.querySelector('#compartir'),next=document.querySelector('#sig'),bar=share?.parentElement
     if(bar){bar.classList.add('s-result-actions');bar.prepend(share);share.classList.add('s-result-share');next.classList.add('s-result-next');share.textContent='📤 Compartir';share.onclick=()=>shareQuestion(q,selected)}
-    async function breakdown(type){try{const data=await api('/breakdown?pregunta='+q.id+'&por='+type),groups=data.grupos.sort((a,b)=>b.votos-a.votos),own=groups.find(g=>g.grupo===data.tuGrupo),shown=groups.slice(0,4);if(own&&!shown.includes(own))shown.push(own);const index=q.tipo==='real'?q.correcta:selected;row.querySelector('#social-breakdown').innerHTML=shown.length?shown.map(g=>`<div><div class="s-row s-between"><span style="font-size:14px;font-weight:${g.grupo===data.tuGrupo?800:500}">${esc((type==='pais'?PAISES:ANOS)[g.grupo]||g.grupo)}</span><b>${Math.round(100*(g.conteos[index]||0)/g.votos)}%</b></div><div class="s-progress"><i style="width:${100*(g.conteos[index]||0)/g.votos}%"></i></div></div>`).join(''):`<p class="s-soft">Aún hay pocos votos para separar por ${type==='pais'?'país':'años en Suiza'}. Cada grupo necesita al menos 20 votos.</p>`}catch{const target=row.querySelector('#social-breakdown');if(target)target.textContent='Este desglose no está disponible ahora.'}}
+    let breakdownRequest=0
+    async function breakdown(type){
+      const request=++breakdownRequest,target=row.querySelector('#social-breakdown')
+      target.dataset.dimension=type;target.setAttribute('aria-label',type==='pais'?'Respuestas por país':'Respuestas por años en Suiza');target.scrollTop=0
+      target.setAttribute('aria-live','polite');target.setAttribute('aria-busy','true')
+      try{
+        const data=await api('/breakdown?pregunta='+q.id+'&por='+type)
+        if(request!==breakdownRequest)return
+        const groups=data.demo&&!demoEnabled()?[]:data.grupos
+        const shown=groups.slice().sort((a,b)=>type==='anos'?yearOrder.indexOf(a.grupo)-yearOrder.indexOf(b.grupo):b.votos-a.votos||a.grupo.localeCompare(b.grupo))
+        const index=q.tipo==='real'?q.correcta:selected
+        target.innerHTML=shown.length?shown.map(g=>{
+          const same=g.conteos[index]||0,pct=Math.round(100*same/g.votos)
+          return `<div class="s-breakdown-item${g.grupo===data.tuGrupo?' mine':''}" data-group="${esc(g.grupo)}"><div class="s-breakdown-main"><span class="s-breakdown-name">${type==='pais'?flag(g.grupo):''}<span>${esc((type==='pais'?PAISES:ANOS)[g.grupo]||g.grupo)}</span></span><div class="s-progress" aria-hidden="true"><i style="width:${100*same/g.votos}%"></i></div><b>${pct}%</b></div><small class="s-soft">${same} de ${g.votos} ${q.tipo==='real'?'acertaron':'eligieron esta respuesta'}</small></div>`
+        }).join(''):`<p class="s-soft">Aún hay pocos votos para separar por ${type==='pais'?'país':'años en Suiza'}. Cada grupo necesita al menos 20 votos.</p>`
+      }catch{if(request===breakdownRequest)target.textContent='Este desglose no está disponible ahora.'}
+      finally{if(request===breakdownRequest)target.setAttribute('aria-busy','false')}
+    }
     row.querySelectorAll('[data-breakdown]').forEach(b=>b.onclick=()=>{row.querySelectorAll('[data-breakdown]').forEach(other=>other.classList.toggle('active',b===other));breakdown(b.dataset.breakdown)})
     if(state.online)breakdown('pais')
   }
