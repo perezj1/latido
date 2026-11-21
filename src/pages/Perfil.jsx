@@ -2371,7 +2371,7 @@ export default function Perfil() {
                     ))}
                   </div>
                   <video
-                    src="/videos/install-ios.mp4"
+                    src="/videos/install-ios.mp4?v=20261121"
                     controls
                     playsInline
                     preload="metadata"
