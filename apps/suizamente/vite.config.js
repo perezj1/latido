@@ -133,6 +133,7 @@ export default defineConfig(({ command, mode }) => {
         const worker = await readFile(path.join(output, 'sw.js'), 'utf8')
         const version = createHash('sha256').update(index).update(worker).update(await readFile(path.join(output, 'suizamente/data/preguntas.json'))).update(await readFile(path.join(output,'manifest.webmanifest')))
         for (const url of Object.keys(icons)) version.update(await readFile(path.join(output,url.slice(1))))
+        for (const [url,file] of [...await sharedFiles()].sort(([a],[b])=>a.localeCompare(b))) version.update(url).update(await readFile(file))
         const build = version.digest('hex').slice(0,12)
         await writeFile(path.join(output, 'sw.js'), worker.replaceAll('__BUILD_ID__', build))
       },

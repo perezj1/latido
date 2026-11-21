@@ -13,8 +13,17 @@ self.addEventListener('install', event => {
 })
 self.addEventListener('activate', event => {
   event.waitUntil((async () => {
-    for (const key of await caches.keys()) if (key.startsWith('suizamente-public-') && key !== CACHE) await caches.delete(key)
+    const previous=await caches.keys()
+    const updated=previous.some(key=>key.startsWith('suizamente-public-')&&key!==CACHE)
+    for (const key of previous) if (key.startsWith('suizamente-public-') && key !== CACHE) await caches.delete(key)
     await self.clients.claim()
+    if(updated){
+      const safePages=new Set(['/','/ranking','/retos','/perfil','/libreta','/amigos','/avisos','/medallas','/bienvenida','/como-se-juega','/instalar'])
+      for(const client of await self.clients.matchAll({type:'window',includeUncontrolled:true})){
+        const url=new URL(client.url)
+        if(url.origin===self.location.origin&&safePages.has(url.pathname))await client.navigate(client.url).catch(()=>{})
+      }
+    }
   })())
 })
 self.addEventListener('fetch', event => {

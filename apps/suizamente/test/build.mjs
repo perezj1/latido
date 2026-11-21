@@ -36,6 +36,7 @@ for (const route of ['onboarding','cuenta','auth/callback','auth/restablecer','r
 for (const file of ['logo.svg','juego.js','juego.html','votos.js','fonts.css','data/preguntas.json','experiencia.js','experiencia.css','experiencia-datos.js','historia.js']) {
   assert.equal(hash(await readFile('dist/suizamente/'+file)),hash(await readFile('../../public/suizamente/'+file)),`Shared source drift: ${file}`)
 }
+for(const file of ['experiencia.js','juego.js','historia.js'])assert.doesNotMatch(await read('dist/suizamente/'+file),/perfiles ficticios|Datos de demostración|No son cuentas ni actividad real|Ver la clasificación real|NO SON VOTOS REALES/i)
 const sitemap=await read('dist/sitemap.xml')
 assert.match(sitemap,/<loc>https:\/\/suizamente.latido.ch\/instalar<\/loc>/)
 assert.doesNotMatch(sitemap,/cuenta|auth\//)
