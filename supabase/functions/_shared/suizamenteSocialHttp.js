@@ -24,6 +24,7 @@ function endpoint(path,method,url,body) {
   if ((match=/^\/duels\/([A-Fa-f0-9]{8})(\/(?:join|rematch))?$/.exec(path))) {
     if (match[2]&&method==='POST')return [match[2]==='/join'?'duelo_unirse':'duelo_revancha',{codigo:match[1]}]
     if (!match[2]&&method==='GET')return ['duelo',{codigo:match[1]}]
+    if (!match[2]&&method==='DELETE')return ['duelo_eliminar',{codigo:match[1]}]
   }
   if ((match=/^\/notebook\/([a-zA-Z0-9_-]+)$/.exec(path))&&['PUT','DELETE'].includes(method))return [method==='PUT'?'libreta_guardar':'libreta_quitar',{preguntaId:match[1]}]
   if ((match=/^\/moderation\/(\d+)$/.exec(path))&&method==='POST')return ['moderar',{...body,id:match[1]}]

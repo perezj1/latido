@@ -6,6 +6,7 @@ const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '
 const CONFIG = Object.assign({ api: '/api/suizamente', jugadorId: null, datos: '/suizamente/data/preguntas.json', ronda: 10 }, window.SUIZAMENTE_CONFIG || {});
 const identidad = await identidadLatido();
 const {separarDatos}=await import('/suizamente/datos-opciones.js');
+const {compartirHistoria}=await import('/suizamente/historia.js');
 const demo=identidad.experience&&CONFIG.experiencia!==false?await import('/suizamente/demostracion.js'):null;
 let experiencia = null, arrancando = true;
 if (identidad.api && !window.SUIZAMENTE_CONFIG?.api) CONFIG.api = identidad.api;
@@ -203,7 +204,7 @@ function abrirResultado(q, o, punto, repetida) {
     </div></div>`;
   refrescarResultado();
   $('#sig').onclick = siguiente;
-  $('#compartir').onclick = () => copiar(textoPregunta(q), $('#copymsg'));
+  $('#compartir').onclick = () => compartirImagen({titulo:'Suizamente',pregunta:q,conteos:reparto(q).n,eleccion:o,enlace:'https://suizamente.latido.ch/jugar?p='+encodeURIComponent(q.id)},$('#copymsg'));
   experiencia?.decorateResult(q,o,{repetida,contexto:ronda.contexto});
   try { $('#sig').focus({ preventScroll: true }); } catch (_) { }
 }
@@ -224,7 +225,6 @@ function refrescarResultado() {
     sub.textContent = rep.n[o] === Math.max(...rep.n) ? 'Piensas como la mayoría de Latido.' : 'Eres de la minoría valiente.';
   }
   if (repetida) sub.textContent += ' (Ya la habías respondido: cuenta tu primer voto.)';
-  if(rep.demo)sub.textContent='Datos de demostración: este reparto es un ejemplo, no representa votos reales.';
   const ordenOpciones = ronda ? ronda.orden[q.id] : q.opciones.map((_, i) => i);
   const orden = [o, ...ordenOpciones.filter(oi => oi !== o)];
   const {opciones:datos,comun}=separarDatos(q);
@@ -236,7 +236,7 @@ function refrescarResultado() {
       <div class="res-bar"><i style="width:${hayDatos ? rep.pct[oi] : 0}%" data-w="${hayDatos ? rep.pct[oi] : 0}"></i></div>${verdadera}${dato}</div>`;
   }).join('');
   $('#dato-comun').innerHTML=comun?`<div class="answer-fact s-common-fact"><b><span aria-hidden="true">💡</span> Sobre este dilema</b><p>${esc(comun)}</p></div>`:'';
-  $('#votos').textContent = rep.demo?`Ejemplo con ${rep.total} votos ficticios · ${rep.realTotal} ${rep.realTotal===1?'voto real':'votos reales'}`:hayDatos ? `${rep.total.toLocaleString('es-ES')} ${rep.total === 1 ? 'voto' : 'votos'}` : textoNota();
+  $('#votos').textContent = hayDatos ? `${rep.total.toLocaleString('es-ES')} ${rep.total === 1 ? 'voto' : 'votos'}` : textoNota();
   experiencia?.decorateFacts(q,o);
 }
 function cerrarResultado() { clearTimeout(revealTimer); eligiendo = false; app.inert = false; resultadoAbierto = null; layer.innerHTML = ''; }
@@ -271,19 +271,13 @@ function pintarFinal() {
   experiencia?.decorateSummary();
   const lineas = [reales.length ? `Verdades: ${ok}/${reales.length}` : '', dilemas.length ? `Como la mayoría: ${mayoria}/${dilemas.length}` : ''].filter(Boolean).join(' · ');
   const texto=`Suizamente · ${MODOS[ronda.modo].nombre}\n${ronda.ids.map((_,i)=>marcas[ronda.marcas[i]||'sk'][0]).join(' ')}\n${lineas}\n¿Cuánto sabes de Suiza? Juega en https://suizamente.latido.ch`;
-  $('#comp').onclick = () => experiencia?experiencia.shareSummary({modo:ronda.modo,texto,titulo:frase,resultado:lineas||'Ronda completada.'}):copiar(texto,$('#copymsg'));
+  $('#comp').onclick = () => experiencia?experiencia.shareSummary({modo:ronda.modo,texto,titulo:frase,resultado:lineas||'Ronda completada.'}):compartirImagen({titulo:frase,subtitulo:lineas||'Ronda completada.'},$('#copymsg'));
   window.scrollTo({ top: 0 });
 }
 
 /* ---------- compartir ---------- */
-function textoPregunta(q) {
-  const rep = reparto(q), hay = Votos.estado === 'ok' && rep.total > 1;
-  const lineas = q.opciones.map((op, i) => `${op.e} ${op.t}${hay ? ` — ${rep.pct[i]} %` : ''}`).join('\n');
-  return `${q.emoji} ${q.pregunta}\n${lineas}\n¿Y tú qué eliges? Suizamente · Juega en https://suizamente.latido.ch`;
-}
-function copiar(texto, msg) {
-  const fallback = () => { const box = document.createElement('textarea'); box.className = 'copybox'; box.readOnly = true; box.value = texto; msg.after(box); box.focus(); box.select(); msg.textContent = 'Selecciona el texto y cópialo.'; };
-  try { navigator.clipboard.writeText(texto).then(() => { msg.textContent = 'Copiado. Pégalo en tus stories o en el grupo.'; }, fallback); } catch (_) { fallback(); }
+async function compartirImagen(options,msg) {
+  try{msg.textContent=await compartirHistoria(options)}catch{msg.textContent='No se ha podido preparar la imagen. Vuelve a intentarlo.'}
 }
 
 /* ---------- teclado: 1-3 elige, Esc o Enter pasa ---------- */

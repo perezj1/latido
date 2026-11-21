@@ -2297,6 +2297,7 @@ BEGIN
   RETURN jsonb_build_object('codigo',d.codigo,'modo',d.modo,'estado',d.estado,'caducaEn',d.caduca_en,
     'creador', (SELECT jsonb_build_object('id',id,'apodo',apodo,'color',color) FROM suizamente_social.jugadores WHERE id=d.creador),
     'rival', (SELECT jsonb_build_object('id',CASE WHEN usuario_id IS NOT NULL OR id=p_jugador THEN id END,'apodo',apodo,'color',color) FROM suizamente_social.jugadores WHERE id=d.rival),
+    'invitado',CASE WHEN p_jugador IN(d.creador,d.invitado) THEN (SELECT jsonb_build_object('id',id,'apodo',apodo,'color',color) FROM suizamente_social.jugadores WHERE id=d.invitado) END,
     'participante',coalesce(propio,false),'puedeUnirse',d.estado='esperando' AND d.rival IS NULL AND p_jugador<>d.creador AND (d.invitado IS NULL OR d.invitado=p_jugador),
     'preguntas',CASE WHEN propio THEN to_jsonb(d.preguntas) ELSE '[]'::jsonb END,
     'respondidas',CASE WHEN p_jugador=d.creador THEN ca WHEN p_jugador=d.rival THEN cb ELSE 0 END,
@@ -2308,6 +2309,16 @@ BEGIN
 END $$;
 
 REVOKE ALL ON ALL FUNCTIONS IN SCHEMA suizamente_social FROM PUBLIC,anon,authenticated;
+
+-- 06-gestion-retos
+
+CREATE TABLE IF NOT EXISTS suizamente_social.duelos_ocultos (
+  codigo text NOT NULL REFERENCES suizamente_social.duelos(codigo) ON DELETE CASCADE,
+  jugador text NOT NULL REFERENCES suizamente_social.jugadores(id) ON DELETE CASCADE,
+  creado_en timestamptz NOT NULL DEFAULT now(), PRIMARY KEY(codigo,jugador)
+);
+ALTER TABLE suizamente_social.duelos_ocultos ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON suizamente_social.duelos_ocultos FROM PUBLIC,anon,authenticated;
 
 -- 04-api
 
@@ -2482,7 +2493,18 @@ BEGIN
     SELECT count(*) FILTER(WHERE acierto) INTO nota FROM suizamente_social.diarias WHERE fecha=hoy AND jugador=p_jugador;
     RETURN jsonb_build_object('fecha',hoy,'preguntas',ids,'respuestas',detalle,'aciertos',nota,'hecho',(SELECT count(*) FROM jsonb_object_keys(detalle))=5,
       'terminaEn',((hoy+1)::timestamp AT TIME ZONE 'Europe/Zurich'),'semana',filas,'ayer',anterior||jsonb_build_object('mejorQuePct',n));
-  ELSIF p_accion IN('duelos','duelo','duelo_unirse','duelo_crear','duelo_revancha') THEN
+  ELSIF p_accion IN('duelos','duelo','duelo_unirse','duelo_crear','duelo_revancha','duelo_eliminar') THEN
+    IF p_accion='duelo_eliminar' THEN
+      SELECT * INTO d FROM suizamente_social.duelos WHERE codigo=upper(p_datos->>'codigo') FOR UPDATE;
+      IF d.codigo IS NULL OR NOT coalesce(p_jugador IN(d.creador,d.rival,d.invitado),false) THEN
+        RAISE SQLSTATE 'PT403' USING MESSAGE='Este reto no está en tu lista';
+      END IF;
+      IF d.creador=p_jugador AND d.estado='esperando' THEN
+        UPDATE suizamente_social.duelos SET estado='caducado',caduca_en=least(caduca_en,now()) WHERE codigo=d.codigo;
+      END IF;
+      INSERT INTO suizamente_social.duelos_ocultos(codigo,jugador) VALUES(d.codigo,p_jugador) ON CONFLICT DO NOTHING;
+      RETURN jsonb_build_object('eliminado',true);
+    END IF;
     IF p_accion='duelo_revancha' THEN
       SELECT * INTO d FROM suizamente_social.duelos WHERE codigo=upper(p_datos->>'codigo') FOR UPDATE;
       IF d.codigo IS NULL OR NOT coalesce(p_jugador IN(d.creador,d.rival),false) THEN RAISE SQLSTATE 'PT403' USING MESSAGE='No participas en este duelo'; END IF;
@@ -2493,7 +2515,9 @@ BEGIN
     END IF;
     IF p_accion='duelos' THEN
       SELECT coalesce(jsonb_agg(suizamente_social.duelo(p_jugador,t.codigo) ORDER BY t.creado_en DESC),'[]') INTO filas
-        FROM (SELECT * FROM suizamente_social.duelos WHERE p_jugador IN(creador,rival,invitado) ORDER BY creado_en DESC LIMIT 50) t;
+        FROM (SELECT * FROM suizamente_social.duelos d WHERE p_jugador IN(creador,rival,invitado)
+          AND NOT EXISTS(SELECT 1 FROM suizamente_social.duelos_ocultos o WHERE o.codigo=d.codigo AND o.jugador=p_jugador)
+          ORDER BY creado_en DESC LIMIT 50) t;
       RETURN jsonb_build_object('duelos',filas);
     ELSIF p_accion='duelo_crear' THEN
       IF uid IS NULL THEN RAISE SQLSTATE 'PT401' USING MESSAGE='Entra con tu cuenta para retar'; END IF;

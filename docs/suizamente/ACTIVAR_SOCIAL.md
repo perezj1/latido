@@ -1,5 +1,13 @@
 # Activar las nuevas pantallas y funciones de Suizamente
 
+**Gestión de retos e imágenes:** la actualización actual añade envío de imágenes
+PNG, descarga, cancelación de retos pendientes y retirada de retos de la lista
+propia. Cada reto admite un solo rival. En instalaciones existentes, ejecutar
+[suizamente_gestion_retos.sql](../../supabase/suizamente_gestion_retos.sql) y desplegar
+la función `suizamente-social` antes de publicar la web. Conserva votos, puntos y
+respuestas. La clasificación semanal y cantonal se presenta en una sola lista;
+las cuentas que participan se incorporan con sus puntos de la semana.
+
 **Desgloses de los 320 perfiles de ejemplo:** para añadir país y años en Suiza
 a una instalación social existente, ejecuta únicamente el
 [SQL de desgloses](../../supabase/suizamente_desgloses_ejemplo.sql).

@@ -14,6 +14,7 @@ const base=strip(await readFile('supabase/suizamente-social/05-demostracion-base
 const seed=base+`\nINSERT INTO suizamente_social.demo_perfiles(id,apodo,canton,pais,anos_suiza,puntos) VALUES\n${values}\nON CONFLICT(id) DO UPDATE SET apodo=excluded.apodo,canton=excluded.canton,pais=excluded.pais,anos_suiza=excluded.anos_suiza,puntos=excluded.puntos;\n\nINSERT INTO suizamente_social.demo_repartos(pregunta,conteos) VALUES\n${counts}\nON CONFLICT(pregunta) DO UPDATE SET conteos=excluded.conteos;\n`
 await writeFile('supabase/suizamente-social/05-demostracion.sql','-- Generado por scripts/generar-suizamente-desgloses.mjs.\nBEGIN;\n'+seed+'\nCOMMIT;\n')
 const api=strip(await readFile('supabase/suizamente-social/04-api.sql','utf8'))
+const management=strip(await readFile('supabase/suizamente-social/06-gestion-retos.sql','utf8'))
 const guard=`DO $preflight$ BEGIN
   IF to_regclass('suizamente_social.jugadores') IS NULL OR to_regclass('public.suizamente_votos') IS NULL
     OR to_regprocedure('public.suizamente_social_api(text,text,jsonb,text)') IS NULL THEN
@@ -24,5 +25,5 @@ await writeFile('supabase/suizamente_desgloses_ejemplo.sql',`-- Ejecutar COMPLET
 -- Añade país y años a los mismos 320 perfiles de ejemplo del juego.
 -- Repetible. No crea cuentas de Auth ni añade votos, puntos o rankings reales.
 -- Los repartos de ejemplo conservan sus totales actuales y su procedencia.
-BEGIN;\n${guard}\n${seed}\n${api}\nCOMMIT;\n`)
+BEGIN;\n${guard}\n${seed}\n${management}\n${api}\nCOMMIT;\n`)
 console.log(`Desgloses: ${profiles.length} perfiles, ${preguntas.length} repartos; SQL de actualización e instalación generados.`)

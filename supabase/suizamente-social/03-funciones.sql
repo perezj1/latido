@@ -153,6 +153,7 @@ BEGIN
   RETURN jsonb_build_object('codigo',d.codigo,'modo',d.modo,'estado',d.estado,'caducaEn',d.caduca_en,
     'creador', (SELECT jsonb_build_object('id',id,'apodo',apodo,'color',color) FROM suizamente_social.jugadores WHERE id=d.creador),
     'rival', (SELECT jsonb_build_object('id',CASE WHEN usuario_id IS NOT NULL OR id=p_jugador THEN id END,'apodo',apodo,'color',color) FROM suizamente_social.jugadores WHERE id=d.rival),
+    'invitado',CASE WHEN p_jugador IN(d.creador,d.invitado) THEN (SELECT jsonb_build_object('id',id,'apodo',apodo,'color',color) FROM suizamente_social.jugadores WHERE id=d.invitado) END,
     'participante',coalesce(propio,false),'puedeUnirse',d.estado='esperando' AND d.rival IS NULL AND p_jugador<>d.creador AND (d.invitado IS NULL OR d.invitado=p_jugador),
     'preguntas',CASE WHEN propio THEN to_jsonb(d.preguntas) ELSE '[]'::jsonb END,
     'respondidas',CASE WHEN p_jugador=d.creador THEN ca WHEN p_jugador=d.rival THEN cb ELSE 0 END,

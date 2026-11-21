@@ -38,7 +38,7 @@ try{
  await expect(ios.page).toHaveURL(origin+'/instalar')
  await expect(ios.page.getByRole('heading',{name:'Suizamente en tu móvil'})).toBeVisible()
  await expect(ios.page.locator('.suizamente-install-logo')).toHaveAttribute('src','/suizamente/icons/suizamente-circle-logo-192.png')
- await expect(ios.page.locator('video')).toHaveAttribute('src','/videos/install-ios.mp4')
+ await expect(ios.page.locator('video')).toHaveAttribute('src','/videos/install-ios.mp4?v=20261121')
  await expect(ios.page.locator('.suizamente-install-page')).toContainText('Añadir a pantalla de inicio')
  await ios.page.getByRole('button',{name:'Instalar Suizamente',exact:true}).click()
  await expect(ios.page.locator('[data-install-status]')).toContainText('Safari')

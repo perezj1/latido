@@ -13,7 +13,7 @@ function officialLogo(){
   if(!logoPromise)logoPromise=new Promise(resolve=>{const img=new Image();img.onload=()=>resolve(img);img.onerror=()=>resolve(null);img.src='/suizamente/icons/suizamente-circle-logo-512.png'})
   return logoPromise
 }
-export async function crearHistoria({titulo,subtitulo='',pregunta=null,conteos=[],eleccion=null,enlace='https://suizamente.latido.ch/',demo=false}){
+export async function crearHistoria({titulo,subtitulo='',pregunta=null,conteos=[],eleccion=null,enlace='https://suizamente.latido.ch/'}){
   await document.fonts.ready
   const logo=await officialLogo(),canvas=document.createElement('canvas');canvas.width=1080;canvas.height=1920
   const ctx=canvas.getContext('2d'),ink='#0F1A2B',total=conteos.reduce((sum,n)=>sum+Number(n||0),0)
@@ -23,7 +23,6 @@ export async function crearHistoria({titulo,subtitulo='',pregunta=null,conteos=[
   ctx.fillStyle='#FFFFFF';ctx.beginPath();ctx.roundRect(66,66,146,146,42);ctx.fill()
   if(logo)ctx.drawImage(logo,81,81,116,116)
   ctx.font='800 68px Poppins, sans-serif';ctx.fillText('Suizamente',244,159)
-  if(demo){ctx.font='700 28px Poppins, sans-serif';ctx.fillText('DATOS DE DEMOSTRACIÓN · NO SON VOTOS REALES',78,260)}
   let titleSize=78,titleLines
   do{ctx.font='800 '+titleSize+'px Poppins, sans-serif';titleLines=lines(ctx,title,920);if(titleLines.length<=5)break;titleSize-=4}while(titleSize>58)
   if(pregunta?.tipo==='dilema'&&percent!==null)titleLines=['El '+percent+' % de los','hispanohablantes en','Suiza piensa lo','mismo que yo']
@@ -72,14 +71,15 @@ export async function crearHistoria({titulo,subtitulo='',pregunta=null,conteos=[
   ctx.fillStyle='#FA2F35';ctx.beginPath();ctx.roundRect(952,1600,60,155,30);ctx.fill()
   ctx.save();ctx.translate(650,1900);ctx.rotate(.35);ctx.fillStyle='#03AA98';ctx.beginPath();ctx.roundRect(-90,-28,180,56,28);ctx.fill();ctx.restore()
   ctx.fillStyle='#FFFFFF';ctx.font='800 52px Poppins, sans-serif';ctx.fillText('¿Y tú qué eliges? 🤔',78,1745)
-  ctx.font='700 40px Poppins, sans-serif';ctx.fillText('👉 Juega en suizamente.latido.ch',78,1830)
+  ctx.font='700 32px Poppins, sans-serif'
+  for(const [i,line] of lines(ctx,enlace.replace(/^https:\/\//,''),920).entries())ctx.fillText(line,78,1815+i*44)
   const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/png'))
   if(!blob)throw new Error('Image unavailable')
   return {blob,enlace}
 }
 export async function compartirHistoria(options){
   const {blob,enlace}=options.historia||await crearHistoria(options),file=new File([blob],'suizamente.png',{type:'image/png'})
-  if(navigator.canShare?.({files:[file]})&&navigator.share){try{await navigator.share({files:[file],title:'Suizamente'});return 'Imagen compartida.'}catch(error){if(error.name==='AbortError')return ''}}
+  if(!options.descargar&&navigator.canShare?.({files:[file]})&&navigator.share){try{await navigator.share({files:[file],title:'Suizamente',text:enlace});return 'Imagen compartida.'}catch(error){if(error.name==='AbortError')return ''}}
   const url=URL.createObjectURL(blob),link=document.createElement('a');link.href=url;link.download='suizamente.png';link.click();setTimeout(()=>URL.revokeObjectURL(url),10000)
-  try{await navigator.clipboard.writeText(enlace);return 'Imagen descargada y enlace copiado.'}catch{return 'Imagen descargada.'}
+  return options.descargar?'Imagen descargada.':'Imagen descargada. Adjúntala en WhatsApp, Instagram o la aplicación que prefieras.'
 }
