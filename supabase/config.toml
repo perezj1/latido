@@ -9,6 +9,10 @@ verify_jwt = false
 # Guests use UUIDs; signed-in users and SSO are verified inside the handler.
 verify_jwt = false
 
+[functions.suizamente-conquista]
+# Verified Auth user required by the handler; no anonymous wallet mutations.
+verify_jwt = false
+
 [functions.latido_message_email]
 verify_jwt = false
 

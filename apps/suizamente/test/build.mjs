@@ -24,7 +24,7 @@ for(const size of [72,96]){
   assert.ok(root.includes(`rel="icon" href="/icons/favicon-circle-${size}.png"`))
   assert.equal(hash(await readFile(`dist/icons/favicon-circle-${size}.png`)),hash(await readFile(`../../public/suizamente/icons/suizamente-circle-logo-${size}.png`)))
 }
-for (const route of ['onboarding','cuenta','auth/callback','auth/restablecer','retos','ranking','libreta','perfil','perfil/editar','amigos','medallas','ajustes','proponer','moderacion','avisos','jugar']) {
+for (const route of ['conquista','conquista/tienda','conquista/batallas','conquista/coleccion','conquista/retar','onboarding','cuenta','auth/callback','auth/restablecer','retos','ranking','libreta','perfil','perfil/editar','amigos','medallas','ajustes','proponer','moderacion','avisos','jugar']) {
   const html=await read(`dist/${route}/index.html`)
   assert.ok(html.includes('class="startup"'),'Missing startup animation: '+route)
   assert.ok(html.includes('class="page boot"'),'Text fallback must remain hidden when JS runs: '+route)
@@ -33,7 +33,7 @@ for (const route of ['onboarding','cuenta','auth/callback','auth/restablecer','r
   assert.match(html,/<meta name="referrer" content="no-referrer">/)
   assert.match(html,new RegExp('href="https://suizamente.latido.ch/'+route+'"'))
 }
-for (const file of ['logo.svg','juego.js','juego.html','votos.js','fonts.css','data/preguntas.json','experiencia.js','experiencia.css','experiencia-datos.js','historia.js']) {
+for (const file of ['conquista.js','conquista.css','conquista/mapa.json','logo.svg','juego.js','juego.html','votos.js','fonts.css','data/preguntas.json','experiencia.js','experiencia.css','experiencia-datos.js','historia.js']) {
   assert.equal(hash(await readFile('dist/suizamente/'+file)),hash(await readFile('../../public/suizamente/'+file)),`Shared source drift: ${file}`)
 }
 for(const file of ['experiencia.js','juego.js','historia.js'])assert.doesNotMatch(await read('dist/suizamente/'+file),/perfiles ficticios|Datos de demostración|No son cuentas ni actividad real|Ver la clasificación real|NO SON VOTOS REALES/i)
@@ -44,11 +44,14 @@ const worker=await read('dist/sw.js')
 assert.equal(worker.includes('__BUILD_ID__'),false)
 assert.doesNotMatch(worker,/access_token|refresh_token|Authorization|localStorage/)
 const vercel=JSON.parse(await read('vercel.json'))
-for (const source of ['/onboarding(.*)','/cuenta(.*)','/auth/(.*)','/retos(.*)','/ranking(.*)','/libreta(.*)','/perfil(.*)','/amigos(.*)','/medallas(.*)','/ajustes(.*)','/proponer(.*)','/moderacion(.*)','/avisos(.*)','/jugar(.*)','/duelo(.*)']) {
+for (const source of ['/conquista(.*)','/onboarding(.*)','/cuenta(.*)','/auth/(.*)','/retos(.*)','/ranking(.*)','/libreta(.*)','/perfil(.*)','/amigos(.*)','/medallas(.*)','/ajustes(.*)','/proponer(.*)','/moderacion(.*)','/avisos(.*)','/jugar(.*)','/duelo(.*)']) {
   const headers=vercel.headers.find(rule=>rule.source===source).headers
   assert.equal(headers.find(h=>h.key==='Cache-Control').value,'no-store')
   assert.match(headers.find(h=>h.key==='X-Robots-Tag').value,/noindex/)
 }
+const conquest=await read('dist/conquista.html')
+assert.match(conquest,/<meta name="robots" content="noindex, nofollow">/)
+for(const part of ['canton','partida','batalla'])assert.ok(vercel.rewrites.some(rule=>rule.source.startsWith('/conquista/'+part+'/')&&rule.destination==='/conquista.html'))
 const duel=await read('dist/duelo.html')
 assert.match(duel,/<meta name="robots" content="noindex, nofollow">/)
 for(const route of ['bienvenida','como-se-juega']) {
@@ -77,4 +80,6 @@ async function scan(directory) {
   }
 }
 await scan('dist')
+for(const file of ['dist/suizamente/conquista.js','dist/suizamente/conquista/mapa.json']){const content=await read(file);assert.doesNotMatch(content,/cq-2026-[A-Z]{2}-\d{3}/,'Protected question IDs leaked into public assets')}
+assert.equal((await readdir('dist/suizamente/conquista')).includes('preguntas.json'),false)
 console.log('PASS: independent production artifacts, exact shared sources, private SEO/headers, sitemap, versioned SW and absence of server secrets.')

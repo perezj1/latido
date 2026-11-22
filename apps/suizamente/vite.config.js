@@ -9,10 +9,10 @@ import { publicConfig } from './src/config.js'
 const appRoot = fileURLToPath(new URL('.', import.meta.url))
 const repoRoot = path.resolve(appRoot, '../..')
 const sharedRoot = path.join(repoRoot, 'public')
-const routes = new Set(['/onboarding','/cuenta','/auth/callback','/auth/restablecer','/instalar','/bienvenida','/como-se-juega','/retos','/ranking','/libreta','/perfil','/perfil/editar','/amigos','/medallas','/ajustes','/proponer','/moderacion','/avisos','/jugar'])
+const routes = new Set(['/conquista/avisos','/conquista','/conquista/tienda','/conquista/batallas','/conquista/coleccion','/conquista/retar','/onboarding','/cuenta','/auth/callback','/auth/restablecer','/instalar','/bienvenida','/como-se-juega','/retos','/ranking','/libreta','/perfil','/perfil/editar','/amigos','/medallas','/ajustes','/proponer','/moderacion','/avisos','/jugar'])
 const publicRoutes=new Set(['/instalar','/bienvenida','/como-se-juega'])
 const routeTitles={'/instalar':'Instalar Suizamente','/bienvenida':'Bienvenido a Suizamente','/como-se-juega':'Cómo jugar a Suizamente','/retos':'Retos','/ranking':'Rankings','/libreta':'Tu libreta','/perfil':'Tu perfil','/perfil/editar':'Editar tu perfil','/amigos':'Amigos','/medallas':'Medallas','/ajustes':'Ajustes','/proponer':'Proponer una pregunta','/moderacion':'Revisar propuestas','/avisos':'Avisos','/jugar':'Jugar'}
-const knownPath=pathname=>routes.has(pathname)||/^\/duelo\/[A-Fa-f0-9]{8}$/.test(pathname)
+const knownPath=pathname=>routes.has(pathname)||(/^\/duelo\/[A-Fa-f0-9]{8}$/.test(pathname)||/^\/conquista\/(?:canton\/[A-Z]{2}|(?:partida|batalla)\/[a-f0-9-]{36})$/.test(pathname))
 const icons = {
   '/favicon.svg':'favicon.svg',
   '/icons/favicon-circle-72.png':'suizamente/icons/suizamente-circle-logo-72.png',
@@ -66,7 +66,7 @@ export default defineConfig(({ command, mode }) => {
       configurePreviewServer(server) {
         server.middlewares.use((req, _res, next) => {
           const url = new URL(req.url || '/', 'http://localhost'), pathname = url.pathname.replace(/\/$/, '') || '/'
-          if (knownPath(pathname)) req.url = (routes.has(pathname)?pathname+'/index.html':'/duelo.html') + url.search
+          if (knownPath(pathname)) req.url = (routes.has(pathname)?pathname+'/index.html':pathname.startsWith('/conquista/')?'/conquista.html':'/duelo.html') + url.search
           next()
         })
       },
@@ -127,6 +127,7 @@ export default defineConfig(({ command, mode }) => {
           await writeFile(path.join(directory, 'index.html'), html)
         }
         await writeFile(path.join(output,'duelo.html'),index.replace(/(<meta name="robots" content=")[^"]+/,'$1noindex, nofollow').replace(/(<meta name="referrer" content=")[^"]+/,'$1no-referrer'))
+        await writeFile(path.join(output,'conquista.html'),index.replace(/(<meta name="robots" content=")[^"]+/,'$1noindex, nofollow').replace(/(<meta name="referrer" content=")[^"]+/,'$1no-referrer'))
         await writeFile(path.join(output, 'robots.txt'), preview ? 'User-agent: *\nDisallow: /\n' : `User-agent: *\nAllow: /\nDisallow: /cuenta\nDisallow: /auth/\nDisallow: /suizamente/\nDisallow: /sin-conexion.html\nSitemap: ${site.replace(/\/$/,'')}/sitemap.xml\n`)
         await writeFile(path.join(output, 'sitemap.xml'), `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>${site.replace(/\/$/,'')}/</loc></url><url><loc>${site.replace(/\/$/,'')}/instalar</loc></url></urlset>\n`)
         await writeFile(path.join(output, '404.html'), '<!doctype html><html lang="es"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>Página no encontrada · Suizamente</title><h1>Página no encontrada</h1><p><a href="/">Volver a Suizamente</a></p></html>')

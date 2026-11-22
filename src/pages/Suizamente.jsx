@@ -69,6 +69,7 @@ export default function Suizamente() {
     },
     socialApi:import.meta.env.DEV?'/api/suizamente/social':import.meta.env.VITE_SUPABASE_URL?.replace(/\/$/,'')+'/functions/v1/suizamente-social',
     getPath:()=>pathRef.current,
+    conquistaApi:import.meta.env.VITE_SUPABASE_URL?.replace(/\/$/,'')+'/functions/v1/suizamente-conquista',
     onNavigate:next=>navigate('/suizamente'+(next==='/'?'':next)),
     api:import.meta.env.PROD && import.meta.env.VITE_SUPABASE_URL
       ? import.meta.env.VITE_SUPABASE_URL.replace(/\/$/, '') + '/functions/v1/suizamente-votos'

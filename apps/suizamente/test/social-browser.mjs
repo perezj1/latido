@@ -85,7 +85,7 @@ try{
  await expect(a.game.locator('[aria-label="Tu perfil"] .s-avatar-photo')).toHaveAttribute('src','https://avatars.example.test/latido-alice.svg')
  await expect(a.game.locator('.s-nav [data-go="/perfil"] .s-avatar-photo')).toBeVisible()
  await expect(a.game.locator('.s-home [data-go="/perfil"]')).toHaveCount(0)
- await expect(a.game.locator('.s-nav button')).toHaveCount(5)
+ await expect(a.game.locator('.s-nav button')).toHaveCount(6)
  await expect(a.game.locator('.s-nav button[aria-current=page]')).toContainText('Jugar')
  await a.page.screenshot({path:'test-results/social/inicio.png',fullPage:true})
  await navigate(a,'/ranking')
@@ -448,6 +448,6 @@ try{
  await expect(a.game.locator('.s-round-cell')).toHaveCount(1)
  assert.deepEqual(errors,[])
  assert.ok(requests.some(r=>r.path.endsWith('/answer')&&r.status===200))
- console.log('PASS: complete social UI with real PostgreSQL fixtures; names, preserved questions/results, 5 emoji tabs, notebook, friendship requests, two-player duels, daily challenge, mean cantonal league, proposals, moderation, settings and dark/mobile layouts. Zero production writes.')
+ console.log('PASS: complete social UI with real PostgreSQL fixtures; names, preserved questions/results, 6 navigation tabs, notebook, friendship requests, two-player duels, daily challenge, mean cantonal league, proposals, moderation, settings and dark/mobile layouts. Zero production writes.')
 }catch(error){if(a)await a.page.screenshot({path:'test-results/social/failure.png',fullPage:true});console.error(error.message);process.exitCode=1}
 finally{await a?.context.close();await b?.context.close();await guest?.context.close();await ssoView?.context.close();await browser.close();await new Promise(resolve=>server.httpServer.close(resolve));await f.db.close()}

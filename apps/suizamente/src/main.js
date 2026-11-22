@@ -1,3 +1,4 @@
+import {rememberConquistaRoute,takeConquistaRoute} from './conquistaReturn.js'
 import { createClient } from '@supabase/supabase-js'
 import { resilientAuthStorage } from '../../../src/lib/authStorage.js'
 import { connectSuizamenteSession,isSuizamentePath } from '../../../src/lib/suizamenteSessionBridge.js'
@@ -20,6 +21,8 @@ const referenceMode=()=>window.SUIZAMENTE_CONFIG?.experiencia===false
 
 const installation=createSuizamenteInstall({navigate:next=>{history.pushState(null,'',next);render()}})
 
+const loginDestination=()=>{try{return takeConquistaRoute(sessionStorage)}catch{return '/'}}
+const rememberDestination=()=>{try{rememberConquistaRoute(sessionStorage,location.pathname+location.search)}catch{}}
 function path() { return location.pathname.replace(/\/+$/, '') || '/' }
 function message(text, error=false) {
   const node = root.querySelector('#message')
@@ -50,7 +53,7 @@ function mountGame() {
   disposeFrame = connectSuizamenteSession({
     getFrame:() => frame.isConnected ? frame.contentWindow : null,
     getSession:() => client.auth.getSession(), api:config.api, standalone:true,
-    experience:true,socialApi:config.socialApi,getPath:()=>location.pathname+location.search,
+    experience:true,socialApi:config.socialApi,conquistaApi:config.conquistaApi,getPath:()=>location.pathname+location.search,
     onLogout:logout,
     onNavigate:next=>{history.pushState(null,'',next);installation.setRoute(new URL(next,location.origin).pathname);metadata(!['/','/bienvenida','/como-se-juega'].includes(new URL(next,location.origin).pathname))},
   })
@@ -87,7 +90,7 @@ function renderAccount() {
     registrationActive=true
     disposeRegistration=mountSuizamenteRegistration(root,{
       client,socialApi:config.socialApi,redirectTo:location.origin+'/auth/callback',backHref:'/bienvenida',
-      onLogin:()=>changeMode('login'),onGoogle:()=>googleLogin(),onLatido:()=>latidoLogin(),onComplete:()=>location.replace('/'),
+      onLogin:()=>changeMode('login'),onGoogle:()=>googleLogin(),onLatido:()=>latidoLogin(),onComplete:()=>location.replace(loginDestination()),
     })
     return
   }
@@ -108,7 +111,7 @@ function renderAccount() {
         result = await client.auth.resetPasswordForEmail(email, { redirectTo:location.origin + '/auth/restablecer' })
       } else result = await client.auth.signInWithPassword({ email, password:String(values.get('password')) })
       if (result.error) return message(authError(result.error), true)
-      if (result.data?.session) { try{localStorage.removeItem('suizamente:sso-optout')}catch{}location.replace('/'); return }
+      if (result.data?.session) { try{localStorage.removeItem('suizamente:sso-optout')}catch{}location.replace(loginDestination()); return }
       message(recovery ? 'Si existe una cuenta con ese correo, recibirás un enlace para cambiar la contraseña. Ábrelo en este mismo navegador y dispositivo.' : 'Revisa tu correo para confirmar la cuenta. Abre el enlace en este mismo navegador y dispositivo.')
     } catch { message('No se ha podido conectar. Comprueba tu conexión y vuelve a intentarlo.', true) }
     finally { if (form.isConnected) busy(form, false) }
@@ -122,7 +125,7 @@ async function latidoLogin(){
   if(button)button.disabled=true
   message('Abre tu cuenta de Latido en la ventana que aparece.')
   const linked=await connectLatidoAccount({client,socialApi:config.socialApi,popup:true})
-  if(linked){location.replace('/');return}
+  if(linked){location.replace(loginDestination());return}
   if(button)button.disabled=false
   message('Puedes entrar también con el correo y la contraseña de tu cuenta de Latido.',true)
 }
@@ -163,11 +166,13 @@ function renderInstall() {
   installation.renderGuide(root)
 }
 function renderOnboarding(){
+  rememberDestination()
   metadata(true);document.title='Bienvenido a Suizamente';registrationActive=true;installation.setRoute('/onboarding')
   history.replaceState(null,'','/onboarding')
-  disposeEntry=mountSuizamenteOnboarding(root,{client,socialApi:config.socialApi,user:session.user,onComplete:()=>installation.afterOnboarding(()=>location.replace('/'))})
+  disposeEntry=mountSuizamenteOnboarding(root,{client,socialApi:config.socialApi,user:session.user,onComplete:()=>installation.afterOnboarding(()=>location.replace(loginDestination()))})
 }
 function renderWelcome(){
+  rememberDestination()
   metadata(false);document.title='Bienvenido a Suizamente';installation.setRoute('/bienvenida')
   history.replaceState(null,'','/bienvenida')
   disposeEntry=mountSuizamenteWelcome(root,{
@@ -192,7 +197,7 @@ function render() {
     metadata(true)
     // getSession() has already awaited the SDK's single automatic PKCE exchange.
     history.replaceState(null, '', '/auth/callback')
-    if (session?.user) location.replace('/')
+    if (session?.user) location.replace(loginDestination())
     else shell('No se ha podido entrar', '<p>El enlace puede haber caducado o haberse abierto en otro navegador. Vuelve a entrar con tu cuenta.</p><a class="button primary" href="/cuenta">Entrar de nuevo</a>')
   } else {
     metadata(true)
@@ -203,7 +208,9 @@ function render() {
 async function start() {
   try {
     config = publicConfig(import.meta.env)
-    config.socialApi=config.url+'/functions/v1/suizamente-social'
+    config.conquistaApi=config.url+'/functions/v1/suizamente-conquista'
+    config.socialApi=__SUIZAMENTE_PREVIEW__?config.conquistaApi+'/social':config.url+'/functions/v1/suizamente-social'
+    if(__SUIZAMENTE_PREVIEW__)config.api=config.conquistaApi+'/base'
     client = createClient(config.url, config.key, {
       auth:{ persistSession:true, autoRefreshToken:true, detectSessionInUrl:true, flowType:'pkce', storage:resilientAuthStorage },
     })

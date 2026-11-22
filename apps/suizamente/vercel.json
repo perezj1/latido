@@ -298,6 +298,23 @@
           "value": "no-referrer"
         }
       ]
+    },
+    {
+      "source": "/conquista(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-store"
+        },
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow, noarchive"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "no-referrer"
+        }
+      ]
     }
   ],
   "rewrites": [
@@ -380,6 +397,42 @@
     {
       "source": "/onboarding",
       "destination": "/onboarding/index.html"
+    },
+    {
+      "source": "/conquista",
+      "destination": "/conquista/index.html"
+    },
+    {
+      "source": "/conquista/tienda",
+      "destination": "/conquista/tienda/index.html"
+    },
+    {
+      "source": "/conquista/batallas",
+      "destination": "/conquista/batallas/index.html"
+    },
+    {
+      "source": "/conquista/coleccion",
+      "destination": "/conquista/coleccion/index.html"
+    },
+    {
+      "source": "/conquista/retar",
+      "destination": "/conquista/retar/index.html"
+    },
+    {
+      "source": "/conquista/avisos",
+      "destination": "/conquista/avisos/index.html"
+    },
+    {
+      "source": "/conquista/canton/:codigo([A-Z]{2})",
+      "destination": "/conquista.html"
+    },
+    {
+      "source": "/conquista/partida/:id([a-f0-9-]{36})",
+      "destination": "/conquista.html"
+    },
+    {
+      "source": "/conquista/batalla/:id([a-f0-9-]{36})",
+      "destination": "/conquista.html"
     }
   ]
 }

@@ -1,5 +1,10 @@
 # Suizamente independiente
 
+La rama `suizamente-social` incorpora **Suizamente Conquista**: mapa oficial,
+conquistas individuales, saldo separado de XP, tienda, batallas voluntarias
+entre amigos y colección. La arquitectura, reglas, fuentes, instalación y
+pruebas están en [CONQUISTA.md](../../docs/suizamente/CONQUISTA.md).
+
 PWA para `https://suizamente.latido.ch`, dentro de `perezj1/latido`. Usa el mismo juego que `/suizamente` en Latido, el mismo banco de preguntas y el proyecto Supabase existente. No requiere instalar las dependencias de la aplicación raíz para compilar.
 
 Desde la raíz del repositorio:

@@ -18,7 +18,7 @@ self.addEventListener('activate', event => {
     for (const key of previous) if (key.startsWith('suizamente-public-') && key !== CACHE) await caches.delete(key)
     await self.clients.claim()
     if(updated){
-      const safePages=new Set(['/','/ranking','/retos','/perfil','/libreta','/amigos','/avisos','/medallas','/bienvenida','/como-se-juega','/instalar'])
+      const safePages=new Set(['/conquista','/conquista/tienda','/conquista/batallas','/conquista/coleccion','/','/ranking','/retos','/perfil','/libreta','/amigos','/avisos','/medallas','/bienvenida','/como-se-juega','/instalar'])
       for(const client of await self.clients.matchAll({type:'window',includeUncontrolled:true})){
         const url=new URL(client.url)
         if(url.origin===self.location.origin&&safePages.has(url.pathname))await client.navigate(client.url).catch(()=>{})

@@ -10,3 +10,8 @@ output/card-header.txt
 output/latido-landing-source.css
 output/suizamente-referencia/
 .vercel
+# Live Conquista content and answer keys: this repository is public.
+data/suizamente/conquista/
+scripts/generar-conquista.mjs
+supabase/suizamente-conquista/04-preguntas.sql
+supabase/suizamente_conquista_instalar.sql
