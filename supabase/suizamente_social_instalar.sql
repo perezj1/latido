@@ -2301,6 +2301,7 @@ BEGIN
     'participante',coalesce(propio,false),'puedeUnirse',d.estado='esperando' AND d.rival IS NULL AND p_jugador<>d.creador AND (d.invitado IS NULL OR d.invitado=p_jugador),
     'preguntas',CASE WHEN propio THEN to_jsonb(d.preguntas) ELSE '[]'::jsonb END,
     'respondidas',CASE WHEN p_jugador=d.creador THEN ca WHEN p_jugador=d.rival THEN cb ELSE 0 END,
+    'respondidasCreador',CASE WHEN propio THEN ca END,'respondidasRival',CASE WHEN propio THEN cb END,
     'mias',CASE WHEN p_jugador=d.creador THEN a WHEN p_jugador=d.rival THEN b ELSE '{}'::jsonb END,
     'puntosCreador',CASE WHEN propio AND ca=10 AND cb=10 THEN puntos_a END,
     'puntosRival',CASE WHEN propio AND ca=10 AND cb=10 THEN puntos_b END,

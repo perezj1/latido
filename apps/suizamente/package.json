@@ -16,7 +16,8 @@
     "test:browser": "node test/browser.mjs",
     "test:onboarding": "node test/onboarding-browser.mjs",
     "test:install": "node test/install-browser.mjs",
-    "test:social": "node test/social-browser.mjs"
+    "test:social": "node test/social-browser.mjs",
+    "test:retos": "node test/retos-browser.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "2.103.2"
