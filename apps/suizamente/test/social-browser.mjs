@@ -48,7 +48,7 @@ async function create(id,options={}){
 async function navigate(view,path){await view.page.goto(origin+path);await expect(view.game.locator('.social')).toBeVisible()}
 async function mockImageShare(view){await view.game.locator('body').evaluate(()=>{
  Object.defineProperty(navigator,'canShare',{configurable:true,value:data=>data.files?.length===1})
- Object.defineProperty(navigator,'share',{configurable:true,value:async data=>{window.__sharePayload={text:data.text,files:data.files?.map(f=>({name:f.name,type:f.type,size:f.size}))}}})
+ Object.defineProperty(navigator,'share',{configurable:true,value:async data=>{window.__sharePayload={text:data.text,url:data.url,files:data.files?.map(f=>({name:f.name,type:f.type,size:f.size}))}}})
 })}
 async function answerRound(view,count=10){
  for(let i=0;i<count;i++){
@@ -189,15 +189,25 @@ try{
  await expect(a.game.getByRole('heading',{name:'Duelo',exact:true})).toBeVisible()
  const pendingCode=new URL(a.page.url()).pathname.split('/').at(-1)
  await a.game.locator('[data-invite]').click()
- await expect(a.game.locator('#social-story')).toBeEnabled()
+ await expect(a.game.getByRole('textbox',{name:'Enlace del reto',exact:true})).toHaveValue('https://suizamente.latido.ch/duelo/'+pendingCode)
+ await expect(a.game.locator('#social-story')).toHaveCount(0)
+ await expect(a.game.locator('.s-share-sheet img')).toHaveCount(0)
  await mockImageShare(a)
- await a.game.locator('[data-share-group]').click()
- await expect(a.game.locator('.s-share-status')).toContainText('Imagen compartida')
+ await a.game.locator('[data-share-invite]').click()
+ await expect(a.game.locator('.s-share-status')).toContainText('Reto compartido')
  const invite=await a.game.locator('body').evaluate(()=>window.__sharePayload)
- assert.ok(invite.text.endsWith('/duelo/'+pendingCode));assert.equal(invite.files[0].type,'image/png')
+ assert.equal(invite.url,'https://suizamente.latido.ch/duelo/'+pendingCode);assert.equal(invite.files,undefined)
+ await a.game.locator('[data-copy-invite]').click()
+ await expect(a.game.locator('.s-share-status')).toContainText('Enlace del reto copiado')
+ assert.equal(await a.page.evaluate(()=>navigator.clipboard.readText()),invite.url)
  await a.game.locator('.s-share-close').click()
  await navigate(a,'/retos')
  await expect(a.game.locator(`[data-duel="${pendingCode}"] [data-invite]`)).toBeVisible()
+ const receiver=await create(bob)
+ await navigate(receiver,'/duelo/'+pendingCode)
+ await receiver.game.getByRole('button',{name:'Aceptar el reto',exact:true}).click()
+ await expect(receiver.game.getByRole('button',{name:'Jugar mi duelo',exact:true})).toBeVisible()
+ await receiver.context.close()
  await a.game.locator(`[data-delete-duel="${pendingCode}"]`).click()
  await expect(a.game.locator(`[data-duel="${pendingCode}"]`)).toHaveCount(0)
  await f.reset()

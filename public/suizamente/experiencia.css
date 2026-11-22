@@ -310,6 +310,9 @@ body .reveal{padding-top:calc(10px + env(safe-area-inset-top,0px));padding-botto
 .s-result-actions+.copymsg:empty{display:none}
 .s-share-sheet{position:fixed;inset:auto 0 0;margin:0 auto;width:min(100%,480px);max-width:480px;max-height:calc(100dvh - 12px);padding:12px 20px max(20px,env(safe-area-inset-bottom));border:1px solid var(--s-border);border-radius:32px 32px 0 0;box-sizing:border-box;background:var(--s-surface);color:var(--s-ink);font-family:var(--font);overflow-y:auto;scrollbar-width:none;overscroll-behavior:contain;box-shadow:0 -8px 40px #0f1a2b16}
 .s-share-sheet::backdrop{background:#0f1a2b66}
+.s-invite-link{display:grid;gap:8px;font-size:13px;font-weight:700;margin:18px 0}
+.s-invite-link input{width:100%;min-width:0;padding:12px;border:1px solid var(--line);border-radius:12px;background:var(--wash);color:var(--ink);font:500 13px/1.5 var(--font)}
+.s-invite-actions{display:grid;gap:10px}
 .s-share-grid .challenge:last-child{grid-column:1/-1;min-height:100px}
 .s-duel-manage{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;border-top:1px solid var(--line);padding-top:10px}
 .s-duel-manage .s-button{min-height:38px;padding:7px 12px;font-size:12px}

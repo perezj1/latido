@@ -255,7 +255,31 @@ export async function crearExperiencia({container,questions,identity,getIdentity
     const d=await api('/duels/'+code,{force:true})
     if(d.creador?.id!==state.profile?.id||d.estado!=='esperando'||d.rival){toast('Este reto ya tiene rival o ha terminado.');return}
     const enlace='https://suizamente.latido.ch/duelo/'+code
-    openShareSheet({titulo:'Te reto a Suizamente',subtitulo:`${MODOS[d.modo]?.[1]||'Mix'} · 10 preguntas · Un rival por reto`,enlace,invitacion:true,duelCode:code,duel:d,challengeMode:d.modo})
+    shareSheet?.close()
+    const dialog=document.createElement('dialog'),previousFocus=document.activeElement
+    dialog.className='s-share-sheet';dialog.setAttribute('aria-labelledby','invite-sheet-title')
+    dialog.innerHTML=`<span class="s-sheet-handle" aria-hidden="true"></span><h2 id="invite-sheet-title">Enviar reto</h2><p class="s-soft">Comparte este enlace con una persona. Al abrirlo podrá aceptar y jugar este mismo reto.</p><label class="s-invite-link">Enlace del reto<input type="text" readonly value="${esc(enlace)}" aria-label="Enlace del reto"></label><div class="s-invite-actions"><button type="button" class="s-button full" data-share-invite>Enviar enlace</button><button type="button" class="s-button secondary full" data-copy-invite>Copiar enlace</button></div><p class="s-share-status" role="status" aria-live="polite">${esc(MODOS[d.modo]?.[1]||'Mix')} · 10 preguntas · Un único rival</p><button type="button" class="s-share-close">Cerrar</button>`
+    document.body.append(dialog);shareSheet=dialog
+    const status=dialog.querySelector('.s-share-status'),input=dialog.querySelector('input'),send=dialog.querySelector('[data-share-invite]')
+    const copy=async()=>{
+      try{await navigator.clipboard.writeText(enlace);status.textContent='Enlace del reto copiado. Pégalo en el chat de la persona a la que quieres retar.'}
+      catch{input.focus();input.select();input.setSelectionRange(0,enlace.length);status.textContent=document.execCommand('copy')?'Enlace del reto copiado.':'El enlace está seleccionado. Cópialo y envíalo a la otra persona.'}
+    }
+    dialog.querySelector('[data-copy-invite]').onclick=copy
+    send.onclick=async()=>{
+      if(!navigator.share){await copy();return}
+      send.disabled=true
+      try{
+        await navigator.share({title:'Te reto a Suizamente',text:'¿Jugamos estas diez preguntas sobre Suiza?',url:enlace})
+        state.sentInvites[code]=true;remember();status.textContent='Reto compartido. Esperando a que la otra persona lo acepte.'
+        const card=container.querySelector(`[data-duel="${code}"]`)
+        if(card){const list=document.createElement('div');list.innerHTML=duelCard(d);card.replaceWith(list.firstElementChild)}
+      }catch(error){if(error.name!=='AbortError')await copy()}
+      finally{if(send.isConnected)send.disabled=false}
+    }
+    dialog.querySelector('.s-share-close').onclick=()=>dialog.close()
+    dialog.addEventListener('close',()=>{dialog.remove();if(shareSheet===dialog)shareSheet=null;if(previousFocus?.isConnected)previousFocus.focus()},{once:true})
+    dialog.showModal()
   }
   async function toggleBook(id){const saved=state.books.includes(id);await api('/notebook/'+id,{method:saved?'DELETE':'PUT',body:{}});toast(saved?'Dato quitado de tu libreta.':'Guardado en tu libreta.');return !saved}
   function deleteScreen(){page(`${header('Borrar mis datos de Suizamente',{back:'/ajustes'})}<p class="s-soft">Se eliminarán tu perfil del juego, puntos, amigos, libreta y progreso. Tus votos se conservarán de forma anónima. Tu cuenta de acceso seguirá existiendo.</p><form id="delete-form" class="s-form"><label class="s-check"><input type="checkbox" name="confirmado" required>Entiendo que no podré recuperar estos datos.</label><label>Escribe BORRAR<input name="confirmacion" required pattern="BORRAR" autocomplete="off"></label><button class="s-button danger full">Borrar mis datos</button></form>`);container.querySelector('#delete-form').onsubmit=event=>submitForm(event,async values=>{await api('/profile',{method:'DELETE',body:{confirmacion:values.get('confirmacion'),confirmado:values.has('confirmado')}});try{for(const storageKey of [key,'suizamente:v1'+(identity.userId?':'+identity.userId:''),'suizamente:pendientes:'+account])localStorage.removeItem(storageKey)}catch{}location.reload()})}
@@ -325,11 +349,6 @@ export async function crearExperiencia({container,questions,identity,getIdentity
       storyButton.disabled=true;sendButton.disabled=true
       try{
         const result=await compartirHistoria({...options,historia,descargar});status.textContent=result
-        if(options.duelCode&&!descargar&&result==='Imagen compartida.'){
-          state.sentInvites[options.duelCode]=true;remember()
-          const card=container.querySelector(`[data-duel="${options.duelCode}"]`)
-          if(card){const list=document.createElement('div');list.innerHTML=duelCard(options.duel);card.replaceWith(list.firstElementChild)}
-        }
       }
       catch{status.textContent='No se ha podido enviar la imagen. Puedes descargarla y adjuntarla.'}
       finally{if(dialog.isConnected){storyButton.disabled=false;sendButton.disabled=false}}
