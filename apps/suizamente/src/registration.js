@@ -1,3 +1,4 @@
+import {prepararFoto,guardarFoto} from '../../../public/suizamente/foto-perfil.js'
 const escape = value => String(value ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))
 
 export function registrationError(error) {
@@ -57,7 +58,7 @@ export async function prepareSuizamenteAccount({client,storage,now=Date.now()}) 
 
 export function mountSuizamenteRegistration(root, {client, socialApi, redirectTo, backHref, onLogin, onGoogle, onLatido=onLogin, onComplete, profileOnly=false,completeOnboarding=false, initialUser=null}) {
   let disposed=false, submitting=false, step=profileOnly?1:0, choices=null, accountUser=null
-  const values={email:'',password:'',name:'',pais:'',canton:'',anosSuiza:'',terms:false}
+  const values={email:'',password:'',name:'',pais:'',canton:'',anosSuiza:'',photo:'',terms:false}
   const message=(text,error=false)=>{
     const node=root.querySelector('#message')
     if(node){node.textContent=text;node.setAttribute('role',error?'alert':'status')}
@@ -68,8 +69,8 @@ export function mountSuizamenteRegistration(root, {client, socialApi, redirectTo
     if(form.elements.namedItem('terms'))values.terms=fields.has('terms')
   }
   const draftKey=()=>accountUser?.id?'suizamente:registro:'+accountUser.id:null
-  function saveDraft(){try{const key=draftKey();if(key)sessionStorage.setItem(key,JSON.stringify(Object.fromEntries(['name','pais','canton','anosSuiza'].map(k=>[k,values[k]]))))}catch{/* The profile form also works without storage. */}}
-  function restoreDraft(){try{const saved=JSON.parse(sessionStorage.getItem(draftKey())||'{}');for(const k of ['name','pais','canton','anosSuiza'])if(typeof saved[k]==='string')values[k]=saved[k]}catch{}}
+  function saveDraft(){try{const key=draftKey();if(key)sessionStorage.setItem(key,JSON.stringify(Object.fromEntries(['name','pais','canton','anosSuiza','photo'].map(k=>[k,values[k]]))))}catch{/* The profile form also works without storage. */}}
+  function restoreDraft(){try{const saved=JSON.parse(sessionStorage.getItem(draftKey())||'{}');for(const k of ['name','pais','canton','anosSuiza','photo'])if(typeof saved[k]==='string')values[k]=saved[k]}catch{}}
   const options=(list,selected,placeholder)=>'<option value="">'+placeholder+'</option>'+Object.entries(list).map(([id,label])=>`<option value="${escape(id)}" ${selected===id?'selected':''}>${escape(label)}</option>`).join('')
   function render() {
     if(disposed)return
@@ -77,7 +78,7 @@ export function mountSuizamenteRegistration(root, {client, socialApi, redirectTo
       ${!step?`<a class="suizamente-access__back" href="${escape(backHref)}" aria-label="Volver">←</a>`:''}
       <header class="suizamente-access__heading"><img src="/suizamente/logo.svg" width="72" height="54" alt="Suizamente"><h1>${step?'Tu perfil en Suizamente':'Crea tu cuenta'}</h1><p>${step?'Elige cómo quieres aparecer en el juego.':'Crea tu cuenta de Suizamente. También podrás usarla para entrar en Latido cuando quieras.'}</p></header>
       <form id="registration-form">
-        ${step?`<label>Nombre de usuario<input name="name" autocomplete="nickname" minlength="2" maxlength="80" value="${escape(values.name)}" placeholder="Tu nombre en el juego" required aria-describedby="name-hint"></label><p class="suizamente-access__hint" id="name-hint">Obligatorio. Será tu nombre visible en Suizamente.</p>
+        ${step?`<div class="suizamente-access__photo"><button type="button" data-choose-photo aria-label="Elegir foto de perfil"><span data-photo-preview>${values.photo?`<img src="${escape(values.photo)}" alt="Foto elegida">`:'&#128100;'}</span><span aria-hidden="true">&#128247;</span></button><p>Foto de perfil <small>Opcional · Toca para elegir una foto</small></p><input type="file" accept="image/*" data-photo-file hidden></div><label>Nombre de usuario<input name="name" autocomplete="nickname" minlength="2" maxlength="80" value="${escape(values.name)}" placeholder="Tu nombre en el juego" required aria-describedby="name-hint"></label><p class="suizamente-access__hint" id="name-hint">Obligatorio. Será tu nombre visible en Suizamente.</p>
           <label>País de origen<select name="pais" aria-label="País de origen">${options(choices?.PAISES||{},values.pais,'Prefiero no indicarlo')}</select></label>
           <label>Cantón<select name="canton" aria-label="Cantón">${options(choices?.CANTONES||{},values.canton,'Elige tu cantón (opcional)')}</select></label>
           <label>¿Cuánto llevas en Suiza?<select name="anosSuiza" aria-label="¿Cuánto llevas en Suiza?">${options(choices?.ANOS||{},values.anosSuiza,'Prefiero no indicarlo')}</select></label>`:
@@ -93,6 +94,21 @@ export function mountSuizamenteRegistration(root, {client, socialApi, redirectTo
     if(google)google.onclick=()=>onGoogle()
     const latido=root.querySelector('#register-latido')
     if(latido)latido.onclick=()=>{if(!submitting){values.password='';onLatido()}}
+    const photoInput=root.querySelector('[data-photo-file]'),photoButton=root.querySelector('[data-choose-photo]')
+    if(photoInput){
+      photoButton.onclick=()=>photoInput.click()
+      photoInput.onchange=async()=>{
+        const file=photoInput.files?.[0];if(!file)return
+        submitting=true;root.querySelectorAll('button').forEach(node=>{node.disabled=true});message('Preparando tu foto…')
+        try{
+          const photo=await prepararFoto(file);if(disposed)return
+          values.photo=photo;saveDraft()
+          const preview=root.querySelector('[data-photo-preview]');preview.innerHTML=''
+          const image=document.createElement('img');image.src=photo;image.alt='Foto elegida';preview.append(image);message('Foto elegida. Se guardará con tu perfil.')
+        }catch(error){if(!disposed)message(error.message,true)}
+        finally{submitting=false;photoInput.value='';root.querySelectorAll('button').forEach(node=>{node.disabled=false})}
+      }
+    }
     root.querySelector('form').onsubmit=async event=>{
       event.preventDefault()
       if(submitting)return
@@ -131,6 +147,7 @@ export function mountSuizamenteRegistration(root, {client, socialApi, redirectTo
         if(saved.error)throw new Error('No se ha podido guardar tu nombre. Vuelve a intentarlo.')
         const updated=await client.auth.updateUser({data:{name:values.name,canton:values.canton,suizamente_necesita_perfil:true,suizamente_perfil_pendiente:profile}})
         if(updated.error)throw new Error('No se ha podido guardar tu perfil. Vuelve a intentarlo.')
+        if(values.photo)await guardarFoto(values.photo,{socialApi,token:current.access_token})
         await completeRegistrationProfile({client,socialApi,completeOnboarding})
         values.password=''
         try{sessionStorage.removeItem(draftKey())}catch{}

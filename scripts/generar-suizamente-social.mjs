@@ -6,6 +6,7 @@ const sql='-- Generado desde el banco publicado; no modifica IDs ni opciones.\nB
 await writeFile('supabase/suizamente-social/02-catalogo.sql',sql)
 await import('./generar-suizamente-desgloses.mjs')
 const parts=await Promise.all(['01-estructura','02-catalogo','03-funciones','06-gestion-retos','04-api','05-demostracion'].map(async name=>'-- '+name+'\n'+(await readFile('supabase/suizamente-social/'+name+'.sql','utf8')).replace(/^BEGIN;\s*$/gm,'').replace(/^COMMIT;\s*$/gm,'')))
+parts.push((await readFile('supabase/suizamente_fotos_perfil.sql','utf8')).replace(/^BEGIN;\s*$/gm,'').replace(/^COMMIT;\s*$/gm,''))
 await writeFile('supabase/suizamente_social_instalar.sql','-- Suizamente social: ejecutar completo en Supabase SQL Editor.\n-- Instalación aditiva e idempotente. Conserva votos y datos existentes.\nBEGIN;\n'+parts.join('\n')+'\nCOMMIT;\n')
 console.log(`Catálogo social: ${data.length} preguntas; respuestas calculadas en servidor.`)
 const changes=await Promise.all(['06-gestion-retos','03-funciones','04-api'].map(async name=>(await readFile('supabase/suizamente-social/'+name+'.sql','utf8')).replace(/^BEGIN;\s*$/gm,'').replace(/^COMMIT;\s*$/gm,'')))

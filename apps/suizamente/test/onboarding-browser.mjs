@@ -19,6 +19,7 @@ async function open({allowSso=false,initialSession=null,device}={}){
   await context.route('**/*',async route=>{
     const req=route.request(),url=new URL(req.url())
     if(url.origin===origin)return route.continue()
+    if(url.origin==='https://avatars.example.test'&&url.pathname.startsWith('/storage/v1/object/public/avatars/'))return route.fulfill({contentType:'image/jpeg',body:Buffer.from(f.uploads.get(url.pathname.replace('/storage/v1/object/public/avatars/',''))||[])})
     if(['https://latido.ch','https://www.latido.ch'].includes(url.origin)&&url.pathname==='/suizamente/conectar'){
       if(!state.allowSso)return route.fulfill({contentType:'text/html',body:'<!doctype html><title>Sin sesión de Latido</title>'})
       const account={access_token:token(alice),user:{id:alice}}
@@ -65,7 +66,7 @@ async function open({allowSso=false,initialSession=null,device}={}){
   await page.goto(origin,{waitUntil:'commit'})
   return {context,page,state,currentSession}
 }
-async function finish(view,{skip=false,name='Nombre Latido',installReminder}={}){
+async function finish(view,{skip=false,name='Nombre Latido',installReminder,photo=false}={}){
   const {page,state}=view
   await expect(page.getByRole('progressbar')).toHaveAttribute('aria-valuenow','1')
   if(skip)await page.getByRole('button',{name:'Saltar',exact:true}).click()
@@ -89,17 +90,22 @@ async function finish(view,{skip=false,name='Nombre Latido',installReminder}={})
   await page.getByLabel('País de origen',{exact:true}).selectOption('ES')
   await page.getByLabel('Cantón',{exact:true}).selectOption('ZH')
   await page.getByLabel('¿Cuánto llevas en Suiza?',{exact:true}).selectOption('1a3')
+  if(photo){
+    await page.locator('[data-photo-file]').setInputFiles({name:'foto.svg',mimeType:'image/svg+xml',buffer:Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="90" height="120"><rect width="90" height="120" fill="#3366dd"/></svg>')})
+    await expect(page.locator('[data-photo-preview] img')).toHaveAttribute('src',/^data:image\/jpeg;base64,/)
+  }
   await page.reload()
   await expect(page.getByRole('progressbar')).toHaveAttribute('aria-valuenow','5')
   await expect(page.getByLabel('Nombre de usuario',{exact:true})).toHaveValue(name)
   await expect(page.getByLabel('Cantón',{exact:true})).toHaveValue('ZH')
+  if(photo)await expect(page.locator('[data-photo-preview] img')).toHaveAttribute('src',/^data:image\/jpeg;base64,/)
   await page.screenshot({path:'test-results/onboarding/paso-5-perfil.png',fullPage:true})
   await page.getByRole('button',{name:'¡A jugar!',exact:true}).click()
   if(installReminder){
     const dialog=page.getByRole('dialog',{name:'Instala Suizamente en tu móvil'})
     await expect(dialog).toBeVisible()
     if(installReminder==='ios'){
-      await expect(dialog.locator('video')).toHaveAttribute('src','/videos/install-ios.mp4')
+      await expect(dialog.locator('video')).toHaveAttribute('src',/^\/videos\/install-ios\.mp4(?:\?v=\d+)?$/)
       await expect(dialog).toContainText('Añadir a pantalla de inicio')
       await expect(dialog.locator('[data-install]')).toHaveCount(0)
       await page.screenshot({path:'test-results/onboarding/instalar-iphone.png',fullPage:true})
@@ -119,6 +125,10 @@ async function finish(view,{skip=false,name='Nombre Latido',installReminder}={})
   await expect(page.frameLocator('iframe.game').locator('[data-play="dilemas"]')).toBeVisible()
   assert.equal(state.user.user_metadata.suizamente_onboarding_completed,true)
   assert.deepEqual(state.profileWrites.at(-1),{pais:'ES',canton:'ZH',anosSuiza:'1a3'})
+  if(photo){
+    const saved=await f.client.rpc('suizamente_social_fotos',{p_usuarios:[state.user.id]})
+    assert.ok(saved.data[0].url.includes('/avatars/'+state.user.id+'/suizamente/'))
+  }
   await page.reload()
   await expect(page.frameLocator('iframe.game').locator('[data-play="dilemas"]')).toBeVisible()
   await expect(page.getByRole('progressbar')).toHaveCount(0)
@@ -126,7 +136,7 @@ async function finish(view,{skip=false,name='Nombre Latido',installReminder}={})
 try{
   // Automatic Latido sign-in: no welcome/login page, first visit gets the tour.
   const linked=await open({allowSso:true})
-  await finish(linked)
+  await finish(linked,{photo:true})
   const anotherDevice=await open({initialSession:linked.currentSession()})
   await expect(anotherDevice.page.frameLocator('iframe.game').locator('[data-play="dilemas"]')).toBeVisible()
   await expect(anotherDevice.page.getByRole('progressbar')).toHaveCount(0)

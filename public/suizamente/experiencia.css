@@ -313,6 +313,9 @@ body .reveal{padding-top:calc(10px + env(safe-area-inset-top,0px));padding-botto
 .s-invite-link{display:grid;gap:8px;font-size:13px;font-weight:700;margin:18px 0}
 .s-invite-link input{width:100%;min-width:0;padding:12px;border:1px solid var(--line);border-radius:12px;background:var(--wash);color:var(--ink);font:500 13px/1.5 var(--font)}
 .s-invite-actions{display:grid;gap:10px}
+.s-photo-control{flex:none}.s-photo-button{position:relative;display:block;padding:0;border:0;border-radius:50%;background:none;cursor:pointer}.s-photo-button:disabled{opacity:.6;cursor:wait}
+.s-photo-camera{position:absolute;right:-2px;bottom:0;display:grid;place-items:center;width:29px;height:29px;border:2px solid var(--card);border-radius:50%;background:var(--wash);font-size:16px;box-shadow:0 1px 5px #0f1a2b22}
+.s-photo-button:focus-visible{outline:3px solid var(--blue);outline-offset:4px}
 .s-share-grid .challenge:last-child{grid-column:1/-1;min-height:100px}
 .s-duel-manage{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;border-top:1px solid var(--line);padding-top:10px}
 .s-duel-manage .s-button{min-height:38px;padding:7px 12px;font-size:12px}

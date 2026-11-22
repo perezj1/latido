@@ -11,7 +11,8 @@ function endpoint(path,method,url,body) {
     'GET /bootstrap':['bootstrap',{}], 'GET /profile':['perfil',{}], 'PUT /profile':['perfil_guardar',body],
     'DELETE /profile':['borrar',body], 'POST /link':['vincular',body], 'POST /answer':['respuesta',body],
     'GET /daily':['reto',{}], 'GET /duels':['duelos',{}], 'POST /duels':['duelo_crear',body],
-    'GET /ranking':['ranking',{tipo:url.searchParams.get('tipo')||'cantones'}],
+    'GET /ranking':['ranking',{tipo:url.searchParams.get('tipo')||'semana'}],
+    'PUT /photo':['perfil',{}],
     'GET /friends':['amigos',{}], 'POST /friends':['amigo_solicitar',body],
     'POST /friends/respond':['amigo_responder',body], 'DELETE /friends':['amigo_quitar',body],
     'GET /people':['buscar',{texto:url.searchParams.get('texto')||''}], 'GET /notebook':['libreta',{}],
@@ -40,8 +41,8 @@ export function createSuizamenteSocialHttp({getClient,getSecret,allowedOrigin=su
       if(origin)Object.assign(headers,{'Access-Control-Allow-Origin':origin,'Access-Control-Allow-Headers':'authorization,apikey,content-type,x-jugador-id,x-client-info','Access-Control-Allow-Methods':'GET,POST,PUT,DELETE,OPTIONS','Access-Control-Max-Age':'600'})
       if(method==='OPTIONS')return send(204,null)
       if(!['GET','POST','PUT','DELETE'].includes(method))return send(405,{error:'metodo_no_permitido'})
-      if(!body||Array.isArray(body)||typeof body!=='object'||new TextEncoder().encode(JSON.stringify(body)).length>8192)return send(400,{error:'solicitud_no_valida'})
       const url=new URL(requestUrl,'http://localhost'), path=url.pathname.replace(/^.*\/(?:suizamente-social|api\/suizamente\/social)/,'').replace(/\/$/,'')||'/'
+      if(!body||Array.isArray(body)||typeof body!=='object'||new TextEncoder().encode(JSON.stringify(body)).length>(path==='/photo'?250000:8192))return send(400,{error:'solicitud_no_valida'})
       const route=endpoint(path,method,url,body)
       if(!route&&!(method==='POST'&&path==='/sso'))return send(404,{error:'ruta_inexistente'})
       if(path==='/answer'&&(!Number.isInteger(body.opcion)||typeof body.preguntaId!=='string'))return send(400,{error:'respuesta_no_valida'})
@@ -55,6 +56,7 @@ export function createSuizamenteSocialHttp({getClient,getSecret,allowedOrigin=su
         user=result.data.user;player='user:'+user.id
       }else if(uuid.test(incoming['x-jugador-id']||''))player='anon:'+incoming['x-jugador-id'].toLowerCase()
       if(!player)return send(401,{error:'jugador_no_valido'})
+      if(path==='/photo'&&!user)return send(401,{error:'Entra con tu cuenta para elegir tu foto.'})
       if(path==='/sso'&&(!user?.email||!user.email_confirmed_at))return send(401,{error:'cuenta_no_confirmada'})
       const ip=await addressHash(String(address),getSecret())
       const {data,error}=await client.rpc('suizamente_social_api',{p_accion:path==='/sso'?'perfil':route[0],p_jugador:player,p_datos:route?.[1]||{},p_direccion:ip})
@@ -62,6 +64,18 @@ export function createSuizamenteSocialHttp({getClient,getSecret,allowedOrigin=su
         const status=/^PT(400|401|403|404|409|429)$/.exec(error.code||'')
         if(status) {if(status[1]==='429')headers['Retry-After']='60';return send(Number(status[1]),{error:error.message||'solicitud_no_valida'})}
         return send(503,{error:'social_no_disponible'})
+      }
+      if(path==='/photo'){
+        if(typeof body.image!=='string'||!/^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/.test(body.image))return send(400,{error:'Elige una foto en formato JPG, PNG o WebP.'})
+        let bytes
+        try{bytes=Uint8Array.from(atob(body.image.split(',')[1]),c=>c.charCodeAt(0))}catch{return send(400,{error:'No se puede abrir esta foto.'})}
+        if(bytes.length<100||bytes[0]!==255||bytes[1]!==216||bytes.at(-2)!==255||bytes.at(-1)!==217)return send(400,{error:'No se puede abrir esta foto.'})
+        const bucket=client.storage.from('avatars'),file=user.id+'/suizamente/'+crypto.randomUUID()+'.jpg'
+        const upload=await bucket.upload(file,bytes,{contentType:'image/jpeg',cacheControl:'31536000',upsert:false})
+        if(upload.error)return send(503,{error:'No se ha podido subir la foto. Vuelve a intentarlo.'})
+        const photo=bucket.getPublicUrl(file).data?.publicUrl
+        const saved=await client.rpc('suizamente_social_foto_guardar',{p_usuario:user.id,p_url:photo})
+        if(saved.error){await bucket.remove([file]);return send(503,{error:'No se ha podido guardar la foto. Vuelve a intentarlo.'})}
       }
       if(path==='/sso') {
         // Generates an OTP without sending email. Verification creates a new,

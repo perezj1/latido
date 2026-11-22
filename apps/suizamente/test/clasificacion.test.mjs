@@ -19,3 +19,11 @@ test('cantonal ranks combine totals and active people using a weighted mean',()=
  assert.equal(combined.media,Math.round(100*(first.puntos+75)/(first.activos+2))/100)
  assert.equal(result.reduce((n,r)=>n+r.activos,0),322)
 })
+
+test('all 26 cantons keep unique positions even when the API omits a canton or scores tie',()=>{
+ const result=clasificacionCantones([{codigo:'ZH',nombre:'Zúrich',puntos:0,activos:0}])
+ assert.equal(result.length,26)
+ assert.equal(new Set(result.map(row=>row.codigo)).size,26)
+ assert.deepEqual(result.map(row=>row.puesto),Array.from({length:26},(_,i)=>i+1))
+ assert.ok(result.some(row=>row.codigo==='JU'))
+})

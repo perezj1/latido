@@ -15,7 +15,8 @@ Deno.serve(async request=>{
     try {
       const reader=request.body?.getReader(),chunks:Uint8Array[]=[]
       let size=0
-      if(reader)for(;;){const {done,value}=await reader.read();if(done)break;size+=value.length;if(size>8192){await reader.cancel();throw new Error('size')}chunks.push(value)}
+      const limit=new URL(request.url).pathname.endsWith('/photo')?250000:8192
+      if(reader)for(;;){const {done,value}=await reader.read();if(done)break;size+=value.length;if(size>limit){await reader.cancel();throw new Error('size')}chunks.push(value)}
       const bytes=new Uint8Array(size);let offset=0;for(const chunk of chunks){bytes.set(chunk,offset);offset+=chunk.length}
       body=JSON.parse(new TextDecoder().decode(bytes)||'{}')
     }catch{
