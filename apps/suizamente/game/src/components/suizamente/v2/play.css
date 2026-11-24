@@ -1,0 +1,36 @@
+.sv-themed-screen{position:relative;isolation:isolate;background:transparent;max-width:430px;width:100%;color:#0F1A2B}
+.sv-offline-status{padding:8px 16px;color:#5A6577;font-size:12px;text-align:center}
+.sv-themed-screen .sv-card,.sv-themed-screen .sv-reward-row{background:#FFFFFF;box-shadow:0 2px 10px rgba(15,26,43,.08)}
+.sv-themed-screen .sv-passport,.sv-themed-screen .sv-duel-select button,.sv-themed-screen .sv-stamp-choice button{background:#FFFFFF}
+.sv-themed-screen>.sv-footer{position:static;bottom:auto;background:transparent;border:0;padding-top:16px;padding-bottom:calc(24px + env(safe-area-inset-bottom,0px))}
+.sv-themed-screen>.sv-footer .sv-button.quiet{background:#FFFFFF;box-shadow:0 2px 10px rgba(15,26,43,.08)}
+.sv-game-board .sv-header{gap:8px;padding:14px 14px 0;min-height:58px;margin:0}
+.sv-header-heading{flex:1;min-width:0;text-align:center}
+.sv-header-heading h1{font-size:17px;line-height:1.2}.sv-header-heading p{font-size:12px;font-weight:600;color:#5A6577;margin-top:3px}
+.sv-game-board .sv-header .sv-icon-button{width:44px;height:44px;flex:none;border-radius:50%;background:#FFFFFF;box-shadow:0 1px 4px rgba(15,26,43,.12);color:#0F1A2B;font-size:22px}
+.sv-game-board .sv-match-players{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:start;gap:6px;margin:10px 12px 0;padding:0}
+.sv-game-board .sv-passport{display:flex;flex-direction:column;align-items:center;gap:6px;min-width:0;padding:0;background:transparent;border:0;border-radius:0}
+.sv-game-board .sv-passport>div:nth-child(2){flex:none;min-width:0;max-width:100%;text-align:center}.sv-game-board .sv-passport b{font-size:14px;line-height:1.2;max-width:100%}
+.sv-game-board .sv-passport>div:nth-child(2)>small{display:none}
+.sv-root .sv-game-board .sv-passport .sv-avatar{width:64px;height:64px;font-size:28px;box-shadow:0 0 0 4px #FFFFFF,0 8px 18px rgba(15,26,43,.14)}
+.sv-root .sv-game-board .sv-passport.active .sv-avatar{box-shadow:0 0 0 4px #FFFFFF,0 0 0 7px #F9A719,0 8px 18px rgba(15,26,43,.14)}
+.sv-game-board .sv-passport .sv-stamps{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:3px;width:min(111px,100%);padding:0;margin:0}
+.sv-game-board .sv-passport .sv-stamps>span{width:100%;height:auto;aspect-ratio:1;min-width:0;border-radius:50%;font-size:10px;border-width:1px;padding:0}
+.sv-game-board .sv-match-score{display:flex;flex-direction:row;align-items:baseline;gap:10px;padding:10px 0 0;white-space:nowrap;position:relative}
+.sv-game-board .sv-match-score::after{content:'sellos';position:absolute;top:55px;left:0;right:0;text-align:center;font-size:11.5px;font-weight:700;color:#5A6577}
+.sv-game-board .sv-match-score strong{font-size:42px;line-height:1}.sv-game-board .sv-match-score small{font-size:17px;font-weight:800;color:#5A6577;text-transform:lowercase}
+.sv-game-board .sv-wheel-area{padding:0;gap:0;margin-top:2px}
+.sv-match-wheel{width:100%;max-width:380px;flex:none;margin:0 auto}
+.sv-root .sv-light-wheel{position:relative;width:100%;max-width:380px;aspect-ratio:380/434;margin:0 auto}
+.sv-light-wheel>svg{position:absolute;inset:0;width:100%;height:100%;display:block;overflow:visible;filter:none;transform:none}
+.sv-root .sv-wheel-center{position:absolute;z-index:2;left:50%;top:55.760%;width:25.263%;height:auto;aspect-ratio:1;transform:translate(-50%,-50%);padding:4px;min-width:44px;min-height:44px;border:0;border-radius:50%;background:conic-gradient(#FA2F35,#4A76EF,#24BFE2,#03AA98,#F9A719,#FA2F35);box-shadow:0 5px 0 rgba(15,26,43,.14),0 0 0 5px rgba(255,255,255,.7);display:flex;color:#0F1A2B;cursor:pointer}
+.sv-wheel-center>span{flex:1;display:grid;place-items:center;background:#FFFFFF;border-radius:50%;font-size:clamp(16px,4.7vw,18px);font-weight:800;letter-spacing:.02em;line-height:1.1}
+.sv-wheel-center img{display:block;width:50%;height:auto}.sv-root button.sv-wheel-center:disabled{opacity:.5;cursor:default}.sv-wheel-center[role=img]{cursor:default}
+.sv-match-wheel>.sv-wheel-status{width:fit-content;max-width:calc(100% - 32px);margin:6px auto 0;padding:9px 18px;border-radius:999px;background:#FFFFFF;box-shadow:0 2px 10px rgba(15,26,43,.08);color:#0F1A2B;text-align:center;font-size:15px;font-weight:800;overflow-wrap:anywhere}
+.sv-themed-screen .sv-game-inventory{display:flex;justify-content:center;gap:6px;margin:0;padding:0;flex-wrap:wrap}
+.sv-game-inventory>span{display:inline-flex;align-items:center;gap:4px;height:32px;padding:0 10px 0 7px;border-radius:999px;background:#FFFFFF;box-shadow:0 1px 4px rgba(15,26,43,.12);font-size:13.5px;font-weight:800;white-space:nowrap}
+.sv-game-inventory>span>span{font-size:15px}
+.sv-game-seal .sv-stamp-choice{grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.sv-game-seal .sv-stamp-choice button{font-size:12px;min-height:122px;box-shadow:0 2px 10px rgba(15,26,43,.05)}.sv-game-seal .sv-stamp-choice b{font-size:12.5px;overflow-wrap:anywhere}
+.sv-game-finish .sv-match-players{background:#FFFFFF;border-radius:24px;box-shadow:0 2px 10px rgba(15,26,43,.08);padding:14px 10px}
+@media(prefers-reduced-motion:reduce){.sv-light-wheel [data-luz]{transition:none!important}}
+html[data-suizamente-reduced=true] .sv-light-wheel [data-luz]{transition:none!important}

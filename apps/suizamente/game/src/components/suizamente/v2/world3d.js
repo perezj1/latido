@@ -80,7 +80,7 @@ function crear(op) {
   const caja = document.createElement('div');
   caja.style.cssText = 'position: absolute; inset: 0; touch-action: pan-y';
   const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: !!op.foto });
-  renderer.setPixelRatio(Math.min(G.devicePixelRatio || 1,op.mini?1.5:2));
+  renderer.setPixelRatio(Math.min(G.devicePixelRatio || 1,op.mini||op.mode==='home'?1.5:2));
   renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   caja.appendChild(renderer.domElement);
   renderer.domElement.style.cssText = 'display: block; width: 100%; height: 100%; border-radius: inherit';
@@ -93,7 +93,7 @@ function crear(op) {
   escena.add(new THREE.HemisphereLight('#FFFFFF', '#B49A7A', 0.6));
   const sol = new THREE.DirectionalLight('#FFF4E0', 0.72);
   sol.position.set(-120, 220, 140); sol.castShadow = true;
-  sol.shadow.mapSize.set(op.mini?256:2048,op.mini?256:2048);
+  const shadowSize=op.mini?256:matchMedia('(max-width: 600px)').matches||op.mode==='home'?1024:1536;sol.shadow.mapSize.set(shadowSize,shadowSize);
   Object.assign(sol.shadow.camera, { left: -220, right: 220, top: 180, bottom: -180, near: 10, far: 700 });
   escena.add(sol, sol.target);
   const suelo = new THREE.Mesh(new THREE.PlaneGeometry(2000, 2000), new THREE.ShadowMaterial({ opacity: 0.16 }));
@@ -449,13 +449,15 @@ function crear(op) {
   });
 
   /* ---------- Bucle ---------- */
-  let reloj = 0, ultimo = performance.now(), vivo = true, dirty=true;controles.addEventListener('change',()=>{dirty=true});
+  let reloj = 0, ultimo = performance.now(), vivo = true, dirty=true, ultimoDibujo=0;controles.addEventListener('change',()=>{dirty=true});
   const tamano = () => { const p = caja.parentElement; if (!p) return; dirty=true;const w = p.clientWidth, h = p.clientHeight; if (!w || !h) return; renderer.setSize(w, h, false); camara.aspect = w / h; camara.updateProjectionMatrix(); };
   const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(tamano) : null;
   const frame = ahora => {
     if (!vivo) return;
     requestAnimationFrame(frame);
     if (document.hidden || op.visible?.()===false || (!document.body.contains(caja) && !op.foto)) { ultimo = ahora; return; }
+    // Throttle decorative models; retain smooth 60 fps while manipulating the map.
+    const fps=op.mini?20:op.interactive?.()?60:30;if(ahora-ultimoDibujo<1000/fps)return;ultimoDibujo=ahora;
     escena.background.set(op.dark?.()?'#161C26':COL.fondo);if(op.reduced?.()) { controles.autoRotate=false;controles.enableDamping=false;if(vuelo){controles.target.copy(vuelo.hacia.t);camara.position.copy(vuelo.hacia.p);vuelo=null;}tweens.forEach(tw=>tw.f(1));tweens.length=0; }
     if(op.reduced?.()&&!dirty)return;dirty=false;controles.enableDamping=controles.enabled&&!op.reduced?.();const dt = op.reduced?.()?0:Math.min(0.05, (ahora - ultimo) / 1000); ultimo = ahora; reloj += dt;
     if (vuelo) { const p = facil(Math.min(1, (reloj - vuelo.t0) / vuelo.dur)); controles.target.lerpVectors(vuelo.desde.t, vuelo.hacia.t, p); camara.position.lerpVectors(vuelo.desde.p, vuelo.hacia.p, p); if (p >= 1) vuelo = null; }

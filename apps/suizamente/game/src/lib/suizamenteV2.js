@@ -1,7 +1,11 @@
 import {supabase,recoverSupabaseSession,invalidateSupabaseSession} from './supabase'
+import {notify} from './suizamenteNotices'
 const pendingReads=new Map()
+const recentReads=new Map(),readTtl={config:30000,jugador:1000,partidas:1000,mapa:1500,misiones:3000,liga:5000,dia:1000}
+let revision=0,reader=null
 let guestQueue=Promise.resolve()
 export const SV_STATE='suizamente:estado'
+export const SV_AVATARS='suizamente:avatares'
 export function szKey(){
   const bytes=new Uint8Array(16);crypto.getRandomValues(bytes)
   bytes[6]=bytes[6]&15|64;bytes[8]=bytes[8]&63|128
@@ -9,31 +13,41 @@ export function szKey(){
   return hex.slice(0,8)+'-'+hex.slice(8,12)+'-'+hex.slice(12,16)+'-'+hex.slice(16,20)+'-'+hex.slice(20)
 }
 
-export async function szApi(path, {method='GET',body}={}) {
+export async function szApi(path, {method='GET',body,fresh=false}={}) {
   let guest=localStorage.getItem('suizamente:jugador')
   if(!guest&&crypto.randomUUID){guest=crypto.randomUUID();localStorage.setItem('suizamente:jugador',guest)}
   const {data:{session}}=await supabase.auth.getSession()
-  const key=path+'|'+(session?.user?.id||'invitado')
+  const actor=session?.user?.id||'invitado'
+  if(reader!==actor||method!=='GET'){recentReads.clear();revision++;reader=actor}
+  const key=path+'|'+actor+'|'+revision,ttl=readTtl[path]||0,startedRevision=revision,cached=recentReads.get(key)
+  if(method==='GET'&&!fresh&&cached&&cached.until>Date.now())return structuredClone(cached.value)
   if(method==='GET'&&pendingReads.has(key))return pendingReads.get(key)
   const execute=async()=>{
-  const send=token=>fetch('/api/suizamente/'+path,{
-    method,credentials:'same-origin',cache:'no-store',
+  const send=async token=>{const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),15000);try{return await fetch('/api/suizamente/'+path,{
+    method,credentials:'same-origin',cache:'no-store',signal:controller.signal,
     headers:{'Content-Type':'application/json',...(guest?{'X-Jugador-Id':guest}:{}),...(token?{Authorization:'Bearer '+token}:{})},
     ...(body?{body:JSON.stringify(body)}:{}),
-  })
-  // iOS can discard a suspended PWA connection. Only reads may be replayed.
-  const read=async token=>{try{return await send(token)}catch(e){if(method!=='GET'||!navigator.onLine)throw e;return send(token)}}
+  })}finally{clearTimeout(timeout)}}
+  // Recover discarded iOS sockets and temporary gateway failures quietly. Never
+  // replay a mutation: the server might have already committed its transaction.
+  const read=async token=>{for(let attempt=0;;attempt++){
+    try{const response=await send(token);if(method!=='GET'||attempt||!navigator.onLine||![500,502,503,504].includes(response.status))return response}
+    catch(error){if(method!=='GET'||attempt||!navigator.onLine)throw error}
+    await new Promise(resolve=>setTimeout(resolve,200))
+  }}
   let response
-  try{response=await read(session?.access_token)}catch{window.dispatchEvent(new Event('suizamente:error-conexion'));throw new Error('Algo ha fallado. Inténtalo otra vez.')}
+  try{response=await read(session?.access_token)}catch{const error=new Error(method==='GET'?'No se pudo cargar. Comprueba la conexión y vuelve a intentarlo.':'No se pudo confirmar la acción. Comprueba la conexión y vuelve a intentarlo.');if(method!=='GET')notify(error,{error:true});throw error}
   const sessionRejected=response.status===401&&(await response.clone().json().catch(()=>null))?.sesionCaducada
-  if(sessionRejected&&session?.access_token){const fresh=await recoverSupabaseSession(session.access_token,session.user?.id);if(fresh?.access_token){response=await send(fresh.access_token);if(response.status===401&&(await response.clone().json().catch(()=>null))?.sesionCaducada)await invalidateSupabaseSession(fresh.access_token)}}
+  if(sessionRejected&&session?.access_token){const renewed=await recoverSupabaseSession(session.access_token,session.user?.id);if(renewed?.access_token){response=await read(renewed.access_token);if(response.status===401&&(await response.clone().json().catch(()=>null))?.sesionCaducada)await invalidateSupabaseSession(renewed.access_token)}}
   let data
-  try{data=await response.json()}catch{throw new Error('No se pudo conectar con Suizamente. Inténtalo otra vez.')}
-  if(!response.ok){if(response.status>=500)window.dispatchEvent(new Event('suizamente:error-conexion'));const error=new Error(data.error||'Algo ha fallado. Inténtalo otra vez.');error.status=response.status;error.partida=data.partida;throw error}
+  try{data=await response.json()}catch{const error=new Error('No se pudo conectar con Suizamente. Inténtalo otra vez.');if(method!=='GET')notify(error,{error:true});throw error}
+  if(!response.ok){const error=new Error(data.error||'Algo ha fallado. Inténtalo otra vez.');error.status=response.status;error.partida=data.partida;if(method!=='GET')notify(error,{error:true});throw error}
   window.dispatchEvent(new Event('suizamente:conexion-restablecida'))
   data=withoutFlags(data)
+  if(data.avatares)window.dispatchEvent(new CustomEvent(SV_AVATARS,{detail:{userId:session?.user?.id,photos:data.avatares}}))
   if(data.identidad?.startsWith('invitado-'))localStorage.setItem('suizamente:jugador',data.identidad.slice(9))
   if(data.jugador)window.dispatchEvent(new CustomEvent(SV_STATE,{detail:data}))
+  if(method==='GET'&&ttl&&revision===startedRevision)recentReads.set(key,{until:Date.now()+ttl,value:structuredClone(data)})
   return data
   }
   // The first anonymous response establishes the HttpOnly credential. Serialize

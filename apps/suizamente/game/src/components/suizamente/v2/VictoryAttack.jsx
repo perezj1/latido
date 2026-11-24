@@ -1,6 +1,6 @@
 import {useEffect,useState} from 'react'
 import {useNavigate,useParams} from 'react-router-dom'
-import {Button,Card,Header} from './Shared'
+import {Button,Card,Header,LatidoBackdrop} from './Shared'
 import {WorldMap} from './WorldMap'
 import {szApi} from '../../../lib/suizamenteV2'
 
@@ -13,7 +13,7 @@ export function VictoryAttack(){
   try{const next=await szApi('partidas/'+id+'/atacar',{method:'POST',body:{canton}});navigate('/suizamente/asalto/'+next.id)}catch(e){setError(e.message);if(e.status===409)await load()}finally{setBusy(false)}
  }
  const cantons=data?.cantones.filter(k=>k.nivel>0)||[]
- return <section className="sv-screen"><Header title="Elige dónde atacar" back={'/suizamente/partida/'+id+'?continuar=1'}/><div className="sv-content">
+ return <section className="sv-screen sv-themed-screen"><LatidoBackdrop tint="#FEEDD1"/><Header title="Elige dónde atacar" back={'/suizamente/partida/'+id+'?continuar=1'}/><div className="sv-content">
   {data?<><h2>El mapa de {data.victima.apodo}</h2><p>Acierta las {data.preguntas} preguntas para robar hasta 🪙 {data.premio} y bajar un nivel al cantón que elijas.</p><p className="sv-muted">Si tu rival tiene un escudo, lo usará para reducir el robo a 🪙 {data.premioConEscudo}. El cantón baja igualmente. Con un fallo, no pasa nada.</p>
    {data.ataqueId?<Card><p>Ya has elegido un ataque para esta victoria.</p><Button to={'/suizamente/asalto/'+data.ataqueId}>Ver mi ataque</Button></Card>:<>
     {data.limiteAlcanzado&&<Card>Ya has alcanzado el límite de ataques de hoy.</Card>}

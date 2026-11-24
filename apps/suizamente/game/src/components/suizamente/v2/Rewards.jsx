@@ -1,7 +1,9 @@
+import {useMoment} from './Moment'
+import {chestSteps,packSteps} from './moments'
 import {useEffect,useRef,useState} from 'react'
 import {useLocation,useNavigate,useParams} from 'react-router-dom'
 import {useSv} from './Context'
-import {Button,Card,Header,Logo,Sheet,Wallet} from './Shared'
+import {Button,Card,Header,Logo,Sheet,Wallet,LatidoBackdrop} from './Shared'
 import {feedback} from '../../../lib/suizamenteFeedback'
 import {ChestLinks} from './Map'
 import {szApi,szKey} from '../../../lib/suizamenteV2'
@@ -50,13 +52,13 @@ export function Album(){
     {selected&&<CardDetail {...selected} onClose={()=>setSelected(null)}/>}</section>
 }
 export function Chest(){
-  const {id}=useParams(),{search}=useLocation(),back=backPath(search),{config,player}=useSv(),[data,setData]=useState(null),[error,setError]=useState(''),[retry,setRetry]=useState(0),pack=useOpenPack(back)
+  const {id}=useParams(),{search}=useLocation(),back=backPath(search),{config,player}=useSv(),{show}=useMoment(),[data,setData]=useState(null),[error,setError]=useState(''),[retry,setRetry]=useState(0),pack=useOpenPack(back)
   useEffect(()=>{
     let active=true
     ;(async()=>{
       let d=await szApi('cofres/'+id)
       if(!d.abierto){
-        try{d=await szApi('cofres/'+id+'/abrir',{method:'POST'});if(active)feedback('cofre')}catch(e){if(e.status===409)d=await szApi('cofres/'+id);else throw e}
+        try{d=await szApi('cofres/'+id+'/abrir',{method:'POST'});if(active){feedback('cofre');show(chestSteps(d,config),{key:'cofre:'+id})}}catch(e){if(e.status===409)d=await szApi('cofres/'+id);else throw e}
       }
       if(active)setData(d)
     })().catch(e=>{if(active)setError(e.message)})
@@ -66,11 +68,26 @@ export function Chest(){
     const cm=config.comodines.find(c=>c.id===id)
     return [cm?.emoji||(id==='sobres'?'🃏':'🛡️'),cm?n+' comodín'+(n>1?'es':'')+' «'+cm.nombre+'»':n+(id==='sobres'?' sobre de cartas':' escudo'),cm?.efecto||(id==='sobres'?config.album.cartasPorSobre+' cartas para el álbum':'Para proteger tu mapa')]
   })]:[]
-  return <section className="sv-screen sv-chest"><div className="sv-reward-heading"><span>🎁</span><h1>{data?.titulo||'Tu cofre'}</h1><p>Esto es lo que había dentro</p></div><div className="sv-content">{data?rows.map(([e,note,desc])=><div className="sv-reward-row" key={note}><span>{e}</span><div><b>{note}</b><small>{desc}</small></div></div>):!error&&<div className="sv-skeleton" role="status" aria-label="Abriendo cofre"/>}{data?.contenido?.escudosAlMaximo&&<p className="sv-muted">🛡️ Ya tienes el máximo de escudos.</p>}{(error||pack.error)&&<p className="sv-error" role="alert">{error||pack.error}</p>}{error&&<Button tone="quiet" onClick={()=>{setError('');setRetry(n=>n+1)}}>Reintentar</Button>}</div><footer className="sv-footer">{data&&(player.inventario?.sobres||0)>0&&<Button disabled={pack.busy} onClick={pack.open}>🃏 Abrir sobre de cartas</Button>}<Button tone="quiet" to={back}>Seguir</Button></footer></section>
+  return <section className="sv-screen sv-chest sv-themed-screen"><LatidoBackdrop tint="#FEEDD1"/><div className="sv-reward-heading"><span>🎁</span><h1>{data?.titulo||'Tu cofre'}</h1><p>Esto es lo que había dentro</p></div><div className="sv-content">{data?rows.map(([e,note,desc])=><div className="sv-reward-row" key={note}><span>{e}</span><div><b>{note}</b><small>{desc}</small></div></div>):!error&&<div className="sv-skeleton" role="status" aria-label="Abriendo cofre"/>}{data?.contenido?.escudosAlMaximo&&<p className="sv-muted">🛡️ Ya tienes el máximo de escudos.</p>}{(error||pack.error)&&<p className="sv-error" role="alert">{error||pack.error}</p>}{error&&<Button tone="quiet" onClick={()=>{setError('');setRetry(n=>n+1)}}>Reintentar</Button>}</div><footer className="sv-footer">{data&&(player.inventario?.sobres||0)>0&&<Button disabled={pack.busy} onClick={pack.open}>🃏 Abrir sobre de cartas</Button>}<Button tone="quiet" to={back}>Seguir</Button></footer></section>
 }
 export function Pack(){
-  const {id}=useParams(),{search}=useLocation(),back=backPath(search),[data,setData]=useState(null),[busy,setBusy]=useState(false),[error,setError]=useState(''),[selected,setSelected]=useState(null),pending=useRef(false)
-  useEffect(()=>{let active=true;szApi('sobres/'+id).then(x=>{if(active)setData(x)}).catch(e=>{if(active)setError(e.message)});return()=>{active=false}},[id])
+  const {id}=useParams(),{search}=useLocation(),back=backPath(search),{show}=useMoment(),[retry,setRetry]=useState(0),[data,setData]=useState(null),[busy,setBusy]=useState(false),[error,setError]=useState(''),[selected,setSelected]=useState(null),pending=useRef(false)
+  useEffect(()=>{
+    let active=true
+    ;(async()=>{
+      let next=await szApi('sobres/'+id)
+      const unopened=next.giradas<next.total
+      // Opening already grants every card. girar only reveals those saved results;
+      // reveal the whole pack before presenting it, including when resuming a pack.
+      pending.current=true;setBusy(true)
+      while(active&&next.giradas<next.total){
+        try{next=await szApi('sobres/'+id+'/girar',{method:'POST',body:{indice:next.giradas}})}
+        catch(e){if(e.status===409)next=await szApi('sobres/'+id);else throw e}
+      }
+      if(active){setData(next);if(unopened)show(packSteps(next),{key:'sobre:'+id})}
+    })().catch(e=>{if(active)setError(e.message)}).finally(()=>{pending.current=false;if(active)setBusy(false)})
+    return()=>{active=false}
+  },[id,retry,show])
   async function flip(index){
     if(pending.current)return
     pending.current=true;setBusy(true);setError('')
@@ -78,7 +95,7 @@ export function Pack(){
     catch(e){setError(e.message);if(e.status===409){try{setData(await szApi('sobres/'+id))}catch{/* Retry safely from the same pack after reconnecting. */}}}
     finally{pending.current=false;setBusy(false)}
   }
-  return <section className="sv-screen sv-pack"><header className="sv-shop-header"><h1>🃏 Sobre de cartas</h1><Wallet/></header><p className="sv-pack-hint">Toca las cartas para girarlas, una a una</p>
+  return <section className="sv-screen sv-pack sv-themed-screen"><LatidoBackdrop tint="#DFE7FC"/><header className="sv-shop-header"><h1>🃏 Sobre de cartas</h1><Wallet/></header><p className="sv-pack-hint">{data?'Las cartas ya están en tu álbum':'Abriendo tu sobre…'}</p>
     {data?<><div className="sv-pack-cards">{Array.from({length:data.total},(_,i)=>data.cartas[i]?<AlbumCard key={i} card={{...data.cartas[i],conseguida:true}} pack justRevealed={i===data.giradas-1} onClick={()=>setSelected(data.cartas[i])}/>:<button key={i} className="sv-card-back" disabled={busy||i!==data.giradas} onClick={()=>flip(i)} aria-label={'Girar carta '+(i+1)}><Logo size={48}/><b>{i===data.giradas?'Toca para girar':'?'}</b></button>)}</div><div className="sv-content">{data.giradas>0&&data.colecciones.map(c=><Card className="sv-pack-progress" key={c.id}><div className="sv-between"><b>{c.nombre}</b><b>{c.tengo}/{c.total}</b></div><div className="sv-xp-bar"><i style={{width:100*c.tengo/c.total+'%'}}/></div>{c.completa&&<small>✅ Colección completa · Premio recibido</small>}</Card>)}{data.giradas===data.total&&<p className="sv-muted">Las repetidas se cambian solas por monedas.</p>}</div></>:!error&&<div className="sv-content"><div className="sv-skeleton" role="status" aria-label="Cargando sobre"/></div>}
-    {error&&<p className="sv-error sv-content" role="alert">{error}</p>}<footer className="sv-footer"><Button to="/suizamente/album">🃏 Ver el álbum</Button><Button tone="quiet" to={back}>Seguir</Button></footer>{selected&&<CardDetail card={{...selected,conseguida:true}} collection={selected.coleccion} onClose={()=>setSelected(null)}/>}</section>
+    {error&&<div className="sv-content"><p className="sv-error" role="alert">{error}</p><Button onClick={()=>{setError('');setRetry(n=>n+1)}}>Reintentar</Button></div>}<footer className="sv-footer"><Button to="/suizamente/album">🃏 Ver el álbum</Button><Button tone="quiet" to={back}>Seguir</Button></footer>{selected&&<CardDetail card={{...selected,conseguida:true}} collection={selected.coleccion} onClose={()=>setSelected(null)}/>}</section>
 }

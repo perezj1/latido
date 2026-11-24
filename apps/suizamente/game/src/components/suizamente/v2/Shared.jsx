@@ -2,19 +2,21 @@ import {useEffect,useRef,useState} from 'react'
 import {createPortal} from 'react-dom'
 import {Link} from 'react-router-dom'
 import {useSv} from './Context'
+export {LatidoBackdrop} from './LatidoBackdrop'
+export {MatchWheel} from './MatchWheel'
 
 export function Logo({size=38}){return <img className="sv-logo" src="/suizamente-assets/logo-suizamente.svg" width={size} alt="Suizamente"/>}
 export function Brand(){return <span className="sv-brand"><span>Suiza</span><span>mente</span></span>}
 export function Button({children,onClick,to,tone='',disabled=false,...props}){
   return to?<Link className={'sv-button '+tone} to={to} {...props}>{children}</Link>:<button type="button" className={'sv-button '+tone} onClick={onClick} disabled={disabled} {...props}>{children}</button>
 }
-export function Avatar({name='',color='menta',level,marco,photo}){
-  const {player,avatarUrl}=useSv(),own=name===player?.apodo,frame=marco||(own?player.marco:null),image=photo||(own?(player.ajustes?.foto_url||avatarUrl):null),[failed,setFailed]=useState(null)
+export function Avatar({id,name='',color='menta',level,marco,photo}){
+  const {player,avatarUrl,avatars={}}=useSv(),pid=id||null,own=!!pid&&pid===player?.jugador_id,frame=marco||(own?player.marco:null),image=photo||(own?player.ajustes?.foto_url:null)||avatars[pid]||(own?avatarUrl:null),[failed,setFailed]=useState(null)
   const safe=typeof image==='string'&&/^(https:\/\/|data:image\/jpeg;base64,)/.test(image)
   return <span className={'sv-avatar '+color} style={frame?{outline:'3px solid '+frame.colores.at(-1),outlineOffset:3}:undefined} aria-label={level?'Nivel '+level:undefined}>{safe&&failed!==image?<img src={image} alt="" referrerPolicy="no-referrer" onError={()=>setFailed(image)}/>:name==='🔍'?name:name.slice(0,1).toUpperCase()}{level&&<small>{level}</small>}</span>
 }
-export function Header({title,back='/suizamente',right,close=false}){
-  return <header className="sv-header"><Link className="sv-icon-button" to={back} aria-label="Volver">{close?'×':'←'}</Link><h1>{title}</h1>{right||<span className="sv-icon-space"/>}</header>
+export function Header({title,subtitle,back='/suizamente',right,close=false}){
+  return <header className="sv-header"><Link className="sv-icon-button" to={back} aria-label="Volver">{close?'×':'←'}</Link>{subtitle?<div className="sv-header-heading"><h1>{title}</h1><p>{subtitle}</p></div>:<h1>{title}</h1>}{right||<span className="sv-icon-space"/>}</header>
 }
 export function Card({children,className='',...props}){return <div className={'sv-card '+className} {...props}>{children}</div>}
 export function Chip({children}){return <span className="sv-chip">{children}</span>}

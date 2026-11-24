@@ -1,28 +1,46 @@
-import {useCallback,useEffect,useRef,useState} from 'react'
+import {lazy,Suspense,useCallback,useEffect,useRef,useState} from 'react'
 import {Link,Navigate,Route,Routes,useLocation} from 'react-router-dom'
 import {useAuth} from '../../../hooks/useAuth'
 import {useEntry} from '../../../../entry'
-import {szApi,szSettings,SV_STATE} from '../../../lib/suizamenteV2'
+import {szApi,szSettings,SV_STATE,SV_AVATARS} from '../../../lib/suizamenteV2'
 import {SuizamenteContext} from './Context'
 import {Brand,Button,Logo,Navigation} from './Shared'
 import {HowTo,Login,Menu,Onboarding,ProfileForm,Settings,Welcome} from './Account'
-import {Game,Home,NewGame} from './Game'
-import {Profile,Achievements,Shop} from './Economy'
+import {Home,NewGame} from './Lobby'
 import {MapHelp} from './Map'
-import {MapPage,MapLevels} from './MapPage3D'
-import {Album,Chest,Pack} from './Rewards'
-import {Raid} from './Raid'
-import {DailyHome,DayQuestion,Friends,Notebook,OtherProfile,Proposals,Ranking} from './Community'
 import './suizamente.css'
 import './community.css'
-import {AdminPanel} from './Admin'
 import './world.css'
 import './finish.css'
 import './production.css'
+import './play.css'
 import {Feedback,InstallMetadata} from './Finish'
 import {Missions,LapComplete} from './Duration'
 import {InstallBanner} from './InstallBanner'
-import {VictoryAttack} from './VictoryAttack'
+import {MomentProvider} from './Moment'
+import {MomentArrival} from './MomentArrival'
+import {isAbsenceNotice} from './moments'
+
+// Only load a screen when its route is opened. Navigation remains mounted.
+const screen=(load,name)=>lazy(()=>load().then(module=>({default:module[name]})))
+const Game=screen(()=>import('./Game'),'Game')
+const Profile=screen(()=>import('./Economy'),'Profile')
+const Achievements=screen(()=>import('./Economy'),'Achievements')
+const Shop=screen(()=>import('./Economy'),'Shop')
+const MapPage=screen(()=>import('./MapPage3D'),'MapPage')
+const MapLevels=screen(()=>import('./MapPage3D'),'MapLevels')
+const Album=screen(()=>import('./Rewards'),'Album')
+const Chest=screen(()=>import('./Rewards'),'Chest')
+const Pack=screen(()=>import('./Rewards'),'Pack')
+const Raid=screen(()=>import('./Raid'),'Raid')
+const DayQuestion=screen(()=>import('./Community'),'DayQuestion')
+const Friends=screen(()=>import('./Community'),'Friends')
+const Notebook=screen(()=>import('./Community'),'Notebook')
+const OtherProfile=screen(()=>import('./Community'),'OtherProfile')
+const Proposals=screen(()=>import('./Community'),'Proposals')
+const Ranking=screen(()=>import('./Community'),'Ranking')
+const AdminPanel=screen(()=>import('./Admin'),'AdminPanel')
+const VictoryAttack=screen(()=>import('./VictoryAttack'),'VictoryAttack')
 
 function Opening({onDone,reduced}){
   useEffect(()=>{
@@ -54,16 +72,16 @@ export default function SuizamenteApp(){
   const entered=!!user&&account===user.id
   const playing=/^\/suizamente\/(partida|asalto|ataque|pregunta|pregunta-del-dia)(\/|$)/.test(location.pathname)
   const [config,setConfig]=useState(null),[player,setPlayer]=useState(null),[ready,setReady]=useState(false),[error,setError]=useState('')
-  const [settings,setSettings]=useState(szSettings),[retry,setRetry]=useState(0),[online,setOnline]=useState(navigator.onLine)
+  const [settings,setSettings]=useState(szSettings),[retry,setRetry]=useState(0)
   const [opening,setOpening]=useState(()=>!sessionStorage.getItem('suizamente:apertura'))
   const [notices,setNotices]=useState([])
+  const [avatars,setAvatars]=useState({})
+  useEffect(()=>{const update=e=>{if(e.detail.userId===user?.id)setAvatars(old=>({...old,...e.detail.photos}))};window.addEventListener(SV_AVATARS,update);return()=>window.removeEventListener(SV_AVATARS,update)},[user?.id])
   const [map,setMap]=useState(null)
   const [capabilities,setCapabilities]=useState(null)
   const [questionVisible,setQuestionVisible]=useState(false)
   const [systemReduced,setSystemReduced]=useState(()=>matchMedia('(prefers-reduced-motion: reduce)').matches)
-  const [networkFailure,setNetworkFailure]=useState(false)
   const [waiting,setWaiting]=useState(0)
-  useEffect(()=>{const failed=()=>setNetworkFailure(true),restored=()=>setNetworkFailure(false);window.addEventListener('suizamente:error-conexion',failed);window.addEventListener('suizamente:conexion-restablecida',restored);return()=>{window.removeEventListener('suizamente:error-conexion',failed);window.removeEventListener('suizamente:conexion-restablecida',restored)}},[])
   useEffect(()=>{
     if(!entered||!player||!ready){setWaiting(0);return}
     if(playing)return
@@ -74,11 +92,13 @@ export default function SuizamenteApp(){
   },[entered,ready,player?.jugador_id,location.pathname,playing])
   useEffect(()=>{const media=matchMedia('(prefers-reduced-motion: reduce)'),change=()=>setSystemReduced(media.matches);media.addEventListener('change',change);return()=>media.removeEventListener('change',change)},[])
   const configRevision=useRef(-1)
-  const refreshConfig=useCallback(async()=>{const d=await szApi('config');configRevision.current=d.version??0;setConfig(d)},[])
+  const refreshConfig=useCallback(async()=>{const d=await szApi('config',{fresh:true});configRevision.current=d.version??0;setConfig(d)},[])
   const seen=useRef(new Set())
   const currentPlayer=useRef(null)
   const finishOpening=useCallback(()=>{sessionStorage.setItem('suizamente:apertura','1');setOpening(false)},[])
+  useEffect(()=>{if(entered&&ready&&player&&opening)finishOpening()},[entered,ready,!!player,opening,finishOpening])
   const savePlayer=useCallback(data=>{
+    if(data.avatares)setAvatars(old=>({...old,...data.avatares}))
     const old=currentPlayer.current,next=data.jugador
     if(old&&next&&old.jugador_id===next.jugador_id&&Date.parse(old.actualizado_en)>Date.parse(next.actualizado_en))return
     currentPlayer.current=next
@@ -96,7 +116,7 @@ export default function SuizamenteApp(){
       if(!user||data.jugador.jugador_id!==user.id)return
       savePlayer(data)
       if(data.configVersion!==undefined&&data.configVersion!==configRevision.current)refreshConfig().catch(()=>{})
-      const fresh=(data.novedades||[]).filter(n=>!seen.current.has(data.jugador.jugador_id+':'+n.id))
+      const fresh=(data.novedades||[]).filter(n=>!isAbsenceNotice(n)&&!seen.current.has(data.jugador.jugador_id+':'+n.id))
       if(fresh.length){
         fresh.forEach(n=>seen.current.add(data.jugador.jugador_id+':'+n.id))
         setNotices(old=>[...old,...fresh])
@@ -121,7 +141,7 @@ export default function SuizamenteApp(){
     if(authLoading)return
     let active=true
     setReady(false);setPlayer(null);setError('')
-    currentPlayer.current=null;setMap(null);setNotices([])
+    currentPlayer.current=null;setMap(null);setNotices([]);setAvatars({})
     if(!entered){setReady(true);return}
     ;(async()=>{
       if(user&&localStorage.getItem('suizamente:invitado-con-datos')){
@@ -131,7 +151,7 @@ export default function SuizamenteApp(){
           localStorage.removeItem('suizamente:jugador')
         }catch(e){if(e.status!==401)throw e}
       }
-      const data=await szApi('jugador')
+      const [data]=await Promise.all([szApi('jugador'),!config&&refreshConfig()])
       if(active){savePlayer(data);setReady(true)}
     })().catch(e=>{if(active)setError(e.message)})
     return()=>{active=false}
@@ -153,9 +173,9 @@ export default function SuizamenteApp(){
     return()=>{delete document.documentElement.dataset.suizamenteTheme;delete document.documentElement.dataset.suizamenteReduced}
   },[settings])
   useEffect(()=>{
-    const up=()=>{setOnline(true);setNetworkFailure(false);if(!ready||!config)setRetry(n=>n+1)},down=()=>setOnline(false)
-    window.addEventListener('online',up);window.addEventListener('offline',down)
-    return()=>{window.removeEventListener('online',up);window.removeEventListener('offline',down)}
+    const up=()=>{if(!ready||!config)setRetry(n=>n+1)}
+    window.addEventListener('online',up)
+    return()=>window.removeEventListener('online',up)
   },[ready,!!config])
   useEffect(()=>{
     document.title='Suizamente · Un juego de Latido'
@@ -174,13 +194,11 @@ export default function SuizamenteApp(){
   const reduced=!!settings.menosAnimaciones||systemReduced
   const admin=location.pathname.startsWith('/suizamente/admin'),showNavigation=entered&&!!player&&ready&&!questionVisible&&!playing
   const activeTab=['mapa','album','tienda','amigos'].find(tab=>location.pathname.startsWith('/suizamente/'+tab))||'inicio'
-  return <SuizamenteContext.Provider value={{player,map,config,user,avatarUrl,latidoName:profileName,capabilities,refreshConfig,settings,reduced,savePlayer,updateSettings,signOut,setQuestionVisible}}><div className={'sv-root'+(admin?' sv-admin-root':'')+(showNavigation?' sv-has-nav':'')}>
+  return <SuizamenteContext.Provider value={{player,map,config,user,avatarUrl,avatars,latidoName:profileName,capabilities,refreshConfig,settings,reduced,savePlayer,updateSettings,signOut,setQuestionVisible}}><MomentProvider reduced={reduced} owner={player?.jugador_id}><MomentArrival enabled={entered&&ready&&!!config&&!opening}/><div className={'sv-root'+(admin?' sv-admin-root':'')+(showNavigation?' sv-has-nav':'')}>
     <Feedback/><InstallMetadata/>
     <InstallBanner hidden={playing||location.pathname==='/suizamente/perfil/nuevo'}/>
-    {networkFailure&&<div className="sv-connection" role="alert">Algo ha fallado. Inténtalo otra vez. <button className="sv-text-button" onClick={()=>{setNetworkFailure(false);setRetry(n=>n+1)}}>Reintentar conexión</button></div>}
-    {!online&&<p className="sv-connection" role="status">Sin conexión · reintentando…</p>}
     {authLoading?<Loading/>:!entered?<Login/>:error?<section className="sv-screen"><div className="sv-welcome"><Logo size={90}/><h1>No se pudo abrir Suizamente</h1><p role="alert">{error}</p><Button onClick={()=>setRetry(n=>n+1)}>Reintentar</Button></div></section>:!config||!ready||!profileMetaLoaded?<Loading/>:
-    <Routes>
+    <Suspense fallback={<Loading/>}><Routes>
       <Route path="admin/*" element={<AdminPanel/>}/>
       <Route path="primera-vez" element={<Onboarding/>}/>
       <Route path="bienvenida" element={<Welcome/>}/>
@@ -216,9 +234,9 @@ export default function SuizamenteApp(){
       <Route path="partida/:id" element={gate(<Game key={location.pathname}/>)}/>
       <Route path="/" element={<HomeEntry>{gate(<Home/>)}</HomeEntry>}/>
       <Route path="*" element={<Navigate to="/suizamente" replace/>}/>
-    </Routes>}
+    </Routes></Suspense>}
     {showNavigation&&<Navigation active={activeTab} waiting={waiting}/>}
-    {opening&&entered&&<Opening onDone={finishOpening} reduced={reduced}/>}
+    {opening&&entered&&ready&&!player&&<Opening onDone={finishOpening} reduced={reduced}/>}
     {!!notices.length&&<div className={'sv-notice'+(notices[0].datos.href?' has-link':'')} role="status" aria-live="polite">{notices[0].datos.texto}{notices[0].datos.href&&<><Link to={notices[0].datos.href} onClick={()=>setNotices(old=>old.slice(1))}>{notices[0].tipo==='asalto'?'Ver mapa':'Ver'}</Link><button aria-label="Cerrar aviso" onClick={()=>setNotices(old=>old.slice(1))}>×</button></>}</div>}
-  </div></SuizamenteContext.Provider>
+  </div></MomentProvider></SuizamenteContext.Provider>
 }

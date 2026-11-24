@@ -67,10 +67,22 @@
 .sv-login-divider::before,.sv-login-divider::after{content:"";height:1px;flex:1;background:var(--sv-line)}
 .sv-profile-avatar{position:relative;align-self:center;width:112px;margin-inline:auto;padding:8px}
 .sv-profile-avatar .sv-avatar{width:96px;height:96px}
-.sv-install-banner{display:flex;align-items:center;gap:8px;padding:10px 12px;background:#EFF4FF;border-bottom:1px solid var(--sv-line);color:var(--sv-text);flex:none}
-.sv-install-banner>div{flex:1;min-width:0;font-size:12px}.sv-install-banner small{display:block;font-size:10px;color:var(--sv-muted)}
-.sv-install-banner>button{min-height:44px;min-width:44px;border:0;border-radius:14px;background:var(--sv-action,#315BC9);color:white;font-size:12px;font-weight:700;padding:8px}
-.sv-install-banner>.sv-install-close{background:transparent;color:var(--sv-muted);font-size:24px;padding:0}
+.sv-root .sv-avatar{border-radius:50%}.sv-root .sv-avatar>img{border-radius:50%;display:block}
+.sv-profile-screen>.sv-content{flex:none}.sv-root .sv-profile-screen>.sv-footer{position:static;bottom:auto;margin-top:auto;z-index:auto}
+.sv-install-banner{position:fixed;z-index:50;bottom:calc(12px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%);width:calc(100% - 24px);max-width:406px;color:white;pointer-events:none}
+.sv-has-nav .sv-install-banner{bottom:calc(var(--sv-nav-height) + 12px)}
+.sv-install-card{pointer-events:auto;background:linear-gradient(135deg,#2448A4,#315BC9);border-radius:18px;padding:14px 16px;box-shadow:0 8px 32px #315BC959;max-height:calc(100dvh - 36px - env(safe-area-inset-bottom,0px));overflow:auto;overscroll-behavior:contain}
+.sv-has-nav .sv-install-card{max-height:calc(100dvh - var(--sv-nav-height) - 36px)}
+.sv-install-heading{display:flex;align-items:flex-start;gap:12px}.sv-install-heading>span{font-size:28px;flex:none}.sv-install-heading>div{min-width:0;flex:1}
+.sv-install-heading b{display:block;font-size:13px;font-weight:700}.sv-install-heading p{font-size:11px;line-height:1.5;margin-top:5px;color:#fff}
+.sv-install-actions{display:flex;gap:8px;margin-top:12px}.sv-install-actions>button{min-height:44px;min-width:44px;flex:1;border:0;border-radius:10px;background:white;color:#315BC9;padding:9px 12px;font-size:12px;font-weight:700}
+.sv-install-actions>.sv-install-close{background:#ffffff20;color:white;border:1px solid #ffffff40}
+.sv-install-video-toggle{display:block;min-height:44px;width:100%;border:1px solid var(--sv-line);border-radius:10px;background:white;color:#315BC9;font:600 12px Poppins,sans-serif;padding:9px 12px;margin-top:10px}
+.sv-install-card .sv-install-video-toggle{border-color:#ffffff40;background:transparent;color:white}
+.sv-install-video video{display:block;width:100%;max-height:45dvh;object-fit:contain;background:#0F1A2B;border:1px solid #ffffff40;border-radius:12px;margin-top:10px}
+.sv-install-video-note{font-size:11px;line-height:1.5;margin-top:8px!important}
+.sv-install-steps{padding-left:24px;line-height:1.6;font-size:13px}.sv-install-steps li+li{margin-top:8px}
+.sv-root.sv-has-install{padding-bottom:var(--sv-install-space,0px)}.sv-root.sv-has-nav.sv-has-install{padding-bottom:calc(var(--sv-nav-height) + var(--sv-install-space,0px))}
 .sv-attack-cantons{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:16px}
 .sv-attack-cantons>button{min-height:154px;border:2px solid var(--sv-line);border-radius:22px;background:white;padding:8px;color:var(--sv-text)}
 .sv-attack-cantons b,.sv-attack-cantons small{display:block}.sv-attack-cantons b{font-size:14px}.sv-attack-cantons small{font-size:11px}.sv-attack-cantons>button:disabled{opacity:.55}

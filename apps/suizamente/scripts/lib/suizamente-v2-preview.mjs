@@ -11,8 +11,8 @@ export function testToken(id){
   const b64=value=>Buffer.from(JSON.stringify(value)).toString('base64url')
   return b64({alg:'HS256',typ:'JWT'})+'.'+b64({sub:id,aud:'authenticated',role:'authenticated',exp:Math.floor(Date.now()/1000)+86400})+'.test-signature'
 }
-export async function startSuizamentePreview(port=5265,{demo=false,host='127.0.0.1'}={}){
-  const db=await database({ataques:true})
+export async function startSuizamentePreview(port=5265,{demo=false,host='127.0.0.1',hmr=true}={}){
+  const db=await database({avatares:true})
   for(const [id,name] of [[A,'Alex'],[B,'Lu'],[C,'Caro']]){
     await call(db,id,'guardar_jugador',profile(name))
     await call(db,id,'bienvenida')
@@ -24,7 +24,7 @@ export async function startSuizamentePreview(port=5265,{demo=false,host='127.0.0
   const actorFrom=auth=>{
     try{const id=JSON.parse(Buffer.from(String(auth||'').split('.')[1],'base64url')).sub;return [A,B,C].includes(id)?id:null}catch{return null}
   }
-  const origin='http://127.0.0.1:'+port
+  const origin='http://'+(host==='0.0.0.0'?'127.0.0.1':host)+':'+port
   process.env.SUPABASE_URL=origin+'/mock-supabase'
   process.env.SUPABASE_ANON_KEY='test-anon'
   const handler=createSuizamenteHandler({fetchImpl:async(_url,options)=>{
@@ -66,7 +66,7 @@ export async function startSuizamentePreview(port=5265,{demo=false,host='127.0.0
     }],define:{
       'import.meta.env.VITE_SUPABASE_URL':"(globalThis.location.origin + '/mock-supabase')",
       'import.meta.env.VITE_SUPABASE_ANON_KEY':JSON.stringify('test-anon'),
-    },server:{host,port,strictPort:true,fs:{allow:[process.cwd(),realpathSync('node_modules')],deny:['.env','.env.*','**/server/suizamente/data/**','**/supabase/**','**/suizamente/data/**']}},
+    },server:{host,port,hmr,strictPort:true,fs:{allow:[process.cwd(),realpathSync('node_modules')],deny:['.env','.env.*','**/server/suizamente/data/**','**/supabase/**','**/suizamente/data/**']}},
   })
   server.httpServer.prependListener('connection',socket=>socket.on('error',error=>{
     if(!['ECONNRESET','EPIPE','ECONNABORTED'].includes(error.code))throw error

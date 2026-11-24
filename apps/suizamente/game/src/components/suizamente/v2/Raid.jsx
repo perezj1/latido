@@ -1,7 +1,9 @@
+import {useMoment} from './Moment'
+import {raidSteps} from './moments'
 import {useCallback,useEffect,useRef,useState} from 'react'
-import {Link,useParams} from 'react-router-dom'
+import {Link,useNavigate,useParams} from 'react-router-dom'
 import {useSv,useQuestionScreen} from './Context'
-import {Avatar,Button,Card,Earnings,Header} from './Shared'
+import {Avatar,Button,Card,Earnings,Header,LatidoBackdrop} from './Shared'
 import {Powerups} from './Duels'
 import {MapDrawing} from './Map'
 import {cantonNames,szApi} from '../../../lib/suizamenteV2'
@@ -9,7 +11,7 @@ import {feedback} from '../../../lib/suizamenteFeedback'
 import {FactCard} from './Sharing'
 
 export function Raid(){
-  const {id}=useParams(),{config}=useSv(),[data,setData]=useState(null),[error,setError]=useState(''),[busy,setBusy]=useState(false),[now,setNow]=useState(Date.now()),[summary,setSummary]=useState(false)
+  const {id}=useParams(),{config}=useSv(),{show}=useMoment(),navigate=useNavigate(),[data,setData]=useState(null),[error,setError]=useState(''),[busy,setBusy]=useState(false),[now,setNow]=useState(Date.now()),[summary,setSummary]=useState(false)
   const pending=useRef(false),offset=useRef(0),mounted=useRef(true),heard=useRef(false)
   const receive=useCallback(d=>{if(!mounted.current)return;offset.current=Date.parse(d.servidorAhora)-Date.now();setData(d);setNow(Date.now())},[])
   const load=useCallback(async()=>{try{receive(await szApi('asaltos/'+id));setError('')}catch(e){if(mounted.current)setError(e.message)}},[id,receive])
@@ -36,18 +38,26 @@ export function Raid(){
     // eslint-disable-next-line react-hooks/exhaustive-deps
   },[q?.venceEn,data?.turnoN])
   const back=data?.partidaId?'/suizamente/partida/'+data.partidaId+'?continuar=1':'/suizamente'
+  async function finishRaid(){
+    setSummary(true)
+    await show(raidSteps(data),{key:'asalto:'+data.id,persist:true})
+    navigate(back)
+  }
+  useEffect(()=>{
+    if(data&&['resuelto','cancelado'].includes(data.estado)&&!q&&!result)finishRaid()
+  },[data?.estado,q?.n,result?.n])
   if(!data)return <section className="sv-screen"><Header title="Asalto"/><div className="sv-content">{error?<><p className="sv-error" role="alert">{error}</p><Button onClick={load}>Reintentar</Button></>:<div className="sv-skeleton" role="status" aria-label="Cargando asalto"/>}</div></section>
-  const target=<Card className="sv-raid-target"><div className="sv-raid-canton"><MapDrawing only={data.canton} levels={{[data.canton]:summary&&data.nivelFinal!==null?data.nivelFinal:data.nivelInicial}} label={cantonNames[data.canton]}/></div><div><div className="sv-raid-person"><Avatar name={data.victima?.apodo||'?'} color={data.victima?.color}/><b>Mapa de {data.victima?.apodo||'otra persona'}</b></div><strong>{cantonNames[data.canton]}</strong><small>{summary&&data.nivelFinal!==null?'Nivel '+data.nivelFinal:'Nivel '+data.nivelInicial+' · '+(data.tieneEscudo?'con escudo':'sin escudo')}</small></div></Card>
+  const target=<Card className="sv-raid-target"><div className="sv-raid-canton"><MapDrawing only={data.canton} levels={{[data.canton]:summary&&data.nivelFinal!==null?data.nivelFinal:data.nivelInicial}} label={cantonNames[data.canton]}/></div><div><div className="sv-raid-person"><Avatar id={data.victima?.id} name={data.victima?.apodo||'?'} color={data.victima?.color}/><b>Mapa de {data.victima?.apodo||'otra persona'}</b></div><strong>{cantonNames[data.canton]}</strong><small>{summary&&data.nivelFinal!==null?'Nivel '+data.nivelFinal:'Nivel '+data.nivelInicial+' · '+(data.tieneEscudo?'con escudo':'sin escudo')}</small></div></Card>
   const fault=error&&<p className="sv-error" role="alert">{error} <button className="sv-text-button" onClick={load}>Reintentar</button></p>
   if(q||(result&&!summary)){
     const category=config.categorias.find(c=>c.id===(q?.categoria||result.categoria))
     return <section className="sv-screen sv-game"><header className="sv-question-header" style={{background:category.color,color:category.colorTexto}}><span>{category.emoji}</span><div><small>ASALTO · {data.preguntaNumero||1}/{data.preguntasTotal||1} · {cantonNames[data.canton].toUpperCase()}</small><b>{category.nombre}</b></div><span className={'sv-clock'+(remaining<=5&&!result?' urgent':'')}>{result?result.ok?'✓':'✕':remaining}</span>{q&&<div className="sv-time-bar"><i style={{width:Math.min(100,100*remaining/q.tiempo)+'%'}}/></div>}</header>
       <div className="sv-content sv-question-content">{q?<><Card className="sv-question-card"><span>{q.emoji}</span><h1>{q.pregunta}</h1></Card>{q.otraUsada&&<p className="sv-retry" role="status">🔁 ¡Otra oportunidad! Elige otra vez</p>}<div className="sv-options">{q.opciones.map(o=><button key={o.indice} disabled={busy||remaining===0||q.quitadas.includes(o.indice)||q.falladas.includes(o.indice)} className={q.quitadas.includes(o.indice)||q.falladas.includes(o.indice)?'sv-option-removed':''} onClick={()=>act('respuesta',{opcion:o.indice})}><span>{o.e}</span><b>{o.t}</b></button>)}</div>{remaining===0&&<p role="status">⏰ ¡Se acabó el tiempo!</p>}</>:<><h1 className={'sv-result-title '+(result.ok?'correct':'wrong')}>{result.agotada?'⏰ ¡Se acabó el tiempo!':result.ok?'¡Correcto!':'¡Uy! No era esa'}</h1><p className="sv-result-question">{result.pregunta}</p><div className="sv-options result">{result.opciones.map(o=><div key={o.indice} className={o.indice===result.correcta?'correct':o.indice===result.opcion?'wrong':'muted'}><span>{o.indice===result.correcta?'✓':o.indice===result.opcion?'✕':o.e}</span><b>{o.t}</b></div>)}</div>{result.pct!==null&&<p className="sv-stat">👥 El {result.pct} % de hispanohablantes en Suiza acertó</p>}<FactCard id={result.preguntaId} dato={result.dato} question={result.pregunta}/></>}{fault}</div>
-      {q?<Powerups match={data} act={act} busy={busy} remaining={remaining}/>:<footer className="sv-footer"><Earnings value={{monedas:data.premio}}/><Button disabled={busy} onClick={()=>data.estado==='entre_preguntas'?act('siguiente'):setSummary(true)}>{data.estado==='entre_preguntas'?'Siguiente pregunta '+(data.preguntaNumero+1)+'/'+data.preguntasTotal:'Ver el asalto'}</Button></footer>}
+      {q?<Powerups match={data} act={act} busy={busy} remaining={remaining}/>:<footer className="sv-footer"><Earnings value={{monedas:data.premio}}/><Button disabled={busy} onClick={()=>data.estado==='entre_preguntas'?act('siguiente'):finishRaid()}>{data.estado==='entre_preguntas'?'Siguiente pregunta '+(data.preguntaNumero+1)+'/'+data.preguntasTotal:'Ver el asalto'}</Button></footer>}
     </section>
   }
   const finished=data.estado!=='ofrecido',cancelled=data.estado==='cancelado'
   const victory=data.tipo==='victoria',won=victory&&data.estado==='resuelto'&&data.aciertos===data.preguntasTotal
-  return <section className={'sv-screen sv-raid '+(finished?'finished':'')}><div className="sv-reward-heading"><span>{finished?cancelled?'🗺️':won?'💥':data.escudo?'🛡️':data.premio>0?'💥':'💨':'⚔️'}</span><h1>{finished?cancelled?'Asalto cancelado':won?'¡Asalto conseguido!':data.escudo?'¡Un escudo lo paró!':data.premio>0?'¡Asalto conseguido!':'Esta vez no':'¡Asalto!'}</h1><p>{finished?cancelled?'El objetivo ya no está disponible.':won?data.escudo?'Su cantón baja un nivel. El escudo redujo el robo a '+data.premio+' monedas.':'Su cantón baja un nivel. Robaste '+data.premio+' monedas.':data.escudo?'El cantón sigue a salvo.':data.premio>0?'Su cantón baja un nivel.':'El mapa sigue como estaba.':'Acierta una pregunta y te llevas monedas de otro mapa'}</p></div>
+  return <section className={'sv-screen sv-raid sv-themed-screen '+(finished?'finished':'')}><LatidoBackdrop tint="#FEEDD1"/><div className="sv-reward-heading"><span>{finished?cancelled?'🗺️':won?'💥':data.escudo?'🛡️':data.premio>0?'💥':'💨':'⚔️'}</span><h1>{finished?cancelled?'Asalto cancelado':won?'¡Asalto conseguido!':data.escudo?'¡Un escudo lo paró!':data.premio>0?'¡Asalto conseguido!':'Esta vez no':'¡Asalto!'}</h1><p>{finished?cancelled?'El objetivo ya no está disponible.':won?data.escudo?'Su cantón baja un nivel. El escudo redujo el robo a '+data.premio+' monedas.':'Su cantón baja un nivel. Robaste '+data.premio+' monedas.':data.escudo?'El cantón sigue a salvo.':data.premio>0?'Su cantón baja un nivel.':'El mapa sigue como estaba.':'Acierta una pregunta y te llevas monedas de otro mapa'}</p></div>
     <div className="sv-content">{target}<div className="sv-chips"><span className="sv-chip">{finished?'🪙 +'+data.premio:'🪙 '+data.maxPremio+' si aciertas'}</span></div>{!finished&&<p className="sv-muted sv-center">Si fallas no pierdes nada. Con escudo, te llevas 🪙 {data.premioConEscudo}.</p>}{fault}</div><footer className="sv-footer">{finished?<Button to={back}>▶ Seguir la partida</Button>:<><Button tone="danger" disabled={busy} onClick={()=>act('empezar')}>⚔️ ¡A por ello!</Button><Link className="sv-text-button sv-center" to={back} onClick={()=>act('descartar')}>Volver a la partida</Link></>}</footer></section>
 }

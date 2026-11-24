@@ -1,0 +1,59 @@
+/* CSS_MOMENTO: keyframes copied verbatim from disenos/juego.html. */
+@keyframes sz-girar{to{transform:rotate(360deg)}}
+@keyframes sz-pop{0%{opacity:0;transform:scale(.4)}60%{opacity:1;transform:scale(1.12)}100%{opacity:1;transform:scale(1)}}
+@keyframes sz-subir{0%{opacity:0;transform:translateY(24px) scale(.92)}100%{opacity:1;transform:none}}
+@keyframes sz-flotar{0%,100%{transform:translateY(0) rotate(-5deg)}50%{transform:translateY(-10px) rotate(-2deg)}}
+@keyframes sz-voltear{0%{opacity:0;transform:perspective(700px) rotateY(95deg) scale(.85)}100%{opacity:1;transform:perspective(700px) rotateY(0) scale(1)}}
+@keyframes sz-temblar{0%,100%{transform:translateX(0)}20%{transform:translateX(-6px) rotate(-3deg)}40%{transform:translateX(6px) rotate(3deg)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}
+@keyframes sz-brillo{0%,100%{opacity:.3;transform:scale(.7) rotate(0)}50%{opacity:1;transform:scale(1.1) rotate(25deg)}}
+@keyframes sz-latir{0%,100%{opacity:.5}50%{opacity:1}}
+@keyframes sz-caer{0%{opacity:0;transform:translateY(-30px) rotate(0)}10%{opacity:1}100%{opacity:0;transform:translateY(900px) rotate(540deg)}}
+@keyframes sz-abrir{0%{transform:scale(1)}35%{transform:scale(1.18) rotate(-8deg)}60%{transform:scale(1.08) rotate(8deg)}100%{transform:scale(1.7);opacity:0}}
+@media (prefers-reduced-motion:reduce){[data-momento],[data-momento] *{animation:none !important}}
+[data-moment-host]{position:relative;z-index:2147483000}
+.sv-moment,.sv-moment *{box-sizing:border-box}
+.sv-moment{position:fixed;inset:0;z-index:2147483000;display:flex;flex-direction:column;align-items:center;padding:66px 20px 96px;background:rgba(251,249,246,.88);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);overflow:hidden;text-align:center;color:#0F1A2B;font-family:Poppins,'Segoe UI',system-ui,sans-serif;cursor:pointer;outline:none;isolation:isolate}
+.sv-moment-rays{position:absolute;left:50%;top:50%;width:1000px;height:1000px;margin:-500px 0 0 -500px;border-radius:50%;background:repeating-conic-gradient(rgba(249,167,25,.22) 0deg 7deg,transparent 7deg 15deg,rgba(36,191,226,.2) 15deg 22deg,transparent 22deg 30deg,rgba(250,47,53,.15) 30deg 37deg,transparent 37deg 45deg,rgba(3,170,152,.18) 45deg 52deg,transparent 52deg 60deg);-webkit-mask-image:radial-gradient(circle,#000 8%,transparent 56%);mask-image:radial-gradient(circle,#000 8%,transparent 56%);animation:sz-girar 40s linear infinite;pointer-events:none}
+.sv-moment-rays.grey{background:repeating-conic-gradient(rgba(90,101,119,.1) 0deg 7deg,transparent 7deg 15deg)}
+.sv-moment-glow{position:absolute;left:50%;top:50%;width:380px;height:380px;margin:-190px 0 0 -190px;border-radius:50%;background:radial-gradient(circle,var(--moment-tint) 0%,rgba(251,249,246,0) 68%);pointer-events:none}
+.sv-moment-confetti{position:absolute;inset:0;pointer-events:none}.sv-moment-confetti>span{position:absolute;top:-24px}
+.sv-moment-skip{position:absolute;z-index:2;top:max(14px,env(safe-area-inset-top));right:14px;min-height:36px;padding:0 14px;border:0;border-radius:999px;background:#FFF;box-shadow:0 1px 4px rgba(15,26,43,.12);font:800 13px Poppins,sans-serif;color:#0F1A2B;cursor:pointer}
+.sv-moment-skip:focus-visible{outline:3px solid #4A76EF;outline-offset:3px}
+.sv-moment-page{position:relative;display:flex;flex-direction:column;align-items:center;width:100%;height:100%;max-width:620px;min-height:0;overflow-y:auto;scrollbar-width:thin;padding:0}
+.sv-moment h1{position:relative;margin:0;font-size:30px;line-height:1.12;font-weight:800;letter-spacing:-.01em;animation:sz-pop .5s both}
+.sv-moment-sub{position:relative;margin:8px 0 0;font-size:15px;line-height:1.35;font-weight:600;color:#3D4757;animation:sz-subir .4s .1s both}
+.sv-moment-body{position:relative;flex:1;width:100%;display:flex;align-items:center;justify-content:center;padding:20px 0}
+.sv-moment-content{width:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px}
+.sv-moment-footer{position:absolute;left:20px;right:20px;bottom:max(24px,env(safe-area-inset-bottom));min-height:52px;display:flex;align-items:center;flex-direction:column;gap:14px}
+.sv-moment-footer p{margin:0;font-size:16px;font-weight:800;line-height:1.4;animation:sz-latir 1.6s ease-in-out infinite}
+.sv-moment-footer span{font-size:12.5px;font-weight:700;color:#5A6577;line-height:1.4}
+.sv-moment-object{position:relative;width:250px;height:250px;display:grid;place-items:center}
+.sv-moment-object.pack{height:290px}.sv-moment-sparkles svg{position:absolute;animation:sz-brillo 1.8s ease-in-out infinite}
+.sv-moment-gift{font-size:136px;line-height:1;filter:drop-shadow(0 16px 18px rgba(15,26,43,.18));animation:sz-flotar 2.4s ease-in-out infinite}
+.sv-moment-content.opening .sv-moment-object{animation:sz-abrir .38s ease-in forwards}
+.sv-moment-envelope{position:relative;width:172px;height:232px;border-radius:22px;overflow:hidden;background:linear-gradient(160deg,#4A76EF 0%,#24BFE2 100%);box-shadow:0 16px 30px rgba(15,26,43,.22),inset 0 0 0 3px rgba(255,255,255,.35);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;animation:sz-flotar 2.4s ease-in-out infinite}
+.sv-moment-envelope:before,.sv-moment-envelope:after{content:'';position:absolute;left:0;right:0;height:16px;background:repeating-linear-gradient(90deg,rgba(255,255,255,.5) 0 3px,transparent 3px 8px)}
+.sv-moment-envelope:before{top:0}.sv-moment-envelope:after{bottom:0}
+.sv-moment-envelope>span{position:relative;width:100px;height:100px;border-radius:50%;background:#FFF;display:grid;place-items:center;box-shadow:0 4px 0 rgba(15,26,43,.12)}
+.sv-moment-envelope b{position:relative;padding:4px 12px;border-radius:999px;background:#FFF;font-size:13px}
+.sv-moment-envelope-band{position:absolute;left:-20%;right:-20%;top:60%;height:46px;background:rgba(255,255,255,.2);transform:rotate(-8deg)}
+.sv-moment-block{display:flex;flex-direction:column;align-items:center;gap:8px;width:100%}
+.sv-moment-tokens{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;max-width:350px;width:100%;padding:3px}
+.sv-moment-token{width:104px;min-height:112px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:12px 6px;border-radius:22px;background:#FFF;box-shadow:0 0 0 2.5px #24E2C9,0 8px 18px rgba(15,26,43,.1);animation:sz-subir .45s var(--delay) both}
+.sv-moment-token.loss{box-shadow:0 0 0 2.5px #FA2F35,0 8px 18px rgba(15,26,43,.1);animation:sz-subir .45s var(--delay) both,sz-temblar .5s var(--shake-delay) forwards}
+.sv-moment-token.other{box-shadow:0 0 0 2.5px #E4E8EF,0 8px 18px rgba(15,26,43,.1)}
+.sv-moment-icon{font-size:34px;line-height:1.1}.sv-moment-token>b{font-weight:700;line-height:1.15}.sv-moment-token>span:last-child{font-size:11.5px;line-height:1.2;font-weight:600;color:#3D4757;overflow-wrap:anywhere}
+.sv-moment-label{padding:5px 12px;border-radius:999px;background:#D3F8F3;font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;animation:sz-subir .35s .15s both}
+.loss>.sv-moment-label{background:#FFE1E2}.other>.sv-moment-label,.sv-moment-label.other{background:#F4F7FB}
+.sv-moment-hero{font-size:80px;line-height:1;filter:drop-shadow(0 10px 14px rgba(15,26,43,.16));animation:sz-pop .6s both}.sv-moment-hero.lost{animation:sz-pop .5s both,sz-temblar .6s .55s forwards}
+.sv-moment-stamp{flex:none;border-radius:50%;display:grid;place-items:center;animation:sz-pop .6s .1s both}
+.sv-moment-note{margin:0;max-width:320px;font-size:13.5px;line-height:1.35;font-weight:600;color:#3D4757;animation:sz-subir .4s .9s both}
+.sv-moment-cards{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;width:100%;max-width:350px}.sv-moment-card{width:104px;min-height:156px;border-radius:18px;border:2px solid #F9A719;background:#FFF;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;padding:10px 6px;box-shadow:0 6px 14px #0F1A2B1F;animation:sz-voltear .55s var(--delay) both}.sv-moment-card>small{color:#F9A719;font-size:12px}.sv-moment-card>span{font-size:40px;line-height:1.1}.sv-moment-card>b{font-size:12.5px;line-height:1.2}.sv-moment-card>em{padding:3px 8px;border-radius:999px;background:#FEEDD1;font-size:10px;font-weight:800;font-style:normal}.sv-moment-card>em.new{background:#FA2F35;color:#FFF}
+.sv-moment-events{display:flex;flex-direction:column;align-items:center;gap:10px;width:100%;max-width:350px}.sv-moment-event{width:100%;display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:20px;background:#FFF;box-shadow:0 0 0 2px #E4E8EF,0 6px 14px rgba(15,26,43,.08);text-align:left;animation:sz-subir .45s var(--delay) both}.sv-moment-event.loss{box-shadow:0 0 0 2px #FFE1E2,0 6px 14px rgba(15,26,43,.08);animation:sz-subir .45s var(--delay) both,sz-temblar .5s var(--shake-delay) forwards}.sv-moment-event>span:first-child{width:50px;height:50px;flex:none;border-radius:16px;background:#F4F7FB;display:grid;place-items:center;font-size:26px}.sv-moment-event.loss>span:first-child{background:#FFE1E2}.sv-moment-event>span:last-child{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}.sv-moment-event b{font-size:15px;line-height:1.2}.sv-moment-event small{font-size:13px;font-weight:700;color:#3D4757}.sv-moment-event.loss small{color:#C5232A}
+/* Retain the reference's geometry at 390px, wrap safely on narrow/short screens. */
+@media(max-width:359px){.sv-moment{padding-left:12px;padding-right:12px}.sv-moment-tokens,.sv-moment-cards{gap:8px}.sv-moment-token,.sv-moment-card{width:calc((100% - 16px)/3);max-width:104px}.sv-moment h1{font-size:28px}}
+@media(max-height:600px){.sv-moment{padding-top:58px;padding-bottom:82px}.sv-moment-body{padding:16px 0}.sv-moment-object{height:200px}.sv-moment-object.pack{height:240px}}
+[data-momento][data-reduced] *,[data-suizamente-reduced=true] [data-momento] *{animation:none!important;transition:none!important}
+@media(prefers-reduced-motion:reduce){[data-momento],[data-momento] *{animation:none!important;transition:none!important}}
+.sv-moment-decoration{position:absolute;inset:0;overflow:hidden;pointer-events:none}
+.sv-moment-icon>.sv-map-drawing{width:46px;height:40px;display:block}.sv-moment-event.loss b{color:#C5232A}

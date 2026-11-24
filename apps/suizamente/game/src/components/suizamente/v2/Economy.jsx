@@ -1,3 +1,4 @@
+import {useDailyGift} from './MomentArrival'
 import {useEffect,useState} from 'react'
 import {Link} from 'react-router-dom'
 import {useSv} from './Context'
@@ -5,8 +6,10 @@ import {Avatar,Button,Card,Header,Wallet} from './Shared'
 import {cantonNames,szApi} from '../../../lib/suizamenteV2'
 import {ProfileDuration} from './Duration'
 import {ShareSheet,storyData} from './Sharing'
+import {notify} from '../../../lib/suizamenteNotices'
 
 export function Profile(){
+  const openGift=useDailyGift()
   const {player,config}=useSv(),[data,setData]=useState(null),[error,setError]=useState('')
   const [sharing,setSharing]=useState(false)
   useEffect(()=>{let active=true;szApi('perfil').then(x=>{if(active)setData(x)}).catch(e=>{if(active)setError(e.message)});return()=>{active=false}},[player.jugador_id])
@@ -16,7 +19,7 @@ export function Profile(){
     return <div className="sv-category-stat" style={{'--tint':cat.tinte,'--category':cat.color}}><span>{cat.emoji}</span><div><small>{title}</small><b>{cat.nombre}</b><div className="sv-xp-bar"><i style={{width:entry.pct+'%'}}/></div></div><b>{entry.pct} %</b></div>
   }
   return <section className="sv-screen"><Header title="" right={<Link className="sv-icon-button" to="/suizamente/menu" aria-label="Menú">☰</Link>}/>
-    <div className="sv-content"><div className="sv-profile-heading"><Avatar name={player.apodo} color={player.color}/><div><h1>{player.apodo}</h1><p>@{player.apodo} · {cantonNames[player.canton]}</p></div></div>
+    <div className="sv-content"><div className="sv-profile-heading"><Avatar id={player.jugador_id} name={player.apodo} color={player.color}/><div><h1>{player.apodo}</h1><p>@{player.apodo} · {cantonNames[player.canton]}</p></div></div>
       <p className="sv-muted">{data?.seguidores??0} seguidores · {data?.siguiendo??0} siguiendo</p><div className="sv-profile-actions"><Button tone="quiet" to="/suizamente/perfil/editar">✏️ Editar perfil</Button><Button tone="quiet" onClick={()=>setSharing(true)}>📤 Compartir</Button></div>
       <ProfileDuration/><div className="sv-profile-tabs"><b>Desempeño</b><Link to="/suizamente/proponer">Tus preguntas</Link></div>
       <Card className="sv-level-card"><div className="sv-between"><h2>⭐ Nivel {player.nivel}</h2><span>{player.xpNivel} / {player.xpNecesaria} XP</span></div><div className="sv-xp-bar" role="progressbar" aria-label="Progreso de nivel" aria-valuenow={player.xpNivel} aria-valuemin={0} aria-valuemax={player.xpNecesaria}><i style={{width:100*player.xpNivel/player.xpNecesaria+'%'}}/></div><p>Has acertado <b>{data?.aciertos??0}</b> preguntas</p></Card>
@@ -34,6 +37,7 @@ export function Achievements(){
   return <section className="sv-screen"><Header title="🏅 Logros" back="/suizamente/perfil"/><div className="sv-content"><p>Tienes <b>{data?.filter(l=>l.conseguido).length||0}</b>. Toca uno para ver cómo se consigue.</p><div className="sv-achievements-grid">{data?.map(l=><button key={l.id} onClick={()=>setSelected(l)} aria-label={l.nombre+': '+(l.conseguido?'Conseguido':l.avance+'/'+l.meta)}><span className={l.conseguido?'achieved':''}>{l.emoji}</span><b>{l.nombre}</b><div className="sv-xp-bar"><i style={{width:Math.min(100,100*l.avance/l.meta)+'%'}}/></div><small>{l.conseguido?'✓ Conseguido':l.avance+'/'+l.meta}</small></button>)}</div>{selected&&<Card role="status"><b>{selected.emoji} {selected.nombre}</b><p>{selected.condicion}</p></Card>}{error&&<p role="alert" className="sv-error">{error}</p>}</div></section>
 }
 export function Shop(){
+  const openGift=useDailyGift()
   const {player,config}=useSv(),[data,setData]=useState(null),[busy,setBusy]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState('')
   async function load(){try{setData(await szApi('tienda'))}catch(e){setError(e.message)}}
   useEffect(()=>{
@@ -57,15 +61,14 @@ export function Shop(){
       await szApi('tienda/comprar',{method:'POST',body:{articulo:article,clave}})
       sessionStorage.removeItem(storageKey)
       const label=data.comodines.find(c=>c.id===article)?.nombre||(article==='escudo'?'Escudo':'Sobre de cartas')
-      setNotice('✓ Comprado: '+label);await load()
-    }catch(e){if(e.status&&e.status<500)sessionStorage.removeItem('suizamente:compra-pendiente:'+player.jugador_id);setError(e.message)}finally{setBusy(false)}
+      notify('Comprado: '+label);await load()
+    }catch(e){if(e.status&&e.status<500)sessionStorage.removeItem('suizamente:compra-pendiente:'+player.jugador_id);notify(e,{error:true})}finally{setBusy(false)}
   }
   async function gift(){
     if(busy)return
     setBusy(true);setError('');setNotice('')
     try{
-      const result=await szApi('tienda/regalo',{method:'POST'})
-      setNotice('🎁 🪙 +'+data.regalo.monedas+' · '+data.comodines.find(c=>c.id===result.comodin)?.nombre)
+      await openGift()
       await load()
     }catch(e){setError(e.message);await load()}finally{setBusy(false)}
   }

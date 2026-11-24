@@ -34,6 +34,6 @@ function App(){return <AuthProvider><EntryProvider><BrowserRouter><PushSync/><Su
  <Route path="/reset-password" element={<ResetPassword/>}/><Route path="/auth/restablecer" element={<ResetPassword/>}/>
  <Route path="/terminos" element={<ExternalLegal path="/terminos"/>}/><Route path="/privacidad" element={<ExternalLegal path="/privacidad"/>}/>
  <Route path="*" element={<Navigate replace to="/suizamente"/>}/>
- </Routes></Suspense><Toaster position="top-center"/></BrowserRouter></EntryProvider></AuthProvider>}
+ </Routes></Suspense><Toaster position="top-center" containerStyle={{top:'calc(12px + env(safe-area-inset-top, 0px))',zIndex:10000}}/></BrowserRouter></EntryProvider></AuthProvider>}
 createRoot(document.getElementById('root')).render(<App/>)
 if('serviceWorker'in navigator&&import.meta.env.PROD)window.addEventListener('load',()=>navigator.serviceWorker.register('/sw.js').then(r=>r.update()).catch(()=>{}))

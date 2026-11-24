@@ -112,3 +112,78 @@ desde segundo plano y el gesto Compartir → Añadir a pantalla de inicio.
 
 La migración v17 debe acompañar al despliegue del código. No ejecutarla como un
 cambio aislado del flujo de juego todavía publicado.
+
+## Avatares y vídeo de instalación (v18)
+
+Para esta actualización, aplicar `supabase/suizamente_v18_avatares.sql` después
+de v17 junto al nuevo despliegue. Solo añade funciones propias del juego: lee
+la foto pública de Latido como respaldo y no modifica perfiles, sesiones ni datos
+de esa app. Los emails y el resto de los metadatos de acceso no se devuelven.
+
+El recurso `public/suizamente-assets/install-ios.mp4` es una copia independiente
+del vídeo de Latido. No depende de sus rutas para reproducirse y se descarga
+únicamente al pulsar «Ver vídeo».
+
+```powershell
+npm run test:avatars
+```
+
+Comprueba fotos recíprocas entre dos cuentas con el mismo apodo, fotos propias y
+de respaldo, ausencia de emails, círculo del avatar, formulario completo antes
+de «¡A jugar!», banner inferior y reproducción del vídeo real en Chromium/WebKit.
+Las capturas quedan en `output/v18/`.
+
+## Ruleta y fondos de la partida
+
+Este cambio visual no requiere una migración adicional. La v18 sigue siendo
+necesaria para los avatares compartidos del cambio anterior.
+
+```powershell
+npm run test:play
+npm run build
+```
+
+La prueba de navegador usa SQL temporal y ejecuta el giro real del servidor en
+Chromium y WebKit. Comprueba 320 px, 390 px y escritorio: rueda fija, centrado,
+arco accesible, inventario real, frenado y dos parpadeos, turno del rival,
+movimiento reducido y pies transparentes que no cubren contenido. Recorre también
+elección de sello, duelo, fin, cofre, sobre, vuelta y asalto.
+
+Las capturas y la hoja de comparación se guardan en `output/play/<navegador>/`.
+La comparación opcional necesita el directorio original de diseño en
+`SUIZAMENTE_DESIGN_ROOT` (por defecto, el checkout vecino `latido/suizamente`).
+La prueba lo sirve en HTTP, juega la referencia y copia las capturas de
+`pantallas.html`; no modifica ese checkout.
+
+Prueba manual: abre una partida con dos cuentas, gira desde el botón central y
+comprueba la pantalla del rival. Activa «Menos animaciones» y repite. Revisa el
+scroll de las pantallas de premio y asalto a 320 px y en un iPhone físico.
+
+## Carga, mapa y ataque aplazado
+
+No añade SQL. Se conserva la dependencia v18 de los avatares preparada antes.
+
+```powershell
+npm run build
+npm run test:ux
+npm run dev:qa
+```
+
+`test:ux` comprueba Chromium y WebKit con SQL temporal: carga de rutas al abrirlas,
+recuperación de un 503 sin aviso amarillo, compra sin saldo con aviso breve y sin
+repetir la acción, gestos del mapa sin herramientas adicionales, ataque aplazado
+que sigue disponible al volver a entrar y aislamiento de caché entre cuentas.
+Valida también que el service worker no descargue todas las rutas al instalarse,
+que guarde las visitadas y que excluya API y autenticación de la caché.
+
+En la compilación de esta revisión el bloque `SuizamenteApp` pasa de 202,53 kB a
+84,20 kB antes de gzip (aproximadamente un 58 % menos). Es una medida del bloque
+principal del juego; las pantallas necesarias se descargan al abrirlas.
+
+La vista temporal usa `http://127.0.0.2:8080`, porque `127.0.0.1:8080` está ocupado
+por Latido. No detiene ni modifica ese servidor. El comando muestra además la
+dirección de la Wi-Fi para abrir la misma partida desde el teléfono. Todo usa
+cuentas de prueba y PostgreSQL en memoria; no se conecta a datos de producción.
+«Alex» y «Lu» en la franja superior permiten probar con dos ventanas o dispositivos.
+Los datos se pierden al detener la vista temporal. La instalación PWA real en iOS
+se comprueba en el dominio de producción con HTTPS.

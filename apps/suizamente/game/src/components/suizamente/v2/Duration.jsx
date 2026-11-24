@@ -1,8 +1,9 @@
 import {useState} from 'react'
 import {Link,useLocation} from 'react-router-dom'
 import {useSv} from './Context'
-import {DailyHome,useData} from './Community'
-import {Avatar,Button,Card,Header,Stamps,Wallet} from './Shared'
+import {DailyHome} from './DailyPreview'
+import {useData} from './useData'
+import {Avatar,Button,Card,Header,Stamps,Wallet,LatidoBackdrop} from './Shared'
 import {MapDrawing} from './Map'
 import {szApi,timeLeft} from '../../../lib/suizamenteV2'
 import {Confetti} from './Finish'
@@ -46,7 +47,7 @@ export function League(){
     <div className="sv-ranking-list">{data.filas.map((r,i)=><div key={r.id}>
       {i===rules.suben&&index<rules.divisiones.length-1&&<p className="sv-league-zone">⬆️ Zona de ascenso</p>}
       {i===Math.max(rules.suben,data.filas.length-rules.bajan)&&index>0&&<p className="sv-league-zone down">⬇️ Zona de descenso</p>}
-      <Link className={'sv-rank-row '+(r.tu?'you':'')} to={'/suizamente/jugador/'+r.id}><span>{['🥇','🥈','🥉'][i]||r.puesto}</span><Avatar name={r.apodo} color={r.color} marco={r.marco}/><b>{r.tu?'Tú':r.apodo}</b><strong>{r.puntos}</strong></Link>
+      <Link className={'sv-rank-row '+(r.tu?'you':'')} to={'/suizamente/jugador/'+r.id}><span>{['🥇','🥈','🥉'][i]||r.puesto}</span><Avatar id={r.id} name={r.apodo} color={r.color} marco={r.marco}/><b>{r.tu?'Tú':r.apodo}</b><strong>{r.puntos}</strong></Link>
     </div>)}</div><Card><h2>Premios de la semana</h2>{rules.premiosDomingo.map(p=><p key={p.desde}>{p.desde===p.hasta?p.desde:p.desde+'–'+p.hasta}.º · 🪙 {Math.round(p.monedas*division.multiplicadorPremio)}{p.sobres?' · 🃏 '+Math.round(p.sobres*division.multiplicadorPremio):''}</p>)}<small>{rules.puntos.partidaGanada} puntos por victoria · {rules.puntos.selloGanado} por sello. Los empates se ordenan por quién llegó antes a la puntuación.</small></Card>
   </>
 }
@@ -54,5 +55,5 @@ export function LapComplete(){
   const {search}=useLocation(),lap=new URLSearchParams(search).get('vuelta'),{data,error}=useData('mapa/vuelta?vuelta='+encodeURIComponent(lap)),{config}=useSv()
   const style=config.vueltasMapa.vueltas[Math.min(Number(lap)-1,config.vueltasMapa.vueltas.length-1)]
   const levels=Object.fromEntries(config.mapa.regiones.flatMap(r=>r.cantones.map(k=>[k.id,config.mapa.nivelesPorCanton])))
-  return <section className="sv-screen"><Header title="Vuelta completa"/>{data?<><Confetti/><div className="sv-content sv-lap-complete"><h1>🎉 ¡{style?.nombre} completa!</h1><MapDrawing region={config.mapa.regiones.length} levels={levels} vuelta={Number(lap)}/><h2>🪙 +{data.monedas}</h2><p>{style?.emoji} Marco {style?.marco}</p><Stamps categories={config.categorias}/></div><footer className="sv-footer"><Button to="/suizamente/mapa">▶ A por la vuelta {data.vuelta+1}</Button></footer></>:<div className="sv-content">{error?<p role="alert">{error}</p>:<div className="sv-skeleton"/>}</div>}</section>
+  return <section className="sv-screen sv-themed-screen"><LatidoBackdrop tint={config.vueltasMapa.vueltas[Math.min(Number(lap),config.vueltasMapa.vueltas.length-1)]?.colores[1]}/><Header title="Vuelta completa"/>{data?<><Confetti/><div className="sv-content sv-lap-complete"><h1>🎉 ¡{style?.nombre} completa!</h1><MapDrawing region={config.mapa.regiones.length} levels={levels} vuelta={Number(lap)}/><h2>🪙 +{data.monedas}</h2><p>{style?.emoji} Marco {style?.marco}</p><Stamps categories={config.categorias}/></div><footer className="sv-footer"><Button to="/suizamente/mapa">▶ A por la vuelta {data.vuelta+1}</Button></footer></>:<div className="sv-content">{error?<p role="alert">{error}</p>:<div className="sv-skeleton"/>}</div>}</section>
 }
