@@ -20,13 +20,17 @@ export async function szApi(path, {method='GET',body}={}) {
     method,credentials:'same-origin',cache:'no-store',
     headers:{'Content-Type':'application/json',...(guest?{'X-Jugador-Id':guest}:{}),...(token?{Authorization:'Bearer '+token}:{})},
     ...(body?{body:JSON.stringify(body)}:{}),
-  }).catch(()=>{window.dispatchEvent(new Event('suizamente:error-conexion'));throw new Error('Algo ha fallado. Inténtalo otra vez.')})
-  let response=await send(session?.access_token)
+  })
+  // iOS can discard a suspended PWA connection. Only reads may be replayed.
+  const read=async token=>{try{return await send(token)}catch(e){if(method!=='GET'||!navigator.onLine)throw e;return send(token)}}
+  let response
+  try{response=await read(session?.access_token)}catch{window.dispatchEvent(new Event('suizamente:error-conexion'));throw new Error('Algo ha fallado. Inténtalo otra vez.')}
   const sessionRejected=response.status===401&&(await response.clone().json().catch(()=>null))?.sesionCaducada
   if(sessionRejected&&session?.access_token){const fresh=await recoverSupabaseSession(session.access_token,session.user?.id);if(fresh?.access_token){response=await send(fresh.access_token);if(response.status===401&&(await response.clone().json().catch(()=>null))?.sesionCaducada)await invalidateSupabaseSession(fresh.access_token)}}
   let data
   try{data=await response.json()}catch{throw new Error('No se pudo conectar con Suizamente. Inténtalo otra vez.')}
   if(!response.ok){if(response.status>=500)window.dispatchEvent(new Event('suizamente:error-conexion'));const error=new Error(data.error||'Algo ha fallado. Inténtalo otra vez.');error.status=response.status;error.partida=data.partida;throw error}
+  window.dispatchEvent(new Event('suizamente:conexion-restablecida'))
   data=withoutFlags(data)
   if(data.identidad?.startsWith('invitado-'))localStorage.setItem('suizamente:jugador',data.identidad.slice(9))
   if(data.jugador)window.dispatchEvent(new CustomEvent(SV_STATE,{detail:data}))

@@ -47,15 +47,20 @@ export function createSuizamenteHandler({ fetchImpl = fetch } = {}) {
       const communityRoute=route.match(/^(perfiles|resultados|preguntas)\/([^/]+)$/)
       if(communityRoute&&req.method==='GET')action={perfiles:'perfil_publico',resultados:'resultado',preguntas:'pregunta_publica'}[communityRoute[1]]
       const match = route.match(/^partidas\/([0-9a-f-]{36})(?:\/(girar|pregunta|respuesta|rendirse|comodin|duelo))?$/)
+      const attackRoute=route.match(/^partidas\/([0-9a-f-]{36})\/(ataque|atacar)$/)
+      if(attackRoute&&UUID.test(attackRoute[1])){
+        if(req.method==='GET'&&attackRoute[2]==='ataque')action='ataque_objetivos'
+        if(req.method==='POST'&&attackRoute[2]==='atacar')action='atacar'
+      }
       if (match && UUID.test(match[1])) {
         if (!match[2] && req.method === 'GET') action = 'partida'
         else if (match[2] && req.method === 'POST') action = match[2]
       }
-      const rewardRoute=route.match(/^(cofres|asaltos|sobres)\/([0-9a-f-]{36})(?:\/(abrir|empezar|respuesta|comodin|descartar|girar))?$/)
+      const rewardRoute=route.match(/^(cofres|asaltos|sobres)\/([0-9a-f-]{36})(?:\/(abrir|empezar|siguiente|respuesta|comodin|descartar|girar))?$/)
       if(rewardRoute&&UUID.test(rewardRoute[2])){
         const [,kind,,operation]=rewardRoute
         if(req.method==='GET'&&!operation)action={cofres:'cofre',asaltos:'asalto',sobres:'sobre'}[kind]
-        if(req.method==='POST')action={cofres:{abrir:'abrir_cofre'},asaltos:{empezar:'asalto_empezar',respuesta:'asalto_respuesta',comodin:'asalto_comodin',descartar:'asalto_descartar'},sobres:{girar:'girar_carta'}}[kind]?.[operation]
+        if(req.method==='POST')action={cofres:{abrir:'abrir_cofre'},asaltos:{empezar:'asalto_empezar',siguiente:'asalto_siguiente',respuesta:'asalto_respuesta',comodin:'asalto_comodin',descartar:'asalto_descartar'},sobres:{girar:'girar_carta'}}[kind]?.[operation]
       }
       if (!action) return send(404, { error:'Ruta no disponible' })
       if(!req.headers.authorization&&!['config','capacidades'].includes(action))return send(adminRoute?403:401,{error:adminRoute?'Solo administración de Latido':'Entra con tu cuenta de Latido para jugar'})
@@ -78,6 +83,7 @@ export function createSuizamenteHandler({ fetchImpl = fetch } = {}) {
       if(body&&Buffer.byteLength(JSON.stringify(body),'utf8')>(adminRoute?150000:20000))return send(413,{error:'Solicitud demasiado grande'})
       const args = { ...Object.fromEntries(url.searchParams), ...body }
       if (match) args.id = match[1]
+      if (attackRoute) args.id=attackRoute[1]
       if (rewardRoute) args.id = rewardRoute[2]
       if(communityRoute)args.id=decodeURIComponent(communityRoute[2])
       if(adminRoute){args.ruta=route.slice(6)||'resumen';args.metodo=req.method}

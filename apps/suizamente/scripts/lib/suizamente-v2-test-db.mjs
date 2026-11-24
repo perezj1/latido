@@ -6,7 +6,8 @@ export const B='22222222-2222-4222-8222-222222222222'
 export const C='33333333-3333-4333-8333-333333333333'
 export const G='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'
 export const TOKEN='a'.repeat(64)
-export async function database({economia=false,tienda=false,mapa=false,album=false,comunidad=false,admin=false,operaciones=false,duracion=false,progreso=false,produccion=false,cuentas=false,independiente=false}={}) {
+export async function database({economia=false,tienda=false,mapa=false,album=false,comunidad=false,admin=false,operaciones=false,duracion=false,progreso=false,produccion=false,cuentas=false,independiente=false,ataques=false}={}) {
+  if(ataques)independiente=true
   if(independiente)cuentas=true
   if(cuentas)produccion=true
   if(produccion)progreso=true
@@ -32,6 +33,7 @@ export async function database({economia=false,tienda=false,mapa=false,album=fal
   if(produccion)await db.exec(await readFile('supabase/suizamente_v13_produccion.sql','utf8'))
   if(cuentas)await db.exec(await readFile('supabase/suizamente_v14_cuentas.sql','utf8'))
   if(independiente){await db.exec('CREATE ROLE service_role BYPASSRLS');await db.exec(await readFile('supabase/suizamente_v15_independiente.sql','utf8'))}
+  if(ataques)await db.exec(await readFile('supabase/suizamente_v17_ataques.sql','utf8'))
   return db
   }catch(error){await db.close();throw error}
 }

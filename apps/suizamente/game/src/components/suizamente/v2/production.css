@@ -67,6 +67,19 @@
 .sv-login-divider::before,.sv-login-divider::after{content:"";height:1px;flex:1;background:var(--sv-line)}
 .sv-profile-avatar{position:relative;align-self:center;width:112px;margin-inline:auto;padding:8px}
 .sv-profile-avatar .sv-avatar{width:96px;height:96px}
+.sv-install-banner{display:flex;align-items:center;gap:8px;padding:10px 12px;background:#EFF4FF;border-bottom:1px solid var(--sv-line);color:var(--sv-text);flex:none}
+.sv-install-banner>div{flex:1;min-width:0;font-size:12px}.sv-install-banner small{display:block;font-size:10px;color:var(--sv-muted)}
+.sv-install-banner>button{min-height:44px;min-width:44px;border:0;border-radius:14px;background:var(--sv-action,#315BC9);color:white;font-size:12px;font-weight:700;padding:8px}
+.sv-install-banner>.sv-install-close{background:transparent;color:var(--sv-muted);font-size:24px;padding:0}
+.sv-attack-cantons{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:16px}
+.sv-attack-cantons>button{min-height:154px;border:2px solid var(--sv-line);border-radius:22px;background:white;padding:8px;color:var(--sv-text)}
+.sv-attack-cantons b,.sv-attack-cantons small{display:block}.sv-attack-cantons b{font-size:14px}.sv-attack-cantons small{font-size:11px}.sv-attack-cantons>button:disabled{opacity:.55}
+.sv-map-mode{position:absolute;z-index:4;right:12px;bottom:12px;min-height:44px;min-width:64px;display:flex;align-items:center;justify-content:center;gap:5px;border:1px solid var(--sv-line);border-radius:16px;background:white;color:var(--sv-text);padding:8px;font-size:11px;font-weight:700;box-shadow:0 2px 8px #0F1A2B12}
+.sv-world-map.selected:not(.mini):not(.preview) .sv-map-mode{bottom:84px}
+.sv-world-map .sv-map-tools{left:12px;right:auto;bottom:12px;max-width:calc(100% - 100px);flex-wrap:wrap}
+.sv-world-map.selected:not(.mini):not(.preview) .sv-map-tools{bottom:84px}
+.sv-home-map .sv-map-mode{right:6px;bottom:6px}.sv-home-map .sv-map-tools{left:6px;right:auto;bottom:6px}
+.sv-nav-icon.home>b{right:50%;top:-10px;transform:translateX(50%);min-width:20px;height:20px;background:#E21D2A;border:2px solid white;font-size:10px}
 .sv-avatar>img{width:100%;height:100%;object-fit:cover;border-radius:inherit}
 .sv-photo-button{position:absolute;right:0;bottom:0;display:grid;place-items:center;min-width:44px;min-height:44px;border:3px solid white;border-radius:50%;background:var(--sv-action,#315BC9);color:white;box-shadow:0 2px 6px #0F1A2B26}
 .sv-root .sv-login-button{display:grid;grid-template-columns:24px minmax(0,1fr);align-items:center;gap:10px;width:100%;min-height:58px;padding:14px 18px;border:2px solid var(--sv-line);border-radius:18px;background:var(--sv-bg);color:var(--sv-text);font:600 clamp(13px,3.7vw,16px)/1.35 Poppins,sans-serif;text-align:center;overflow-wrap:anywhere}

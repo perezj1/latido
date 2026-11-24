@@ -32,7 +32,7 @@ export function Wheel({categories,rotation=0,spinning=false,duration=2700,onSpin
   const slots=[...categories,{id:'sello',emoji:'🛂',color:'var(--sv-card)'}]
   const n=slots.length
   const point=(r,a)=>[150+r*Math.sin(a*Math.PI/180),150-r*Math.cos(a*Math.PI/180)]
-  return <div className="sv-wheel" role={onSpin?'group':'img'} aria-label="Ruleta de seis categorías y sello"><div className="sv-pointer"/><svg aria-hidden="true" viewBox="0 0 300 300" style={{transform:'rotate('+rotation+'deg)',transition:spinning?'transform '+duration+'ms cubic-bezier(.15,.75,.2,1)':'none'}}>{slots.map((c,i)=>{
+  return <div className="sv-wheel" role={onSpin?'group':'img'} aria-label="Ruleta de seis categorías y sello"><div className="sv-pointer"/><svg aria-hidden="true" onClick={()=>{if(!disabled&&!spinning)onSpin?.()}} viewBox="0 0 300 300" style={{transform:'rotate('+rotation+'deg)',transition:spinning?'transform '+duration+'ms cubic-bezier(.15,.75,.2,1)':'none'}}>{slots.map((c,i)=>{
     const a=point(145,(i-.5)*360/n),b=point(145,(i+.5)*360/n),label=point(104,i*360/n)
     return <g key={c.id}><path d={'M150 150 L'+a.join(' ')+' A145 145 0 0 1 '+b.join(' ')+' Z'} fill={c.color} stroke="white" strokeWidth="3"/><text x={label[0]} y={label[1]} textAnchor="middle" dominantBaseline="central" fontSize="27">{c.emoji}</text></g>
   })}</svg>{onSpin?<button className="sv-wheel-logo sv-wheel-spin" onClick={onSpin} disabled={disabled} aria-label="Girar la ruleta"><Logo size={32}/><b>{spinning?'…':'GIRAR'}</b></button>:<div className="sv-wheel-logo"><Logo size={38}/></div>}</div>

@@ -16,14 +16,10 @@ function Passport({name,avatarName,color,owned,active,categories,id,fresh}){
   return <div className={'sv-passport'+(active?' active':'')}><Link to={id?'/suizamente/jugador/'+id:'/suizamente/perfil'} aria-label={'Perfil de '+name}><Avatar name={name.includes('Buscando')?'\ud83d\udd0d':avatarName||name} color={name.includes('Buscando')?'gris':color}/></Link><div><b>{name}</b><small>{owned.length}/{categories.length} sellos</small></div><Stamps categories={categories} owned={owned} freshIds={fresh?[fresh]:[]}/></div>
 }
 function MatchHistoryRow({match}){
-  const {user}=useSv(),navigate=useNavigate(),[busy,setBusy]=useState(false),[error,setError]=useState('')
-  async function rematch(){
-    if(!user){navigate('/suizamente/entrar');return}
-    setBusy(true);try{const result=await szApi('partidas',{method:'POST',body:{rival:match.rival.id}});navigate('/suizamente/partida/'+result.id)}catch(e){setError(e.message)}finally{setBusy(false)}
-  }
+  const {config}=useSv()
   return <Card className="sv-match-history"><Link className="sv-match" to={'/suizamente/partida/'+match.id}>
     <Avatar name={match.rival?.apodo||'?'} color={match.rival?.color}/><div><b>{match.rival?.apodo||'Perfil eliminado'}</b><small>{match.terminadaEn&&new Intl.DateTimeFormat('es-CH',{dateStyle:'medium',timeZone:'Europe/Zurich'}).format(new Date(match.terminadaEn))}</small></div><strong>{match.tusSellos.length}–{match.susSellos.length}</strong>
-  </Link>{match.rival&&<Button tone="quiet" disabled={busy} onClick={rematch}>🔁 Revancha</Button>}{error&&<p role="alert" className="sv-error">{error}</p>}</Card>
+  </Link>{config.apiVersion>=17&&match.rival&&match.ganador===match.tuId&&<Button tone="quiet" to={'/suizamente/ataque/'+match.id}>Atacar</Button>}</Card>
 }
 export function Home(){
   const {player,config}=useSv()
@@ -126,9 +122,9 @@ export function Game(){
   useEffect(()=>{
     mounted.current=true;load()
     const poll=setInterval(()=>{if(!pending.current)load()},10000),clock=setInterval(()=>setNow(Date.now()),200)
-    const recover=()=>load(),disconnected=()=>setOffline(true)
-    window.addEventListener('online',recover);window.addEventListener('offline',disconnected)
-    return()=>{mounted.current=false;clearInterval(poll);clearInterval(clock);clearTimeout(timer.current);window.removeEventListener('online',recover);window.removeEventListener('offline',disconnected)}
+    const recover=()=>{if(!document.hidden&&!pending.current)load()},disconnected=()=>setOffline(true)
+    window.addEventListener('online',recover);window.addEventListener('focus',recover);document.addEventListener('visibilitychange',recover);window.addEventListener('offline',disconnected)
+    return()=>{mounted.current=false;clearInterval(poll);clearInterval(clock);clearTimeout(timer.current);window.removeEventListener('online',recover);window.removeEventListener('focus',recover);document.removeEventListener('visibilitychange',recover);window.removeEventListener('offline',disconnected)}
   },[load])
   async function act(action,args={},state=m){
     if(pending.current)return null
@@ -158,12 +154,15 @@ export function Game(){
   }
   const q=m?.pregunta
   useQuestionScreen(!!q)
-  const activeResult=m?.resultado&&m.resultado.n!==dismissed&&!q?m.resultado:null
+  const stampReady=m?.teToca&&m.fase==='sello'&&m.tuBarra>=config.partida.barraParaSello&&!q
+  const activeResult=m?.resultado&&m.resultado.n!==dismissed&&!q&&!stampReady?m.resultado:null
+  const solved=activeResult||(stampReady?m?.resultado:null)
   useEffect(()=>{
-    if(!activeResult)return
-    const key=mid+':'+activeResult.n
-    if(!heard.current.has(key)){heard.current.add(key);feedback(activeResult.ok?'acierto':'fallo')}
-  },[activeResult?.n,activeResult?.ok,mid])
+    if(!solved)return
+    const key=mid+':'+solved.n
+    if(!heard.current.has(key)){heard.current.add(key);feedback(solved.ok?'acierto':'fallo')}
+  },[solved?.n,solved?.ok,mid])
+  useEffect(()=>{if(m?.fase==='sello'&&m.teToca&&!spinning&&!q)document.querySelector('.sv-wheel-status')?.focus({preventScroll:true})},[m?.fase,m?.teToca,spinning,q?.n])
   useEffect(()=>{
     if(!m)return
     const fresh=previousStamps.current&&m.tusSellos.find(id=>!previousStamps.current.includes(id))
@@ -232,15 +231,16 @@ export function Game(){
         {error&&<p className="sv-error" role="alert">{error} <button className="sv-text-button" onClick={load}>Reintentar</button></p>}
       </div>
       {q&&<Powerups match={m} act={act} busy={busy} remaining={remaining}/>}
-      {result&&<footer className="sv-footer"><Earnings value={result.ganado}/>{result.evento&&<p className="sv-center">{result.evento}</p>}{m.asalto&&<Button tone="danger" to={"/suizamente/asalto/"+m.asalto.id}>⚔️ ¡Asalto disponible!</Button>}<StampBar value={m.tuBarra} max={config.partida.barraParaSello}/><Button onClick={continueResult}>{m.duelo?.mostrarResultado?'Ver resultado del duelo':ended?'Ver resultado':m.teToca?(m.fase==='sello'?'🛂 ¡Juega por un sello!':m.fase==='duelo'?'▶ Siguiente pregunta':'🎡 Girar otra vez'):'Le toca a '+(m.rival?.apodo||'tu rival')}</Button></footer>}
-    </>:ended?<><Header title={m.ganador===m.tuId?'¡Victoria!':m.ganador?'Esta vez no':'Partida terminada'}/><div className="sv-content sv-finish"><span className="sv-finish-emoji" aria-hidden="true">{m.ganador===m.tuId?'🏆':'🛂'}</span><h1>{m.tusSellos.length} – {m.susSellos.length}</h1>{passports}<Earnings value={m.premio}/><p>{m.motivoFin==='plazo'?'El plazo del turno ha terminado.':m.motivoFin==='rendicion'?'La partida ha terminado por abandono.':m.motivoFin==='rondas'?'Fin de las '+m.rondasMax+' rondas.':'Pasaporte completo.'}</p></div><footer className="sv-footer"><Button tone="quiet" onClick={()=>setSharing(true)}>📤 Compartir</Button>{m.cofre&&<Button to={"/suizamente/cofre/"+m.cofre.id+"?volver="+encodeURIComponent("/suizamente/partida/"+m.id+"?continuar=1")}>{m.cofre.abierto?"🎁 Ver el cofre":"🎁 Abrir el cofre"}</Button>}{m.rival&&<Button disabled={busy} onClick={async()=>{setBusy(true);try{const next=await szApi('partidas',{method:'POST',body:{rival:m.rival.id}});navigate('/suizamente/partida/'+next.id)}catch(e){setError(e.message)}finally{setBusy(false)}}}>🔁 Revancha</Button>}<Button tone="quiet" to="/suizamente">🏠 Inicio</Button>{error&&<p role="alert" className="sv-error">{error}</p>}</footer></>:
+      {result&&<footer className="sv-footer"><Earnings value={result.ganado}/>{result.evento&&<p className="sv-center">{result.evento}</p>}{m.asalto&&<Button tone="danger" to={"/suizamente/asalto/"+m.asalto.id}>⚔️ ¡Asalto disponible!</Button>}<StampBar value={m.tuBarra} max={config.partida.barraParaSello}/><Button onClick={continueResult}>{m.duelo?.mostrarResultado?'Ver resultado del duelo':ended?'Ver resultado':m.teToca?(m.fase==='sello'?'🛂 ¡Juega por un sello!':m.fase==='duelo'?'▶ Siguiente pregunta':'Continuar'):'Le toca a '+(m.rival?.apodo||'tu rival')}</Button></footer>}
+    </>:ended?<><Header title={m.ganador===m.tuId?'¡Victoria!':m.ganador?'Esta vez no':'Partida terminada'}/><div className="sv-content sv-finish"><span className="sv-finish-emoji" aria-hidden="true">{m.ganador===m.tuId?'🏆':'🛂'}</span><h1>{m.tusSellos.length} – {m.susSellos.length}</h1>{passports}<Earnings value={m.premio}/><p>{m.motivoFin==='plazo'?'El plazo del turno ha terminado.':m.motivoFin==='rendicion'?'La partida ha terminado por abandono.':m.motivoFin==='rondas'?'Fin de las '+m.rondasMax+' rondas.':'Pasaporte completo.'}</p></div><footer className="sv-footer"><Button tone="quiet" onClick={()=>setSharing(true)}>📤 Compartir</Button>{m.cofre&&<Button to={"/suizamente/cofre/"+m.cofre.id+"?volver="+encodeURIComponent("/suizamente/partida/"+m.id+"?continuar=1")}>{m.cofre.abierto?"🎁 Ver el cofre":"🎁 Abrir el cofre"}</Button>}{globalConfig.apiVersion>=17&&m.rival&&m.ganador===m.tuId&&<Button to={'/suizamente/ataque/'+m.id}>Atacar</Button>}<Button tone="quiet" to="/suizamente">🏠 Inicio</Button>{error&&<p role="alert" className="sv-error">{error}</p>}</footer></>:
     <><Header title={'Ronda '+m.ronda} right={<button className="sv-icon-button" aria-label="Más opciones: rendirse" onClick={()=>setResign(true)}>⋯</button>}/><p className="sv-round-limit">de {m.rondasMax} como máximo</p><div className="sv-game-inventory" aria-label="Tus comodines">{config.comodines.map(c=><button key={c.id} onClick={()=>setAdvantage(c)} aria-label={c.nombre+': tienes '+(player.inventario?.[c.id]||0)}><span aria-hidden="true">{c.emoji}</span><b>{player.inventario?.[c.id]||0}</b></button>)}</div>{passports}<div className="sv-wheel-area">
-      <b>{spinning?'…':!m.rival?'🔍 Buscando rival…':m.teToca?m.fase==='sello'?'🛂 Elige tu sello':'¡Te toca! Gira la ruleta':'⏳ Turno de '+m.rival.apodo}</b>
+      <b className="sv-wheel-status" tabIndex={-1} role="heading" aria-level={2}>{spinning?'…':!m.rival?'🔍 Buscando rival…':m.teToca?m.fase==='sello'?(stampReady?'¡'+config.partida.barraParaSello+' aciertos! Elige tu sello':'🛂 Elige tu sello'):'¡Te toca! Gira la ruleta':'⏳ Turno de '+m.rival.apodo}</b>
       {m.fase==='sello'&&m.teToca&&!spinning?<><div className="sv-stamp-choice">{categories.map(c=><button disabled={busy||m.tusSellos.includes(c.id)} key={c.id} style={{'--category':c.color,'--tint':c.tinte}} onClick={()=>act('pregunta',{modo:'sello',categoria:c.id})}><span>{c.emoji}</span><b>{c.nombre}</b>{m.tusSellos.includes(c.id)&&<small>✓ Lo tienes</small>}</button>)}</div>{m.dueloDisponible&&<button className="sv-duel-invite" disabled={busy} onClick={()=>setPreparingDuel(true)}>⚔️ Duelo de sellos<small>Quítale un sello a tu rival</small></button>}</>:m.fase==='duelo'?<Card className="sv-empty sv-duel-wait"><span>⚔️</span><h2>Duelo de sellos</h2><p>{m.duelo?.desempate?'Pregunta de desempate':(m.duelo?.tusAciertos.length||0)+' de '+config.duelo.preguntas+' preguntas respondidas'}</p><div className="sv-duel-progress">{categories.map((c,i)=><span key={c.id} title={c.nombre}>{m.duelo?.tusAciertos[i]===undefined?c.emoji:m.duelo.tusAciertos[i]?'✓':'✕'}</span>)}</div></Card>:<Wheel categories={categories} rotation={rotation} spinning={spinning} duration={settings.menosAnimaciones?0:config.ruleta.duracionGiroMs} onSpin={spin} disabled={busy||spinning||!m.teToca||!m.rival||m.fase!=='girar'}/>}
       {!m.rival&&<p className="sv-muted">Esta partida aún no tiene rival. Vuelve a Nueva partida para elegir a alguien disponible.</p>}
       <StampBar value={m.tuBarra} max={config.partida.barraParaSello}/>
       {error&&<p className="sv-error" role="alert">{error}</p>}
-    </div><footer className="sv-footer">{m.fase!=='sello'&&<Button disabled={busy||spinning||!m.teToca||!m.rival||m.fase==='espera'} onClick={()=>['elegida','duelo'].includes(m.fase)?act('pregunta'):spin()}>{busy?'Conectando…':spinning?'Girando…':!m.teToca?'⏳ Turno de '+(m.rival?.apodo||'tu rival'):m.fase==='duelo'?'⚔️ Seguir el duelo':m.fase==='elegida'?'▶ Seguir':'🎡 ¡Girar!'}</Button>}<small className="sv-muted">⏳ {timeLeft(m.plazo)} para jugar el turno</small></footer></>}
+    </div><footer className="sv-footer">{['elegida','duelo'].includes(m.fase)&&m.teToca&&<Button disabled={busy||spinning} onClick={()=>act('pregunta')}>Continuar</Button>}<small className="sv-muted">{timeLeft(m.plazo)} para jugar el turno</small></footer></>}
+
     {advantage&&<Sheet title={advantage.emoji+' '+advantage.nombre} onClose={()=>setAdvantage(null)}><p>Tienes {player.inventario?.[advantage.id]||0}. Puedes activarlo al responder una pregunta, cuando esté disponible.</p><Button to="/suizamente/tienda">Ver en la tienda</Button></Sheet>}
     {resign&&<Sheet title="¿Rendirte?" onClose={()=>setResign(false)}><p>La partida cuenta como abandonada.</p><Button onClick={()=>setResign(false)}>Seguir jugando</Button><Button tone="danger-text" disabled={busy} onClick={async()=>{await act('rendirse');setResign(false)}}>Rendirme</Button></Sheet>}
     {sharing&&<ShareSheet data={storyData('fin',{...m,categorias:categories})} onClose={()=>setSharing(false)}/>}

@@ -87,3 +87,28 @@ En un teléfono, comprobar: abrir el dominio con sesión guardada → ver las cu
 opciones → Latido → nombre/foto y cámara → elegir foto → ¡A jugar! → Ajustes sin
 Apariencia. Repetir con el dispositivo en modo oscuro: sigue claro. Una recarga
 presenta de nuevo las opciones; cambiar de pestaña dentro del juego no las repite.
+
+## Actualización de partida y ataques (v17)
+
+Antes de publicar este cambio, aplicar `supabase/suizamente_v17_ataques.sql` después
+de v15/v16. La migración añade el progreso privado del ataque, selecciona cinco
+preguntas y liquida robo, escudo y bajada de nivel de forma atómica. No modifica
+tablas ni notificaciones de Latido. Conserva partidas y asaltos anteriores.
+
+La regla nueva usa los valores de `asaltos`: cinco preguntas, 100 monedas sin
+escudo y 70 con escudo. El cantón siempre baja un nivel tras los cinco aciertos.
+La víctima pierde exactamente lo que gana el atacante, limitado a su saldo.
+
+```powershell
+npm run test:rules
+```
+
+Esta prueba usa PostgreSQL temporal y Chromium/WebKit: tres aciertos, elección y
+pregunta de sello, victoria con seis, elección del cantón, cinco preguntas,
+transferencia de monedas, escudo, fallos, tiempo agotado, límite diario, duplicados,
+contador de turnos, mapa bloqueado/activo, instalación y modo PWA de iPhone.
+Las capturas quedan en `output/v17/`. Probar además en un iPhone físico el retorno
+desde segundo plano y el gesto Compartir → Añadir a pantalla de inicio.
+
+La migración v17 debe acompañar al despliegue del código. No ejecutarla como un
+cambio aislado del flujo de juego todavía publicado.

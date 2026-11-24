@@ -22,6 +22,7 @@
     "test:accounts": "node scripts/test-suizamente-v14.mjs && node scripts/test-session-transport.mjs",
     "test:entry": "node scripts/test-suizamente-login-browser.mjs && node scripts/test-suizamente-entry-profile.mjs",
     "test:photos": "node scripts/test-suizamente-fotos.mjs",
+    "test:rules": "node scripts/test-suizamente-v17.mjs && node scripts/test-suizamente-v17-browser.mjs && node scripts/test-suizamente-v17-browser.mjs --webkit",
     "test:game": "node scripts/test-suizamente-production-browser.mjs",
     "test:independence": "node scripts/test-independencia.mjs"
   },

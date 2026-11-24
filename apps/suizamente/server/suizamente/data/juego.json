@@ -545,10 +545,12 @@
   ]
  },
  "asaltos": {
+  "momento": "victoria",
+  "preguntasTrasVictoria": 5,
   "probabilidadPorAcierto": 0.125,
   "maxPorDia": 3,
   "premio": 100,
-  "premioConEscudo": 30,
+  "premioConEscudo": 70,
   "soloRegionActualDeLaVictima": true,
   "nivelMinimoDelCanton": 1,
   "comodinesNoPermitidos": [
@@ -960,7 +962,7 @@
    "id": "muralla",
    "emoji": "🛡️",
    "nombre": "Muralla",
-   "condicion": "Para 10 asaltos con tus escudos",
+   "condicion": "Reduce el robo en 10 ataques con tus escudos",
    "meta": 10
   },
   {

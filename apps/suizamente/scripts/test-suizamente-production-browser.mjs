@@ -15,7 +15,7 @@ try{
  },{user:testUser(A,'Alex'),token:testToken(A)})
  page=await context.newPage();page.on('pageerror',e=>errors.push(e.message))
  async function go(path){await preview.db.exec('DELETE FROM suizamente_private.suizamente_limites');await page.goto(preview.origin+'/suizamente/'+path);await page.getByRole('button',{name:'Entrar con cuenta de Latido',exact:true}).click();await page.getByRole('button',{name:/A jugar/}).click();await page.waitForLoadState('networkidle')}
- async function nav(){const el=page.getByRole('navigation',{name:'Navegación principal'});await expect(el).toBeVisible();assert.equal(await el.count(),1);const r=await el.boundingBox();assert.ok(Math.abs(r.y+r.height-page.viewportSize().height)<2,'Navigation is fixed to viewport bottom')}
+ async function nav(){const el=page.getByRole('navigation',{name:'Navegación principal'});if(/\/(partida|asalto|ataque|pregunta)(\/|$)/.test(new URL(page.url()).pathname)){await expect(el).toHaveCount(0);return}await expect(el).toBeVisible();assert.equal(await el.count(),1);const r=await el.boundingBox();assert.ok(Math.abs(r.y+r.height-page.viewportSize().height)<2,'Navigation is fixed to viewport bottom')}
  async function capture(name){assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),'No horizontal overflow');await page.screenshot({path:out+'/produccion-'+name+'.png',fullPage:true})}
  await go('');await nav();await expect(page.locator('.sv-home-map canvas')).toBeVisible();await capture('inicio-390')
  const home=page.locator('.sv-home-map canvas'),homeA=await home.screenshot();await page.waitForTimeout(250);assert.ok(!(await home.screenshot()).equals(homeA),'Home renders the same live model with moving life')
@@ -52,7 +52,7 @@ try{
  await go('mapa');await page.getByRole('button',{name:/Ver Lucerna/}).click();const main=page.locator('.sv-map-frame>.sv-world-map canvas');await page.waitForTimeout(200)
  const still=await main.screenshot();await page.waitForTimeout(200);assert.ok((await main.screenshot()).equals(still),'Reduced motion keeps the map still')
  await page.emulateMedia({colorScheme:'dark'});assert.equal(await page.locator('html').getAttribute('data-suizamente-theme'),'clara');await capture('mapa-claro-reducido')
- assert.deepEqual(errors,[]);await writeFile(out+'/produccion.json',JSON.stringify({engine,checks:['fixed navigation except active questions','random disabled without real available player','server starts with real rival','search/invite/continue/start lobby','large wheel and actual inventory','live home 3D','animated current-level canton models','build updates main and miniature','320/390/1440','forced light/reduced motion']},null,2))
+ assert.deepEqual(errors,[]);await writeFile(out+'/produccion.json',JSON.stringify({engine,checks:['navigation hidden throughout gameplay and results','random disabled without real available player','server starts with real rival','search/invite/continue/start lobby','large wheel and actual inventory','live home 3D','animated current-level canton models','build updates main and miniature','320/390/1440','forced light/reduced motion']},null,2))
  console.log('Production browser '+engine+': mobile/desktop navigation, real matchmaking, lobby, roulette, home/canton 3D, construction and reduced motion passed.')
 }catch(e){await page?.screenshot({path:out+'/produccion-fallo.png',fullPage:true}).catch(()=>{});console.error(e.message);process.exitCode=1}
 finally{await browser?.close();await preview?.close()}
