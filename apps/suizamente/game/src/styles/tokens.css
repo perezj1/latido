@@ -1,0 +1,102 @@
+:root {
+  color-scheme: light;
+
+  /* Semantic color roles. Component and page styles consume these variables
+     directly or through the Tailwind/theme.js compatibility layers. */
+  --latido-color-surface-canvas: #f0f6ff;
+  --latido-color-surface: #ffffff;
+  --latido-color-surface-subtle: #f8faff;
+  --latido-color-surface-elevated: #ffffff;
+  --latido-color-surface-inverse: #0f172a;
+  --latido-color-border: #e2eaf4;
+  --latido-color-border-subtle: #f1f5f9;
+  --latido-color-border-strong: #cbd5e1;
+  --latido-color-text-primary: #0f172a;
+  --latido-color-text-secondary: #475569;
+  /* Muted copy remains AA on both white and the blue canvas (4.72:1 minimum). */
+  --latido-color-text-muted: #5f6f85;
+  --latido-color-text-inverse: #ffffff;
+  --latido-color-accent: #2563eb;
+  --latido-color-accent-hover: #1d4ed8;
+  --latido-color-accent-strong: #1d4ed8;
+  --latido-color-accent-subtle: #eff6ff;
+  --latido-color-accent-border: #bfdbfe;
+  --latido-color-brand-100: #dbeafe;
+  --latido-color-brand-500: #3b82f6;
+  --latido-color-brand-800: #1e40af;
+  --latido-color-brand-900: #1e3a8a;
+  --latido-color-success: #10b981;
+  --latido-color-success-text: #047857;
+  --latido-color-success-subtle: #ecfdf5;
+  --latido-color-success-border: #6ee7b7;
+  --latido-color-warning: #f59e0b;
+  --latido-color-warning-text: #b45309;
+  --latido-color-warning-subtle: #fffbeb;
+  --latido-color-warning-border: #fcd34d;
+  --latido-color-danger: #ef4444;
+  --latido-color-danger-text: #b91c1c;
+  --latido-color-danger-subtle: #fef2f2;
+  --latido-color-danger-border: #fecaca;
+  --latido-color-focus: #2563eb;
+
+  /* Category accents are brand identifiers, not status colors. */
+  --latido-color-category-vivienda-surface: #dbeafe;
+  --latido-color-category-vivienda-text: #1d4ed8;
+  --latido-color-category-cuidados-surface: #fce7f3;
+  --latido-color-category-cuidados-text: #9d174d;
+  --latido-color-category-documentos-surface: #ede9fe;
+  --latido-color-category-documentos-text: #6d28d9;
+  --latido-color-category-venta-surface: #fef3c7;
+  --latido-color-category-venta-text: #92400e;
+  --latido-color-category-servicios-surface: #ccfbf1;
+  --latido-color-category-servicios-text: #0f766e;
+  --latido-color-category-regalo-surface: #fee2e2;
+  --latido-color-category-regalo-text: #b91c1c;
+
+  /* 4px spacing scale. */
+  --latido-space-0: 0px;
+  --latido-space-1: 4px;
+  --latido-space-2: 8px;
+  --latido-space-3: 12px;
+  --latido-space-4: 16px;
+  --latido-space-5: 20px;
+  --latido-space-6: 24px;
+  --latido-space-8: 32px;
+  --latido-space-10: 40px;
+  --latido-space-12: 48px;
+  --latido-space-16: 64px;
+
+  /* One horizontal rhythm for every route. It starts compact on phones and
+     grows on wide screens without leaving content floating against the edge. */
+  --latido-page-gutter: clamp(16px, 3vw, 32px);
+  --latido-page-max-wide: 1200px;
+  --latido-page-max-content: 1000px;
+  --latido-page-max-reading: 780px;
+  --latido-page-max-form: 600px;
+  --latido-page-max-compact: 480px;
+
+  /* Type roles. Screens can use responsive clamp values for display only. */
+  --latido-font-size-caption: 12px;
+  --latido-font-size-body: 14px;
+  --latido-font-size-subtitle: 16px;
+  --latido-font-size-title: 24px;
+  --latido-font-size-display: clamp(32px, 5vw, 48px);
+  --latido-line-height-title: 1.2;
+  --latido-line-height-body: 1.6;
+  --latido-measure-reading: 70ch;
+
+  --latido-radius-sm: 8px;
+  --latido-radius-md: 12px;
+  --latido-radius-lg: 20px;
+  --latido-radius-full: 999px;
+
+  --latido-shadow-sm: 0 2px 8px rgba(15, 23, 42, 0.06);
+  --latido-shadow-md: 0 10px 28px rgba(15, 23, 42, 0.1);
+  --latido-shadow-lg: 0 24px 64px rgba(15, 23, 42, 0.18);
+
+  --latido-motion-fast: 140ms;
+  --latido-motion-base: 220ms;
+  --latido-motion-slow: 320ms;
+  --latido-ease-standard: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --latido-ease-emphasized: cubic-bezier(0.22, 1, 0.36, 1);
+}

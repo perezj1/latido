@@ -1,0 +1,202 @@
+import { track as trackVercelEvent } from '@vercel/analytics'
+import { supabase } from './supabase'
+import { hasAnalyticsConsent } from './cookieConsent'
+import { getAnalyticsRoute, isPrivateAnalyticsRoute, sanitizeAnalyticsMetadata } from './analyticsPrivacy.js'
+
+export { getAnalyticsRoute } from './analyticsPrivacy.js'
+
+const SESSION_KEY = 'latido_analytics_session_id'
+const LOCAL_HOSTNAMES = new Set(['localhost', '127.0.0.1', '::1', '[::1]'])
+const VERCEL_EVENT_PROPERTIES = {
+  card_journey: ['action', 'step', 'mode'],
+  search: ['scope', 'cat', 'category', 'active_filter'],
+  search_result_open: ['result_type'],
+  search_solution_action: ['action', 'result_type'],
+  search_resolution: ['answer', 'result_type', 'had_solution_action'],
+  search_resolution_reason: ['answer', 'reason', 'result_type'],
+  signup_success: ['method', 'entry_point', 'interest_count'],
+  login_success: ['method', 'entry_point'],
+  publication_created: ['content_type', 'category', 'intent', 'channel', 'moderation_status'],
+  partner_card_impression: ['partner_id', 'placement'],
+  giveaway_cta_click: ['giveaway_id', 'placement'],
+  giveaway_entry: ['giveaway_id', 'entry_type', 'marketing_consent'],
+  giveaway_signup_click: ['giveaway_id'],
+  giveaway_share: ['giveaway_id', 'method'],
+  giveaway_video_play: ['giveaway_id', 'video_id'],
+  partner_page_view: ['partner_id', 'placement'],
+  partner_service_click: ['partner_id', 'placement', 'service'],
+  partner_cross_click: ['partner_id', 'placement'],
+  partner_outbound_click: ['partner_id', 'placement', 'action', 'service'],
+  saved_search_created: ['entity_kind', 'category', 'has_query', 'has_location'],
+  saved_search_push_enabled: ['source'],
+  saved_search_result_open: ['source'],
+}
+
+// Card events never include account, business, offer or receipt identifiers.
+// Private validation pages remain excluded, including custom events.
+export function trackCardEvent(action, properties = {}) {
+  if (typeof window === 'undefined' || window.location.pathname.startsWith('/card/validacion/')) return
+  const allowed = ['visit', 'request', 'offer_details', 'use_confirmed', 'business_visit',
+    'form_start', 'form_abandon', 'offer_published', 'qr_print', 'qr_download', 'qr_share', 'first_use']
+  if (!allowed.includes(action)) return
+  return trackAnalyticsEvent('card_journey', { path: window.location.pathname.startsWith('/card') ? getAnalyticsRoute(window.location.pathname) : '/latido', search: '',
+    metadata: { action, ...(Number.isInteger(properties.step) ? { step: properties.step } : {}),
+      ...(['create', 'edit', 'replace'].includes(properties.mode) ? { mode: properties.mode } : {}) } })
+}
+let lastEventKey = ''
+let lastEventAt = 0
+let analyticsRetryAfter = 0
+
+export function isAnalyticsEnabled() {
+  if (!import.meta.env.PROD || typeof window === 'undefined') return false
+
+  const hostname = window.location.hostname.toLowerCase()
+  return hasAnalyticsConsent() &&
+    !LOCAL_HOSTNAMES.has(hostname) &&
+    !hostname.endsWith('.localhost')
+}
+
+export function sanitizeVercelAnalyticsEvent(event) {
+  if (!hasAnalyticsConsent()) return null
+  if (!event?.url || typeof window === 'undefined') return event
+
+  try {
+    const url = new URL(event.url, window.location.origin)
+    if (isPrivateAnalyticsRoute(url.pathname)) return null
+    url.pathname = getAnalyticsRoute(url.pathname)
+    url.search = ''
+    url.hash = ''
+    return { ...event, url: url.toString() }
+  } catch {
+    return null
+  }
+}
+
+function getSessionId() {
+  try {
+    window.localStorage.removeItem(SESSION_KEY)
+    const existing = window.sessionStorage.getItem(SESSION_KEY)
+    if (existing) return existing
+
+    const next = typeof crypto !== 'undefined' && crypto.randomUUID
+      ? crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(16).slice(2)}`
+
+    window.sessionStorage.setItem(SESSION_KEY, next)
+    return next
+  } catch {
+    return 'session-unavailable'
+  }
+}
+
+function shouldSkipDuplicate(eventType, payload) {
+  if (eventType === 'partner_outbound_click') return false
+
+  const key = JSON.stringify({
+    eventType,
+    path: payload.path,
+    search: payload.search,
+    search_attempt_id: payload.metadata?.search_attempt_id,
+    scope: payload.metadata?.scope,
+    ...(eventType === 'card_journey' ? { action:payload.metadata?.action, step:payload.metadata?.step, mode:payload.metadata?.mode } : {}),
+  })
+  const now = Date.now()
+  if (key === lastEventKey && now - lastEventAt < 1500) return true
+  lastEventKey = key
+  lastEventAt = now
+  return false
+}
+
+function getVercelProperties(eventType, metadata) {
+  const keys = VERCEL_EVENT_PROPERTIES[eventType] || []
+
+  return Object.fromEntries(keys.flatMap(key => {
+    const value = metadata[key]
+    if (value === null || value === undefined || value === '') return []
+    if (typeof value === 'number' && Number.isFinite(value)) return [[key, value]]
+    if (typeof value === 'boolean') return [[key, value]]
+    if (typeof value === 'string') return [[key, value.slice(0, 255)]]
+    return []
+  }))
+}
+
+function sendVercelCustomEvent(eventType, metadata) {
+  if (eventType === 'page_view') return
+
+  try {
+    trackVercelEvent(eventType.slice(0, 255), getVercelProperties(eventType, metadata))
+  } catch (error) {
+    console.warn('Vercel analytics event failed:', error)
+  }
+}
+
+export async function trackAnalyticsEvent(eventType, payload = {}) {
+  if (!eventType || !isAnalyticsEnabled()) return
+
+  if (isPrivateAnalyticsRoute(window.location.pathname) || isPrivateAnalyticsRoute(payload.path)) return
+  const path = getAnalyticsRoute(payload.path || window.location.pathname)
+  const search = ''
+  const metadata = sanitizeAnalyticsMetadata(payload.metadata)
+
+  if (shouldSkipDuplicate(eventType, { path, search, metadata })) return
+  sendVercelCustomEvent(eventType, metadata)
+
+  if (Date.now() < analyticsRetryAfter) return
+
+  try {
+    const { error } = await supabase
+      .from('analytics_events')
+      .insert({
+        event_type: eventType,
+        path,
+        search,
+        user_id: payload.user_id || null,
+        session_id: getSessionId(),
+        metadata,
+      })
+
+    if (error) {
+      analyticsRetryAfter = Date.now() + 30_000
+      console.warn('Analytics event not saved:', error.message)
+    } else {
+      analyticsRetryAfter = 0
+    }
+  } catch (error) {
+    analyticsRetryAfter = Date.now() + 30_000
+    console.warn('Analytics event failed:', error)
+  }
+}
+
+export function trackSearchEvent({ query, scope, user_id, metadata = {} }) {
+  const cleanQuery = String(query || '').trim()
+  if (cleanQuery.length < 2) return
+
+  return trackAnalyticsEvent('search', {
+    user_id,
+    metadata: {
+      ...metadata,
+      query: cleanQuery.slice(0, 120),
+      scope,
+    },
+  })
+}
+
+export function trackPublicationCreated({
+  user_id,
+  contentType,
+  category = '',
+  intent = '',
+  channel = '',
+  needsReview = false,
+}) {
+  return trackAnalyticsEvent('publication_created', {
+    user_id,
+    metadata: {
+      content_type: contentType,
+      category,
+      intent,
+      channel,
+      moderation_status: needsReview ? 'review' : 'published',
+    },
+  })
+}

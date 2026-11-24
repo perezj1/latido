@@ -1,0 +1,14 @@
+{
+ "framework":"vite",
+ "installCommand":"npm ci",
+ "buildCommand":"npm run build",
+ "outputDirectory":"dist",
+ "functions":{"api/suizamente.js":{"includeFiles":"server/suizamente/data/**"}},
+ "headers":[
+  {"source":"/(.*)","headers":[{"key":"X-Content-Type-Options","value":"nosniff"},{"key":"Referrer-Policy","value":"strict-origin-when-cross-origin"}]},
+  {"source":"/sw.js","headers":[{"key":"Cache-Control","value":"no-cache, no-store, must-revalidate"}]},
+  {"source":"/suizamente/partida/(.*)","headers":[{"key":"Cache-Control","value":"no-store"},{"key":"X-Robots-Tag","value":"noindex, nofollow, noarchive"}]},
+  {"source":"/auth(.*)","headers":[{"key":"Cache-Control","value":"no-store"},{"key":"X-Robots-Tag","value":"noindex, nofollow, noarchive"}]}
+ ],
+ "rewrites":[{"source":"/api/suizamente/:ruta*","destination":"/api/suizamente?_ruta=:ruta*"},{"source":"/(.*)","destination":"/index.html"}]
+}

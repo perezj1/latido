@@ -1,0 +1,32 @@
+{
+  "id": "/",
+  "name": "Suizamente · Latido",
+  "short_name": "Suizamente",
+  "description": "Juega con la comunidad hispanohablante en Suiza.",
+  "lang": "es",
+  "start_url": "/suizamente?app=1",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#FFFFFF",
+  "theme_color": "#24E2C9",
+  "icons": [
+    {
+      "src": "/suizamente-assets/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/suizamente-assets/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/suizamente-assets/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

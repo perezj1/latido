@@ -1,6 +1,6 @@
 node_modules/
 dist/
-.env*
+output/
+.env
+.env.*
 !.env.example
-playwright-report/
-test-results/

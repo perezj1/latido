@@ -1,0 +1,988 @@
+{
+ "_leeme": "Valores del juego de FUNCIONES.md (secciones 4 y 23). Son valores iniciales: Latido los puede ajustar aquí sin tocar el código. Los lee el servidor; el navegador solo recibe lo que necesita para pintar.",
+ "zonaHoraria": "Europe/Zurich",
+ "minimoVotosParaPorcentajes": 20,
+ "categorias": [
+  {
+   "id": "idioma",
+   "nombre": "Idioma",
+   "emoji": "🗣️",
+   "color": "#4A76EF",
+   "tinte": "#DFE7FC",
+   "colorTexto": "#FFFFFF",
+   "temas": [
+    "idioma"
+   ]
+  },
+  {
+   "id": "cultura",
+   "nombre": "Cultura",
+   "emoji": "🎭",
+   "color": "#FA2F35",
+   "tinte": "#FFE1E2",
+   "colorTexto": "#FFFFFF",
+   "temas": [
+    "cultura",
+    "fiestas"
+   ]
+  },
+  {
+   "id": "comida",
+   "nombre": "Comida y naturaleza",
+   "emoji": "🧀",
+   "color": "#F9A719",
+   "tinte": "#FEEDD1",
+   "colorTexto": "#0F1A2B",
+   "temas": [
+    "comida",
+    "naturaleza"
+   ]
+  },
+  {
+   "id": "papeles",
+   "nombre": "Papeles y dinero",
+   "emoji": "📄",
+   "color": "#03AA98",
+   "tinte": "#CDEEEA",
+   "colorTexto": "#FFFFFF",
+   "temas": [
+    "papeles",
+    "dinero"
+   ]
+  },
+  {
+   "id": "casa",
+   "nombre": "Casa y trabajo",
+   "emoji": "🏠",
+   "color": "#24BFE2",
+   "tinte": "#D3F2F9",
+   "colorTexto": "#0F1A2B",
+   "temas": [
+    "casa",
+    "trabajo"
+   ]
+  },
+  {
+   "id": "dia",
+   "nombre": "Día a día",
+   "emoji": "🚆",
+   "color": "#24E2C9",
+   "tinte": "#D3F8F3",
+   "colorTexto": "#0F1A2B",
+   "temas": [
+    "transporte",
+    "salud",
+    "social"
+   ]
+  }
+ ],
+ "ruleta": {
+  "casillas": [
+   "idioma",
+   "cultura",
+   "comida",
+   "papeles",
+   "casa",
+   "dia",
+   "sello"
+  ],
+  "casillaSello": {
+   "id": "sello",
+   "emoji": "🛂"
+  },
+  "duracionGiroMs": 2700
+ },
+ "partida": {
+  "sellosParaGanar": 6,
+  "barraParaSello": 3,
+  "rondasMax": 25,
+  "segundosPorPregunta": 30,
+  "margenServidorSegundos": 3,
+  "horasPorTurno": 48,
+  "avisoAntesDeCaducarHoras": 6,
+  "partidasAbiertasMax": 20,
+  "diasSinRepetirPregunta": 30,
+  "rivalAlAzar": {
+   "margenNivel": 3,
+   "cualquierNivelTrasHoras": 24
+  },
+  "invitacionDias": 7,
+  "desempateRondasMax": "más sellos; con empate, más aciertos en la partida"
+ },
+ "duelo": {
+  "preguntas": 6,
+  "orden": [
+   "idioma",
+   "cultura",
+   "comida",
+   "papeles",
+   "casa",
+   "dia"
+  ],
+  "comodinesNoPermitidos": [
+   "salta"
+  ],
+  "premioMonedas": 20,
+  "despuesLeTocaAlOtro": true
+ },
+ "comodines": [
+  {
+   "id": "quita",
+   "emoji": "✂️",
+   "nombre": "Quita una",
+   "efecto": "Quita una respuesta incorrecta",
+   "precio": 20,
+   "soloConTresOpciones": true,
+   "noEnModos": []
+  },
+  {
+   "id": "otra",
+   "emoji": "🔁",
+   "nombre": "Otra oportunidad",
+   "efecto": "Si fallas, eliges otra vez",
+   "precio": 30,
+   "soloConTresOpciones": true,
+   "noEnModos": []
+  },
+  {
+   "id": "salta",
+   "emoji": "⏭️",
+   "nombre": "Cambiar",
+   "efecto": "Otra pregunta de la misma categoría",
+   "precio": 20,
+   "soloConTresOpciones": false,
+   "noEnModos": [
+    "sello",
+    "duelo",
+    "desempate",
+    "asalto"
+   ]
+  },
+  {
+   "id": "tiempo",
+   "emoji": "⏱️",
+   "nombre": "+15 s",
+   "efecto": "15 segundos más para responder",
+   "precio": 10,
+   "soloConTresOpciones": false,
+   "noEnModos": [],
+   "segundosExtra": 15
+  }
+ ],
+ "maxComodinesPorPregunta": "uno de cada tipo",
+ "recompensas": {
+  "acierto": {
+   "monedas": 5,
+   "xp": 10
+  },
+  "selloConPregunta": {
+   "monedas": 20,
+   "xp": 10
+  },
+  "selloEnDuelo": {
+   "monedas": 20
+  },
+  "partidaGanada": {
+   "monedas": 100,
+   "xp": 150,
+   "cofre": "victoria"
+  },
+  "partidaPerdida": {
+   "monedas": 10,
+   "xp": 30
+  },
+  "asalto": {
+   "monedas": 100,
+   "conEscudo": 30
+  },
+  "preguntaDelDia": {
+   "monedas": 5,
+   "xp": 5
+  },
+  "regaloDiario": {
+   "monedas": 50,
+   "comodinesAlAzar": 1
+  },
+  "cartaRepetida": {
+   "monedas": 5
+  },
+  "valoracionPropuesta": {
+   "monedas": 2,
+   "maxPorDia": 20
+  },
+  "propuestaAprobada": {
+   "monedas": 100,
+   "xp": 100
+  },
+  "bienvenida": {
+   "monedas": 100,
+   "sobres": 1,
+   "comodines": {
+    "quita": 2
+   }
+  },
+  "quienYaJugaba": {
+   "monedas": 500
+  }
+ },
+ "tienda": {
+  "escudo": 150,
+  "sobre": 100,
+  "comodines": {
+   "quita": 20,
+   "otra": 30,
+   "salta": 20,
+   "tiempo": 10
+  }
+ },
+ "cofres": {
+  "victoria": {
+   "monedas": 80,
+   "sobres": 1,
+   "comodinesAlAzar": 1
+  },
+  "region": {
+   "monedas": 200,
+   "sobres": 1,
+   "escudos": 1
+  }
+ },
+ "niveles": {
+  "xpParaSubir": "150 × nivel + 200",
+  "a": 150,
+  "b": 200,
+  "ejemplo": {
+   "nivel": 12,
+   "xpParaSubir": 2000
+  }
+ },
+ "mapa": {
+  "nivelesPorCanton": 3,
+  "coste": {
+   "formula": "redondear_a_10((60 + 20·i + 40·r) × (1 + 0,5·n))",
+   "base": 60,
+   "porCanton": 20,
+   "porRegion": 40,
+   "porNivel": 0.5,
+   "redondeo": 10
+  },
+  "coloresNivel": [
+   "#FFFFFF",
+   "#D3F8F3",
+   "#24E2C9",
+   "#03AA98"
+  ],
+  "regiones": [
+   {
+    "nombre": "Suiza central",
+    "cantones": [
+     {
+      "id": "LU",
+      "nombre": "Lucerna",
+      "costes": [
+       60,
+       90,
+       120
+      ]
+     },
+     {
+      "id": "UR",
+      "nombre": "Uri",
+      "costes": [
+       80,
+       120,
+       160
+      ]
+     },
+     {
+      "id": "SZ",
+      "nombre": "Schwyz",
+      "costes": [
+       100,
+       150,
+       200
+      ]
+     },
+     {
+      "id": "OW",
+      "nombre": "Obwalden",
+      "costes": [
+       120,
+       180,
+       240
+      ]
+     },
+     {
+      "id": "NW",
+      "nombre": "Nidwalden",
+      "costes": [
+       140,
+       210,
+       280
+      ]
+     },
+     {
+      "id": "ZG",
+      "nombre": "Zug",
+      "costes": [
+       160,
+       240,
+       320
+      ]
+     }
+    ]
+   },
+   {
+    "nombre": "Zúrich",
+    "cantones": [
+     {
+      "id": "ZH",
+      "nombre": "Zúrich",
+      "costes": [
+       100,
+       150,
+       200
+      ]
+     }
+    ]
+   },
+   {
+    "nombre": "Noroeste",
+    "cantones": [
+     {
+      "id": "BS",
+      "nombre": "Basilea-Ciudad",
+      "costes": [
+       140,
+       210,
+       280
+      ]
+     },
+     {
+      "id": "BL",
+      "nombre": "Basilea-Campiña",
+      "costes": [
+       160,
+       240,
+       320
+      ]
+     },
+     {
+      "id": "AG",
+      "nombre": "Argovia",
+      "costes": [
+       180,
+       270,
+       360
+      ]
+     }
+    ]
+   },
+   {
+    "nombre": "Espacio Mittelland",
+    "cantones": [
+     {
+      "id": "BE",
+      "nombre": "Berna",
+      "costes": [
+       180,
+       270,
+       360
+      ]
+     },
+     {
+      "id": "FR",
+      "nombre": "Friburgo",
+      "costes": [
+       200,
+       300,
+       400
+      ]
+     },
+     {
+      "id": "SO",
+      "nombre": "Soleura",
+      "costes": [
+       220,
+       330,
+       440
+      ]
+     },
+     {
+      "id": "NE",
+      "nombre": "Neuchâtel",
+      "costes": [
+       240,
+       360,
+       480
+      ]
+     },
+     {
+      "id": "JU",
+      "nombre": "Jura",
+      "costes": [
+       260,
+       390,
+       520
+      ]
+     }
+    ]
+   },
+   {
+    "nombre": "Región del Lemán",
+    "cantones": [
+     {
+      "id": "VD",
+      "nombre": "Vaud",
+      "costes": [
+       220,
+       330,
+       440
+      ]
+     },
+     {
+      "id": "VS",
+      "nombre": "Valais",
+      "costes": [
+       240,
+       360,
+       480
+      ]
+     },
+     {
+      "id": "GE",
+      "nombre": "Ginebra",
+      "costes": [
+       260,
+       390,
+       520
+      ]
+     }
+    ]
+   },
+   {
+    "nombre": "Tesino",
+    "cantones": [
+     {
+      "id": "TI",
+      "nombre": "Tesino",
+      "costes": [
+       260,
+       390,
+       520
+      ]
+     }
+    ]
+   },
+   {
+    "nombre": "Suiza oriental",
+    "cantones": [
+     {
+      "id": "GL",
+      "nombre": "Glaris",
+      "costes": [
+       300,
+       450,
+       600
+      ]
+     },
+     {
+      "id": "SH",
+      "nombre": "Schaffhausen",
+      "costes": [
+       320,
+       480,
+       640
+      ]
+     },
+     {
+      "id": "AR",
+      "nombre": "Appenzell R. Ext.",
+      "costes": [
+       340,
+       510,
+       680
+      ]
+     },
+     {
+      "id": "AI",
+      "nombre": "Appenzell R. Int.",
+      "costes": [
+       360,
+       540,
+       720
+      ]
+     },
+     {
+      "id": "SG",
+      "nombre": "San Galo",
+      "costes": [
+       380,
+       570,
+       760
+      ]
+     },
+     {
+      "id": "GR",
+      "nombre": "Grisones",
+      "costes": [
+       400,
+       600,
+       800
+      ]
+     },
+     {
+      "id": "TG",
+      "nombre": "Turgovia",
+      "costes": [
+       420,
+       630,
+       840
+      ]
+     }
+    ]
+   }
+  ]
+ },
+ "asaltos": {
+  "probabilidadPorAcierto": 0.125,
+  "maxPorDia": 3,
+  "premio": 100,
+  "premioConEscudo": 30,
+  "soloRegionActualDeLaVictima": true,
+  "nivelMinimoDelCanton": 1,
+  "comodinesNoPermitidos": [
+   "salta"
+  ]
+ },
+ "escudos": {
+  "max": 3
+ },
+ "album": {
+  "archivo": "data/album.json",
+  "cartasPorSobre": 3,
+  "pesoRareza": {
+   "1": 0.6,
+   "2": 0.3,
+   "3": 0.1
+  },
+  "premioColeccion": {
+   "monedas": "200 + 100 × id",
+   "quita": 2,
+   "escudos": 1
+  }
+ },
+ "ranking": {
+  "semana": "lunes 00:00 a domingo 23:59 (Europe/Zurich)",
+  "medida": "partidas ganadas",
+  "desempate": "sellos ganados en la semana",
+  "top": 50
+ },
+ "vueltasMapa": {
+  "incrementoMultiplicador": 0.5,
+  "premioMonedasPorVuelta": 1000,
+  "_leeme": "Al completar los 26 cantones empieza otra vuelta: los costes se multiplican y el mapa cambia de color. De la 5.ª en adelante, el multiplicador sube 0,5 por vuelta.",
+  "vueltas": [
+   {
+    "vuelta": 1,
+    "nombre": "Suiza",
+    "emoji": "🗺️",
+    "marco": "verde",
+    "colores": [
+     "#FFFFFF",
+     "#D3F8F3",
+     "#24E2C9",
+     "#03AA98"
+    ],
+    "multiplicadorCoste": 1
+   },
+   {
+    "vuelta": 2,
+    "nombre": "Suiza de oro",
+    "emoji": "🥇",
+    "marco": "de oro",
+    "colores": [
+     "#FFFFFF",
+     "#FEEDD1",
+     "#FCD38C",
+     "#F9A719"
+    ],
+    "multiplicadorCoste": 1.5
+   },
+   {
+    "vuelta": 3,
+    "nombre": "Suiza de cristal",
+    "emoji": "💎",
+    "marco": "de cristal",
+    "colores": [
+     "#FFFFFF",
+     "#D3F2F9",
+     "#91DFF0",
+     "#24BFE2"
+    ],
+    "multiplicadorCoste": 2
+   },
+   {
+    "vuelta": 4,
+    "nombre": "Suiza de leyenda",
+    "emoji": "🔥",
+    "marco": "de leyenda",
+    "colores": [
+     "#FFFFFF",
+     "#FFE1E2",
+     "#FC979A",
+     "#FA2F35"
+    ],
+    "multiplicadorCoste": 2.5
+   }
+  ],
+  "premioAlCompletar": {
+   "monedas": "1000 × vuelta completada",
+   "marco": "el de la vuelta completada",
+   "logro": "suiza_entera (1.ª) / suiza_oro (2.ª)"
+  },
+  "multiplicadorDesdeLa5": "2,5 + 0,5 × (vuelta − 4)"
+ },
+ "misiones": {
+  "porDia": 3,
+  "renuevan": "00:00 (Europe/Zurich)",
+  "cambiosPorDia": 1,
+  "reparto": "una fácil, una media y una difícil, de tipos distintos",
+  "premios": {
+   "facil": {
+    "monedas": 40
+   },
+   "media": {
+    "monedas": 60
+   },
+   "dificil": {
+    "monedas": 120,
+    "sobres": 1
+   }
+  },
+  "cofreDiario": {
+   "monedas": 100,
+   "sobres": 1,
+   "comodinesAlAzar": 1,
+   "cuando": "al completar las 3"
+  },
+  "tipos": [
+   {
+    "id": "aciertos",
+    "texto": "Acierta {n} preguntas de {categoria}",
+    "n": {
+     "facil": 4,
+     "media": 8,
+     "dificil": 12
+    }
+   },
+   {
+    "id": "sellos",
+    "texto": "Gana {n} sellos",
+    "n": {
+     "facil": 1,
+     "media": 2,
+     "dificil": 4
+    }
+   },
+   {
+    "id": "ganar",
+    "texto": "Gana {n} partidas",
+    "n": {
+     "facil": 1,
+     "media": 2,
+     "dificil": 3
+    }
+   },
+   {
+    "id": "seguidas",
+    "texto": "Acierta {n} seguidas",
+    "n": {
+     "facil": 4,
+     "media": 6,
+     "dificil": 9
+    }
+   },
+   {
+    "id": "duelo",
+    "texto": "Gana un duelo de sellos",
+    "n": {
+     "dificil": 1
+    }
+   },
+   {
+    "id": "construir",
+    "texto": "Sube {n} niveles en tu mapa",
+    "n": {
+     "facil": 1,
+     "media": 2,
+     "dificil": 4
+    }
+   },
+   {
+    "id": "sobres",
+    "texto": "Abre {n} sobres",
+    "n": {
+     "facil": 1,
+     "media": 2
+    }
+   },
+   {
+    "id": "dia",
+    "texto": "Vota la pregunta del día",
+    "n": {
+     "facil": 1
+    }
+   },
+   {
+    "id": "turnos",
+    "texto": "Juega {n} turnos",
+    "n": {
+     "facil": 3,
+     "media": 6,
+     "dificil": 10
+    }
+   }
+  ]
+ },
+ "ligas": {
+  "_leeme": "Cada lunes se forman grupos de 30 personas de la misma división que hayan jugado la semana anterior. Suben los 5 primeros y bajan los 5 últimos (en Pradera no baja nadie y en Cumbre no sube nadie). Quien empieza entra en Pradera.",
+  "divisiones": [
+   {
+    "id": "pradera",
+    "nombre": "Liga Pradera",
+    "emoji": "🌿",
+    "tinte": "#D3F8F3",
+    "multiplicadorPremio": 1
+   },
+   {
+    "id": "bosque",
+    "nombre": "Liga Bosque",
+    "emoji": "🌲",
+    "tinte": "#CDEEEA",
+    "multiplicadorPremio": 1.5
+   },
+   {
+    "id": "glaciar",
+    "nombre": "Liga Glaciar",
+    "emoji": "🧊",
+    "tinte": "#D3F2F9",
+    "multiplicadorPremio": 2
+   },
+   {
+    "id": "cumbre",
+    "nombre": "Liga Cumbre",
+    "emoji": "🏔️",
+    "tinte": "#DFE7FC",
+    "multiplicadorPremio": 3
+   }
+  ],
+  "tamanoGrupo": 30,
+  "suben": 5,
+  "bajan": 5,
+  "puntos": {
+   "partidaGanada": 3,
+   "selloGanado": 1
+  },
+  "desempate": "quien llegó antes a esa puntuación",
+  "premiosDomingo": [
+   {
+    "desde": 1,
+    "hasta": 1,
+    "monedas": 500,
+    "sobres": 2
+   },
+   {
+    "desde": 2,
+    "hasta": 3,
+    "monedas": 300,
+    "sobres": 1
+   },
+   {
+    "desde": 4,
+    "hasta": 10,
+    "monedas": 150,
+    "sobres": 0
+   },
+   {
+    "desde": 11,
+    "hasta": 30,
+    "monedas": 50,
+    "sobres": 0,
+    "nota": "solo si jugó al menos una partida"
+   }
+  ],
+  "premiosSeMultiplicanPor": "multiplicadorPremio de la división"
+ },
+ "eventosFinDeSemana": {
+  "efectos": {
+   "categoria": { "multiplicadorMonedas": 2 },
+   "cartas": { "cartasPorSobre": 4 },
+   "sellos": { "pesoSello": 2 },
+   "obras": { "multiplicadorCoste": 0.75 }
+  },
+  "cuando": "de viernes 18:00 a domingo 23:59 (Europe/Zurich)",
+  "eleccion": "Latido los programa en el panel; si no hay ninguno, se van turnando en este orden y la categoría rota",
+  "tipos": [
+   {
+    "id": "categoria",
+    "texto": "Fin de semana de {categoria}",
+    "efecto": "🪙 ×2 en los aciertos y sellos de esa categoría"
+   },
+   {
+    "id": "cartas",
+    "texto": "Fin de semana de cartas",
+    "efecto": "Los sobres traen 4 cartas"
+   },
+   {
+    "id": "sellos",
+    "texto": "Fin de semana de sellos",
+    "efecto": "La casilla 🛂 sale el doble en la ruleta"
+   },
+   {
+    "id": "obras",
+    "texto": "Fin de semana de obras",
+    "efecto": "Construir en el mapa cuesta un 25 % menos"
+   }
+  ]
+ },
+ "coleccionDelMes": {
+  "probabilidadEnSobres": 0.5,
+  "nota": "La colección con «mes» igual al mes actual sale en la mitad de las cartas de los sobres. Las colecciones con un mes futuro aún no salen."
+ },
+ "logros": [
+  {
+   "id": "llegada",
+   "emoji": "🛬",
+   "nombre": "Recién llegado",
+   "condicion": "Juega tu primera partida",
+   "meta": 1
+  },
+  {
+   "id": "permiso_b",
+   "emoji": "🪪",
+   "nombre": "Permiso B",
+   "condicion": "Gana 10 partidas",
+   "meta": 10
+  },
+  {
+   "id": "permiso_c",
+   "emoji": "🏡",
+   "nombre": "Permiso C",
+   "condicion": "Gana 50 partidas",
+   "meta": 50
+  },
+  {
+   "id": "pasaporte",
+   "emoji": "🛂",
+   "nombre": "Pasaporte",
+   "condicion": "Gana 200 partidas",
+   "meta": 200
+  },
+  {
+   "id": "poliglota",
+   "emoji": "🗣️",
+   "nombre": "Políglota",
+   "condicion": "100 aciertos de Idioma",
+   "meta": 100
+  },
+  {
+   "id": "folclore",
+   "emoji": "🎭",
+   "nombre": "Folclore",
+   "condicion": "100 aciertos de Cultura",
+   "meta": 100
+  },
+  {
+   "id": "gourmet",
+   "emoji": "🫕",
+   "nombre": "Gourmet",
+   "condicion": "100 aciertos de Comida y naturaleza",
+   "meta": 100
+  },
+  {
+   "id": "papeleo",
+   "emoji": "📄",
+   "nombre": "Sin miedo al papeleo",
+   "condicion": "100 aciertos de Papeles y dinero",
+   "meta": 100
+  },
+  {
+   "id": "vecindad",
+   "emoji": "🏠",
+   "nombre": "Buena vecindad",
+   "condicion": "100 aciertos de Casa y trabajo",
+   "meta": 100
+  },
+  {
+   "id": "puntualidad",
+   "emoji": "🚆",
+   "nombre": "Puntualidad",
+   "condicion": "100 aciertos de Día a día",
+   "meta": 100
+  },
+  {
+   "id": "duelista",
+   "emoji": "⚔️",
+   "nombre": "Duelista",
+   "condicion": "Gana 10 duelos de sellos",
+   "meta": 10
+  },
+  {
+   "id": "constancia",
+   "emoji": "🔥",
+   "nombre": "Constancia",
+   "condicion": "Juega 7 días seguidos",
+   "meta": 7
+  },
+  {
+   "id": "suiza_entera",
+   "emoji": "🗺️",
+   "nombre": "Suiza entera",
+   "condicion": "Construye los 26 cantones",
+   "meta": 26
+  },
+  {
+   "id": "coleccionista",
+   "emoji": "🃏",
+   "nombre": "Coleccionista",
+   "condicion": "Completa 5 colecciones del álbum",
+   "meta": 5
+  },
+  {
+   "id": "autoria",
+   "emoji": "✍️",
+   "nombre": "Autoría",
+   "condicion": "Consigue que aprueben una pregunta tuya",
+   "meta": 1
+  },
+  {
+   "id": "muralla",
+   "emoji": "🛡️",
+   "nombre": "Muralla",
+   "condicion": "Para 10 asaltos con tus escudos",
+   "meta": 10
+  },
+  {
+   "id": "suiza_oro",
+   "emoji": "🥇",
+   "nombre": "Suiza de oro",
+   "condicion": "Completa la vuelta de oro del mapa",
+   "meta": 1
+  },
+  {
+   "id": "cumbre",
+   "emoji": "🏔️",
+   "nombre": "Cumbre",
+   "condicion": "Llega a la Liga Cumbre",
+   "meta": 1
+  },
+  {
+   "id": "misiones",
+   "emoji": "🎯",
+   "nombre": "Misión cumplida",
+   "condicion": "Completa las misiones de 30 días",
+   "meta": 30
+  }
+ ]
+}

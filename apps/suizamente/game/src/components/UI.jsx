@@ -1,0 +1,1403 @@
+import { forwardRef, useEffect, useId, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
+import { Link } from 'react-router-dom'
+import { C, CAT_COLORS, PP } from '../lib/theme'
+import { AD_CATS as BASE_AD_CATS, formatAdLocation, getAdCategoryId, getAdDisplayCat, getAdDisplayEmoji, getAdSubOption } from '../lib/constants'
+import { useOverlayHistory } from '../hooks/useOverlayHistory'
+import { getThumbnailImageUrl } from '../lib/imageVariants'
+import LinkedText from './LinkedText'
+import { useAccountPermissions } from '../hooks/useAuth'
+
+export function ChevronLeftIcon({ size=22, style }) {
+  return (
+    <svg aria-hidden="true" style={style} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="m15 18-6-6 6-6" />
+    </svg>
+  )
+}
+
+export const BackButton = forwardRef(function BackButton({ to, onClick, className='', style={}, ...props }, ref) {
+  const Component = to ? Link : 'button'
+  return (
+    <Component
+      {...props}
+      ref={ref}
+      {...(to ? { to } : { type:'button' })}
+      onClick={onClick}
+      aria-label={props['aria-label'] || 'Volver'}
+      className={['latido-back-pill', className].filter(Boolean).join(' ')}
+      style={{
+        display:'inline-flex', alignItems:'center', justifyContent:'center',
+        width:44, height:44, minHeight:44, padding:0,
+        borderRadius:999, border:`1px solid ${C.border}`, background:'#fff', color:C.text,
+        fontFamily:PP, fontSize:13, fontWeight:600, lineHeight:1, textDecoration:'none',
+        whiteSpace:'nowrap', flexShrink:0, cursor:'pointer', boxSizing:'border-box',
+        boxShadow:'0 8px 22px rgba(15,23,42,0.16)', ...style,
+      }}
+    >
+      <ChevronLeftIcon size={22} style={{ width:22, height:22, flexShrink:0 }} />
+    </Component>
+  )
+})
+
+// ── Button ─────────────────────────────────────────────────────
+export function Button({
+  as:Component='button',
+  children,
+  variant='primary',
+  size='md',
+  block=true,
+  loading=false,
+  success=false,
+  disabled=false,
+  type='button',
+  className='',
+  style={},
+  ...props
+}) {
+  const isNativeButton = Component === 'button'
+  const isDisabled = disabled || loading
+  const classes = [
+    'latido-button',
+    `latido-button--${success ? 'success' : variant}`,
+    `latido-button--${size}`,
+    block && 'latido-button--block',
+    className,
+  ].filter(Boolean).join(' ')
+
+  return (
+    <Component
+      {...props}
+      {...(isNativeButton ? { type, disabled:isDisabled } : {})}
+      className={classes}
+      aria-busy={loading || undefined}
+      aria-disabled={!isNativeButton && isDisabled ? true : undefined}
+      data-loading={loading ? 'true' : undefined}
+      data-success={success ? 'true' : undefined}
+      style={style}
+    >
+      <span className="latido-button__content" aria-hidden={loading || undefined}>{children}</span>
+      {loading && <span className="latido-button__loader" aria-hidden="true" />}
+      {loading && <span className="latido-visually-hidden">Cargando</span>}
+    </Component>
+  )
+}
+
+// Compatibility name used by existing screens while they migrate gradually.
+export function Btn(props) {
+  return <Button {...props} />
+}
+
+export function IconButton({
+  children,
+  label,
+  variant='ghost',
+  size='md',
+  className='',
+  type='button',
+  ...props
+}) {
+  return (
+    <button
+      {...props}
+      type={type}
+      aria-label={label || props['aria-label']}
+      className={[
+        'latido-icon-button',
+        `latido-icon-button--${variant}`,
+        `latido-icon-button--${size}`,
+        className,
+      ].filter(Boolean).join(' ')}
+    >
+      {children}
+    </button>
+  )
+}
+
+// ── Card ───────────────────────────────────────────────────────
+export function StickyFormActions({ children }) {
+  return (
+    <div
+      className="sticky-form-actions"
+      style={{
+        position:'fixed',
+        left:0,
+        right:0,
+        zIndex:70,
+        padding:'10px max(20px, env(safe-area-inset-left)) calc(10px + env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-right))',
+        background:'rgba(248,250,255,0.94)',
+        borderTop:`1px solid ${C.border}`,
+        boxShadow:'0 -14px 38px rgba(15,23,42,0.12)',
+        backdropFilter:'blur(16px)',
+        WebkitBackdropFilter:'blur(16px)',
+        transition:'bottom .16s ease',
+      }}
+    >
+      <div style={{ maxWidth:600, margin:'0 auto', display:'flex', gap:10, alignItems:'center' }}>
+        {children}
+      </div>
+    </div>
+  )
+}
+
+export function Card({
+  as:Component='div',
+  children,
+  onClick,
+  onKeyDown,
+  variant='surface',
+  padding='md',
+  interactive=Boolean(onClick),
+  className='',
+  style={},
+  ...props
+}) {
+  const isNaturallyInteractive = Component === 'button' || Component === 'a'
+
+  const handleKeyDown = event => {
+    onKeyDown?.(event)
+    if (!interactive || isNaturallyInteractive || event.defaultPrevented) return
+    if (event.target !== event.currentTarget) return
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault()
+      onClick?.(event)
+    }
+  }
+
+  return (
+    <Component
+      {...props}
+      onClick={onClick}
+      onKeyDown={handleKeyDown}
+      role={interactive && !isNaturallyInteractive ? (props.role || 'button') : props.role}
+      tabIndex={interactive && !isNaturallyInteractive ? (props.tabIndex ?? 0) : props.tabIndex}
+      className={[
+        'latido-card',
+        `latido-card--${variant}`,
+        `latido-card--padding-${padding}`,
+        interactive && 'latido-card--interactive',
+        className,
+      ].filter(Boolean).join(' ')}
+      style={style}
+    >
+      {children}
+    </Component>
+  )
+}
+
+// ── Tag / Pill ─────────────────────────────────────────────────
+export function Tag({ children, bg=C.primaryLight, color=C.primary, size=10, style={}, title }) {
+  return (
+    <span
+      title={title}
+      style={{
+        fontFamily:PP,
+        fontSize:size,
+        fontWeight:600,
+        padding:'3px 8px',
+        borderRadius:20,
+        background:bg,
+        color,
+        whiteSpace:'nowrap',
+        maxWidth:'100%',
+        minWidth:0,
+        overflow:'hidden',
+        textOverflow:'ellipsis',
+        flexShrink:1,
+        display:'inline-block',
+        verticalAlign:'middle',
+        boxSizing:'border-box',
+        ...style,
+      }}
+    >
+      {children}
+    </span>
+  )
+}
+
+const PUBLICATION_LEGAL_COPY = {
+  ad: {
+    title: 'Publicación responsable',
+    text: 'Latido solo facilita el contacto. No verifica identidad, disponibilidad, licencias, permisos, estado de productos ni condiciones. Evita pagos por adelantado y revisa referencias, permisos y acuerdos antes de contratar o entregar dinero.',
+  },
+  job: {
+    title: 'Empleo sin intermediación',
+    text: 'Latido no es agencia de colocación ni empresa temporal: no selecciona candidatos, no gestiona contratos, no cobra por contratación y no garantiza condiciones laborales. Las ofertas deben ser reales, no discriminatorias y cumplir la normativa aplicable.',
+  },
+  event: {
+    title: 'Evento bajo responsabilidad del organizador',
+    text: 'Latido no organiza ni garantiza el evento. El publicador confirma que la información es real, que tiene autorización para anunciarlo y que cumple permisos, aforo, seguridad, derechos de imagen y obligaciones aplicables.',
+  },
+  business: {
+    title: 'Negocio y servicios regulados',
+    text: 'Latido no verifica automáticamente licencias, seguros, permisos, cualificaciones ni cumplimiento fiscal o laboral. El negocio confirma que puede ofrecer sus servicios y que sus textos, fotos, logos y marcas pueden publicarse.',
+  },
+  community: {
+    title: 'Grupo bajo responsabilidad del publicador',
+    text: 'Latido no administra grupos externos ni responde por lo que ocurra dentro de ellos. El publicador confirma que el enlace es legítimo, que puede compartirlo y que el grupo respeta privacidad, derechos de terceros y normas de convivencia.',
+  },
+}
+
+const PUBLICATION_RESPONSIBILITY_TEXT = 'La veracidad, el contenido y el buen uso de la publicación son responsabilidad de quien publica.'
+
+export function PublicationLegalNotice({ kind='ad', style={} }) {
+  const copy = PUBLICATION_LEGAL_COPY[kind] || PUBLICATION_LEGAL_COPY.ad
+  return (
+    <div
+      style={{
+        background:'#F8FAFC',
+        border:`1px solid ${C.border}`,
+        borderRadius:14,
+        padding:'12px 14px',
+        marginTop:14,
+        marginBottom:4,
+        ...style,
+      }}
+    >
+      <p style={{ fontFamily:PP, fontWeight:800, fontSize:12, color:C.text, margin:'0 0 5px' }}>
+        {copy.title}
+      </p>
+      <p style={{ fontFamily:PP, fontSize:11, color:C.mid, lineHeight:1.65, margin:0 }}>
+        {copy.text} {PUBLICATION_RESPONSIBILITY_TEXT} Al publicar aceptas los <a href="/terminos" style={{ color:C.primary, fontWeight:700 }}>términos</a> y el <a href="/descargo" style={{ color:C.primary, fontWeight:700 }}>descargo</a>.
+      </p>
+    </div>
+  )
+}
+
+// ── Avatar ─────────────────────────────────────────────────────
+export function Avatar({ name='?', size=32, src }) {
+  const colors = ['#3B82F6','#8B5CF6','#EC4899','#10B981','#F59E0B','#EF4444']
+  const bg = colors[(name?.charCodeAt(0) || 0) % colors.length]
+  if (src) return <img src={src} alt={name} loading="lazy" decoding="async" style={{ width:size, height:size, borderRadius:'50%', objectFit:'contain', background:'#fff', flexShrink:0 }} />
+  return (
+    <div style={{ width:size, height:size, borderRadius:'50%', background:bg, display:'flex', alignItems:'center', justifyContent:'center', color:'#fff', fontFamily:PP, fontWeight:700, fontSize:size*0.38, flexShrink:0 }}>
+      {name?.[0]?.toUpperCase() || '?'}
+    </div>
+  )
+}
+
+// ── Privacy badge ──────────────────────────────────────────────
+export function PrivacyTag({ privacy }) {
+  return null
+}
+
+// ── Input ──────────────────────────────────────────────────────
+export function Input({ label, placeholder, value, onChange, type='text', rows, required, style={}, leftElement, rightElement, error, errorKey }) {
+  const hasError = Boolean(error)
+  const controlId=useId(),errorId=controlId+'-error'
+  const accessibility={id:controlId,'aria-required':required||undefined,'aria-describedby':hasError?errorId:undefined}
+  const base = {
+    width:'100%', border:`1.5px solid ${C.border}`, borderRadius:12,
+    padding:'11px 13px', fontSize:13, fontFamily:PP, outline:'none',
+    background:C.surface, color:C.text, boxSizing:'border-box',
+    marginBottom: label ? 0 : 10,
+  }
+  const errorStyle = hasError ? { border:'1.5px solid #EF4444', background:'#FFF7F7' } : {}
+  const controlStyle = { ...base, ...style, ...errorStyle }
+  return (
+    <div data-error-field={errorKey || undefined} style={{ marginBottom: 10 }}>
+      {label && <label htmlFor={controlId} style={{ fontFamily:PP, fontSize:10, fontWeight:700, color:C.light, letterSpacing:1, display:'block', marginBottom:6 }}>{label}{required&&<span aria-hidden="true"> *</span>}</label>}
+      {rows
+        ? <textarea {...accessibility} aria-invalid={hasError || undefined} style={{ ...controlStyle, resize:'none', minHeight: rows*24 }} placeholder={placeholder} value={value} onChange={onChange} rows={rows} />
+        : leftElement || rightElement ? (
+          <div style={{ position:'relative' }}>
+            {leftElement && (
+              <div style={{ position:'absolute', zIndex:1, left:13, top:'50%', transform:'translateY(-50%)', display:'flex', alignItems:'center', color:C.text, fontFamily:PP, fontSize:13, pointerEvents:'none' }}>
+                {leftElement}
+              </div>
+            )}
+            <input {...accessibility} aria-invalid={hasError || undefined} style={{ ...controlStyle, ...(leftElement ? { paddingLeft:31 } : {}), ...(rightElement ? { paddingRight:46 } : {}) }} type={type} placeholder={placeholder} value={value} onChange={onChange} />
+            {rightElement && (
+              <div style={{ position:'absolute', right:8, top:'50%', transform:'translateY(-50%)', display:'flex', alignItems:'center' }}>
+                {rightElement}
+              </div>
+            )}
+          </div>
+        ) : <input {...accessibility} aria-invalid={hasError || undefined} style={controlStyle} type={type} placeholder={placeholder} value={value} onChange={onChange} />
+      }
+      {hasError && (
+        <p id={errorId} style={{ fontFamily:PP, fontSize:10.5, color:'#DC2626', margin:'5px 2px 0', lineHeight:1.45 }}>
+          {error}
+        </p>
+      )}
+    </div>
+  )
+}
+
+// ── Select ─────────────────────────────────────────────────────
+export function Select({ label, value, onChange, children, required, disabled=false, error, errorKey }) {
+  const hasError = Boolean(error)
+  return (
+    <div data-error-field={errorKey || undefined} style={{ marginBottom:10 }}>
+      {label && <label style={{ fontFamily:PP, fontSize:10, fontWeight:700, color:C.light, letterSpacing:1, display:'block', marginBottom:6 }}>{label}{required&&' *'}</label>}
+      <div style={{ position:'relative' }}>
+        <select
+          aria-invalid={hasError || undefined}
+          value={value} onChange={onChange} disabled={disabled}
+          style={{ width:'100%', border:`1.5px solid ${hasError ? '#EF4444' : C.border}`, borderRadius:12, padding:'11px 40px 11px 13px', fontSize:13, fontFamily:PP, outline:'none', background:hasError ? '#FFF7F7' : C.surface, color:C.text, appearance:'none', WebkitAppearance:'none', MozAppearance:'none', cursor:disabled ? 'not-allowed' : 'pointer', opacity:disabled ? 0.6 : 1 }}
+        >
+          {children}
+        </select>
+        <span
+          style={{
+            position:'absolute',
+            right:14,
+            top:'50%',
+            transform:'translateY(-50%)',
+            color:C.light,
+            fontSize:14,
+            pointerEvents:'none',
+          }}
+        >
+          ▾
+        </span>
+      </div>
+      {hasError && (
+        <p style={{ fontFamily:PP, fontSize:10.5, color:'#DC2626', margin:'5px 2px 0', lineHeight:1.45 }}>
+          {error}
+        </p>
+      )}
+    </div>
+  )
+}
+
+// ── Bottom Sheet ───────────────────────────────────────────────
+export function ImageUploadField({
+  label,
+  hint,
+  previewUrl='',
+  previewUrls=[],
+  uploading=false,
+  multiple=false,
+  maxImages=5,
+  currentImageCount,
+  onFilesSelected,
+  onRemove,
+  onRemoveAt,
+  onReplaceAt,
+  compact=false,
+}) {
+  const { canDelete } = useAccountPermissions()
+  const deviceId = useId()
+  const cameraId = useId()
+  const previews = previewUrls.length ? previewUrls : (previewUrl ? [previewUrl] : [])
+  const imageCount = Number.isFinite(currentImageCount) ? currentImageCount : previews.length
+  const hasImageLimit = multiple && Number.isFinite(maxImages)
+  const atImageLimit = hasImageLimit && imageCount >= maxImages
+  const selectionDisabled = uploading || atImageLimit
+
+  const handleFiles = event => {
+    const files = Array.from(event.target.files || [])
+    if (!atImageLimit && files.length) onFilesSelected?.(files)
+    event.target.value = ''
+  }
+
+  const handleReplaceFiles = (event, index) => {
+    const files = Array.from(event.target.files || [])
+    if (files.length) onReplaceAt?.(index, files)
+    event.target.value = ''
+  }
+
+  return (
+    <div style={{ marginBottom:12 }}>
+      {label && <label style={{ fontFamily:PP, fontSize:10, fontWeight:700, color:C.light, letterSpacing:1, display:'block', marginBottom:6 }}>{label}</label>}
+
+      {previews.length > 0 && (
+        <div style={{ display:'grid', gridTemplateColumns: multiple ? 'repeat(auto-fill,minmax(88px,1fr))' : '1fr', gap:8, marginBottom:10 }}>
+          {previews.map((url, index) => {
+            const replaceId = `${deviceId}-replace-${index}`
+            return (
+              <div key={`${url}-${index}`} style={{ position:'relative', borderRadius:14, overflow:'visible', border:`1px solid ${C.border}`, background:'#fff', minHeight:multiple ? 88 : compact ? 108 : 180, display:'flex', alignItems:'center', justifyContent:'center', padding:multiple ? 4 : compact ? 5 : 8, boxSizing:'border-box' }}>
+                <img src={url} alt="Vista previa" style={{ width:'100%', height:'auto', maxHeight:multiple ? 160 : compact ? 160 : 280, objectFit:'contain', display:'block' }} />
+                {canDelete && (multiple ? onRemoveAt : onRemove) && (
+                  <button
+                    type="button"
+                    onClick={() => multiple ? onRemoveAt?.(index) : onRemove?.()}
+                    style={{ position:'absolute', top:8, right:8, width:28, height:28, borderRadius:'50%', border:'none', background:'rgba(15,23,42,0.72)', color:'#fff', cursor:'pointer', fontSize:13 }}
+                  >
+                    X
+                  </button>
+                )}
+                {canDelete && onReplaceAt && (
+                  <>
+                    <label htmlFor={replaceId} style={{ position:'absolute', left:8, bottom:8, right:8, fontFamily:PP, fontWeight:700, fontSize:10, background:'rgba(255,255,255,0.92)', color:C.primary, border:`1px solid ${C.primaryMid}`, borderRadius:10, padding:'6px 8px', textAlign:'center', cursor:uploading ? 'not-allowed' : 'pointer', opacity:uploading ? 0.6 : 1 }}>
+                      Cambiar
+                    </label>
+                    <input id={replaceId} type="file" accept="image/*" onChange={event => handleReplaceFiles(event, index)} disabled={uploading} style={{ display:'none' }} />
+                  </>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      )}
+
+      <div style={{ border:`1.5px dashed ${uploading ? C.primary : C.border}`, borderRadius:16, padding:compact ? '10px' : '14px 14px 12px', background:uploading ? C.primaryLight : '#fff' }}>
+        <p style={{ fontFamily:PP, fontWeight:700, fontSize:compact ? 11.5 : 13, color:C.text, margin:'0 0 4px' }}>
+          {uploading
+            ? 'Subiendo imagen...'
+            : atImageLimit
+              ? `Has alcanzado el máximo de ${maxImages} imágenes`
+              : multiple
+                ? 'Añade fotos desde tu dispositivo o la cámara'
+                : 'Añade una imagen desde tu dispositivo o la cámara'}
+        </p>
+        <p style={{ fontFamily:PP, fontSize:compact ? 9.5 : 11, color:C.light, margin:`0 0 ${compact ? 8 : 12}px`, lineHeight:1.6 }}>
+          {hint || (multiple ? 'En móvil puedes abrir la cámara o seleccionar varias fotos de la galería.' : 'En móvil puedes tomar una foto al momento o elegir una desde la galería.')}
+          {hasImageLimit && ` (${imageCount}/${maxImages})`}
+        </p>
+
+        <div style={{ display:'grid', gridTemplateColumns:'repeat(2,minmax(0,1fr))', gap:8 }}>
+          <label htmlFor={deviceId} style={{ fontFamily:PP, fontWeight:700, fontSize:compact ? 10.5 : 12, background:C.primary, color:'#fff', borderRadius:12, padding:compact ? '9px 8px' : '11px 12px', textAlign:'center', cursor:selectionDisabled ? 'not-allowed' : 'pointer', opacity:selectionDisabled ? 0.6 : 1 }}>
+            🖼 Desde dispositivo
+          </label>
+          <label htmlFor={cameraId} style={{ fontFamily:PP, fontWeight:700, fontSize:compact ? 10.5 : 12, background:C.bg, color:C.primary, border:`1.5px solid ${C.primaryMid}`, borderRadius:12, padding:compact ? '9px 8px' : '11px 12px', textAlign:'center', cursor:selectionDisabled ? 'not-allowed' : 'pointer', opacity:selectionDisabled ? 0.6 : 1 }}>
+            📷 Usar cámara
+          </label>
+        </div>
+
+        <input id={deviceId} type="file" accept="image/*" multiple={multiple} onChange={handleFiles} disabled={selectionDisabled} style={{ display:'none' }} />
+        <input id={cameraId} type="file" accept="image/*" capture="environment" onChange={handleFiles} disabled={selectionDisabled} style={{ display:'none' }} />
+      </div>
+    </div>
+  )
+}
+
+export function Sheet({ show, onClose, title, children, syncHistory=true, zIndex=80, lockBody=true }) {
+  useOverlayHistory(show, onClose, syncHistory)
+
+  useEffect(() => {
+    if (!show || !lockBody) return
+    const prev = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => { document.body.style.overflow = prev }
+  }, [lockBody, show])
+
+  if (!show) return null
+  const sheet = (
+    <div className="fade-in latido-overlay-backdrop" style={{ position:'fixed', inset:0, zIndex, display:'flex', flexDirection:'column', justifyContent:'flex-end', paddingLeft:'env(safe-area-inset-left)', paddingRight:'env(safe-area-inset-right)', boxSizing:'border-box' }}
+      onClick={e => { if (e.target === e.currentTarget) onClose() }}>
+      <div style={{ position:'absolute', inset:0, background:'rgba(0,0,0,0.4)' }} onClick={onClose} />
+      <div className="fade-up latido-sheet-panel no-scroll" onClick={e => e.stopPropagation()}
+        style={{ position:'relative', background:C.surface, borderRadius:'24px 24px 0 0', padding:'4px 20px calc(40px + env(safe-area-inset-bottom))', maxHeight:'88vh', overflowY:'auto', scrollbarWidth:'none', msOverflowStyle:'none' }}>
+        <div style={{ width:36, height:4, background:C.border, borderRadius:4, margin:'12px auto 16px' }} />
+        {title && <p style={{ fontFamily:PP, fontWeight:800, fontSize:17, color:C.text, marginBottom:14 }}>{title}</p>}
+        {children}
+      </div>
+    </div>
+  )
+  return typeof document !== 'undefined' ? createPortal(sheet, document.body) : sheet
+}
+
+// ── Modal (centered) ───────────────────────────────────────────
+export function FullPageOverlay({ show, onClose, title, eyebrow, children, syncHistory=true, actions=null, showHeader=true, headerVariant='bar', compactOnScroll=false, scrollResetKey, contentStyle={} }) {
+  useOverlayHistory(show, onClose, syncHistory)
+  const scrollerRef = useRef(null)
+  const [compactHeader, setCompactHeader] = useState(false)
+  const floatingHeader = showHeader && headerVariant === 'floating'
+  const barHeader = showHeader && !floatingHeader
+
+  const updateHeader = event => {
+    if (!floatingHeader || !compactOnScroll) return
+    const scroller = event.currentTarget
+    const hero = scroller.querySelector('[data-detail-hero]')
+    if (hero) {
+      setCompactHeader(hero.getBoundingClientRect().bottom <= scroller.getBoundingClientRect().top)
+    }
+  }
+
+  useEffect(() => {
+    if (!show) return
+    const prev = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => { document.body.style.overflow = prev }
+  }, [show])
+
+  useEffect(() => {
+    setCompactHeader(false)
+    if (show) scrollerRef.current?.scrollTo({ top:0, left:0, behavior:'instant' })
+  }, [show, title, scrollResetKey])
+
+  if (!show) return null
+  const overlay = (
+    <div ref={scrollerRef} onScroll={updateHeader} className="fade-in latido-fullpage-enter no-scroll" style={{ position:'fixed', inset:0, zIndex:95, background:C.bg, overflowY:'auto', overflowX:'hidden', scrollbarWidth:'none', msOverflowStyle:'none', paddingLeft:'env(safe-area-inset-left)', paddingRight:'env(safe-area-inset-right)', boxSizing:'border-box' }}>
+      {floatingHeader && (
+        <div data-detail-header={compactHeader ? 'compact' : 'floating'} style={{ position:compactHeader ? 'sticky' : 'relative', top:compactHeader ? 0 : undefined, zIndex:30, height:0, pointerEvents:'none' }}>
+          <div className="latido-page-container" style={{ maxWidth:760, padding:compactHeader ? 'calc(10px + env(safe-area-inset-top)) 12px 10px' : 'calc(12px + env(safe-area-inset-top)) 12px 0', display:'flex', alignItems:'center', justifyContent:'space-between', gap:8, background:compactHeader ? '#fff' : undefined, borderBottom:compactHeader ? `1px solid ${C.border}` : undefined, boxShadow:compactHeader ? '0 2px 8px rgba(15,23,42,0.06)' : undefined, pointerEvents:compactHeader ? 'auto' : 'none' }}>
+            <BackButton onClick={onClose} style={{ pointerEvents:'auto' }} />
+            {compactHeader && <p title={title} style={{ minWidth:0, flex:1, fontFamily:PP, fontWeight:700, fontSize:14, color:C.text, margin:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{title}</p>}
+            {actions && <div style={{ display:'flex', alignItems:'center', gap:8, flexShrink:0, pointerEvents:'auto' }}>{actions}</div>}
+          </div>
+        </div>
+      )}
+      {barHeader && (
+        <div style={{ position:'relative', zIndex:20, background:'rgba(255,255,255,0.96)', borderBottom:`1px solid ${C.border}`, backdropFilter:'blur(10px)' }}>
+          <div style={{ maxWidth:760, margin:'0 auto', padding:'10px 14px', display:'flex', alignItems:'center', gap:10 }}>
+            <BackButton onClick={onClose} />
+            <div style={{ minWidth:0, flex:1 }}>
+              {eyebrow && <p style={{ fontFamily:PP, fontSize:10, fontWeight:700, color:C.light, letterSpacing:0.8, margin:'0 0 1px', textTransform:'uppercase', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{eyebrow}</p>}
+              {title && <p style={{ fontFamily:PP, fontWeight:800, fontSize:14, color:C.text, margin:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{title}</p>}
+            </div>
+            {actions && <div style={{ display:'flex', alignItems:'center', gap:8, flexShrink:0 }}>{actions}</div>}
+          </div>
+        </div>
+      )}
+      <div style={{ maxWidth:760, margin:'0 auto', padding:'0 0 calc(108px + env(safe-area-inset-bottom))', ...contentStyle }}>
+        {children}
+      </div>
+    </div>
+  )
+  return typeof document !== 'undefined' ? createPortal(overlay, document.body) : overlay
+}
+
+export function Modal({ show, onClose, title, children, syncHistory=true, zIndex=80 }) {
+  useOverlayHistory(show, onClose, syncHistory)
+
+  useEffect(() => {
+    if (!show) return
+    const prev = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => { document.body.style.overflow = prev }
+  }, [show])
+
+  if (!show) return null
+  const modal = (
+    <div className="fade-in latido-overlay-backdrop" style={{ position:'fixed', inset:0, zIndex, display:'flex', alignItems:'center', justifyContent:'center', padding:'16px max(16px, env(safe-area-inset-right)) calc(16px + env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left))', boxSizing:'border-box' }}>
+      <div style={{ position:'absolute', inset:0, background:'rgba(0,0,0,0.45)', backdropFilter:'blur(4px)' }} onClick={onClose} />
+      <div className="fade-up latido-modal-panel" style={{ position:'relative', background:C.surface, borderRadius:24, width:'100%', maxWidth:560, maxHeight:'calc(100vh - 32px)', overflow:'hidden', display:'flex', flexDirection:'column', boxShadow:'0 24px 60px rgba(0,0,0,0.2)' }}>
+        <div style={{ flexShrink:0, position:'relative', zIndex:2, background:C.surface, borderBottom:`1px solid ${C.border}`, padding:'16px 20px', display:'flex', justifyContent:'space-between', alignItems:'center', borderRadius:'24px 24px 0 0' }}>
+          <p style={{ fontFamily:PP, fontWeight:800, fontSize:17, color:C.text, margin:0 }}>{title}</p>
+          <IconButton size="sm" variant="surface" onClick={onClose} label="Cerrar">✕</IconButton>
+        </div>
+        <div className="no-scroll" style={{ padding:20, overflowY:'auto', minHeight:0, scrollbarWidth:'none', msOverflowStyle:'none' }}>{children}</div>
+      </div>
+    </div>
+  )
+  return typeof document !== 'undefined' ? createPortal(modal, document.body) : modal
+}
+
+// ── Progress steps ─────────────────────────────────────────────
+export function ProgressBar({ step, total }) {
+  return (
+    <div style={{ marginBottom:20 }}>
+      <div style={{ display:'flex', gap:4, marginBottom:6 }}>
+        {Array.from({length:total}).map((_,i) => (
+          <div key={i} style={{ flex:1, height:4, borderRadius:4, background: i<=step ? C.primary : C.border, transition:'background .3s' }} />
+        ))}
+      </div>
+      <p style={{ fontFamily:PP, fontSize:11, color:C.light, margin:0 }}>Paso {step+1} de {total}</p>
+    </div>
+  )
+}
+
+// ── Pill filter row ────────────────────────────────────────────
+export function PillFilters({ options, value, onChange, className='' }) {
+  return (
+    <div className={`no-scroll ${className}`} style={{ display:'flex', gap:6, overflowX:'auto', paddingBottom:2 }}>
+      {options.map(o => {
+        const active = value === o.id
+        return (
+          <button key={o.id} onClick={() => onChange(active ? '' : o.id)} style={{
+            fontFamily:PP, fontSize:10, fontWeight:600, padding:'5px 12px', borderRadius:20,
+            border:`1.5px solid ${active ? C.primary : C.border}`,
+            background: active ? C.primary : C.surface,
+            color: active ? '#fff' : C.mid, cursor:'pointer', whiteSpace:'nowrap', flexShrink:0,
+          }}>
+            {o.label}
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
+// ── Segmented tabs ─────────────────────────────────────────────
+export function SegmentedTabs({ tabs, value, onChange }) {
+  const activeIndex = Math.max(0, tabs.findIndex(tab => tab.id === value))
+
+  return (
+    <div
+      className="ui-segmented-tabs"
+      role="tablist"
+      aria-label="Secciones"
+      style={{
+        '--ui-segment-count':tabs.length,
+        '--ui-active-segment':activeIndex,
+      }}
+    >
+      <span className="ui-segmented-tabs__indicator" aria-hidden="true" />
+      {tabs.map(t => (
+        <button
+          key={t.id}
+          type="button"
+          role="tab"
+          aria-selected={value === t.id}
+          className={value === t.id ? 'is-active' : ''}
+          onClick={() => onChange(t.id)}
+        >
+          {t.label}
+        </button>
+      ))}
+    </div>
+  )
+}
+
+// ── Info banner ────────────────────────────────────────────────
+export function InfoBanner({ emoji, title, text, bg=C.warnLight, border=C.warnMid, color=C.warn }) {
+  return (
+    <div style={{ background:bg, border:`1px solid ${border}`, borderRadius:16, padding:'10px 13px', marginBottom:14, display:'flex', gap:10, alignItems:'flex-start' }}>
+      <span style={{ fontSize:18, flexShrink:0 }}>{emoji}</span>
+      <div>
+        {title && <p style={{ fontFamily:PP, fontWeight:700, fontSize:12, color, margin:'0 0 2px' }}>{title}</p>}
+        <p style={{ fontFamily:PP, fontSize:11, color, margin:0, lineHeight:1.55, opacity:.9 }}>{text}</p>
+      </div>
+    </div>
+  )
+}
+
+export function SearchBeforePublishNotice({ kind='ad', onSearch }) {
+  const isJob = kind === 'job'
+  return (
+    <div
+      role="status"
+      aria-live="polite"
+      className="fade-in"
+      style={{
+        background:'#EFF6FF',
+        border:'1.5px solid #93C5FD',
+        borderRadius:16,
+        padding:'14px 15px',
+        boxShadow:'0 6px 18px rgba(37,99,235,0.08)',
+      }}
+    >
+      <div style={{ display:'flex', gap:11, alignItems:'flex-start' }}>
+        <span style={{ fontSize:22, lineHeight:1, flexShrink:0 }}>🔎</span>
+        <div style={{ minWidth:0 }}>
+          <p style={{ fontFamily:PP, fontWeight:800, fontSize:13, color:'#1E3A8A', margin:'0 0 4px' }}>
+            Busca primero en Latido
+          </p>
+          <p style={{ fontFamily:PP, fontSize:11.5, color:'#1E40AF', margin:0, lineHeight:1.55 }}>
+            Antes de {isJob ? 'publicar una búsqueda de empleo' : 'crear tu anuncio'}, asegúrate de haber buscado en Latido. Puede que encuentres lo que necesitas sin tener que publicar.
+          </p>
+        </div>
+      </div>
+      <button
+        type="button"
+        onClick={onSearch}
+        style={{
+          width:'100%',
+          marginTop:11,
+          border:'none',
+          borderRadius:11,
+          padding:'9px 12px',
+          background:C.primary,
+          color:'#fff',
+          fontFamily:PP,
+          fontWeight:800,
+          fontSize:11.5,
+          cursor:'pointer',
+        }}
+      >
+        {isJob ? 'Ver ofertas de empleo disponibles →' : 'Buscar antes de publicar →'}
+      </button>
+      <p style={{ fontFamily:PP, fontSize:10, color:'#64748B', margin:'7px 0 0', textAlign:'center' }}>
+        Si no encuentras una opción adecuada, puedes continuar publicando aquí.
+      </p>
+    </div>
+  )
+}
+
+// ── Empty state ────────────────────────────────────────────────
+export function EmptyState({
+  emoji='😕',
+  title,
+  sub,
+  text,
+  action,
+  onAction,
+  actionHref,
+  actionComponent,
+  actionProps={},
+  variant='page',
+  className='',
+  style={},
+}) {
+  const description = sub || text
+  const ActionComponent = actionComponent || (actionHref ? 'a' : 'button')
+
+  return (
+    <section
+      className={['latido-empty-state', `latido-empty-state--${variant}`, className].filter(Boolean).join(' ')}
+      style={style}
+    >
+      {emoji && <span className="latido-empty-state__emoji" aria-hidden="true">{emoji}</span>}
+      {title && <h3 className="latido-empty-state__title">{title}</h3>}
+      {description && <p className="latido-empty-state__description">{description}</p>}
+      {action && (
+        <Button
+          as={ActionComponent}
+          {...actionProps}
+          href={actionHref}
+          onClick={onAction}
+          block={false}
+          className="latido-empty-state__action"
+        >
+          {action}
+        </Button>
+      )}
+    </section>
+  )
+}
+
+export function SkeletonCard({
+  variant='list',
+  lines=2,
+  className='',
+  style={},
+}) {
+  const lineCount = Math.max(1, Math.min(lines, 3))
+
+  return (
+    <div
+      className={['latido-skeleton-card', `latido-skeleton-card--${variant}`, className].filter(Boolean).join(' ')}
+      style={style}
+      aria-hidden="true"
+    >
+      <span className="skeleton latido-skeleton-card__media" />
+      <span className="latido-skeleton-card__body">
+        <span className="skeleton latido-skeleton-card__eyebrow" />
+        <span className="skeleton latido-skeleton-card__title" />
+        {Array.from({ length:lineCount }, (_, index) => (
+          <span key={index} className="skeleton latido-skeleton-card__line" />
+        ))}
+        <span className="latido-skeleton-card__footer">
+          <span className="skeleton" />
+          <span className="skeleton" />
+        </span>
+      </span>
+    </div>
+  )
+}
+
+// ── Ad Card ────────────────────────────────────────────────────
+export function AdCard({ ad, onClick, compact=false, onRevealContact }) {
+  const { AD_CATS, CAT_COLORS_MAP } = (() => {
+    const cats = [...BASE_AD_CATS, {id:'regalo',emoji:'🎁',label:'Regalo'}]
+    const map = { ...CAT_COLORS, empleo:CAT_COLORS.vivienda }
+    return { AD_CATS: cats, CAT_COLORS_MAP: map }
+  })()
+  const normalizedCat = getAdCategoryId(ad)
+  const cat = getAdDisplayCat(ad) || AD_CATS.find(c => c.id === normalizedCat)
+  const cc  = CAT_COLORS_MAP[normalizedCat] || { bg:C.primaryLight, tc:C.primary }
+  const displayEmoji = getAdDisplayEmoji(ad)
+  const subOption = getAdSubOption(normalizedCat, ad.sub)
+  const typeMap = { busca:['🔍 Busca','#FEF3C7','#92400E'], ofrece:['✨ Ofrece','#D1FAE5','#065F46'], vende:['🏷️ Vende','#DBEAFE','#1D4ED8'], regala:['🎁 Regala','#FCE7F3','#9D174D'] }
+  const [tl, tbg, ttc] = typeMap[ad.type] || ['•', C.bg, C.mid]
+  const location = formatAdLocation(ad)
+
+  if (compact) return (
+    <Card onClick={onClick} aria-label={`Ver anuncio: ${ad.title}`} variant="outlined" padding="none" style={{ background:C.surface, borderRadius:13, border:`1px solid ${C.border}`, padding:'10px 12px', display:'flex', gap:10, alignItems:'flex-start', cursor:'pointer', transition:'all .15s' }}>
+      <div style={{ width:36, height:36, background:cc.bg, borderRadius:10, display:'flex', alignItems:'center', justifyContent:'center', fontSize:17, flexShrink:0 }}>{displayEmoji}</div>
+      <div style={{ flex:1, minWidth:0 }}>
+        <p style={{ fontFamily:PP, fontWeight:600, fontSize:12, color:C.text, lineHeight:1.3, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', marginBottom:3 }}>{ad.title}</p>
+        <div style={{ display:'flex', gap:4, flexWrap:'wrap' }}>
+          <PrivacyTag privacy={ad.privacy}/>
+          <Tag bg={cc.bg} color={cc.tc}>{cat?.emoji} {cat?.label}</Tag>
+          {ad.sub && <Tag bg={C.bg} color={C.mid}>{subOption?.emoji ? `${subOption.emoji} ` : ''}{ad.sub}</Tag>}
+          <span style={{ fontFamily:PP, fontSize:9, color:C.light }}>📍 {location || ad.canton} · {ad.ts}</span>
+        </div>
+      </div>
+      <span style={{ fontFamily:PP, fontSize:11, fontWeight:800, color:C.primary, flexShrink:0 }}>{ad.price}</span>
+    </Card>
+  )
+
+  return (
+    <Card onClick={onClick} aria-label={`Ver anuncio: ${ad.title}`} variant="outlined" padding="none" style={{ background:C.surface, borderRadius:16, border:`1px solid ${C.border}`, overflow:'hidden', cursor:'pointer', transition:'all .2s' }}>
+      {ad.img ? (
+        <img src={getThumbnailImageUrl(ad.img)} alt={ad.title} loading="lazy" decoding="async" style={{ width:'100%', height:160, objectFit:'cover' }} />
+      ) : (
+        <div style={{ width:'100%', height:160, background:'#fff', display:'flex', alignItems:'center', justifyContent:'center', fontSize:52 }}>
+          {displayEmoji}
+        </div>
+      )}
+      <div style={{ padding:'12px 14px 14px' }}>
+        <div style={{ display:'flex', gap:4, flexWrap:'wrap', marginBottom:7 }}>
+          <Tag bg={cc.bg} color={cc.tc}>{cat?.emoji} {cat?.label}</Tag>
+          {ad.sub && <Tag bg={C.bg} color={C.mid}>{subOption?.emoji ? `${subOption.emoji} ` : ''}{ad.sub}</Tag>}
+          <PrivacyTag privacy={ad.privacy}/>
+          {ad.verified && <Tag bg="#D1FAE5" color="#065F46">✓</Tag>}
+        </div>
+        <p style={{ fontFamily:PP, fontWeight:700, fontSize:13, color:C.text, lineHeight:1.35, marginBottom:4 }}>{ad.title}</p>
+        <p style={{ fontFamily:PP, fontSize:11, color:C.mid, lineHeight:1.5, marginBottom:8, whiteSpace:'pre-line', display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden' }}><LinkedText>{ad.desc}</LinkedText></p>
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+          <div style={{ display:'flex', gap:5, alignItems:'center' }}>
+            <Avatar name={ad.user} size={20} />
+            <span style={{ fontFamily:PP, fontSize:9, color:C.light }}>{ad.user} · {ad.ts} · {location || ad.canton}</span>
+          </div>
+          <span style={{ fontFamily:PP, fontSize:12, fontWeight:800, color:C.primary }}>{ad.price}</span>
+        </div>
+      </div>
+    </Card>
+  )
+}
+
+
+
+// ── Star Rating ────────────────────────────────────────────────
+export function Stars({ rating, size = 14, showNumber = false, count }) {
+  const full  = Math.floor(rating)
+  const half  = rating % 1 >= 0.5
+  const empty = 5 - full - (half ? 1 : 0)
+  return (
+    <span style={{ display:'inline-flex', alignItems:'center', gap:2 }}>
+      {Array(full).fill(0).map((_,i)  => <span key={`f${i}`} style={{ color:'#F59E0B', fontSize:size }}>★</span>)}
+      {half                             && <span style={{ color:'#F59E0B', fontSize:size }}>½</span>}
+      {Array(empty).fill(0).map((_,i) => <span key={`e${i}`} style={{ color:'#D1D5DB', fontSize:size }}>★</span>)}
+      {showNumber && <span style={{ fontFamily:"'Poppins',sans-serif", fontSize:size-2, color:'#475569', marginLeft:3 }}>{rating.toFixed(1)}{count !== undefined && ` (${count})`}</span>}
+    </span>
+  )
+}
+
+// ── Review Card ────────────────────────────────────────────────
+export function RatingPill({ rating, count, style }) {
+  const value = Number(rating)
+  if (!Number.isFinite(value)) return null
+  const label = Number.isInteger(value) ? String(value) : value.toFixed(1)
+  const aria = count !== undefined ? `${label} de 5, ${count} reseñas` : `${label} de 5`
+
+  return (
+    <span
+      aria-label={aria}
+      title={aria}
+      style={{
+        display:'inline-flex',
+        alignItems:'center',
+        justifyContent:'center',
+        gap:4,
+        width:'fit-content',
+        minHeight:24,
+        maxWidth:'100%',
+        fontFamily:PP,
+        fontWeight:800,
+        fontSize:11,
+        lineHeight:'14px',
+        color:'#0F172A',
+        background:'#fff',
+        border:'1px solid #FDE68A',
+        borderRadius:999,
+        padding:'5px 8px',
+        whiteSpace:'nowrap',
+        ...style,
+      }}
+    >
+      <span style={{ fontSize:12, lineHeight:'14px', display:'inline-flex', alignItems:'center' }}>⭐</span>
+      <span style={{ lineHeight:'14px', display:'inline-flex', alignItems:'center' }}>{label}</span>
+    </span>
+  )
+}
+
+export function ReviewCard({ review, googleReviewsUrl = '' }) {
+  const colors = ['#3B82F6','#8B5CF6','#EC4899','#10B981','#F59E0B','#EF4444']
+  const bg = colors[(review.author?.charCodeAt(0) || 0) % colors.length]
+  const isGoogleReview = Boolean(googleReviewsUrl && /(?:·|-)\s*Google\s*$/i.test(review.author || ''))
+  return (
+    <div style={{ background:'#FAFAFA', borderRadius:14, padding:'13px 15px', border:'1px solid #E2EAF4', marginBottom:10 }}>
+      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:8 }}>
+        <div style={{ display:'flex', gap:9, alignItems:'center' }}>
+          <div style={{ width:34, height:34, borderRadius:'50%', background:bg, display:'flex', alignItems:'center', justifyContent:'center', color:'#fff', fontFamily:"'Poppins',sans-serif", fontWeight:700, fontSize:13, flexShrink:0 }}>
+            {review.author?.[0]?.toUpperCase()}
+          </div>
+          <div>
+            <p style={{ fontFamily:"'Poppins',sans-serif", fontWeight:600, fontSize:12, color:'#0F172A', margin:0 }}>{review.author}</p>
+            <p style={{ fontFamily:"'Poppins',sans-serif", fontSize:10, color:C.light, margin:0 }}>📍 Cantón {review.canton} · {review.date}</p>
+          </div>
+        </div>
+        <Stars rating={review.stars} size={12} />
+      </div>
+      <p style={{ fontFamily:"'Poppins',sans-serif", fontSize:12, color:'#475569', lineHeight:1.65, margin:0 }}><LinkedText>{review.text}</LinkedText></p>
+      {isGoogleReview && (
+        <a
+          href={googleReviewsUrl}
+          target="_blank"
+          rel="noreferrer"
+          style={{ display:'inline-flex', alignItems:'center', gap:4, marginTop:8, fontFamily:PP, fontWeight:700, fontSize:11, color:C.primary, textDecoration:'none' }}
+        >
+          Ver reseñas en Google ↗
+        </a>
+      )}
+    </div>
+  )
+}
+
+// ── Photo Gallery ──────────────────────────────────────────────
+const REVIEW_PAGE_SIZE = 5
+
+export function ReviewList({
+  reviews = [],
+  emptyTitle = 'Sin reseñas todavía',
+  emptyText = 'Sé la primera persona en dejar una reseña.',
+  googleReviewsUrl = '',
+}) {
+  const [filter, setFilter] = useState('all')
+  const [visibleCount, setVisibleCount] = useState(REVIEW_PAGE_SIZE)
+
+  useEffect(() => {
+    setVisibleCount(REVIEW_PAGE_SIZE)
+  }, [filter, reviews.length])
+
+  const countsByStars = [5, 4, 3, 2, 1].reduce((acc, stars) => {
+    acc[stars] = reviews.filter(review => Number(review.stars) === stars).length
+    return acc
+  }, {})
+  const filteredReviews = filter === 'all'
+    ? reviews
+    : reviews.filter(review => Number(review.stars) === Number(filter))
+  const visibleReviews = filteredReviews.slice(0, visibleCount)
+  const remaining = Math.max(0, filteredReviews.length - visibleReviews.length)
+
+  if (!reviews.length) {
+    return (
+      <div style={{ textAlign:'center', padding:'32px 0' }}>
+        <p style={{ fontSize:40, margin:'0 0 10px' }}>⭐</p>
+        <p style={{ fontFamily:PP, fontWeight:700, fontSize:15, color:C.text, margin:'0 0 5px' }}>{emptyTitle}</p>
+        <p style={{ fontFamily:PP, fontSize:12, color:C.light, margin:0 }}>{emptyText}</p>
+      </div>
+    )
+  }
+
+  return (
+    <div>
+      <div className="no-scroll" style={{ display:'flex', gap:6, overflowX:'auto', paddingBottom:10, marginBottom:8 }}>
+        {[{ id:'all', label:'Todas', count:reviews.length }, ...[5, 4, 3, 2, 1].map(stars => ({ id:String(stars), label:`${stars} ★`, count:countsByStars[stars] || 0 }))].map(option => {
+          const active = filter === option.id
+          return (
+            <button
+              key={option.id}
+              type="button"
+              onClick={() => setFilter(option.id)}
+              style={{ fontFamily:PP, fontWeight:700, fontSize:11, color:active ? '#fff' : C.mid, background:active ? C.primary : '#fff', border:`1.5px solid ${active ? C.primary : C.border}`, borderRadius:999, padding:'7px 11px', cursor:'pointer', whiteSpace:'nowrap', flexShrink:0 }}
+            >
+              {option.label} ({option.count})
+            </button>
+          )
+        })}
+      </div>
+
+      {filteredReviews.length === 0 ? (
+        <div style={{ textAlign:'center', padding:'24px 0' }}>
+          <p style={{ fontSize:34, margin:'0 0 8px' }}>⭐</p>
+          <p style={{ fontFamily:PP, fontWeight:700, fontSize:14, color:C.text, margin:'0 0 4px' }}>No hay reseñas de {filter} estrella{filter === '1' ? '' : 's'}</p>
+          <p style={{ fontFamily:PP, fontSize:12, color:C.light, margin:0 }}>Prueba otro filtro o escribe la primera.</p>
+        </div>
+      ) : (
+        <>
+          <p style={{ fontFamily:PP, fontSize:11, color:C.light, margin:'0 0 10px' }}>
+            Mostrando {visibleReviews.length} de {filteredReviews.length} reseña{filteredReviews.length !== 1 ? 's' : ''}
+          </p>
+          {visibleReviews.map(review => <ReviewCard key={review.id} review={review} googleReviewsUrl={googleReviewsUrl} />)}
+          {remaining > 0 && (
+            <button
+              type="button"
+              onClick={() => setVisibleCount(count => count + REVIEW_PAGE_SIZE)}
+              style={{ width:'100%', fontFamily:PP, fontWeight:700, fontSize:12, background:C.bg, color:C.primary, border:`1.5px solid ${C.border}`, borderRadius:12, padding:'11px 0', cursor:'pointer', marginTop:2 }}
+            >
+              Ver {Math.min(REVIEW_PAGE_SIZE, remaining)} más
+            </button>
+          )}
+        </>
+      )}
+    </div>
+  )
+}
+
+export function ImageLightbox({ photos = [], initialIndex = 0, open = false, onClose, title = 'Foto' }) {
+  const validPhotos = photos.filter(Boolean)
+  const [active, setActive] = useState(initialIndex)
+  const [zoom, setZoom] = useState(1)
+  const [pan, setPan] = useState({ x:0, y:0 })
+  const touchStartRef = useRef(null)
+  const gestureRef = useRef(null)
+
+  const clampZoom = value => Math.min(Math.max(value, 1), 4)
+
+  const goPrevious = () => {
+    if (validPhotos.length < 2) return
+    setActive(index => (index - 1 + validPhotos.length) % validPhotos.length)
+  }
+
+  const goNext = () => {
+    if (validPhotos.length < 2) return
+    setActive(index => (index + 1) % validPhotos.length)
+  }
+
+  useEffect(() => {
+    if (!open) return
+    const maxIndex = Math.max(validPhotos.length - 1, 0)
+    setActive(Math.min(Math.max(initialIndex, 0), maxIndex))
+    setZoom(1)
+    setPan({ x:0, y:0 })
+  }, [open, initialIndex, validPhotos.length])
+
+  useEffect(() => {
+    setZoom(1)
+    setPan({ x:0, y:0 })
+  }, [active])
+
+  useEffect(() => {
+    if (!open) return
+    const prevOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+
+    const handleKeyDown = event => {
+      if (event.key === 'Escape') onClose?.()
+      if (event.key === 'ArrowLeft') goPrevious()
+      if (event.key === 'ArrowRight') goNext()
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => {
+      document.body.style.overflow = prevOverflow
+      window.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [open, onClose, validPhotos.length])
+
+  if (!open || !validPhotos.length || typeof document === 'undefined') return null
+
+  const handleTouchStart = event => {
+    if (event.touches?.length === 2) {
+      const [a, b] = Array.from(event.touches)
+      const distance = Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY)
+      gestureRef.current = {
+        type:'pinch',
+        startDistance:distance,
+        startZoom:zoom,
+      }
+      touchStartRef.current = null
+      return
+    }
+
+    const touch = event.touches?.[0]
+    if (!touch) return
+    if (zoom > 1) {
+      gestureRef.current = {
+        type:'pan',
+        x:touch.clientX,
+        y:touch.clientY,
+        pan,
+      }
+      touchStartRef.current = null
+      return
+    }
+
+    gestureRef.current = null
+    touchStartRef.current = { x: touch.clientX, y: touch.clientY }
+  }
+
+  const handleTouchMove = event => {
+    const gesture = gestureRef.current
+    if (!gesture) return
+
+    if (gesture.type === 'pinch' && event.touches?.length === 2) {
+      event.preventDefault()
+      const [a, b] = Array.from(event.touches)
+      const distance = Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY)
+      const nextZoom = clampZoom(gesture.startZoom * (distance / Math.max(gesture.startDistance, 1)))
+      setZoom(nextZoom)
+      if (nextZoom <= 1.02) setPan({ x:0, y:0 })
+      return
+    }
+
+    if (gesture.type === 'pan' && event.touches?.length === 1) {
+      event.preventDefault()
+      const touch = event.touches[0]
+      setPan({
+        x: gesture.pan.x + touch.clientX - gesture.x,
+        y: gesture.pan.y + touch.clientY - gesture.y,
+      })
+    }
+  }
+
+  const handleTouchEnd = event => {
+    const gesture = gestureRef.current
+    if (gesture?.type === 'pinch') {
+      if (zoom <= 1.05) {
+        setZoom(1)
+        setPan({ x:0, y:0 })
+      }
+      if (event.touches?.length < 2) gestureRef.current = null
+      return
+    }
+
+    if (gesture?.type === 'pan') {
+      gestureRef.current = null
+      return
+    }
+
+    const touch = event.changedTouches?.[0]
+    const start = touchStartRef.current
+    touchStartRef.current = null
+    if (!touch || !start || validPhotos.length < 2) return
+
+    const dx = touch.clientX - start.x
+    const dy = touch.clientY - start.y
+    if (Math.abs(dx) < 48 || Math.abs(dx) < Math.abs(dy) * 1.2) return
+
+    if (dx < 0) goNext()
+    else goPrevious()
+  }
+
+  return createPortal(
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label={title}
+      className="fade-in"
+      onClick={event => {
+        event.stopPropagation()
+        onClose?.()
+      }}
+      style={{ position:'fixed', inset:0, zIndex:240, background:'#000', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:'18px', boxSizing:'border-box' }}
+    >
+      <div style={{ position:'absolute', top:14, left:16, right:16, display:'flex', justifyContent:'flex-end', alignItems:'center', zIndex:2 }}>
+        <button
+          type="button"
+          onClick={event => { event.stopPropagation(); onClose?.() }}
+          aria-label="Cerrar"
+          style={{ width:38, height:38, borderRadius:'50%', border:'none', background:'#fff', color:'#111827', cursor:'pointer', fontSize:22, lineHeight:1, display:'flex', alignItems:'center', justifyContent:'center', boxShadow:'0 10px 24px rgba(0,0,0,0.28)' }}
+        >
+          X
+        </button>
+      </div>
+
+      <div
+        onClick={event => event.stopPropagation()}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        onTouchCancel={() => { touchStartRef.current = null; gestureRef.current = null }}
+        style={{ position:'relative', width:'100%', maxWidth:1120, display:'flex', alignItems:'center', justifyContent:'center', touchAction:'none' }}
+      >
+        <img
+          src={validPhotos[active]}
+          alt={`${title} ${active + 1}`}
+          loading="eager"
+          fetchpriority="high"
+          referrerPolicy="no-referrer"
+          decoding="async"
+          draggable={false}
+          style={{ width:'auto', height:'auto', maxWidth:'calc(100vw - 28px)', maxHeight:'calc(100vh - 110px)', objectFit:'contain', display:'block', background:'#000', transform:`translate3d(${pan.x}px, ${pan.y}px, 0) scale(${zoom})`, transition:gestureRef.current ? 'none' : 'transform .18s ease', touchAction:'none', userSelect:'none' }}
+        />
+      </div>
+
+      {validPhotos.length > 1 && (
+        <div onClick={event => event.stopPropagation()} style={{ position:'absolute', left:0, right:0, bottom:28, display:'flex', justifyContent:'center', gap:8, padding:'0 20px' }}>
+          {validPhotos.map((src, index) => (
+            <button
+              type="button"
+              key={`${src}-${index}`}
+              onClick={() => setActive(index)}
+              aria-label={`Ver foto ${index + 1}`}
+              style={{ width:index === active ? 10 : 9, height:index === active ? 10 : 9, padding:0, border:'none', borderRadius:'50%', background:index === active ? '#03AA98' : 'rgba(255,255,255,0.72)', cursor:'pointer', boxShadow:index === active ? '0 0 0 3px rgba(3,170,152,0.18)' : 'none' }}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+    ,
+    document.body
+  )
+}
+
+export function PhotoGallery({ photos = [], mainPhoto }) {
+  const [lightboxIndex, setLightboxIndex] = useState(null)
+  const [active, setActive] = useState(0)
+  const railRef = useRef(null)
+  const all = mainPhoto ? [mainPhoto, ...photos.filter(p => p !== mainPhoto)] : photos
+
+  const maxIndex = Math.max(all.length - 1, 0)
+
+  useEffect(() => {
+    if (active > maxIndex) setActive(maxIndex)
+  }, [active, maxIndex])
+
+  const updateActiveFromScroll = event => {
+    const rail = event.currentTarget
+    const items = Array.from(rail.querySelectorAll('[data-photo-index]'))
+    const center = rail.scrollLeft + rail.clientWidth / 2
+    let nearestIndex = 0
+    let nearestDistance = Infinity
+
+    items.forEach(item => {
+      const itemCenter = item.offsetLeft + item.offsetWidth / 2
+      const distance = Math.abs(itemCenter - center)
+      if (distance < nearestDistance) {
+        nearestDistance = distance
+        nearestIndex = Number(item.dataset.photoIndex || 0)
+      }
+    })
+
+    setActive(nearestIndex)
+  }
+
+  const handlePhotoClick = index => {
+    const rail = railRef.current
+    const item = rail?.querySelector(`[data-photo-index="${index}"]`)
+    if (rail && item) {
+      const itemLeft = item.offsetLeft
+      const itemRight = itemLeft + item.offsetWidth
+      const visibleLeft = rail.scrollLeft
+      const visibleRight = visibleLeft + rail.clientWidth
+      const mostlyVisible = itemLeft >= visibleLeft - 4 && itemRight <= visibleRight + 4
+      if (!mostlyVisible) {
+        rail.scrollTo({ left:itemLeft - 14, behavior:'smooth' })
+        return
+      }
+    }
+
+    setLightboxIndex(index)
+  }
+
+  if (!all.length) return null
+
+  return (
+    <div style={{ marginBottom:16 }}>
+      <div
+        style={{ position:'relative', margin:'0 -14px' }}
+      >
+        <div
+          ref={railRef}
+          className="no-scroll"
+          onScroll={updateActiveFromScroll}
+          style={{ display:'flex', gap:12, overflowX:'auto', WebkitOverflowScrolling:'touch', padding:'0 14px 10px', overscrollBehaviorX:'contain', scrollBehavior:'smooth' }}
+        >
+          {all.map((src, index) => (
+            <button
+              type="button"
+              key={`${src}-${index}`}
+              data-photo-index={index}
+              onClick={() => handlePhotoClick(index)}
+              aria-label={`Ampliar foto ${index + 1}`}
+              style={{ flex:all.length > 1 ? '0 0 clamp(250px, 78%, 420px)' : '1 1 100%', height:'min(58vh, 460px)', minHeight:260, padding:8, border:`1px solid ${C.border}`, borderRadius:18, overflow:'hidden', background:'#fff', cursor:'zoom-in', display:'flex', alignItems:'center', justifyContent:'center', boxShadow:'0 10px 26px rgba(15,23,42,0.08)', position:'relative', boxSizing:'border-box' }}
+            >
+              <img src={src} alt={`Foto ${index + 1}`} loading={index === 0 ? 'eager' : 'lazy'} fetchpriority={index === 0 ? 'high' : undefined} decoding="async" referrerPolicy="no-referrer" style={{ width:'100%', height:'100%', objectFit:'contain', display:'block' }} />
+            </button>
+          ))}
+        </div>
+      </div>
+      {all.length > 1 && (
+        <div style={{ display:'flex', justifyContent:'center', gap:6, marginTop:4 }}>
+          {all.map((_, index) => (
+            <span
+              key={index}
+              style={{ width:index === active ? 8 : 7, height:index === active ? 8 : 7, borderRadius:'50%', background:index === active ? C.primary : C.border, transition:'all .15s' }}
+            />
+          ))}
+        </div>
+      )}
+      <ImageLightbox
+        open={lightboxIndex !== null}
+        photos={all}
+        initialIndex={lightboxIndex ?? 0}
+        onClose={() => setLightboxIndex(null)}
+        title="Foto del anuncio"
+      />
+    </div>
+  )
+}
+
+// ── Write Review Form ──────────────────────────────────────────
+export function ReviewForm({
+  onSubmit,
+  onCancel,
+  initialReview=null,
+  defaultName='',
+  defaultCanton='',
+  lockName=false,
+  lockCanton=false,
+  submitLabel,
+}) {
+  const [stars, setStars]   = useState(0)
+  const [hover, setHover]   = useState(0)
+  const [text, setText]     = useState('')
+  const [name, setName]     = useState('')
+  const [canton, setCanton] = useState('')
+
+  useEffect(() => {
+    setStars(Number(initialReview?.stars || 0))
+    setText(initialReview?.text || '')
+    setName(initialReview?.name || initialReview?.author || defaultName || '')
+    setCanton(initialReview?.canton || defaultCanton || '')
+  }, [initialReview, defaultName, defaultCanton])
+
+  const canSubmit = stars > 0 && text.trim().length > 10 && !!name.trim()
+  const finalSubmitLabel = submitLabel || (initialReview ? 'Guardar reseña' : 'Publicar reseña')
+  const showNameField = !lockName
+  const showCantonField = !lockCanton
+
+  return (
+    <div style={{ background:'#F8FAFF', borderRadius:16, padding:'16px', border:'1px solid #E2EAF4', marginBottom:16 }}>
+      <p style={{ fontFamily:"'Poppins',sans-serif", fontWeight:700, fontSize:14, color:'#0F172A', marginBottom:14 }}>{initialReview ? 'Editar reseña' : 'Escribir reseña'}</p>
+
+      {/* Star picker */}
+      <div style={{ marginBottom:12 }}>
+        <p style={{ fontFamily:"'Poppins',sans-serif", fontSize:10, fontWeight:700, color:C.light, letterSpacing:1, marginBottom:8 }}>TU VALORACIÓN *</p>
+        <div style={{ display:'flex', gap:4 }}>
+          {[1,2,3,4,5].map(n => (
+            <button key={n} onMouseEnter={() => setHover(n)} onMouseLeave={() => setHover(0)} onClick={() => setStars(n)}
+              style={{ background:'none', border:'none', cursor:'pointer', fontSize:28, color: n<=(hover||stars)?'#F59E0B':'#D1D5DB', transition:'color .1s', padding:'0 2px' }}>★</button>
+          ))}
+          {(hover||stars) > 0 && <span style={{ fontFamily:"'Poppins',sans-serif", fontSize:12, color:C.warn, marginLeft:6, alignSelf:'center', fontWeight:600 }}>
+            {['','Muy malo','Malo','Regular','Bueno','Excelente'][hover||stars]}
+          </span>}
+        </div>
+      </div>
+
+      {(showNameField || showCantonField) && (
+        <div className="grid-2" style={{ gap:8, marginBottom:8 }}>
+          {showNameField && (
+            <div>
+              <p style={{ fontFamily:"'Poppins',sans-serif", fontSize:10, fontWeight:700, color:C.light, letterSpacing:1, marginBottom:5 }}>TU NOMBRE *</p>
+              <input
+                style={{ width:'100%', border:'1.5px solid #E2EAF4', borderRadius:10, padding:'9px 12px', fontSize:12, fontFamily:"'Poppins',sans-serif", outline:'none', background:'#fff', color:'#0F172A', boxSizing:'border-box' }}
+                placeholder="Maria G."
+                value={name}
+                onChange={e => setName(e.target.value)}
+              />
+            </div>
+          )}
+          {showCantonField && (
+            <div>
+              <p style={{ fontFamily:"'Poppins',sans-serif", fontSize:10, fontWeight:700, color:C.light, letterSpacing:1, marginBottom:5 }}>CANTÓN</p>
+              <input
+                style={{ width:'100%', border:'1.5px solid #E2EAF4', borderRadius:10, padding:'9px 12px', fontSize:12, fontFamily:"'Poppins',sans-serif", outline:'none', background:'#fff', color:'#0F172A', boxSizing:'border-box' }}
+                placeholder="ZH"
+                maxLength={2}
+                value={canton}
+                onChange={e => setCanton(e.target.value.toUpperCase())}
+              />
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Text */}
+      <div style={{ marginBottom:12 }}>
+        <p style={{ fontFamily:"'Poppins',sans-serif", fontSize:10, fontWeight:700, color:C.light, letterSpacing:1, marginBottom:5 }}>TU RESEÑA *</p>
+        <textarea style={{ width:'100%', border:'1.5px solid #E2EAF4', borderRadius:10, padding:'9px 12px', fontSize:12, fontFamily:"'Poppins',sans-serif", outline:'none', background:'#fff', resize:'none', minHeight:80, boxSizing:'border-box' }}
+          placeholder="Cuéntanos cómo fue tu experiencia con este proveedor..." value={text} onChange={e => setText(e.target.value)} />
+        <p style={{ fontFamily:"'Poppins',sans-serif", fontSize:9, color:C.light, margin:'3px 0 0' }}>{text.length} / mínimo 10 caracteres</p>
+      </div>
+
+      <div style={{ display:'flex', gap:8 }}>
+        <button onClick={() => onSubmit({ id:initialReview?.id, stars, text, name, canton, date:'Ahora mismo' })} disabled={!canSubmit}
+          style={{ fontFamily:"'Poppins',sans-serif", fontWeight:700, fontSize:12, background: canSubmit?'#2563EB':'#E2EAF4', color: canSubmit?'#fff':C.light, border:'none', borderRadius:11, padding:'10px 0', flex:1, cursor: canSubmit?'pointer':'not-allowed', transition:'all .15s' }}>
+          {finalSubmitLabel}
+        </button>
+        <button onClick={onCancel}
+          style={{ fontFamily:"'Poppins',sans-serif", fontWeight:700, fontSize:12, background:'#F8FAFC', color:'#475569', border:'1.5px solid #CBD5E1', borderRadius:11, padding:'10px 16px', cursor:'pointer' }}>
+          Cancelar
+        </button>
+      </div>
+    </div>
+  )
+}

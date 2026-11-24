@@ -1,39 +1,12 @@
-// Only a public offline notice, installation metadata and icons are cached.
-// Auth, account pages, Supabase, votes and player data always use the network.
-const CACHE = 'suizamente-public-__BUILD_ID__'
-const PUBLIC_FILES = [
-  '/sin-conexion.html', '/manifest.webmanifest', '/favicon.svg',
-  '/icons/icon-192.png', '/icons/icon-512.png', '/icons/apple-touch-icon.png',
-  '/icons/maskable-192.png', '/icons/maskable-512.png',
-  '/icons/maskable-72.png', '/icons/maskable-96.png', '/icons/maskable-128.png',
-  '/icons/favicon-circle-72.png', '/icons/favicon-circle-96.png',
-]
-self.addEventListener('install', event => {
-  event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(PUBLIC_FILES)).then(() => self.skipWaiting()))
+const CACHE='suizamente-game-__BUILD_ID__'
+const FILES=/*PRECACHE*/[]
+self.addEventListener('install',event=>event.waitUntil(caches.open(CACHE).then(c=>c.addAll(FILES)).then(()=>self.skipWaiting())))
+self.addEventListener('activate',event=>event.waitUntil((async()=>{for(const name of await caches.keys())if(name!==CACHE)await caches.delete(name);await self.clients.claim()})()))
+self.addEventListener('fetch',event=>{
+ const url=new URL(event.request.url)
+ if(event.request.method!=='GET'||url.origin!==self.location.origin||url.pathname.startsWith('/api/')||url.pathname.startsWith('/auth')||url.pathname==='/cuenta')return
+ if(event.request.mode==='navigate'){event.respondWith(fetch(event.request).catch(()=>caches.match('/index.html')));return}
+ if(FILES.includes(url.pathname))event.respondWith(caches.match(event.request).then(r=>r||fetch(event.request)))
 })
-self.addEventListener('activate', event => {
-  event.waitUntil((async () => {
-    const previous=await caches.keys()
-    const updated=previous.some(key=>key.startsWith('suizamente-public-')&&key!==CACHE)
-    for (const key of previous) if (key.startsWith('suizamente-public-') && key !== CACHE) await caches.delete(key)
-    await self.clients.claim()
-    if(updated){
-      const safePages=new Set(['/conquista','/conquista/tienda','/conquista/batallas','/conquista/coleccion','/','/ranking','/retos','/perfil','/libreta','/amigos','/avisos','/medallas','/bienvenida','/como-se-juega','/instalar'])
-      for(const client of await self.clients.matchAll({type:'window',includeUncontrolled:true})){
-        const url=new URL(client.url)
-        if(url.origin===self.location.origin&&safePages.has(url.pathname))await client.navigate(client.url).catch(()=>{})
-      }
-    }
-  })())
-})
-self.addEventListener('fetch', event => {
-  const request = event.request, url = new URL(request.url)
-  if (request.method !== 'GET' || url.origin !== self.location.origin) return
-  if (request.mode === 'navigate') {
-    event.respondWith(fetch(request).catch(async () => (await caches.match('/sin-conexion.html')) || Response.error()))
-    return
-  }
-  if (!url.search && PUBLIC_FILES.includes(url.pathname)) {
-    event.respondWith((async () => (await caches.match(request)) || fetch(request))())
-  }
-})
+self.addEventListener('push',event=>{let data;try{data=event.data.json()}catch{return}const target=new URL(data.url||'/suizamente',self.location.origin);if(target.pathname.startsWith('/suizamente'))target.host=self.location.host;event.waitUntil(self.registration.showNotification(data.title||'Suizamente',{body:data.body||'',icon:'/suizamente-assets/icon-192.png',badge:'/suizamente-assets/icon-192.png',tag:data.tag,data:{url:target.href}}))})
+self.addEventListener('notificationclick',event=>{event.notification.close();const target=event.notification.data?.url||'/suizamente';event.waitUntil(self.clients.matchAll({type:'window'}).then(async clients=>{for(const client of clients)if(new URL(client.url).origin===self.location.origin){await client.navigate(target);return client.focus()}return self.clients.openWindow(target)}))})
