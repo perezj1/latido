@@ -1,10 +1,6 @@
-import {useLocation} from 'react-router-dom'
-import SuizamenteArcade from '../components/suizamente/SuizamenteArcade'
-import SuizamenteGamePlayer from '../components/suizamente/SuizamenteGamePlayer'
-import './Suizamente.css'
+import SuizamenteApp from '../components/suizamente/v2/SuizamenteApp'
 
 export default function Suizamente(){
-  const {pathname}=useLocation()
-  return pathname.startsWith('/suizamente/partida')?<SuizamenteGamePlayer/>:<SuizamenteArcade/>
+  return <SuizamenteApp/>
 }
-export function Suizometro(){return <SuizamenteArcade/>}
+export function Suizometro(){return <SuizamenteApp/>}

@@ -18,6 +18,12 @@ const notification = (overrides = {}) => ({
 
 const cardRequestGroup=groupAppNotifications([notification({kind:APP_NOTIFICATION_KINDS.CARD_PHYSICAL_REQUEST,data:{reference:'LCP-000123'}})])[0]
 const followupGroup = groupAppNotifications([notification({ kind: APP_NOTIFICATION_KINDS.CONVERSATION_FOLLOWUP, data: { href: '/mensajes?conv=consulta-1' } })])[0]
+const raidGroup=groupAppNotifications([notification({kind:APP_NOTIFICATION_KINDS.SUIZAMENTE_RAID,data:{title:'🛡️ Tu escudo ha parado un asalto',href:'/suizamente/mapa'}})])[0]
+const communityGroup=groupAppNotifications([notification({kind:APP_NOTIFICATION_KINDS.SUIZAMENTE_COMMUNITY,data:{title:'👥 Lu quiere añadirte',href:'/suizamente/amigos'}})])[0]
+assert.equal(communityGroup.href,'/suizamente/amigos')
+assert.equal(communityGroup.title,'👥 Lu quiere añadirte')
+assert.equal(raidGroup.title,'🛡️ Tu escudo ha parado un asalto')
+assert.equal(raidGroup.href,'/suizamente/mapa')
 assert.equal(followupGroup.title, '¿Cómo fue tu consulta?')
 assert.equal(followupGroup.href, '/mensajes?conv=consulta-1')
 const severalFollowups = groupAppNotifications([notification({ kind: APP_NOTIFICATION_KINDS.CONVERSATION_FOLLOWUP }), notification({ kind: APP_NOTIFICATION_KINDS.CONVERSATION_FOLLOWUP })])[0]

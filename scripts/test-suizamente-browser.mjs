@@ -20,6 +20,7 @@ server.stdout.on('data',d=>{logs+=d});server.stderr.on('data',d=>{logs+=d})
 const errors=[]
 try {
   db=await createSuizamenteDb({game:true})
+  if(process.argv.includes('--community-only'))await db.exec(await readFile('supabase/suizamente_community.sql','utf8'))
   await szRpc(db,SZ_ALICE,'preferences',{canton:'ZH',alias:'AnaZH',leaderboard_opt_in:false})
   await szRpc(db,SZ_BOB,'preferences',{canton:'BE',alias:'BrunoBE',leaderboard_opt_in:false})
   await db.query('UPDATE suizamente_private.players SET xp=305,level=2 WHERE user_id=$1',[SZ_ALICE])
@@ -37,6 +38,17 @@ try {
       if(req.method()==='OPTIONS')return send({})
       if(url.origin!==origin)return send([])
       if(url.pathname.startsWith('/suizamente-test-api')){
+        if(url.pathname.endsWith('/rpc/suizamente_community')){
+          const body=req.postDataJSON()
+          try{
+            const result=await db.transaction(async tx=>{
+              await tx.query("SELECT set_config('test.uid',$1,true)",[actor||''])
+              await tx.exec(`SET LOCAL ROLE ${actor?'authenticated':'anon'}`)
+              return (await tx.query('SELECT public.suizamente_community($1,$2::jsonb) result',[body.p_action,JSON.stringify(body.p_args)])).rows[0].result
+            })
+            return send(result)
+          }catch(e){return send({message:e.message,code:e.code||'P0001'},400)}
+        }
         if(url.pathname.endsWith('/rpc/suizamente')){
           const body=req.postDataJSON()
           if(failNextAnswer&&body.p_action==='answer'){failNextAnswer=false;return send({message:'Temporary test connection failure',code:'TEST_NETWORK'},503)}
@@ -111,7 +123,55 @@ try {
     }
     await page.locator('.sg-map').waitFor()
   }
-  if(process.argv.includes('--language-exercises-only')){
+  if(process.argv.includes('--community-only')){
+    const player=await contextFor(SZ_ALICE),page=player.page
+    await visit(page,'/suizamente')
+    await page.getByRole('button',{name:/Preguntas: Suiza general y Zürich/}).click()
+    const preferences=page.getByRole('dialog',{name:'¿De dónde quieres preguntas?',exact:true})
+    await preferences.getByRole('combobox',{name:'País de origen',exact:true}).selectOption('CO')
+    await preferences.getByRole('combobox',{name:'Años en Suiza',exact:true}).selectOption('1_3')
+    await preferences.getByRole('button',{name:'Guardar preferencias',exact:true}).click()
+    await expect(preferences).toHaveCount(0)
+    assert.equal((await szRpc(db,SZ_ALICE,'summary')).player.community_country,'CO')
+    const session=await szRpc(db,SZ_ALICE,'game_start')
+    const v=(await db.query("SELECT id,payload FROM suizamente_private.versions WHERE payload->>'game_type'='choice' AND NOT annulled LIMIT 1")).rows[0]
+    await db.query("UPDATE suizamente_private.sessions SET version_ids=ARRAY[$2::bigint,$2::bigint],position=0,option_orders=jsonb_build_object($2::text,'[0,1,2,3]'::jsonb) WHERE id=$1",[session.id,v.id])
+    await visit(page,`/suizamente/partida/${session.id}`)
+    await expect(page.locator('.sg-community')).toHaveCount(0)
+    await answerCurrent(page,SZ_ALICE)
+    await expect(page.locator('.sg-community')).toContainText('Aún no hay suficientes respuestas por país.')
+    const chosen=v.payload.correct_index
+    for(let i=1;i<=14;i++){
+      const user=`bbbbbbbb-bbbb-4bbb-8bbb-${String(i).padStart(12,'0')}`,country=i<=4?'CO':i<=9?'ES':'MX',years=i<=4?'1_3':i<=9?'4_9':'10_plus'
+      await db.query('INSERT INTO auth.users(id) VALUES($1)',[user])
+      await db.query('INSERT INTO public.profiles(id) VALUES($1)',[user])
+      await db.query('INSERT INTO suizamente_private.players(user_id,alias,community_country,community_years) VALUES($1,$2,$3,$4)',[user,`Community${i}`,country,years])
+      const s=(await db.query(`INSERT INTO suizamente_private.sessions(user_id,mode,day_key,week_key,level,version_ids,option_orders,rules)
+        VALUES($1,'practice',current_date,current_date,1,ARRAY[$2::bigint],jsonb_build_object($2::text,'[0,1,2,3]'::jsonb),'{}') RETURNING id`,[user,v.id])).rows[0]
+      await db.query('INSERT INTO suizamente_private.answers(session_id,position,version_id,user_id,choice,correct) VALUES($1,0,$2,$3,$4,true)',[s.id,v.id,user,i%2?chosen:(chosen+1)%4])
+    }
+    await page.reload()
+    const card=page.locator('.sg-community')
+    await expect(card.locator('li')).toHaveCount(3)
+    await expect(card).toContainText('Colombia')
+    for(const width of [320,390,1280]){
+      await page.setViewportSize({width,height:640})
+      await card.getByRole('button',{name:'Años en Suiza',exact:true}).click()
+      await expect(card).toContainText('1–3 años')
+      await expect(card).toContainText('10 años o más')
+      await card.getByRole('button',{name:'País',exact:true}).click()
+      await fits(page,`community ${width}`)
+      const action=await page.locator('.sg-game-footer>.sz-button').boundingBox()
+      assert.ok(action.y>=0&&action.y+action.height<=640,'Continue remains visible')
+    }
+    await page.setViewportSize({width:390,height:844})
+    await card.scrollIntoViewIfNeeded()
+    await page.screenshot({path:`${output}/${useWebkit?'webkit':'chromium'}-community-country.png`})
+    await card.getByRole('button',{name:'Años en Suiza',exact:true}).click()
+    await page.screenshot({path:`${output}/${useWebkit?'webkit':'chromium'}-community-years.png`})
+    await player.close()
+    console.log('Browser: optional community profile persisted, empty and populated countries/years, three viewport sizes, and continue visibility passed.')
+  }else if(process.argv.includes('--language-exercises-only')){
     await db.exec(await readFile('supabase/suizamente_revision_completa.sql','utf8'))
     const bank=JSON.parse(await readFile('supabase/seed-data/suizamente-language-exercises.json','utf8'))
     const player=await contextFor(SZ_ALICE),page=player.page

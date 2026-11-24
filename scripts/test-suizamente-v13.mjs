@@ -1,0 +1,41 @@
+import assert from 'node:assert/strict'
+import {readFile} from 'node:fs/promises'
+import {database,call,profile,A,B,C,G} from './lib/suizamente-v2-test-db.mjs'
+const db=await database({produccion:true})
+try{
+ await call(db,A,'guardar_jugador',profile())
+ assert.equal((await call(db,A,'config')).apiVersion,13)
+ assert.equal((await call(db,A,'emparejamiento')).disponible,false)
+ await assert.rejects(call(db,A,'crear_partida',{rival:'azar'}),/SZV2:409/)
+ assert.equal((await db.query('SELECT count(*) n FROM suizamente_private.suizamente_partidas')).rows[0].n,0)
+ await call(db,B,'guardar_jugador',profile('Lu'))
+ assert.equal((await call(db,A,'emparejamiento')).disponible,true)
+ await db.exec("UPDATE suizamente_private.suizamente_jugadores SET ultimo_visto_en=clock_timestamp()-interval '1 day' WHERE jugador_id='"+B+"'")
+ assert.equal((await call(db,A,'emparejamiento')).disponible,false)
+ await assert.rejects(call(db,A,'crear_partida',{rival:'azar'}),/SZV2:409/)
+ await call(db,B,'jugador')
+ await db.query('UPDATE suizamente_private.suizamente_jugadores SET bloqueado=true WHERE jugador_id=$1',[B])
+ assert.equal((await call(db,A,'emparejamiento')).disponible,false)
+ await db.query('UPDATE suizamente_private.suizamente_jugadores SET bloqueado=false WHERE jugador_id=$1',[B])
+ const game=await call(db,A,'crear_partida',{rival:'azar'})
+ assert.equal(game.rival.id,B);assert.equal(game.estado,'jugando')
+ assert.equal((await call(db,A,'emparejamiento')).disponible,false,'Existing pair is not offered again')
+ await assert.rejects(call(db,A,'crear_partida',{rival:'azar'}),/SZV2:409/)
+ const selected=await call(db,A,'crear_partida',{rival:B});assert.equal(selected.rival.id,B,'Explicit rematches remain possible')
+ await call(db,null,'guardar_jugador',profile('Invitado'))
+ const guest=await call(db,null,'crear_partida',{rival:'azar'});assert.equal(guest.estado,'jugando');assert.ok(guest.rival)
+ const legacy=(await db.query("INSERT INTO suizamente_private.suizamente_partidas(jugador_a,turno,plazo,reglas) VALUES($1,$1,clock_timestamp()+interval '2 days',suizamente_private.v2_config()) RETURNING id",[A])).rows[0].id
+ assert.equal((await call(db,A,'partida',{id:legacy})).teToca,false,'Legacy empty games never claim it is your turn')
+ for(const action of ['girar','pregunta','respuesta','comodin','duelo'])await assert.rejects(call(db,A,action,{id:legacy,turnoN:1}),/SZV2:409:Esta partida espera rival/)
+ await call(db,C,'guardar_jugador',profile('Caro'))
+ const available=await call(db,A,'emparejamiento');assert.ok(!JSON.stringify(available).includes('email'))
+ await db.exec(await readFile('supabase/suizamente_v13_produccion.sql','utf8'))
+ assert.equal((await call(db,A,'config')).apiVersion,13,'Migration is repeatable')
+ await db.exec("CREATE OR REPLACE FUNCTION suizamente_private.v13_rivales(actor text) RETURNS SETOF text LANGUAGE sql STABLE SECURITY DEFINER SET search_path='' AS $$ SELECT jugador_id FROM suizamente_private.suizamente_jugadores WHERE jugador_id='"+B+"' $$")
+ const max=Number((await call(db,A,'config')).partida.partidasAbiertasMax)
+ for(let i=0;i<max;i++)await db.query("INSERT INTO suizamente_private.suizamente_partidas(jugador_a,jugador_b,turno,estado,plazo,reglas) VALUES($1,$2,$1,'jugando',clock_timestamp()+interval '2 days',suizamente_private.v2_config())",[C,B])
+ // Restore the real availability function and verify capacity is respected.
+ await db.exec(await readFile('supabase/suizamente_v13_produccion.sql','utf8'))
+ assert.ok(!(await call(db,C,'emparejamiento')).disponible)
+ console.log('v13: no empty games; availability, presence, blocks, capacity, guest/selected opponents, legacy guards and repeat migration passed.')
+}finally{await db.close()}

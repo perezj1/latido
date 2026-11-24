@@ -61,7 +61,6 @@ const CreadorAlta = lazy(() => import('./pages/CreadorAlta'))
 const CreadorPanel = lazy(() => import('./pages/CreadorPanel'))
 const Perfil = lazy(() => import('./pages/Perfil'))
 const Suizamente = lazy(() => import('./pages/Suizamente'))
-const Suizometro = lazy(() => import('./pages/Suizamente').then(module => ({ default:module.Suizometro })))
 const Auth = lazy(() => import('./pages/Auth'))
 const OAuthOnboarding = lazy(() => import('./pages/OAuthOnboarding'))
 const PublicarEvento = lazy(() => import('./pages/PublicarEvento'))
@@ -525,10 +524,9 @@ function AppShell() {
   const isBusinessPartnerLanding = pathname.startsWith('/latido-x/')
   const isPuntoHispanoPublisher = pathname.startsWith('/publicar/punto-hispano/')
   const isSuizamente = isSuizamenteRoute(pathname)
-  const isSuizamentePlayer = pathname.startsWith('/suizamente/partida/')
   const showLanding = isRoot && !isPWA && !isLoggedIn
   const isCardLanding = pathname === '/club' || pathname === '/club/'
-  const hideAppNavigation = isCardLanding || pathname.startsWith('/auth') || pathname === '/reset-password' || pathname === '/tienda' || (pathname === '/card' || pathname.startsWith('/card/')) || isPuntoHispanoPublisher || isSuizamentePlayer
+  const hideAppNavigation = isCardLanding || pathname.startsWith('/auth') || pathname === '/reset-password' || pathname === '/tienda' || (pathname === '/card' || pathname.startsWith('/card/')) || isPuntoHispanoPublisher || isSuizamente
   const needsProfileOnboarding = needsGoogleProfileOnboarding(user)
 
   useLayoutEffect(() => {
@@ -831,8 +829,7 @@ function AppShell() {
             <Route path="/creadores/mi-perfil" element={<ProtectedRoute><CreadorPanel /></ProtectedRoute>} />
             <Route path="/creadores/:creatorSlug" element={<CreadorPerfil />} />
             <Route path="/perfil" element={<ProtectedRoute><Perfil /></ProtectedRoute>} />
-            <Route path="/perfil/suizometro" element={<ProtectedRoute><Suizometro /></ProtectedRoute>} />
-            <Route path="/suizamente/partida/:sessionId" element={<Suizamente />} />
+            <Route path="/perfil/suizometro" element={<Navigate to="/suizamente" replace />} />
             <Route path="/suizamente/*" element={<Suizamente />} />
             <Route path="/auth/onboarding" element={<ProtectedRoute><OAuthOnboarding /></ProtectedRoute>} />
             <Route path="/auth" element={<AuthRoute />} />

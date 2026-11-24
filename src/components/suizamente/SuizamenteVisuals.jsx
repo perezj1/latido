@@ -1,7 +1,8 @@
-import {useState} from 'react'
-import { Link,useNavigate } from 'react-router-dom'
-import { invalidateSuizamente,suizamenteCall,szLevel,szProgress,useSuizamente } from '../../lib/suizamente'
-import MT from '../../data/suizamenteMountains.json'
+﻿
+import { Link } from 'react-router-dom'
+import { szLevel } from '../../lib/suizamente'
+import LatidoCard from './v2/LatidoCards'
+
 import ICON_PATHS from '../../data/suizamenteIconPaths.json'
 import '../../pages/Suizamente.css'
 
@@ -36,18 +37,5 @@ export function ProgressBar({percent=0,level=1,label}) {
   return <div className="sz-bar" role="progressbar" aria-label={label||'Progreso al siguiente nivel'} aria-valuemin={0} aria-valuemax={100} aria-valuenow={percent}><span style={{width:`${percent}%`,background:szLevel(level).color}}/></div>
 }
 export default function SuizamenteEntry({surface='home'}) {
-  const {data,actor}=useSuizamente(),isProfile=surface==='profile',p=szProgress(data),navigate=useNavigate()
-  const [busy,setBusy]=useState(false),[error,setError]=useState('')
-  const node=data?.trail?.node??-1,m=MT[p.level],stage=m.st[node],summit=node>=m.st.length,active=data?.trail?.active
-  const title=node===-1?'Llegada a '+m.n:summit?'Test de cima':stage?.[0]
-  async function play(){
-    if(busy)return
-    setBusy(true);setError('')
-    try{const id=actor?(await suizamenteCall('game_start')).id:'demo';invalidateSuizamente();navigate('/suizamente/partida/'+id,{state:{returnTo:isProfile?'/perfil':'/'}})}catch(e){setError(e.message)}finally{setBusy(false)}
-  }
-  return <section className={'sz-entry sz-card sz-trail-entry'+(isProfile?' sz-entry--profile':'')} aria-label={isProfile?'Suizómetro':'Suizamente'}>
-    <Link className="sz-entry-head" to={isProfile?'/perfil/suizometro':'/suizamente'} state={{from:isProfile?'/perfil':'/'}}><SuizamenteMark/><div><h2>{isProfile?'Suizómetro':<>Suiza<span>mente</span></>}</h2><p>{isProfile?'Tu aprendizaje en Suizamente':(data?.trail?.streak||0)+' días de racha · subiendo '+m.n}</p></div><span className="sz-chevron">›</span></Link>
-    {isProfile?<><div className="sz-entry-mountain"><MountainIcon level={p.level}/><strong>{m.n}</strong><small>Nivel {p.level} de 5</small></div><ProgressBar percent={p.percent} level={p.level}/><div className="sz-between sz-muted"><strong>{p.xp} XP</strong><span>{p.completed?'Recorrido completado':p.percent+' %'}</span></div><Link className="sz-button sz-button--primary" to="/perfil/suizometro">Ver mi progreso</Link></>:<><div className="sz-entry-stage" style={{background:szLevel(p.level).soft}}><span aria-hidden="true">{node===-1?'🚉':summit?'🏔️':stage?.[1]==='rep'?'🔁':stage?.[1]}</span><div><strong>{title}</strong><small>{node===-1?'3 preguntas sobre la montaña':summit?m.test+' preguntas · '+m.pass+' aciertos para pasar':'Etapa '+(node+1)+' de '+m.st.length+' · unos '+Math.round(m.q*.6)+' min'}</small></div></div><button className="sz-button sz-button--primary" disabled={busy||data?.config?.enabled===false} onClick={play}>{busy?'Preparando…':active?'Continuar mi etapa':data?.trail?.today?'Seguir subiendo':'Jugar la etapa de hoy'}</button><Link className="sz-text-link" to="/suizamente">Ver mi camino →</Link></>}
-    {error&&<p className="sz-error-text" role="alert">{error}</p>}
-  </section>
+  return <LatidoCard surface={surface}/>
 }

@@ -1,5 +1,37 @@
 # Suizamente: activar el modo juego
 
+**Juego nuevo, comunidad y administración:** consulta [SUIZAMENTE_V2.md](SUIZAMENTE_V2.md).
+La entrada de la aplicación utiliza esa versión. Las instrucciones siguientes se
+conservan como documentación del motor y banco anteriores.
+Para el juego actual se aplican v7_comunidad y v9_admin después del álbum;
+los porcentajes requieren 20 votos por grupo. El añadido histórico descrito
+abajo no es la migración de comunidad del juego nuevo.
+
+**Estadísticas de comunidad:** después de las migraciones vigentes, ejecuta
+[suizamente_community.sql](../supabase/suizamente_community.sql) para activar «Eligieron lo mismo».
+Añade país de origen y años en Suiza opcionales en las preferencias. Los porcentajes
+usan una primera respuesta por persona y versión de pregunta, con un mínimo de 5
+personas por grupo. Las repeticiones no aumentan los recuentos. Las omisiones y
+cuentas bloqueadas se excluyen. No se generan cifras de relleno. En la demostración
+o sin muestra suficiente se muestra un estado vacío. No hay cambios remotos automáticos.
+
+Si al ejecutar ese añadido aparece **`schema "suizamente_private" does not exist`**,
+el proyecto o rama seleccionados no tienen el esquema principal. Comprueba primero
+que estás en el mismo proyecto de Supabase que usa Latido. Puedes consultar, sin
+modificar datos:
+
+```sql
+select current_database() as base_de_datos,
+       to_regnamespace('suizamente_private') as esquema_suizamente,
+       to_regclass('suizamente_private.players') as jugadores;
+```
+
+Si `esquema_suizamente` es `null` en el proyecto correcto, ejecuta los cuatro
+archivos completos **01 → 02 → 03 → 04** enlazados en «Acciones manuales necesarias»
+y después `suizamente_community.sql`. Los instaladores completos ya incluyen los
+ejercicios de la actualización 16. Este añadido necesita las tablas y funciones
+del juego: crear únicamente un esquema vacío no completa la instalación.
+
 **Ampliación actual 16:** si ya instalaste la revisión 14, ejecuta solo el
 [SQL de 64 ejercicios nuevos e idiomas en etapas y cimas](SUIZAMENTE_EJERCICIOS_IDIOMA.md).
 Incluye la actualización 15.

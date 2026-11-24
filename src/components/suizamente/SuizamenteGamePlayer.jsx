@@ -15,6 +15,7 @@ import {PRIZES,StreakWeek} from './SuizamenteArcade'
 import {CheckIcon,MountainIcon,SuizamenteMark,SwissFlag} from './SuizamenteVisuals'
 import Modal from './SuizamenteSheet'
 import QuestionOrdering from './QuestionOrdering'
+import CommunityAnswers from './CommunityAnswers'
 import {useQuestionLayout} from './useQuestionLayout'
 import './SuizamenteArcade.css'
 import './SuizamenteGameStyle.css'
@@ -147,6 +148,7 @@ export default function SuizamenteGamePlayer(){
           {type==='match'&&!a.annulled&&<p className="sg-pair-recap">{matched.length} de 4 parejas unidas · {s.pair_state?.errors||0} {(s.pair_state?.errors||0)===1?'fallo':'fallos'}</p>}
           {!a.annulled&&(!a.correct||type==='match')&&<FeedbackSolution key={`solution:${q.version_id||q.id}:${s.position}`} answer={a} question={q} matchedCount={matched.length} wrongPairs={s.pair_state?.wrong_pairs}/>}
           <FeedbackExplanation key={`reason:${q.version_id||q.id}:${s.position}`} text={a.explanation} renderText={text=><GlossText text={text} onWord={setWord}/>}/>
+          {!a.skipped&&!a.annulled&&['choice','tf','image','false','multi','order'].includes(type)&&<CommunityAnswers key={`community:${s.id}:${s.position}`} sessionId={s.id} position={s.position} isDemo={isDemo} available={Object.hasOwn(summary?.player||{},'community_country')}/>}
           <div className="sg-feedback-links"><a href={a.source_url} target="_blank" rel="noopener noreferrer">Fuente: {a.source_title} ↗</a>{!isDemo&&<button onClick={()=>{setReportError('');setReportOpen(true)}}>⚑ Avisar de un error</button>}{a.guide_path&&<Link to={a.guide_path} target="_blank" rel="noopener noreferrer">Leer guía ↗</Link>}</div>
         </section><button className="sz-button sz-button--primary" disabled={busy} onClick={next}>{busy?'Guardando…':s.status==='completed'?'Ver mi resultado':state==='wrong'?'Entendido':'Continuar'}</button></>:<><button className="sz-button sz-button--ghost" disabled={busy} onClick={()=>submit({skip:true,choice:0})}>{busy?'Guardando…':'No lo sé'}</button>{['multi','order','short'].includes(type)&&<button className="sz-button sz-button--primary" disabled={busy||(type==='multi'?!multi.length:type==='order'?sequence.length!==q.options.length:!shortText.trim())} onClick={()=>submit(type==='short'?{text:shortText}:{choices:type==='order'?sequence:multi})}>{busy?'Comprobando…':'Comprobar'}</button>}</>}
       </footer>

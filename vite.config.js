@@ -5,8 +5,27 @@ import react from '@vitejs/plugin-react'
 import gelatoHandler from './api/gelato.js'
 import { resolveTikTokLink } from './api/tiktok-resolve.js'
 import tiktokMetadataHandler from './api/tiktok-metadata.js'
+import suizamenteHandler from './server/suizamente/http.mjs'
 
 dns.setDefaultResultOrder('verbatim')
+
+function suizamenteApiPlugin() {
+  return {
+    name:'latido-suizamente-api',
+    configureServer(server) {
+      server.middlewares.use((req,res,next) => {
+        // The local design folder must not shadow the app's trailing-slash route.
+        if(req.url?.split('?')[0]==='/suizamente/')req.url='/index.html'
+        if (/^\/(?:server\/|supabase\/|suizamente\/data\/)/.test(req.url || '')) {
+          res.statusCode=404
+          return res.end()
+        }
+        if (!req.url?.startsWith('/api/suizamente/')) return next()
+        return suizamenteHandler(req,res)
+      })
+    },
+  }
+}
 
 function tiktokResolverPlugin() {
   return {
@@ -107,6 +126,9 @@ function scannerRoutingPlugin() {
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
+  for (const key of ['VITE_SUPABASE_URL','VITE_SUPABASE_ANON_KEY']) {
+    if (env[key] !== undefined) process.env[key] = env[key]
+  }
   // Vite reloads its config when an env file changes. Always copy the latest
   // local Gelato values so a key that was replaced does not remain cached in
   // the long-running development process.
@@ -146,7 +168,7 @@ export default defineConfig(({ mode }) => {
   }
 
   return {
-    plugins: [react(), tiktokResolverPlugin(), gelatoDevPlugin(), scannerRoutingPlugin()],
+    plugins: [react(), suizamenteApiPlugin(), tiktokResolverPlugin(), gelatoDevPlugin(), scannerRoutingPlugin()],
     resolve: {
       alias: {
         react: path.resolve(process.cwd(), 'node_modules/react'),
@@ -157,6 +179,7 @@ export default defineConfig(({ mode }) => {
     server: {
       host: 'localhost',
       port: 8080,
+      fs:{deny:['.env','.env.*','**/server/suizamente/data/**','**/supabase/**','**/suizamente/data/**']},
       watch: {
         // Windows + Deno's node-compat fs watcher can crash when Vite tries to
         // watch a path that was just removed during HMR. Polling is a little

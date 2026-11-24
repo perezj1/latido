@@ -29,7 +29,7 @@ import PuntoHispanoContacts from '../components/admin/PuntoHispanoContacts'
 import PuntoHispanoPublishLinks from '../components/admin/PuntoHispanoPublishLinks'
 import LatidoClubMetrics from '../components/admin/LatidoClubMetrics'
 import StoreOrders from '../components/admin/StoreOrders'
-import SuizamenteAdmin from '../components/admin/SuizamenteAdmin'
+import {AdminEntry as SuizamenteAdmin} from '../components/suizamente/v2/Admin'
 import ConversationFollowUpReport from '../components/admin/ConversationFollowUpReport'
 import '../styles/admin.css'
 
@@ -4586,7 +4586,7 @@ export default function Admin() {
 
   const activeSection = SECTION_TITLES[tab]
   const SECTION_DETAILS = {
-    suizamente: {description:'Contenido revisado, cobertura cantonal, avisos y configuración del aprendizaje.',color:'#0E7490',badge:'Preguntas · Montañas · Aprendizaje'},
+    suizamente: {description:'Propuestas, jugadores, partidas y economía de Suizamente.',color:'#0E7490',badge:'Juego · Comunidad · Moderación'},
     followups: { description: 'Resultados confirmados por las personas que contactaron por el chat: respuestas, motivos e historial de cada seguimiento.', color: '#2563EB', badge: 'Consultas · Respuestas · Próximas preguntas' },
     storeOrders: { description: 'Pedidos, pagos confirmados, datos de envío y preparación. Marca cada pedido en proceso, enviado y entregado.', color: '#047857', badge: 'Pagos · Preparación · Envíos' },
     latidoClub: { description: 'Miembros, negocios participantes, ofertas y actividad de Latido Club. Estado actual e historial separados.', color: '#4F46E5', badge: 'Miembros · Ofertas · Negocios · Usos' },
@@ -5250,7 +5250,7 @@ export default function Admin() {
             <div className="adm-sidebar__user">
               <span className="adm-avatar" aria-hidden="true">{(user?.email || 'A').slice(0, 1).toUpperCase()}</span>
               <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {user?.email || 'Panel de administración'}
+                {tab === 'suizamente' ? 'Equipo Latido' : user?.email || 'Panel de administración'}
               </span>
             </div>
           </div>

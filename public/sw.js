@@ -4,7 +4,7 @@ const ASSET_CACHE = `latido-assets-${BUILD_ID}`
 const IMAGE_CACHE = 'latido-images-v2'
 const PUBLIC_DATA_CACHE = 'latido-public-data-v1'
 const CURRENT_CACHES = new Set([SHELL_CACHE, ASSET_CACHE, IMAGE_CACHE, PUBLIC_DATA_CACHE])
-const APP_SHELL = ['/', '/index.html', '/manifest.json', '/favicon.svg', '/icon-192.png']
+const APP_SHELL = ['/', '/index.html', '/manifest.json', '/favicon.svg', '/icon-192.png', '/suizamente.webmanifest', '/suizamente-assets/icon-180.png', '/suizamente-assets/icon-192.png', '/suizamente-assets/icon-512.png', '/suizamente-assets/icon-maskable-512.png']
 const PRECACHE_ASSETS = []
 const MAX_IMAGE_CACHE_ENTRIES = 260
 const SUPABASE_STORAGE_OBJECT_SEGMENT = '/storage/v1/object/public/'
@@ -321,7 +321,7 @@ self.addEventListener('fetch', event => {
     return
   }
 
-  if (url.pathname === '/manifest.json') {
+  if (url.pathname === '/manifest.json' || url.pathname === '/suizamente.webmanifest') {
     event.respondWith(networkFirst(request, SHELL_CACHE, event, 40))
   }
 })
