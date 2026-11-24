@@ -623,21 +623,19 @@ de hora y recibos únicos. El panel verifica permisos, registro y Economía viva
 
 ## Publicar y pendientes de lanzamiento
 
-1. Aplicar en Supabase los SQL pendientes según el orden anterior, incluido el
-   archivo de datos actual antes de v11. Conservar `suizamente_private` fuera de
-   los esquemas expuestos y dar acceso al panel solo a administradores de Latido.
-   Aplicar `suizamente_v12_tareas.sql` para activar el cierre sin visitas y el
-   reparto de misiones; esto es independiente de la activación del push.
+1. La base de Latido ya está actualizada hasta v13 y las dos tareas programadas
+   se han ejecutado correctamente. No hace falta ejecutar SQL manual en esta
+   entrega. Mantener `suizamente_private` fuera de los esquemas expuestos.
 2. Desplegar en Vercel este frontend y `api/suizamente/[...path].js` juntos con las
    variables de Supabase existentes. Ejecutar `npm run build`; los recursos del
    juego se incluyen en `dist` y los bancos de preguntas quedan privados.
-3. Desplegar `latido_push_notification` y aplicar `suizamente_v2_avisos.sql` con
-   el webhook/VAPID que ya usa Latido. Comprobar la entrega de un aviso real.
+3. `latido_push_notification` está desplegada y el trabajo de plazos activo.
+   Comprobar con consentimiento la entrega de un aviso en un dispositivo físico.
 4. Probar en dos dispositivos físicos: instalación, actualización, sonido,
    vibración donde esté disponible y push con consentimiento. Las pruebas de
    Chromium y WebKit no sustituyen estas comprobaciones del sistema operativo.
 
-No se han aplicado migraciones ni hecho despliegues remotos durante este trabajo.
+El estado y los pasos concretos están en `docs/SUIZAMENTE_PRODUCCION.md`.
 Latido debe confirmar el calendario y contenido de las colecciones propuestas
 (enero–julio de 2027), y puede elegir los eventos concretos del lanzamiento en el
 panel. Mientras tanto funcionan las fechas del archivo y la rotación escrita.
