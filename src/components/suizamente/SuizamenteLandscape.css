@@ -1,0 +1,65 @@
+/* ---------- Paisajes vivos: animaciones y hora del día ---------- */
+.sg-landscape .land .pz-cl{animation:pz-cloud var(--du,30s) ease-in-out infinite alternate}
+@keyframes pz-cloud{from{transform:translateX(-28px)}to{transform:translateX(28px)}}
+.sg-landscape .land .pz-dr{animation:pz-drift var(--du,30s) ease-in-out infinite alternate}
+@keyframes pz-drift{from{transform:translateX(-16px)}to{transform:translateX(16px)}}
+.sg-landscape .land .pz-hd{transform-origin:6px -6.5px;animation:pz-graze var(--du,11s) ease-in-out infinite}
+@keyframes pz-graze{0%,34%{transform:rotate(0)}42%{transform:rotate(27deg)}50%{transform:rotate(22deg)}58%{transform:rotate(27deg)}66%{transform:rotate(22deg)}74%{transform:rotate(27deg)}82%,100%{transform:rotate(0)}}
+.sg-landscape .land .pz-tl{transform-origin:-9px -7.6px;animation:pz-swish var(--du,2.4s) ease-in-out infinite}
+@keyframes pz-swish{0%,100%{transform:rotate(-10deg)}50%{transform:rotate(18deg)}}
+.sg-landscape .land .pz-zz{transform-box:fill-box;transform-origin:center;animation:pz-zz var(--du,3.6s) ease-out infinite}
+@keyframes pz-zz{0%{opacity:0;transform:translate(0,0) scale(.5)}20%{opacity:1}100%{opacity:0;transform:translate(7px,-16px) scale(1.25)}}
+.sg-landscape .land .pz-fl{animation:pz-flag var(--du,2.2s) ease-in-out infinite}
+@keyframes pz-flag{0%,100%{transform:skewY(0) scaleX(1)}50%{transform:skewY(-8deg) scaleX(.88)}}
+.sg-landscape .land .pz-wv{animation:pz-wave var(--du,6s) ease-in-out infinite alternate}
+@keyframes pz-wave{from{transform:translateX(-6px)}to{transform:translateX(6px)}}
+.sg-landscape .land .pz-bt{animation:pz-bob var(--du,3.4s) ease-in-out infinite}
+@keyframes pz-bob{0%,100%{transform:translateY(0) rotate(-2.5deg)}50%{transform:translateY(1.6px) rotate(2.5deg)}}
+.sg-landscape .land .pz-sm{animation:pz-sail var(--du,90s) ease-in-out infinite alternate}
+@keyframes pz-sail{from{transform:translateX(-150px)}to{transform:translateX(70px)}}
+.sg-landscape .land .pz-pf{transform-box:fill-box;transform-origin:center;animation:pz-puff var(--du,3.6s) ease-out infinite}
+@keyframes pz-puff{0%{opacity:0;transform:translate(0,0) scale(.4)}15%{opacity:.9}100%{opacity:0;transform:translate(-9px,-20px) scale(1.9)}}
+.sg-landscape .land .pz-ry{animation:pz-spin var(--du,60s) linear infinite}
+@keyframes pz-spin{to{transform:rotate(360deg)}}
+.sg-landscape .land .pz-tw,.sg-landscape .land .pz-mr{animation:pz-tw var(--du,3s) ease-in-out infinite}
+@keyframes pz-tw{0%,100%{opacity:1}50%{opacity:.2}}
+.sg-landscape .land .pz-sh{animation:pz-shoot var(--du,13s) linear infinite}
+@keyframes pz-shoot{0%,90%{opacity:0;transform:translate(0,0)}91%{opacity:1}97%,100%{opacity:0;transform:translate(-120px,48px)}}
+.sg-landscape .land .pz-bl{animation:pz-blink var(--du,2s) steps(1) infinite}
+@keyframes pz-blink{0%,55%{opacity:1}56%,100%{opacity:.08}}
+.sg-landscape .land .pz-bd{animation:pz-fly var(--du,34s) linear infinite}
+@keyframes pz-fly{from{transform:translateX(calc(-30px - var(--bx,0px)))}to{transform:translateX(calc(400px - var(--bx,0px)))}}
+.sg-landscape .land .pz-bw{transform-box:fill-box;transform-origin:center;animation:pz-flap var(--du,.6s) ease-in-out infinite}
+@keyframes pz-flap{0%,100%{transform:scaleY(1)}50%{transform:scaleY(-.45)}}
+.sg-landscape .land .pz-dg{animation:pz-dragon var(--du,30s) ease-in-out infinite}
+@keyframes pz-dragon{0%{transform:translate(-112px,8px) scaleX(1)}46%{transform:translate(112px,-12px) scaleX(1)}50%{transform:translate(116px,-12px) scaleX(-1)}96%{transform:translate(-112px,8px) scaleX(-1)}100%{transform:translate(-116px,8px) scaleX(1)}}
+.sg-landscape .land .pz-dh{animation:pz-hover var(--du,3.2s) ease-in-out infinite alternate}
+@keyframes pz-hover{from{transform:translateY(-6px)}to{transform:translateY(6px)}}
+.sg-landscape .land .pz-dw{transform-origin:5px 1px;animation:pz-wing var(--du,.5s) ease-in-out infinite alternate}
+@keyframes pz-wing{from{transform:scaleY(1)}to{transform:scaleY(.3)}}
+.sg-landscape .land .pz-pg{animation:pz-glide var(--du,56s) linear infinite}
+@keyframes pz-glide{from{transform:translate(-240px,-60px)}to{transform:translate(190px,60px)}}
+.sg-landscape .land .pz-sw{animation:pz-sway var(--du,4s) ease-in-out infinite alternate}
+/* Luciérnagas: dos vaivenes con ritmos distintos dan un vuelo que no se repite igual */
+.sg-landscape .land .pz-wx{animation:pz-wx var(--du,7s) ease-in-out infinite alternate}
+@keyframes pz-wx{from{transform:translateX(-22px)}to{transform:translateX(22px)}}
+.sg-landscape .land .pz-wy{animation:pz-wy var(--du,4.5s) ease-in-out infinite alternate}
+@keyframes pz-wy{from{transform:translateY(-14px)}to{transform:translateY(14px)}}
+.sg-landscape .land .pz-ff{animation:pz-ff var(--du,2.4s) ease-in-out infinite}
+@keyframes pz-ff{0%,100%{opacity:.15}45%,60%{opacity:1}}
+@keyframes pz-sway{from{transform:rotate(-6deg)}to{transform:rotate(6deg)}}
+/* Todas siguen el reloj de la página: al volver a pintar la pantalla, cada cosa sigue donde iba */
+.sg-landscape .land [class^="pz-"]{animation-delay:calc(var(--ago,0s) + var(--dl,0s))}
+/* Nubes según la hora */
+.t-amanecer .pz-cl{fill:#ffe6dc}
+.t-atardecer .pz-cl{fill:#ffd6c4}
+.t-noche .pz-cl{fill:#3d4b79;opacity:.6}
+/* Fuera de la vista, quietas */
+.sg-landscape .land.still *{animation-play-state:paused!important}
+/* Al cambiar el momento del día, el paisaje nuevo aparece encima del anterior en 1 s */
+.sg-landscape .land.fadein{animation:pz-in 1s ease-in-out both}
+@keyframes pz-in{from{opacity:0}to{opacity:1}}
+@media (prefers-reduced-motion:reduce){.sg-landscape .land *,.sg-landscape .land.fadein{animation:none!important}}
+
+.sg-landscape.is-paused *{animation-play-state:paused!important}
+.sg-map-viewport[data-scene="noche"] .is-lock .sg-sign{opacity:.85}

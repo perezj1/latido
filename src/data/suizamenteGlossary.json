@@ -1,0 +1,98 @@
+{
+  "Gemeinde": {
+    "tr": "municipio",
+    "d": "El municipio donde vives y su administración. Allí te das de alta al llegar, cambias tu dirección y pagas parte de los impuestos."
+  },
+  "Einwohnerkontrolle": {
+    "tr": "oficina de habitantes",
+    "d": "La oficina de la Gemeinde donde te das de alta y de baja cuando te mudas. En algunos sitios se llama Einwohneramt; en la ciudad de Zürich, Kreisbüro."
+  },
+  "Post": {
+    "tr": "Correos",
+    "d": "El servicio de correos de Suiza (La Poste en francés). También ofrece servicios bancarios con PostFinance."
+  },
+  "Krankenkasse": {
+    "tr": "aseguradora de salud",
+    "d": "La compañía de tu seguro médico básico. Es obligatorio para todas las personas que viven en Suiza."
+  },
+  "Zürcher Verkehrsverbund": {
+    "tr": "red de transporte de Zürich",
+    "d": "Agrupa trenes, tranvías, autobuses y barcos del cantón de Zürich con un solo sistema de billetes por zonas."
+  },
+  "Kantonsrat": {
+    "tr": "parlamento cantonal",
+    "d": "Así se llama el parlamento del cantón en Zürich y en otros cantones."
+  },
+  "Grosser Rat": {
+    "tr": "Gran Consejo",
+    "d": "Nombre del parlamento cantonal en cantones como Berna o Basilea-Ciudad."
+  },
+  "Landrat": {
+    "tr": "parlamento cantonal",
+    "d": "Nombre del parlamento cantonal en Basilea-Campiña, Uri, Glarus o Nidwalden."
+  },
+  "Stadtrat": {
+    "tr": "gobierno de la ciudad",
+    "d": "En Zürich, el Stadtrat es el gobierno de la ciudad. En otras ciudades, como Berna, el mismo nombre se usa para el parlamento municipal."
+  },
+  "Lohnausweis": {
+    "tr": "certificado de salario",
+    "d": "Resumen anual de lo que has cobrado y lo que te han descontado. Lo necesitas para la declaración de impuestos."
+  },
+  "Lohnabrechnung": {
+    "tr": "nómina",
+    "d": "El detalle de tu sueldo de cada mes, con lo que se descuenta."
+  },
+  "Gebührensack": {
+    "tr": "bolsa de basura oficial",
+    "d": "La bolsa de pago de tu municipio para la basura de casa. En algunos municipios se usa una etiqueta en lugar de la bolsa."
+  },
+  "Wanderweg": {
+    "tr": "sendero",
+    "d": "Sendero señalizado en amarillo, apto para la mayoría de personas."
+  },
+  "Bergwanderweg": {
+    "tr": "sendero de montaña",
+    "d": "Sendero marcado en blanco-rojo-blanco. Hace falta paso firme y buen calzado."
+  },
+  "Alpinwanderweg": {
+    "tr": "sendero alpino",
+    "d": "Marcado en blanco-azul-blanco: terreno alpino, a veces con nieve o pasos de roca."
+  },
+  "Planetenweg": {
+    "tr": "camino de los planetas",
+    "d": "Ruta a pie entre el Uetliberg y Felsenegg con el Sol y los planetas a escala."
+  },
+  "Königin der Berge": {
+    "tr": "reina de las montañas",
+    "d": "El apodo del Rigi desde hace siglos."
+  },
+  "Nordwand": {
+    "tr": "cara norte",
+    "d": "La pared norte de una montaña. La del Eiger es una de las más famosas de los Alpes."
+  },
+  "Kulm": {
+    "tr": "cima",
+    "d": "Se usa en el nombre de cumbres con hotel o estación, como Rigi Kulm o Uto Kulm."
+  },
+  "Grüezi": {
+    "tr": "hola",
+    "l": "ch",
+    "d": "Saludo en suizo alemán para personas a las que tratas de usted. Entre amigos se dice «Hoi» o «Sali»."
+  },
+  "Merci vilmal": {
+    "tr": "muchas gracias",
+    "l": "ch",
+    "d": "Agradecimiento en suizo alemán. «Merci» se usa mucho en la Suiza de habla alemana."
+  },
+  "Uf Wiederluege": {
+    "tr": "adiós",
+    "l": "ch",
+    "d": "Despedida en suizo alemán, sobre todo con personas a las que tratas de usted."
+  },
+  "Exgüsi": {
+    "tr": "perdón",
+    "l": "ch",
+    "d": "Disculpa en suizo alemán, por ejemplo para pedir paso o llamar la atención de alguien."
+  }
+}

@@ -1,0 +1,110 @@
+{
+  "1": [
+    {
+      "tag": "path",
+      "props": {
+        "d": "M0 72C18 58 34 47 56 45C78 43 98 55 120 72Z",
+        "fill": "currentColor"
+      }
+    },
+    {
+      "tag": "path",
+      "props": {
+        "d": "M60 45V22M55 29h10M56 36h8",
+        "stroke": "currentColor",
+        "strokeWidth": "3",
+        "strokeLinecap": "round"
+      }
+    },
+    {
+      "tag": "circle",
+      "props": {
+        "cx": "60",
+        "cy": "19",
+        "r": "3.5",
+        "fill": "currentColor"
+      }
+    }
+  ],
+  "2": [
+    {
+      "tag": "path",
+      "props": {
+        "d": "M0 72L22 48L36 42L50 32L66 30L82 38L98 50L120 72Z",
+        "fill": "currentColor"
+      }
+    },
+    {
+      "tag": "path",
+      "props": {
+        "d": "M8 72C34 63 86 63 112 72Z",
+        "fill": "#fff",
+        "fillOpacity": ".55"
+      }
+    }
+  ],
+  "3": [
+    {
+      "tag": "path",
+      "props": {
+        "d": "M0 72L16 52L26 56L38 32L46 40L56 20L64 34L74 26L86 42L100 52L120 72Z",
+        "fill": "currentColor"
+      }
+    },
+    {
+      "tag": "path",
+      "props": {
+        "d": "M56 20L51 30L56 27L60 31L62 29Z",
+        "fill": "#fff"
+      }
+    }
+  ],
+  "4": [
+    {
+      "tag": "path",
+      "props": {
+        "d": "M0 72L28 50L56 14L64 20L86 42L120 72Z",
+        "fill": "currentColor"
+      }
+    },
+    {
+      "tag": "path",
+      "props": {
+        "d": "M56 14L64 20L58 72L42 72L50 30Z",
+        "fill": "#000",
+        "fillOpacity": ".12"
+      }
+    },
+    {
+      "tag": "path",
+      "props": {
+        "d": "M56 14L49 25L55 22L59 27L64 20Z",
+        "fill": "#fff"
+      }
+    }
+  ],
+  "5": [
+    {
+      "tag": "path",
+      "props": {
+        "d": "M0 72L30 52L48 32L56 8L63 10L72 30L94 54L120 72Z",
+        "fill": "currentColor"
+      }
+    },
+    {
+      "tag": "path",
+      "props": {
+        "d": "M56 8L63 10L72 30L62 72L48 72L54 36Z",
+        "fill": "#000",
+        "fillOpacity": ".12"
+      }
+    },
+    {
+      "tag": "path",
+      "props": {
+        "d": "M56 8L52 21L57 18L61 23L66 19L63 10Z",
+        "fill": "#fff"
+      }
+    }
+  ]
+}

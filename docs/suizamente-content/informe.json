@@ -1,0 +1,730 @@
+{
+  "reference_date": "2026-11-17",
+  "target_total": 1350,
+  "prepared_total": 1350,
+  "structurally_valid_total": 1350,
+  "remaining": 0,
+  "complete": true,
+  "counts": {
+    "CH": {
+      "total": 50,
+      "formats": {
+        "selection": 18,
+        "tf": 10,
+        "match": 8,
+        "order": 7,
+        "image": 5,
+        "short": 2
+      },
+      "topics": {
+        "convivencia": 10,
+        "derechos": 8,
+        "tramites": 7,
+        "idioma": 7,
+        "cultura": 7,
+        "naturaleza": 7,
+        "movilidad": 4
+      },
+      "difficulty": {
+        "facil": 22,
+        "media": 19,
+        "dificil": 9
+      }
+    },
+    "ZH": {
+      "total": 50,
+      "formats": {
+        "selection": 18,
+        "tf": 10,
+        "match": 8,
+        "order": 7,
+        "image": 5,
+        "short": 2
+      },
+      "topics": {
+        "convivencia": 5,
+        "derechos": 4,
+        "tramites": 11,
+        "idioma": 9,
+        "cultura": 10,
+        "naturaleza": 3,
+        "movilidad": 8
+      },
+      "difficulty": {
+        "facil": 21,
+        "media": 25,
+        "dificil": 4
+      }
+    },
+    "BE": {
+      "total": 50,
+      "formats": {
+        "selection": 18,
+        "tf": 10,
+        "match": 8,
+        "order": 7,
+        "image": 5,
+        "short": 2
+      },
+      "topics": {
+        "convivencia": 7,
+        "derechos": 3,
+        "tramites": 5,
+        "idioma": 14,
+        "cultura": 17,
+        "naturaleza": 2,
+        "movilidad": 2
+      },
+      "difficulty": {
+        "facil": 28,
+        "media": 20,
+        "dificil": 2
+      }
+    },
+    "LU": {
+      "total": 50,
+      "formats": {
+        "selection": 18,
+        "tf": 10,
+        "match": 8,
+        "order": 7,
+        "image": 5,
+        "short": 2
+      },
+      "topics": {
+        "convivencia": 4,
+        "derechos": 4,
+        "tramites": 7,
+        "idioma": 10,
+        "cultura": 19,
+        "naturaleza": 4,
+        "movilidad": 2
+      },
+      "difficulty": {
+        "facil": 27,
+        "media": 20,
+        "dificil": 3
+      }
+    },
+    "UR": {
+      "total": 50,
+      "formats": {
+        "selection": 18,
+        "tf": 10,
+        "match": 8,
+        "order": 7,
+        "image": 5,
+        "short": 2
+      },
+      "topics": {
+        "convivencia": 4,
+        "derechos": 5,
+        "tramites": 7,
+        "idioma": 16,
+        "cultura": 13,
+        "naturaleza": 2,
+        "movilidad": 3
+      },
+      "difficulty": {
+        "facil": 20,
+        "media": 25,
+        "dificil": 5
+      }
+    },
+    "SZ": {
+      "total": 50,
+      "formats": {
+        "selection": 18,
+        "tf": 10,
+        "match": 8,
+        "order": 7,
+        "image": 5,
+        "short": 2
+      },
+      "topics": {
+        "convivencia": 2,
+        "derechos": 3,
+        "tramites": 5,
+        "idioma": 17,
+        "cultura": 13,
+        "naturaleza": 8,
+        "movilidad": 2
+      },
+      "difficulty": {
+        "facil": 20,
+        "media": 26,
+        "dificil": 4
+      }
+    },
+    "OW": {
+      "total": 50,
+      "formats": {
+        "selection": 18,
+        "tf": 10,
+        "match": 8,
+        "order": 7,
+        "image": 5,
+        "short": 2
+      },
+      "topics": {
+        "convivencia": 3,
+        "derechos": 2,
+        "tramites": 8,
+        "idioma": 18,
+        "cultura": 14,
+        "naturaleza": 4,
+        "movilidad": 1
+      },
+      "difficulty": {
+        "facil": 22,
+        "media": 25,
+        "dificil": 3
+      }
+    },
+    "NW": {
+      "total": 50,
+      "formats": {
+        "selection": 18,
+        "tf": 10,
+        "match": 8,
+        "order": 7,
+        "image": 5,
+        "short": 2
+      },
+      "topics": {
+        "convivencia": 5,
+        "derechos": 4,
+        "tramites": 11,
+        "idioma": 16,
+        "cultura": 7,
+        "naturaleza": 1,
+        "movilidad": 6
+      },
+      "difficulty": {
+        "facil": 23,
+        "media": 23,
+        "dificil": 4
+      }
+    },
+    "GL": {
+      "total": 50,
+      "formats": {
+        "selection": 18,
+        "tf": 10,
+        "match": 8,
+        "order": 7,
+        "image": 5,
+        "short": 2
+      },
+      "topics": {
+        "convivencia": 5,
+        "derechos": 4,
+        "tramites": 5,
+        "idioma": 18,
+        "cultura": 9,
+        "naturaleza": 8,
+        "movilidad": 1
+      },
+      "difficulty": {
+        "facil": 25,
+        "media": 23,
+        "dificil": 2
+      }
+    },
+    "ZG": {
+      "total": 50,
+      "formats": {
+        "selection": 18,
+        "tf": 10,
+        "match": 8,
+        "order": 7,
+        "image": 5,
+        "short": 2
+      },
+      "topics": {
+        "convivencia": 3,
+        "derechos": 3,
+        "tramites": 7,
+        "idioma": 17,
+        "cultura": 15,
+        "naturaleza": 5,
+        "movilidad": 0
+      },
+      "difficulty": {
+        "facil": 26,
+        "media": 22,
+        "dificil": 2
+      }
+    },
+    "FR": {
+      "total": 50,
+      "formats": {
+        "selection": 18,
+        "tf": 10,
+        "match": 8,
+        "order": 7,
+        "image": 5,
+        "short": 2
+      },
+      "topics": {
+        "convivencia": 2,
+        "derechos": 4,
+        "tramites": 6,
+        "idioma": 11,
+        "cultura": 23,
+        "naturaleza": 1,
+        "movilidad": 3
+      },
+      "difficulty": {
+        "facil": 22,
+        "media": 23,
+        "dificil": 5
+      }
+    },
+    "SO": {
+      "total": 50,
+      "formats": {
+        "selection": 18,
+        "tf": 10,
+        "match": 8,
+        "order": 7,
+        "image": 5,
+        "short": 2
+      },
+      "topics": {
+        "convivencia": 4,
+        "derechos": 5,
+        "tramites": 6,
+        "idioma": 20,
+        "cultura": 9,
+        "naturaleza": 6,
+        "movilidad": 0
+      },
+      "difficulty": {
+        "facil": 25,
+        "media": 21,
+        "dificil": 4
+      }
+    },
+    "BS": {
+      "total": 50,
+      "formats": {
+        "selection": 18,
+        "tf": 10,
+        "match": 8,
+        "order": 7,
+        "image": 5,
+        "short": 2
+      },
+      "topics": {
+        "convivencia": 6,
+        "derechos": 5,
+        "tramites": 5,
+        "idioma": 15,
+        "cultura": 13,
+        "naturaleza": 2,
+        "movilidad": 4
+      },
+      "difficulty": {
+        "facil": 25,
+        "media": 20,
+        "dificil": 5
+      }
+    },
+    "BL": {
+      "total": 50,
+      "formats": {
+        "selection": 18,
+        "tf": 10,
+        "match": 8,
+        "order": 7,
+        "image": 5,
+        "short": 2
+      },
+      "topics": {
+        "convivencia": 7,
+        "derechos": 5,
+        "tramites": 4,
+        "idioma": 14,
+        "cultura": 15,
+        "naturaleza": 2,
+        "movilidad": 3
+      },
+      "difficulty": {
+        "facil": 20,
+        "media": 25,
+        "dificil": 5
+      }
+    },
+    "SH": {
+      "total": 50,
+      "formats": {
+        "selection": 18,
+        "tf": 10,
+        "match": 8,
+        "order": 7,
+        "image": 5,
+        "short": 2
+      },
+      "topics": {
+        "convivencia": 4,
+        "derechos": 1,
+        "tramites": 8,
+        "idioma": 19,
+        "cultura": 13,
+        "naturaleza": 2,
+        "movilidad": 3
+      },
+      "difficulty": {
+        "facil": 27,
+        "media": 21,
+        "dificil": 2
+      }
+    },
+    "AR": {
+      "total": 50,
+      "formats": {
+        "selection": 18,
+        "tf": 10,
+        "match": 8,
+        "order": 7,
+        "image": 5,
+        "short": 2
+      },
+      "topics": {
+        "convivencia": 1,
+        "derechos": 3,
+        "tramites": 8,
+        "idioma": 13,
+        "cultura": 20,
+        "naturaleza": 3,
+        "movilidad": 2
+      },
+      "difficulty": {
+        "facil": 23,
+        "media": 25,
+        "dificil": 2
+      }
+    },
+    "AI": {
+      "total": 50,
+      "formats": {
+        "selection": 18,
+        "tf": 10,
+        "match": 8,
+        "order": 7,
+        "image": 5,
+        "short": 2
+      },
+      "topics": {
+        "convivencia": 0,
+        "derechos": 5,
+        "tramites": 6,
+        "idioma": 15,
+        "cultura": 18,
+        "naturaleza": 6,
+        "movilidad": 0
+      },
+      "difficulty": {
+        "facil": 19,
+        "media": 28,
+        "dificil": 3
+      }
+    },
+    "SG": {
+      "total": 50,
+      "formats": {
+        "selection": 18,
+        "tf": 10,
+        "match": 8,
+        "order": 7,
+        "image": 5,
+        "short": 2
+      },
+      "topics": {
+        "convivencia": 8,
+        "derechos": 4,
+        "tramites": 5,
+        "idioma": 15,
+        "cultura": 18,
+        "naturaleza": 0,
+        "movilidad": 0
+      },
+      "difficulty": {
+        "facil": 26,
+        "media": 19,
+        "dificil": 5
+      }
+    },
+    "GR": {
+      "total": 50,
+      "formats": {
+        "selection": 18,
+        "tf": 10,
+        "match": 8,
+        "order": 7,
+        "image": 5,
+        "short": 2
+      },
+      "topics": {
+        "convivencia": 5,
+        "derechos": 3,
+        "tramites": 3,
+        "idioma": 14,
+        "cultura": 11,
+        "naturaleza": 12,
+        "movilidad": 2
+      },
+      "difficulty": {
+        "facil": 23,
+        "media": 24,
+        "dificil": 3
+      }
+    },
+    "AG": {
+      "total": 50,
+      "formats": {
+        "selection": 18,
+        "tf": 10,
+        "match": 8,
+        "order": 7,
+        "image": 5,
+        "short": 2
+      },
+      "topics": {
+        "convivencia": 6,
+        "derechos": 2,
+        "tramites": 7,
+        "idioma": 18,
+        "cultura": 12,
+        "naturaleza": 5,
+        "movilidad": 0
+      },
+      "difficulty": {
+        "facil": 28,
+        "media": 20,
+        "dificil": 2
+      }
+    },
+    "TG": {
+      "total": 50,
+      "formats": {
+        "selection": 18,
+        "tf": 10,
+        "match": 8,
+        "order": 7,
+        "image": 5,
+        "short": 2
+      },
+      "topics": {
+        "convivencia": 3,
+        "derechos": 3,
+        "tramites": 8,
+        "idioma": 17,
+        "cultura": 16,
+        "naturaleza": 0,
+        "movilidad": 3
+      },
+      "difficulty": {
+        "facil": 24,
+        "media": 23,
+        "dificil": 3
+      }
+    },
+    "TI": {
+      "total": 50,
+      "formats": {
+        "selection": 18,
+        "tf": 10,
+        "match": 8,
+        "order": 7,
+        "image": 5,
+        "short": 2
+      },
+      "topics": {
+        "convivencia": 4,
+        "derechos": 2,
+        "tramites": 8,
+        "idioma": 12,
+        "cultura": 15,
+        "naturaleza": 6,
+        "movilidad": 3
+      },
+      "difficulty": {
+        "facil": 31,
+        "media": 16,
+        "dificil": 3
+      }
+    },
+    "VD": {
+      "total": 50,
+      "formats": {
+        "selection": 18,
+        "tf": 10,
+        "match": 8,
+        "order": 7,
+        "image": 5,
+        "short": 2
+      },
+      "topics": {
+        "convivencia": 4,
+        "derechos": 2,
+        "tramites": 5,
+        "idioma": 14,
+        "cultura": 17,
+        "naturaleza": 3,
+        "movilidad": 5
+      },
+      "difficulty": {
+        "facil": 27,
+        "media": 18,
+        "dificil": 5
+      }
+    },
+    "VS": {
+      "total": 50,
+      "formats": {
+        "selection": 18,
+        "tf": 10,
+        "match": 8,
+        "order": 7,
+        "image": 5,
+        "short": 2
+      },
+      "topics": {
+        "convivencia": 1,
+        "derechos": 3,
+        "tramites": 7,
+        "idioma": 15,
+        "cultura": 15,
+        "naturaleza": 9,
+        "movilidad": 0
+      },
+      "difficulty": {
+        "facil": 24,
+        "media": 20,
+        "dificil": 6
+      }
+    },
+    "NE": {
+      "total": 50,
+      "formats": {
+        "selection": 18,
+        "tf": 10,
+        "match": 8,
+        "order": 7,
+        "image": 5,
+        "short": 2
+      },
+      "topics": {
+        "convivencia": 4,
+        "derechos": 3,
+        "tramites": 6,
+        "idioma": 18,
+        "cultura": 15,
+        "naturaleza": 4,
+        "movilidad": 0
+      },
+      "difficulty": {
+        "facil": 27,
+        "media": 21,
+        "dificil": 2
+      }
+    },
+    "GE": {
+      "total": 50,
+      "formats": {
+        "selection": 18,
+        "tf": 10,
+        "match": 8,
+        "order": 7,
+        "image": 5,
+        "short": 2
+      },
+      "topics": {
+        "convivencia": 7,
+        "derechos": 2,
+        "tramites": 8,
+        "idioma": 8,
+        "cultura": 15,
+        "naturaleza": 5,
+        "movilidad": 5
+      },
+      "difficulty": {
+        "facil": 23,
+        "media": 23,
+        "dificil": 4
+      }
+    },
+    "JU": {
+      "total": 50,
+      "formats": {
+        "selection": 18,
+        "tf": 10,
+        "match": 8,
+        "order": 7,
+        "image": 5,
+        "short": 2
+      },
+      "topics": {
+        "convivencia": 4,
+        "derechos": 5,
+        "tramites": 8,
+        "idioma": 18,
+        "cultura": 12,
+        "naturaleza": 3,
+        "movilidad": 0
+      },
+      "difficulty": {
+        "facil": 28,
+        "media": 20,
+        "dificil": 2
+      }
+    }
+  },
+  "errors": [],
+  "missing": [],
+  "warnings": [],
+  "review_due": [],
+  "review_next_30_days": [
+    "szx-vs-perro-vacaciones-vs",
+    "szx-vs-rottweiler-mudanza-vs",
+    "szx-vs-subsidio-sin-decision-vs",
+    "szx-vs-perro-siempre-control-vs",
+    "szx-vs-plazo-decision-vs",
+    "szx-sz-perro-camino-publico",
+    "szx-sz-perro-obligaciones",
+    "szx-sz-parejas-correa",
+    "szx-gl-bon-no-fide",
+    "szx-gl-bon-transferir",
+    "szx-gl-bon-limitado"
+  ],
+  "reused_ids": [
+    "ch-health-fecha-tratamiento",
+    "ch-health-copago",
+    "ch-home-conciliacion",
+    "ch-home-reglamento",
+    "ch-admin-constitucion-cantonal",
+    "ch-life-idiomas-cantones",
+    "ch-life-regiones-geograficas",
+    "ch-life-meseta-poblacion",
+    "game-3-v1",
+    "ch-life-estandar-dialecto",
+    "game-12-v1",
+    "game-7-v1",
+    "game-8-v1",
+    "game-6-v1",
+    "ti-canton-capital",
+    "ti-arcobaleno",
+    "vd-canton-capital",
+    "fr-bilingue",
+    "vs-bilingue",
+    "gr-tres-lenguas",
+    "ai-landsgemeinde"
+  ],
+  "keyboard_percentage": 4,
+  "limitations": [
+    "La estructura, los recuentos y la presencia de fuentes se comprueban automáticamente. La pertinencia de las fuentes, las traducciones y la ausencia de duplicados semánticos requieren revisión editorial.",
+    "El informe no equipara tener un enlace con haber contrastado una afirmación. La revisión sustantiva se registra separadamente en sources.json."
+  ]
+}

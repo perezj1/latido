@@ -8,3 +8,9 @@ supabase/.temp
 output/latido-card/
 output/card-header.txt
 output/latido-landing-source.css
+
+# Suizamente: material de referencia del diseño (solo en local, no se sube)
+/suizamente/
+/output/suizamente-final/
+/output/suizamente-admin/
+.vercel

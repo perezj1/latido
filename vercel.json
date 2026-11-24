@@ -1,5 +1,8 @@
 {
-  "functions": { "api/card-share.js": { "includeFiles": "dist/index.html" } },
+  "functions": {
+    "api/card-share.js": { "includeFiles": "dist/index.html" },
+    "api/suizamente/[...path].js": { "includeFiles": "server/suizamente/data/**" }
+  },
   "headers": [
     {
       "source": "/suizamente/conectar",
@@ -8,6 +11,14 @@
         { "key": "Referrer-Policy", "value": "no-referrer" },
         { "key": "X-Robots-Tag", "value": "noindex, nofollow, noarchive" },
         { "key": "Content-Security-Policy", "value": "frame-ancestors https://suizamente.latido.ch" }
+      ]
+    },
+    {
+      "source": "/suizamente/partida/(.*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-store" },
+        { "key": "Referrer-Policy", "value": "no-referrer" },
+        { "key": "X-Robots-Tag", "value": "noindex, nofollow, noarchive" }
       ]
     },
     {

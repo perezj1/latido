@@ -1185,6 +1185,21 @@ async function handlePublication(req: Request, table: string, payload: WebhookPa
   })
 }
 
+async function handleSuizamente(req: Request, record: Record<string, unknown>) {
+  const {data:row,error}=await supabase.from('app_notifications')
+    .select('id,recipient_id,kind,data,read_at').eq('id',text(record.id)).maybeSingle()
+  if(error)throw error
+  if(!row || row.read_at || !['suizamente_turno','suizamente_plazo','suizamente_asalto','suizamente_comunidad'].includes(row.kind))return json(req,{ok:true,skipped:'unavailable'})
+  const href=text(row.data?.href)
+  const validPath=row.kind==='suizamente_comunidad'?/^\/suizamente(?:\/(?:amigos|proponer|crea-preguntas|perfil\/editar|jugador\/[0-9a-f-]{36}))?$/.test(href):row.kind==='suizamente_asalto'?href==='/suizamente/mapa':/^\/suizamente\/partida\/[0-9a-f-]{36}$/.test(href)
+  if(!validPath)return json(req,{ok:true,skipped:'invalid_path'})
+  const result=await notifySubscriptions(await fetchActiveSubscriptions([row.recipient_id]),{
+    title:text(row.data?.title,'Te toca en Suizamente'),body:row.kind==='suizamente_comunidad'?'Amigos y preguntas de la comunidad.':row.kind==='suizamente_asalto'?'Mira cómo está tu mapa.':'Tu partida te espera.',url:href,tag:row.kind+':'+row.id,
+    icon:'/suizamente-assets/logo-suizamente.svg',data:{kind:row.kind},
+  })
+  return json(req,{ok:true,...result})
+}
+
 Deno.serve(async req => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders(req) })
   if (req.method !== 'POST') return json(req, { ok: false, error: 'Method not allowed' }, 405)
@@ -1219,6 +1234,7 @@ Deno.serve(async req => {
     if (table === 'saved_search_digest') return handleSavedSearchDigest(req)
     if (table === 'messages' && payload.type === 'INSERT') return handleMessage(req, record)
     if (table === 'conversation_followups' && payload.type === 'INSERT') return handleConversationFollowup(req, record)
+    if (table === 'app_notifications' && payload.type === 'INSERT') return handleSuizamente(req, record)
     if (['listings', 'ads', 'jobs', 'providers', 'events', 'communities', 'creator_profiles', 'creator_contents'].includes(table)) {
       return handlePublication(req, table, payload)
     }
