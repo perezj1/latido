@@ -4,6 +4,7 @@ import {useSv} from './Context'
 import {Button,Card,Sheet} from './Shared'
 import {szApi} from '../../../lib/suizamenteV2'
 import {dibujarHistoria,compartirHistoria} from './story'
+import {SHARE_URL,SHARE_HOST,shareText,victoryImage,cleanShareText} from './shareData'
 
 async function copyText(text){
   if(navigator.clipboard){await navigator.clipboard.writeText(text);return}
@@ -12,29 +13,30 @@ async function copyText(text){
 }
 export async function inviteSomeone(){
   const data=await szApi('invitaciones',{method:'POST'})
-  const url=location.origin+data.enlace
+  const url=SHARE_URL+data.enlace
   if(navigator.share)await navigator.share({title:'Suizamente',text:'¿Jugamos una partida de Suizamente?',url})
   else await copyText(url)
   return url
 }
 export function ShareSheet({data,onClose}){
-  const {user}=useSv(),navigate=useNavigate(),canvas=useRef(null),[error,setError]=useState(''),[notice,setNotice]=useState(''),[busy,setBusy]=useState(false)
+  const {user}=useSv(),navigate=useNavigate(),canvas=useRef(null),prepared=useRef(null),[imageReady,setImageReady]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState(''),[busy,setBusy]=useState(false)
   const previewKey=JSON.stringify(data)
-  useEffect(()=>{let active=true;dibujarHistoria(canvas.current,JSON.parse(previewKey)).catch(e=>{if(active)setError(e.message)});return()=>{active=false}},[previewKey])
-  const url=data.url||location.origin+'/suizamente',text=(data.texto||'Suizamente · El juego de preguntas sobre la vida en Suiza')+'\n'+url
+  useEffect(()=>{let active=true;prepared.current=null;setImageReady(false);const draft=document.createElement('canvas');dibujarHistoria(draft,JSON.parse(previewKey)).then(()=>{if(!active)return;canvas.current.width=draft.width;canvas.current.height=draft.height;canvas.current.getContext('2d').drawImage(draft,0,0);draft.toBlob(blob=>{if(active){prepared.current=blob;setImageReady(!!blob)}},'image/png')}).catch(e=>{if(active)setError(e.message)});return()=>{active=false}},[previewKey])
+  const url=data.url||SHARE_URL,text=shareText(data)
   async function run(fn){setBusy(true);setError('');try{await fn()}catch(e){if(e.name!=='AbortError')setError(e.message)}finally{setBusy(false)}}
-  return <Sheet title="📤 Compartir" onClose={onClose}><p className="sv-muted">Así se verá tu historia. Tu nombre no aparece.</p><canvas ref={canvas} className="sv-story-preview" aria-label="Vista previa de la historia"/><div className="sv-share-actions"><Button disabled={busy} tone="quiet" onClick={()=>run(()=>compartirHistoria(data))}>📸 Imagen para historias</Button><Button disabled={busy} tone="quiet" onClick={()=>run(async()=>{if(navigator.share)await navigator.share({text,url});else{await copyText(text);setNotice('Texto y enlace copiados')}})}>💬 Enviar a un grupo</Button><Button disabled={busy} tone="quiet" onClick={()=>run(async()=>{await copyText(text);setNotice('Texto copiado')})}>📋 Copiar texto</Button><Button disabled={busy} onClick={()=>user?run(async()=>{const link=await inviteSomeone();setNotice('Invitación lista: '+link)}):navigate('/suizamente/entrar')}>⚔️ Retar a alguien</Button></div>{notice&&<p role="status">{notice}</p>}{error&&<p className="sv-error" role="alert">{error}</p>}</Sheet>
+  return <Sheet title="📤 Compartir" onClose={onClose}><p className="sv-muted">Así se verá tu historia. Tu nombre no aparece.</p><canvas ref={canvas} className="sv-story-preview" aria-label="Vista previa de la historia"/><div className="sv-share-actions"><Button disabled={busy||!imageReady} tone="quiet" onClick={()=>run(()=>compartirHistoria(data,prepared.current))}>📸 Imagen para historias</Button><Button disabled={busy} tone="quiet" onClick={()=>run(async()=>{if(navigator.share)await navigator.share({text,url});else{await copyText(text);setNotice('Texto y enlace copiados')}})}>💬 Enviar a un grupo</Button><Button disabled={busy} tone="quiet" onClick={()=>run(async()=>{await copyText(text);setNotice('Texto copiado')})}>📋 Copiar texto</Button><Button disabled={busy} onClick={()=>user?run(async()=>{const link=await inviteSomeone();setNotice('Invitación lista: '+link)}):navigate('/suizamente/entrar')}>⚔️ Retar a alguien</Button></div>{notice&&<p role="status">{notice}</p>}{error&&<p className="sv-error" role="alert">{error}</p>}</Sheet>
 }
 export function storyData(kind,data){
-  const base={enlace:location.host+'/suizamente',url:location.origin+'/suizamente',opciones:[]}
+  const base={enlace:SHARE_HOST,url:SHARE_URL,opciones:[]}
   if(kind==='dia'){
-    return {...base,titular:data.pct===null?[{t:'¿Qué eligen los hispanohablantes en Suiza?'}]:[{t:'El '},{t:data.pct+' %',resaltado:true},{t:' de los hispanohablantes en Suiza piensa lo mismo que yo'}],
-      pregunta:data.pregunta,opciones:data.opciones.map((o,i)=>({texto:o.t,pct:data.porcentajes?.[i]??null})),cierre:'¿Y tú qué eliges? 🤔',url:location.origin+'/suizamente?p='+encodeURIComponent(data.id)}
+    const visible=data.pct!=null&&(data.total==null||data.total>=20)
+    const texto=cleanShareText((data.emoji||'')+' '+data.pregunta)+'\n'+(visible?'Así votan los hispanohablantes en Suiza:\n':'')+data.opciones.map((o,i)=>cleanShareText((o.e||'')+' '+o.t)+(visible?' — '+data.porcentajes[i]+' %':'')).join('\n')+'\n¿Y tú qué eliges?'
+    return {...base,titular:data.pct==null||data.total!=null&&data.total<20?[{t:'¿Qué eligen los hispanohablantes en Suiza?'}]:[{t:'El '},{t:data.pct+' %',resaltado:true},{t:' de los hispanohablantes en Suiza piensa lo mismo que yo'}],
+      texto,pregunta:data.pregunta,opciones:data.opciones.map((o,i)=>({texto:o.t,pct:visible?data.porcentajes?.[i]??null:null})),cierre:'¿Y tú qué eliges? 🤔',url:SHARE_URL+'?p='+encodeURIComponent(data.id)}
   }
   if(kind==='perfil')return {...base,titular:[{t:'Mi vida en Suiza, pregunta a pregunta'}],pregunta:'⭐ Nivel '+data.nivel+(data.especialidad?' · '+data.especialidad:''),
     cierre:'¿Jugamos una partida? 🎡'}
-  return {...base,titular:[{t:data.ganador===data.tuId?'¡Victoria en Suizamente!':'Una partida más sobre la vida en Suiza'}],
-    sellos:[data.tusSellos,data.susSellos].map(row=>row.map(id=>data.categorias?.find(c=>c.id===id)?.emoji||'🛂').join(' ')),pregunta:'🛂 '+data.tusSellos.length+' sellos · Rival '+data.susSellos.length+' sellos',cierre:'¿Te atreves con Suizamente? 🎡'}
+  return {...victoryImage(data),titular:data.ganador===data.tuId?victoryImage(data).titular:[{t:'Una partida más sobre la vida en Suiza'}]}
 }
 export function Breakdown({id,initial,real=false}){
   const {config}=useSv(),[data,setData]=useState(initial||null),[tab,setTab]=useState('pais')

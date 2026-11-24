@@ -1,6 +1,7 @@
 import {MomentObject,MomentStamp,MomentSummary,MomentTokens} from './Moment'
 import {cantonNames} from '../../../lib/suizamenteV2'
 import {MapDrawing} from './Map'
+import {cardImage,collectionImage,duelImage,victoryImage} from './shareData'
 
 // Only present confirmed results. No prices, rewards or random choices live here.
 export function rewardTokens(reward={},config={}){
@@ -26,9 +27,13 @@ export function chestSteps(chest,config){return [
 ]}
 export function packSteps(pack){
   const fresh=pack.cartas.filter(c=>c.nueva).length,repeated=pack.cartas.filter(c=>!c.nueva),amounts=[...new Set(repeated.map(c=>c.monedas))]
-  return [{title:'¡Nuevo sobre!',subtitle:pack.total===3?'Tres cartas para tu álbum':pack.total+' cartas para tu álbum',tint:'#DFE7FC',open:true,body:<MomentObject pack total={pack.total}/>},
+  const rare=pack.cartas.find(c=>c.nueva&&c.r===3)
+  const steps=[{title:'¡Nuevo sobre!',subtitle:pack.total===3?'Tres cartas para tu álbum':pack.total+' cartas para tu álbum',tint:'#DFE7FC',open:true,body:<MomentObject pack total={pack.total}/>},
     {title:fresh===1?'¡Una carta nueva!':fresh?'¡'+fresh+' cartas nuevas!':'Todas repetidas',subtitle:repeated.length?(amounts.length===1?'Las repetidas se cambian solas por 🪙 '+amounts[0]:'Las repetidas se cambian solas por monedas'):'Ya están en tu álbum',tint:'#DFE7FC',confetti:fresh>0,body:<div className="sv-moment-cards">{pack.cartas.map((c,i)=><div key={i} className="sv-moment-card" style={{'--delay':(.2+i*.35)+'s'}}><small aria-label={c.r+' estrellas'}>{'★'.repeat(c.r)}</small><span aria-hidden="true">{c.e}</span><b>{c.n}</b><em className={c.nueva?'new':''}>{c.nueva?'NUEVA':'🪙 +'+c.monedas}</em></div>)}</div>},
   ]
+  if(rare)Object.assign(steps[1],{image:cardImage(rare),shareLabel:'Compartir tu carta'})
+  for(const col of pack.coleccionesCompletadas||[])steps.push({title:'¡Colección completa!',subtitle:col.nombre,tint:'#FEEDD1',confetti:true,image:collectionImage(col),shareLabel:'Compartir tu colección',body:<><div className="sv-moment-collection" role="img" aria-label={col.nombre+': '+col.cartas.map(c=>c.n).join(', ')}>{col.cartas.map((c,i)=><span key={c.id} aria-hidden="true" style={{'--delay':(.2+i*.07)+'s'}}>{c.e}</span>)}</div><MomentTokens items={rewardTokens(col.premioEntregado,{comodines:[{id:'quita',emoji:'✂️',nombre:'Quita una'}]})}/></>})
+  return steps
 }
 export function stampSteps(match,config){
   const result=match.resultado,category=config.categorias.find(c=>c.id===result.categoria)
@@ -36,14 +41,15 @@ export function stampSteps(match,config){
 }
 export function duelSteps(match,config){
   const duel=match.duelo,won=duel.ganador===match.tuId,category=config.categorias.find(c=>c.id===duel.sello),stamp=[<MomentStamp category={category}/>,'Sello',category?.nombre]
-  return [won?{title:'¡Duelo ganado!',subtitle:'Contra '+match.rival?.apodo,tint:'#D3F8F3',confetti:true,body:<MomentSummary hero="🏆" gain={[stamp,...rewardTokens(duel.premio),...league(config,'selloGanado')]}/>}:
+  return [won?{title:'¡Duelo ganado!',subtitle:'Contra '+match.rival?.apodo,tint:'#D3F8F3',confetti:true,image:duelImage(duel.sello),body:<MomentSummary hero="🏆" gain={[stamp,...rewardTokens(duel.premio),...league(config,'selloGanado')]}/>}:
     {title:'Duelo perdido',subtitle:match.rival?.apodo+' se queda tu sello',tint:'#FFE1E2',grey:true,body:<MomentSummary hero="💔" loss={[stamp]} note="Puedes recuperarlo en otro duelo"/>}]
 }
 export function finishSteps(match,config){
   const won=match.ganador===match.tuId
   const subtitle=won?(match.motivoFin==='sellos'?'Has llenado tu pasaporte antes que ':'Has ganado la partida contra ')+match.rival?.apodo:match.ganador?match.rival?.apodo+' terminó la partida':'La partida ha terminado'
-  return [{title:won?'¡Victoria!':match.ganador?'Esta vez no':'Partida terminada',subtitle,tint:won?'#FEEDD1':'#DFE7FC',grey:!won,confetti:won,body:<MomentSummary hero={won?'🏆':'🫶'} gain={[...rewardTokens(match.premio),...(match.cofre?[['🎁','1','cofre']]:[]),...(won?league(config,'partidaGanada'):[])]} note={!won?'No pierdes nada de tu mapa ni de tu álbum':undefined}/>}]
+  return [{title:won?'¡Victoria!':match.ganador?'Esta vez no':'Partida terminada',subtitle,tint:won?'#FEEDD1':'#DFE7FC',grey:!won,confetti:won,image:won?victoryImage(match):undefined,body:<MomentSummary hero={won?'🏆':'🫶'} gain={[...rewardTokens(match.premio),...(match.cofre?[['🎁','1','cofre']]:[]),...(won?league(config,'partidaGanada'):[])]} note={!won?'No pierdes nada de tu mapa ni de tu álbum':undefined}/>}]
 }
+export function cantonSteps(name,landmark,image){return [{title:'¡Cantón completo!',subtitle:name+' ya tiene su monumento',tint:'#D3F8F3',confetti:true,image,shareLabel:'Compartir mi Suiza',body:<><div className="sv-moment-canton-photo"><img src={image.foto} alt={'Maqueta de '+name+' con su monumento'} style={{objectFit:image.ajuste==='contener'?'contain':'cover'}}/></div><span className="sv-moment-landmark">🏰 {landmark||'Monumento'}</span></>} ]}
 export function raidSteps(raid){
   const changed=raid.nivelFinal!=null&&raid.nivelFinal<raid.nivelInicial,won=raid.premio>0||changed,other=[]
   if(raid.escudo)other.push(['🛡️','−1','escudo'])

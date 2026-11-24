@@ -487,10 +487,20 @@ function crear(op) {
     rotar(angle){vuelo=null;controles.autoRotate=false;camara.position.sub(controles.target).applyAxisAngle(new THREE.Vector3(0,1,0),angle).add(controles.target);dirty=true;},
     foco: () => foco,
     info: k => ({ hito: C3[k].hito, nombreHito: C3[k].n, alpes: C3[k].alpes || 0 }),
-    saltar() { if (vuelo) { controles.target.copy(vuelo.hacia.t); camara.position.copy(vuelo.hacia.p); vuelo = null; } tweens.forEach(tw => tw.f(1)); tweens.length = 0; },
-    foto(tipo = 'image/webp', calidad = 0.82) { renderer.render(escena, camara); return renderer.domElement.toDataURL(tipo, calidad); },
+    saltar() { if (vuelo) { controles.target.copy(vuelo.hacia.t); camara.position.copy(vuelo.hacia.p); camara.lookAt(controles.target); vuelo = null; } tweens.forEach(tw => tw.f(1)); tweens.length = 0; },
+    reposo() { return new Promise(resolve=>{const comprobar=()=>{if(!vivo||(!vuelo&&!tweens.length))resolve();else requestAnimationFrame(comprobar)};comprobar()}) },
+    foto(tipo = 'image/webp', calidad = 0.82, escala) {
+      const antes=renderer.getPixelRatio(),cambia=escala&&escala!==antes
+      try{if(cambia){renderer.setPixelRatio(escala);tamano()}renderer.render(escena,camara);return renderer.domElement.toDataURL(tipo,calidad)}
+      finally{if(cambia){renderer.setPixelRatio(antes);tamano();renderer.render(escena,camara)}}
+    },
     destruir() { vivo = false; if (ro) ro.disconnect(); controles.dispose();const geos=new Set(),materials=new Set();escena.traverse(o=>{if(o.geometry)geos.add(o.geometry);if(o.material)(Array.isArray(o.material)?o.material:[o.material]).forEach(m=>materials.add(m))});geos.forEach(g=>g.dispose());materials.forEach(m=>m.dispose());renderer.dispose();renderer.forceContextLoss(); },
   };
 }
 
-export const Mapa3D = { crear, C3, NIVELES, EMOJI_NIVEL };
+function fotoEntera(op){
+  const host=document.createElement('div');host.setAttribute('aria-hidden','true');host.style.cssText='position:fixed;left:-600px;top:0;width:400px;height:320px;pointer-events:none';document.body.append(host)
+  let world
+  try{world=crear({datos:op.datos,regiones:op.regiones,foto:true,reduced:()=>true});world.montar(host);world.estado({v:op.v||1,r:op.regiones.length,niv:{}});world.enfocar(null);world.saltar();return world.foto('image/jpeg',.9,3)}finally{world?.destruir();host.remove()}
+}
+export const Mapa3D = { crear, fotoEntera, C3, NIVELES, EMOJI_NIVEL };

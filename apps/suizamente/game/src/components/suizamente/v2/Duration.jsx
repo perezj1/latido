@@ -1,4 +1,4 @@
-import {useState} from 'react'
+import {lazy,Suspense,useCallback,useRef,useState} from 'react'
 import {Link,useLocation} from 'react-router-dom'
 import {useSv} from './Context'
 import {DailyHome} from './DailyPreview'
@@ -7,6 +7,9 @@ import {Avatar,Button,Card,Header,Stamps,Wallet,LatidoBackdrop} from './Shared'
 import {MapDrawing} from './Map'
 import {szApi,timeLeft} from '../../../lib/suizamenteV2'
 import {Confetti} from './Finish'
+const ShareImage=lazy(()=>import('./ShareImage').then(module=>({default:module.ShareImage})))
+import {mapImage} from './shareData'
+import {scenePhoto} from './mapPhotos'
 
 export function DurationHome(){
   const {data}=useData('misiones',{refreshMs:15000}),{data:league}=useData('liga',{refreshMs:30000})
@@ -52,8 +55,9 @@ export function League(){
   </>
 }
 export function LapComplete(){
-  const {search}=useLocation(),lap=new URLSearchParams(search).get('vuelta'),{data,error}=useData('mapa/vuelta?vuelta='+encodeURIComponent(lap)),{config}=useSv()
+  const {search}=useLocation(),lap=new URLSearchParams(search).get('vuelta'),{data,error}=useData('mapa/vuelta?vuelta='+encodeURIComponent(lap)),{config,player}=useSv(),[sharing,setSharing]=useState(false),photo=useRef(null)
+  const makeShare=useCallback(async includeName=>{const state={vuelta:Number(lap),region:config.mapa.regiones.length,niveles:{}};if(photo.current?.lap!==lap)photo.current={lap,result:scenePhoto(state,config,{whole:true})};return mapImage(state,player,config,{...await photo.current.result,completedLap:true,includeName})},[lap,player,config])
   const style=config.vueltasMapa.vueltas[Math.min(Number(lap)-1,config.vueltasMapa.vueltas.length-1)]
   const levels=Object.fromEntries(config.mapa.regiones.flatMap(r=>r.cantones.map(k=>[k.id,config.mapa.nivelesPorCanton])))
-  return <section className="sv-screen sv-themed-screen"><LatidoBackdrop tint={config.vueltasMapa.vueltas[Math.min(Number(lap),config.vueltasMapa.vueltas.length-1)]?.colores[1]}/><Header title="Vuelta completa"/>{data?<><Confetti/><div className="sv-content sv-lap-complete"><h1>🎉 ¡{style?.nombre} completa!</h1><MapDrawing region={config.mapa.regiones.length} levels={levels} vuelta={Number(lap)}/><h2>🪙 +{data.monedas}</h2><p>{style?.emoji} Marco {style?.marco}</p><Stamps categories={config.categorias}/></div><footer className="sv-footer"><Button to="/suizamente/mapa">▶ A por la vuelta {data.vuelta+1}</Button></footer></>:<div className="sv-content">{error?<p role="alert">{error}</p>:<div className="sv-skeleton"/>}</div>}</section>
+  return <section className="sv-screen sv-themed-screen"><LatidoBackdrop tint={config.vueltasMapa.vueltas[Math.min(Number(lap),config.vueltasMapa.vueltas.length-1)]?.colores[1]}/><Header title="Vuelta completa"/>{data?<><Confetti/><div className="sv-content sv-lap-complete"><h1>🎉 ¡{style?.nombre} completa!</h1><MapDrawing region={config.mapa.regiones.length} levels={levels} vuelta={Number(lap)}/><h2>🪙 +{data.monedas}</h2><p>{style?.emoji} Marco {style?.marco}</p><Stamps categories={config.categorias}/></div><footer className="sv-footer"><Button to="/suizamente/mapa">▶ A por la vuelta {data.vuelta+1}</Button><Button tone="quiet" onClick={()=>setSharing(true)}>📤 Compartir mi Suiza</Button></footer></>:<div className="sv-content">{error?<p role="alert">{error}</p>:<div className="sv-skeleton"/>}</div>}{sharing&&<Suspense fallback={null}><ShareImage makeData={makeShare} apodo={player.apodo} onClose={()=>setSharing(false)}/></Suspense>}</section>
 }

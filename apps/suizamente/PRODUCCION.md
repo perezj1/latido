@@ -1,5 +1,24 @@
 # Suizamente independiente
 
+## Compartir imágenes y colecciones (v19)
+
+La migración `supabase/suizamente_v19_compartir.sql` se aplicó al proyecto Latido
+el 24 de noviembre de 2026. Añade la instantánea privada de colecciones recién
+cobradas a cada sobre y a su respuesta. No modifica datos de Latido, reglas ni
+el cobro existente; se puede repetir. La API pública conserva sus rutas.
+
+En otra base, aplicar después de v18 y antes del frontend:
+
+```powershell
+npx --yes supabase@3.4.0 db query --remote=REFERENCIA_DEL_PROYECTO --file supabase/suizamente_v19_compartir.sql --yes
+```
+
+Verificación local: `npm run test:sharing`, `npm run test:moments`, `npm run build`
+y `node scripts/test-suizamente-delivery.mjs`. Los tests usan exclusivamente SQL
+temporal y cuentas locales. Las imágenes se crean en el dispositivo. En móvil se
+prepara el PNG antes de pulsar Compartir para mantener el gesto del usuario;
+la descarga de escritorio y la alternativa SVG no necesitan WebGL.
+
 La aplicación del juego se publica desde esta carpeta en **suizamente.latido.ch**.
 No usa el frontend de Latido ni necesita cambios en sus pantallas, rutas o botones.
 Las cuentas siguen perteneciendo al mismo proyecto Supabase de Latido.

@@ -182,3 +182,45 @@ No cambian las reglas, los precios ni los premios del juego.
   `output/momentos/{chromium,webkit}/comparacion.html` y `comparacion.png`.
   La referencia se busca en `../../../latido/suizamente`; se puede indicar otra
   carpeta con `SUIZAMENTE_DESIGN_ROOT`. Queda la escucha manual con NVDA/VoiceOver.
+
+## Compartir «Mi Suiza» y los Momentos (13, 23.8, 23.10 y 23.17)
+
+- `story.js` amplía el motor Canvas con `mapa` y `logro`, conserva las funciones
+  anteriores y exporta `dibujar`, `png` y `compartir`. Los ocho ejemplos coinciden
+  píxel a píxel con `disenos/imagenes-compartir.js`, incluido el de pregunta.
+  El motor se carga cuando se utiliza, no al abrir Inicio.
+- El mapa tiene el botón «Compartir mi Suiza» o «Compartir {cantón}». Captura la
+  vista actual a densidad ×3 tras terminar sus animaciones y restaura después el
+  renderer. Sin WebGL, genera el mapa SVG con ajuste «contener».
+- `ShareImage` presenta el canvas de 1080 × 1920 y el interruptor accesible
+  «Poner mi apodo», apagado al abrir. El apodo modifica únicamente el titular si
+  se activa. La vista previa se prepara en otro canvas para evitar resultados
+  antiguos al alternar rápidamente el interruptor. Compartir utiliza el archivo
+  ya preparado para conservar la activación del gesto en móviles; en escritorio
+  se descarga. «Guardar la imagen» siempre descarga el PNG.
+- `WorldMap` permite capturar la vista y esperar al final real de su animación.
+  Al confirmar el servidor el nivel máximo, `MomentoCanton` muestra su maqueta y
+  monumento; no concede premios. Si termina una región o la vuelta, su cofre o
+  resumen se abre después. La imagen de vuelta se crea en una maqueta temporal
+  con todos los cantones completos y el color de la vuelta terminada; se destruye
+  después de capturarla, aunque la vista actual muestre ya la vuelta siguiente.
+- Los Momentos de victoria, duelo ganado, carta nueva de tres estrellas, colección
+  y cantón incluyen un botón que comparte directamente, sin apodo. Tocar el botón
+  o pulsar Intro cuando tiene el foco no cierra ni avanza el Momento.
+- v19 añade `coleccionesCompletadas` a la respuesta del sobre, con sus nueve
+  cartas y el premio realmente entregado del libro de movimientos, incluidos los
+  escudos limitados por inventario. Guarda una instantánea por sobre. Reutiliza
+  íntegramente el cobro existente: no cambia reglas, premios, costes ni puntos.
+  Cada colección recién cobrada añade un paso al Momento del sobre y no se repite
+  al abrir otro. Los sobres antiguos conservan una lista vacía.
+- Ninguna imagen contiene datos del rival. El apodo propio solo aparece mediante
+  el interruptor; los emails se excluyen. El pie y los textos usan el dominio
+  canónico `https://suizamente.latido.ch`. Compartir no concede nada ni envía
+  peticiones de escritura a la API. Los porcentajes requieren al menos 20 votos.
+- `npm run test:sharing` ejecuta SQL y navegadores Chromium/WebKit. Prueba captura
+  ×3, privacidad, interruptor, PNG móvil/descarga, respaldo SVG, cola tras región,
+  colección cobrada una vez y el botón de Momento con ratón y teclado. Las capturas
+  en 320, 390 y escritorio, tres imágenes comparadas y `MomentoCanton` quedan en
+  `output/compartir/<navegador>/comparacion.html`. La escucha manual en un lector
+  de pantalla y la hoja nativa en dispositivos físicos siguen siendo comprobación
+  manual; el árbol accesible y la llamada con archivo están cubiertos por pruebas.

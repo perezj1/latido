@@ -1,6 +1,7 @@
 import {createContext,useCallback,useContext,useEffect,useId,useRef,useState} from 'react'
 import {createPortal} from 'react-dom'
 import './moment.css'
+import './share.css'
 
 const MomentContext=createContext(null)
 export const useMoment=()=>useContext(MomentContext)
@@ -38,6 +39,9 @@ export function MomentProvider({children,reduced,owner}){
 export function Moment({steps,onFinish,reduced=false}){
   const [index,setIndex]=useState(0),[opening,setOpening]=useState(false),[closing,setClosing]=useState(false),[error,setError]=useState('')
   const dialog=useRef(null),timer=useRef(null),locked=useRef(false),closingRef=useRef(false),titleId=useId(),descriptionId=useId(),step=steps[index]
+  const prepared=useRef(null),[shareReady,setShareReady]=useState(false),[sharing,setSharing]=useState(false)
+  useEffect(()=>{let active=true;prepared.current=null;setShareReady(false);if(step.image)import('./story').then(async engine=>({blob:await engine.png(step.image),share:engine.compartir})).then(result=>{if(active){prepared.current=result;setShareReady(!!result.blob)}}).catch(e=>{if(active)setError(e.message)});return()=>{active=false}},[step])
+  async function share(){if(!shareReady||sharing)return;setSharing(true);try{await prepared.current.share(step.image,'suizamente.png',prepared.current.blob)}catch(e){setError(e.message)}finally{setSharing(false)}}
   useEffect(()=>{
     const previous=document.activeElement,host=dialog.current.parentElement,oldOverflow=document.body.style.overflow
     const siblings=[...document.body.children].filter(el=>el!==host),inert=siblings.map(el=>el.inert)
@@ -62,14 +66,15 @@ export function Moment({steps,onFinish,reduced=false}){
   function keydown(e){
     e.stopPropagation()
     if(e.key==='Escape'){e.preventDefault();close()}
-    else if((e.key==='Enter'||e.key===' ')&&!e.repeat){e.preventDefault();if(e.target.closest('button'))close();else advance()}
-    else if(e.key==='Tab'){e.preventDefault();const button=dialog.current.querySelector('button');if(document.activeElement===button)dialog.current.focus();else button.focus()}
+    else if((e.key==='Enter'||e.key===' ')&&!e.repeat){e.preventDefault();if(e.target.closest('[data-m="compartir"]'))share();else if(e.target.closest('button'))close();else advance()}
+    else if(e.key==='Tab'){e.preventDefault();const buttons=[...dialog.current.querySelectorAll('button:not(:disabled)')],i=buttons.indexOf(document.activeElement),next=e.shiftKey?(i<0?buttons.length-1:i-1):i+1;if(next<0||next>=buttons.length)dialog.current.focus();else buttons[next].focus()}
   }
-  return createPortal(<div data-moment-host><div ref={dialog} data-momento data-reduced={reduced||undefined} role="dialog" aria-modal="true" aria-labelledby={titleId} aria-describedby={descriptionId} tabIndex={-1} className="sv-moment" style={{'--moment-tint':step.tint||'#FEEDD1'}} onKeyDown={keydown} onClick={e=>{e.stopPropagation();advance()}}>
+  return createPortal(<div data-moment-host><div ref={dialog} data-momento data-reduced={reduced||undefined} role="dialog" aria-modal="true" aria-labelledby={titleId} aria-describedby={descriptionId} tabIndex={-1} className={'sv-moment'+(step.image?' has-share':'')} style={{'--moment-tint':step.tint||'#FEEDD1'}} onKeyDown={keydown} onClick={e=>{e.stopPropagation();advance()}}>
     <div aria-hidden="true" className="sv-moment-decoration"><div className={'sv-moment-rays'+(step.grey?' grey':'')}/><div className="sv-moment-glow"/>
     {step.confetti&&<div aria-hidden="true" className="sv-moment-confetti">{Array.from({length:18},(_,i)=><span key={i} style={{left:((i*53+7)%96)+'%',width:i%2?8:10,height:i%2?15:10,borderRadius:i%2?3:'50%',background:['#FA2F35','#F9A719','#24E2C9','#4A76EF','#24BFE2','#03AA98'][i%6],animation:`sz-caer ${2.8+(i%4)*.45}s ${(i%6)*.33+(i%3)*.17}s linear infinite`}}/>)}</div>}
     </div><button className="sv-moment-skip" disabled={closing} onClick={e=>{e.stopPropagation();close()}}>Omitir</button>
     <div className="sv-moment-page" key={index} aria-live="polite" aria-atomic="true"><h1 id={titleId}>{step.title}</h1>{step.subtitle&&<p className="sv-moment-sub">{step.subtitle}</p>}<div id={descriptionId} className="sv-moment-body"><div className={'sv-moment-content'+(opening?' opening':'')}>{step.body}</div></div></div>
+    {step.image&&<button data-m="compartir" className="sv-moment-share" disabled={!shareReady||sharing} onClick={e=>{e.stopPropagation();share()}}>📤 {step.shareLabel||'Compartir'}</button>}
     <footer className="sv-moment-footer"><p>{closing?'Guardando…':step.open?'Toca para abrirlo':'Toca para continuar'}</p>{steps.length>1&&<span>{index+1} de {steps.length}</span>}{error&&<p role="alert">{error}</p>}</footer>
   </div></div>,document.body)
 }
