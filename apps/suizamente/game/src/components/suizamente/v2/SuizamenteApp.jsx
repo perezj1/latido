@@ -1,6 +1,7 @@
 import {useCallback,useEffect,useRef,useState} from 'react'
 import {Link,Navigate,Route,Routes,useLocation} from 'react-router-dom'
 import {useAuth} from '../../../hooks/useAuth'
+import {useEntry} from '../../../../entry'
 import {szApi,szSettings,SV_STATE} from '../../../lib/suizamenteV2'
 import {SuizamenteContext} from './Context'
 import {Brand,Button,Logo,Navigation} from './Shared'
@@ -47,7 +48,8 @@ function ProfileGate({children,player,ready}){
 function Loading(){return <section className="sv-screen"><div className="sv-content"><div className="sv-skeleton" role="status" aria-label="Cargando Suizamente"/><div className="sv-skeleton short"/></div></section>}
 function HomeEntry({children}){const {search}=useLocation(),id=new URLSearchParams(search).get('p');return id?<Navigate to={'/suizamente/pregunta/'+encodeURIComponent(id)} replace/>:children}
 export default function SuizamenteApp(){
-  const {authUser:user,loading:authLoading,signOut}=useAuth(),location=useLocation()
+  const {authUser:user,loading:authLoading,signOut,avatarUrl,profileName,profileMetaLoaded}=useAuth(),location=useLocation(),{account}=useEntry()
+  const entered=!!user&&account===user.id
   const [config,setConfig]=useState(null),[player,setPlayer]=useState(null),[ready,setReady]=useState(false),[error,setError]=useState('')
   const [settings,setSettings]=useState(szSettings),[retry,setRetry]=useState(0),[online,setOnline]=useState(navigator.onLine)
   const [opening,setOpening]=useState(()=>!sessionStorage.getItem('suizamente:apertura'))
@@ -72,7 +74,7 @@ export default function SuizamenteApp(){
     if(data.mapa)setMap(data.mapa)
     if(!next)setMap(null)
     if(data.jugador?.ajustes){
-      setSettings(old=>({...old,...data.jugador.ajustes}))
+      setSettings(old=>({...old,...data.jugador.ajustes,apariencia:'clara'}))
       if(data.jugador.ajustes.onboarding)localStorage.setItem('suizamente:onboarding',data.jugador.ajustes.onboarding)
     }
   },[])
@@ -102,13 +104,13 @@ export default function SuizamenteApp(){
     szApi('config').then(data=>{if(active){configRevision.current=data.version??0;setConfig(data)}}).catch(e=>{if(active)setError(e.message)})
     return()=>{active=false}
   },[retry])
-  useEffect(()=>{let active=true;setCapabilities(null);if(!user)return;szApi('capacidades').then(d=>{if(active)setCapabilities(d)}).catch(()=>{if(active)setCapabilities({admin:false})});return()=>{active=false}},[user?.id,retry])
+  useEffect(()=>{let active=true;setCapabilities(null);if(!entered)return;szApi('capacidades').then(d=>{if(active)setCapabilities(d)}).catch(()=>{if(active)setCapabilities({admin:false})});return()=>{active=false}},[user?.id,entered,retry])
   useEffect(()=>{
     if(authLoading)return
     let active=true
     setReady(false);setPlayer(null);setError('')
     currentPlayer.current=null;setMap(null);setNotices([])
-    if(!user){setReady(true);return}
+    if(!entered){setReady(true);return}
     ;(async()=>{
       if(user&&localStorage.getItem('suizamente:invitado-con-datos')){
         try{
@@ -121,7 +123,7 @@ export default function SuizamenteApp(){
       if(active){savePlayer(data);setReady(true)}
     })().catch(e=>{if(active)setError(e.message)})
     return()=>{active=false}
-  },[user?.id,authLoading,retry,savePlayer])
+  },[user?.id,entered,authLoading,retry,savePlayer])
   useEffect(()=>{
     if(!ready||!player)return
     const refresh=()=>{if(document.visibilityState==='visible')szApi('jugador').catch(()=>{})}
@@ -131,13 +133,12 @@ export default function SuizamenteApp(){
   },[ready,player?.jugador_id])
   useEffect(()=>{
     localStorage.setItem('suizamente:ajustes',JSON.stringify(settings))
-    const media=matchMedia('(prefers-color-scheme: dark)')
     function apply(){
-      document.documentElement.dataset.suizamenteTheme=settings.apariencia==='oscura'||((!settings.apariencia||settings.apariencia==='auto')&&media.matches)?'oscura':'clara'
+      document.documentElement.dataset.suizamenteTheme='clara'
       document.documentElement.dataset.suizamenteReduced=settings.menosAnimaciones?'true':'false'
     }
-    apply();media.addEventListener('change',apply)
-    return()=>{media.removeEventListener('change',apply);delete document.documentElement.dataset.suizamenteTheme;delete document.documentElement.dataset.suizamenteReduced}
+    apply()
+    return()=>{delete document.documentElement.dataset.suizamenteTheme;delete document.documentElement.dataset.suizamenteReduced}
   },[settings])
   useEffect(()=>{
     const up=()=>{setOnline(true);setNetworkFailure(false);if(!ready||!config)setRetry(n=>n+1)},down=()=>setOnline(false)
@@ -150,6 +151,7 @@ export default function SuizamenteApp(){
     if(ready&&config){const heading=document.querySelector('.sv-root h1');heading?.setAttribute('tabindex','-1');heading?.focus({preventScroll:true})}
   },[location.pathname,ready,!!config])
   async function updateSettings(value){
+    value={...value,apariencia:'clara'}
     setSettings(value)
     if(player){
       const data=await szApi('jugador',{method:'PUT',body:{...player,ajustes:value}})
@@ -158,13 +160,13 @@ export default function SuizamenteApp(){
   }
   const gate=element=><ProfileGate player={player} ready={ready}>{element}</ProfileGate>
   const reduced=!!settings.menosAnimaciones||systemReduced
-  const admin=location.pathname.startsWith('/suizamente/admin'),showNavigation=!!user&&!!player&&ready&&!questionVisible
+  const admin=location.pathname.startsWith('/suizamente/admin'),showNavigation=entered&&!!player&&ready&&!questionVisible
   const activeTab=['mapa','album','tienda','amigos'].find(tab=>location.pathname.startsWith('/suizamente/'+tab))||'inicio'
-  return <SuizamenteContext.Provider value={{player,map,config,user,capabilities,refreshConfig,settings,reduced,savePlayer,updateSettings,signOut,setQuestionVisible}}><div className={'sv-root'+(admin?' sv-admin-root':'')+(showNavigation?' sv-has-nav':'')}>
+  return <SuizamenteContext.Provider value={{player,map,config,user,avatarUrl,latidoName:profileName,capabilities,refreshConfig,settings,reduced,savePlayer,updateSettings,signOut,setQuestionVisible}}><div className={'sv-root'+(admin?' sv-admin-root':'')+(showNavigation?' sv-has-nav':'')}>
     <Feedback/><InstallMetadata/>
     {networkFailure&&<div className="sv-connection" role="alert">Algo ha fallado. Inténtalo otra vez. <button className="sv-text-button" onClick={()=>{setNetworkFailure(false);setRetry(n=>n+1)}}>Reintentar conexión</button></div>}
     {!online&&<p className="sv-connection" role="status">Sin conexión · reintentando…</p>}
-    {authLoading?<Loading/>:!user?<Login/>:error?<section className="sv-screen"><div className="sv-welcome"><Logo size={90}/><h1>No se pudo abrir Suizamente</h1><p role="alert">{error}</p><Button onClick={()=>setRetry(n=>n+1)}>Reintentar</Button></div></section>:!config||!ready?<Loading/>:
+    {authLoading?<Loading/>:!entered?<Login/>:error?<section className="sv-screen"><div className="sv-welcome"><Logo size={90}/><h1>No se pudo abrir Suizamente</h1><p role="alert">{error}</p><Button onClick={()=>setRetry(n=>n+1)}>Reintentar</Button></div></section>:!config||!ready||!profileMetaLoaded?<Loading/>:
     <Routes>
       <Route path="admin/*" element={<AdminPanel/>}/>
       <Route path="primera-vez" element={<Onboarding/>}/>
@@ -202,7 +204,7 @@ export default function SuizamenteApp(){
       <Route path="*" element={<Navigate to="/suizamente" replace/>}/>
     </Routes>}
     {showNavigation&&<Navigation active={activeTab}/>}
-    {opening&&user&&<Opening onDone={finishOpening} reduced={reduced}/>}
+    {opening&&entered&&<Opening onDone={finishOpening} reduced={reduced}/>}
     {!!notices.length&&<div className={'sv-notice'+(notices[0].datos.href?' has-link':'')} role="status" aria-live="polite">{notices[0].datos.texto}{notices[0].datos.href&&<><Link to={notices[0].datos.href} onClick={()=>setNotices(old=>old.slice(1))}>{notices[0].tipo==='asalto'?'Ver mapa':'Ver'}</Link><button aria-label="Cerrar aviso" onClick={()=>setNotices(old=>old.slice(1))}>×</button></>}</div>}
   </div></SuizamenteContext.Provider>
 }

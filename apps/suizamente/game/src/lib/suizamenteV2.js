@@ -47,8 +47,8 @@ function withoutFlags(value){
   return value
 }
 export function szSettings() {
-  const defaults={sonidos:true,vibracion:true,menosAnimaciones:false,apariencia:'auto'}
-  try{return {...defaults,...JSON.parse(localStorage.getItem('suizamente:ajustes')||'{}')}}catch{return defaults}
+  const defaults={sonidos:true,vibracion:true,menosAnimaciones:false,apariencia:'clara'}
+  try{return {...defaults,...JSON.parse(localStorage.getItem('suizamente:ajustes')||'{}'),apariencia:'clara'}}catch{return defaults}
 }
 export const cantonNames={
   ZH:'Zúrich',BE:'Berna',LU:'Lucerna',UR:'Uri',SZ:'Schwyz',OW:'Obwalden',NW:'Nidwalden',GL:'Glaris',ZG:'Zug',FR:'Friburgo',SO:'Soleura',BS:'Basilea-Ciudad',BL:'Basilea-Campiña',SH:'Schaffhausen',AR:'Appenzell Rodas Exteriores',AI:'Appenzell Rodas Interiores',SG:'San Galo',GR:'Grisones',AG:'Argovia',TG:'Turgovia',TI:'Tesino',VD:'Vaud',VS:'Valais',NE:'Neuchâtel',GE:'Ginebra',JU:'Jura',

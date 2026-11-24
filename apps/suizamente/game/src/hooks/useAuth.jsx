@@ -58,7 +58,7 @@ export function AuthProvider({ children }) {
     async function loadProfileMeta() {
       let response = await supabase
         .from('profiles')
-        .select('avatar_url, banned, banned_reason, banned_at, interests')
+        .select('name, avatar_url, banned, banned_reason, banned_at, interests')
         .eq('id', user.id)
         .maybeSingle()
 
@@ -79,6 +79,7 @@ export function AuthProvider({ children }) {
         || null
       )
       setProfileMeta({
+        name:profile.name||'',
         banned: profile.banned === true,
         bannedReason: profile.banned_reason || '',
         bannedAt: profile.banned_at || null,
@@ -129,6 +130,7 @@ export function AuthProvider({ children }) {
       email,
       password,
       options: {
+        emailRedirectTo:new URL('/auth/callback',window.location.origin).toString(),
         data: {
           name,
           canton,
@@ -200,6 +202,7 @@ export function AuthProvider({ children }) {
         : profileMeta.interests
     ),
     profileMetaLoaded,
+    profileName:profileMeta.name||'',
     avatarUrl,
     isBanned: profileMeta.banned,
     bannedReason: profileMeta.bannedReason,

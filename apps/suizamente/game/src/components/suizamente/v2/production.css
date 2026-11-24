@@ -1,10 +1,14 @@
 /* Persistent player navigation, including standalone support/reward screens. */
-.sv-root{--sv-nav-height:calc(84px + env(safe-area-inset-bottom,0px))}
+.sv-root{--sv-nav-height:calc(102px + env(safe-area-inset-bottom,0px))}
 .sv-has-nav{padding-bottom:var(--sv-nav-height)}
 .sv-has-nav>.sv-screen{min-height:calc(100dvh - var(--sv-nav-height))}
-.sv-root>.sv-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;height:var(--sv-nav-height);margin:0;z-index:30;padding-bottom:calc(12px + env(safe-area-inset-bottom,0px));box-shadow:0 -4px 18px #0F1A2B08}
+.sv-root>.sv-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;height:var(--sv-nav-height);margin:0;z-index:30;padding-bottom:calc(10px + env(safe-area-inset-bottom,0px));box-shadow:none}
 .sv-has-nav .sv-footer{bottom:var(--sv-nav-height);padding-bottom:16px}
-.sv-root>.sv-nav a{min-height:60px}
+.sv-root .sv-nav-icon:not(.home){width:24px;height:24px;border-radius:0;background:transparent}
+.sv-root .sv-nav a[aria-current=page]{color:var(--sv-action,#315BC9);font-weight:700}
+.sv-root .sv-nav a[aria-current=page] .sv-nav-icon{transform:translateY(-1px) scale(1.05)}
+.sv-root .sv-nav a[aria-current=page] .sv-nav-icon:not(.home){background:transparent}
+.sv-root .sv-nav a:active .sv-nav-icon.home{transform:scale(.94)}
 .sv-lobby-invites{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .sv-lobby-invites>a,.sv-lobby-invites>button{border:0;background:var(--sv-soft-green);color:var(--sv-text);border-radius:20px;display:flex;flex-direction:column;align-items:flex-start;gap:4px;padding:16px;text-align:left;min-height:120px}
 .sv-lobby-invites>a{background:var(--sv-card)}
@@ -56,6 +60,15 @@
 .sv-login-stamp{position:absolute;display:grid;place-items:center;z-index:2;width:54px;height:54px;border-radius:18px;background:var(--sv-bg);border:2px solid var(--sv-line);font-size:28px;box-shadow:0 6px 0 #0F1A2B12}
 .sv-login-stamp.one{left:4%;top:26%;transform:rotate(-14deg)}.sv-login-stamp.two{right:1%;top:10%;transform:rotate(14deg)}.sv-login-stamp.three{right:5%;bottom:8%;transform:rotate(12deg)}
 .sv-login-actions{display:flex;flex-direction:column;gap:12px;width:100%;max-width:360px;margin:auto auto 0;flex:none}
+.sv-root .sv-login-button.create,.sv-root .sv-login-button.existing{grid-template-columns:minmax(0,1fr);min-height:48px;font-size:14px;border-radius:16px}
+.sv-root .sv-login-button.create{background:var(--sv-action,#315BC9);border-color:transparent;color:white;box-shadow:0 5px 12px #4A76EF26}
+.sv-root .sv-login-button.existing{background:var(--sv-soft-blue);color:var(--sv-action,#315BC9)}
+.sv-login-divider{display:flex;align-items:center;gap:12px;font-size:12px;color:var(--sv-muted);text-align:center}
+.sv-login-divider::before,.sv-login-divider::after{content:"";height:1px;flex:1;background:var(--sv-line)}
+.sv-profile-avatar{position:relative;align-self:center;width:112px;margin-inline:auto;padding:8px}
+.sv-profile-avatar .sv-avatar{width:96px;height:96px}
+.sv-avatar>img{width:100%;height:100%;object-fit:cover;border-radius:inherit}
+.sv-photo-button{position:absolute;right:0;bottom:0;display:grid;place-items:center;min-width:44px;min-height:44px;border:3px solid white;border-radius:50%;background:var(--sv-action,#315BC9);color:white;box-shadow:0 2px 6px #0F1A2B26}
 .sv-root .sv-login-button{display:grid;grid-template-columns:24px minmax(0,1fr);align-items:center;gap:10px;width:100%;min-height:58px;padding:14px 18px;border:2px solid var(--sv-line);border-radius:18px;background:var(--sv-bg);color:var(--sv-text);font:600 clamp(13px,3.7vw,16px)/1.35 Poppins,sans-serif;text-align:center;overflow-wrap:anywhere}
 .sv-login-button>b{font-weight:600;min-width:0}.sv-login-button>span{font-size:22px;font-weight:800}.sv-root .sv-login-button.latido{background:var(--sv-action,#315BC9);border-color:transparent;color:white;box-shadow:0 5px 0 #0F1A2B1A}
 .sv-root .sv-login-button.email{background:transparent}.sv-login-account-note{text-align:center;font-size:11px;line-height:1.6;color:var(--sv-muted)}

@@ -1,6 +1,10 @@
-import {useState} from 'react'
-import {Link,Navigate,useLocation,useNavigate} from 'react-router-dom'
+import {useRef,useState} from 'react'
+import {Link,useLocation,useNavigate} from 'react-router-dom'
 import {useAuth} from '../../../hooks/useAuth'
+import {supabase} from '../../../lib/supabase'
+import {useEntry,rememberEntryDestination} from '../../../../entry'
+import {connectLatidoAccount} from '../../../../latidoSso'
+import {prepareProfilePhoto,uploadProfilePhoto} from '../../../lib/suizamentePhoto'
 import {useSv} from './Context'
 import {Avatar,Brand,Button,Card,Chip,Header,Logo,Sheet,StampBar,Stamps,Wheel} from './Shared'
 import {szApi,cantonNames,countryNames} from '../../../lib/suizamenteV2'
@@ -53,12 +57,19 @@ function LoginArt(){
 }
 function GoogleMark(){return <svg viewBox="0 0 18 18" width="22" height="22" aria-hidden="true"><path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.71v2.26h2.91c1.7-1.57 2.69-3.88 2.69-6.61Z"/><path fill="#34A853" d="M9 18c2.43 0 4.47-.81 5.96-2.19l-2.91-2.26c-.81.54-1.84.86-3.05.86-2.34 0-4.33-1.58-5.04-3.71H.96v2.33A9 9 0 0 0 9 18Z"/><path fill="#FBBC05" d="M3.96 10.7A5.42 5.42 0 0 1 3.68 9c0-.59.1-1.16.28-1.7V4.97H.96A9 9 0 0 0 0 9c0 1.45.35 2.82.96 4.03l3-2.33Z"/><path fill="#EA4335" d="M9 3.58c1.32 0 2.51.46 3.44 1.35l2.58-2.58A8.64 8.64 0 0 0 9 0 9 9 0 0 0 .96 4.97l3 2.33C4.67 5.17 6.66 3.58 9 3.58Z"/></svg>}
 export function Login(){
-  const {authUser:user,signInWithGoogle}=useAuth(),{pathname,search}=useLocation(),[busy,setBusy]=useState(false),[error,setError]=useState('')
+  const {authUser:user,signInWithGoogle}=useAuth(),{acceptAccount}=useEntry(),navigate=useNavigate(),{pathname,search}=useLocation(),[busy,setBusy]=useState(''),[error,setError]=useState('')
   const destination=['/suizamente/entrar','/suizamente/bienvenida','/suizamente/primera-vez'].includes(pathname)?'/suizamente':pathname+search
   const auth='/auth?next='+encodeURIComponent(destination)
-  async function google(){setBusy(true);setError('');try{sessionStorage.setItem('suizamente:auth-destino',destination);const callback=new URL('/auth/callback',location.origin);const result=await signInWithGoogle({redirectTo:callback.toString()});if(result.error)throw result.error}catch{setError('No se pudo abrir Google. Inténtalo otra vez o entra con tu email.');setBusy(false)}}
-  if(user)return <Navigate to="/suizamente" replace/>
-  return <section className="sv-screen sv-login-screen"><header className="sv-login-heading"><Logo size={62}/><h1><Brand/></h1><p>Descubre Suiza. Juega en comunidad.</p></header><LoginArt/><div className="sv-login-actions"><Link className="sv-login-button latido" to={auth+'&mode=login'}><span aria-hidden="true">L</span><b>Iniciar sesión con Latido</b></Link><button className="sv-login-button google" disabled={busy} onClick={google}><GoogleMark/><b>{busy?'Conectando con Google…':'Continuar con Google'}</b></button><Link className="sv-login-button email" to={auth+'&mode=login&metodo=email'}><span aria-hidden="true">✉</span><b>Entrar con email</b></Link><p className="sv-login-account-note">Necesitas una cuenta para jugar.<br/>Las tres opciones usan tu cuenta de Latido.</p>{error&&<p role="alert">{error}</p>}</div><p className="sv-login-legal">Al continuar, aceptas los <Link to="/terminos">Términos</Link> y la <Link to="/privacidad">Política de privacidad</Link>.</p></section>
+  async function google(){setBusy('google');setError('');try{rememberEntryDestination(destination);const callback=new URL('/auth/callback',location.origin);const result=await signInWithGoogle({redirectTo:callback.toString()});if(result.error)throw result.error}catch{setError('No se pudo abrir Google. Inténtalo otra vez o entra con tu email.');setBusy('')}}
+  async function latido(){
+    setBusy('latido');setError('');rememberEntryDestination(destination)
+    try{
+      const session=user?{user}:await connectLatidoAccount({client:supabase,socialApi:import.meta.env.VITE_SUPABASE_URL+'/functions/v1/suizamente-social',popup:true})
+      if(!session?.user)throw new Error('Abre Latido e inicia sesión allí. Después vuelve y pulsa «Entrar con cuenta de Latido». También puedes entrar con Google o email.')
+      acceptAccount(session.user);navigate('/suizamente/perfil/nuevo')
+    }catch(e){setError(e.message)}finally{setBusy('')}
+  }
+  return <section className="sv-screen sv-login-screen"><header className="sv-login-heading"><Logo size={62}/><h1><Brand/></h1><p>Descubre Suiza. Juega en comunidad.</p></header><LoginArt/><div className="sv-login-actions"><Link className="sv-login-button create" to={auth+'&mode=register&metodo=email'} onClick={()=>rememberEntryDestination(destination)}><b>Crear cuenta gratis</b></Link><Link className="sv-login-button existing" to={auth+'&mode=login&metodo=email'} onClick={()=>rememberEntryDestination(destination)}><b>Ya tengo cuenta</b></Link><div className="sv-login-divider" aria-hidden="true">o</div><button className="sv-login-button google" disabled={!!busy} onClick={google}><GoogleMark/><b>{busy==='google'?'Conectando con Google…':'Entrar con Google'}</b></button><button className="sv-login-button latido" disabled={!!busy} onClick={latido}><span aria-hidden="true">L</span><b>{busy==='latido'?'Conectando con Latido…':'Entrar con cuenta de Latido'}</b></button><p className="sv-login-account-note">Necesitas una cuenta para jugar.</p>{error&&<p className="sv-error" role="alert">{error}</p>}</div><p className="sv-login-legal">Al continuar, aceptas los <Link to="/terminos">Términos</Link> y la <Link to="/privacidad">Política de privacidad</Link>.</p></section>
 }
 export function HowTo(){
   const {config,player}=useSv()
@@ -66,29 +77,32 @@ export function HowTo(){
   return <section className="sv-screen"><Header title="Así se juega" back={player?'/suizamente/menu':'/suizamente/bienvenida'}/><div className="sv-content sv-steps">{steps.map(([emoji,title,text],i)=><div key={title}><span className="sv-step-icon">{emoji}<small>{i+1}</small></span><div><h2>{title}</h2><p>{text}</p></div></div>)}<Stamps categories={config.categorias}/></div><footer className="sv-footer"><Button to={player?'/suizamente/nueva':'/suizamente/entrar'}>▶ ¡A jugar!</Button></footer></section>
 }
 export function ProfileForm({editing=false}){
-  const {player,user,savePlayer,settings}=useSv(),navigate=useNavigate()
-  const [form,setForm]=useState(()=>({apodo:player?.apodo||user?.user_metadata?.name?.slice(0,20)||'',color:player?.color||'menta',pais:player?.pais||'ES',canton:player?.canton||user?.user_metadata?.canton||'ZH',anos_suiza:player?.anos_suiza||'menos1',en_ranking:player?.en_ranking??true}))
+  const {player,user,avatarUrl,latidoName,savePlayer,settings}=useSv(),navigate=useNavigate(),fileInput=useRef(null)
+  const [form,setForm]=useState(()=>({apodo:player?.apodo||(latidoName||user?.user_metadata?.name||user?.user_metadata?.full_name||'').slice(0,20),color:player?.color||'menta',pais:player?.pais||'ES',canton:player?.canton||user?.user_metadata?.canton||'ZH',anos_suiza:player?.anos_suiza||'menos1',en_ranking:player?.en_ranking??true}))
   const [busy,setBusy]=useState(false),[error,setError]=useState('')
+  const [photo,setPhoto]=useState(null),[photoBusy,setPhotoBusy]=useState(false)
+  async function choosePhoto(e){const file=e.target.files?.[0];e.target.value='';if(!file)return;setPhotoBusy(true);setError('');try{setPhoto(await prepareProfilePhoto(file))}catch(e){setError(e.message)}finally{setPhotoBusy(false)}}
   function change(key,value){setForm(f=>({...f,[key]:value}))}
   async function submit(e){
     e.preventDefault();setBusy(true);setError('')
     try{
-      let result=await szApi('jugador',{method:'PUT',body:{...form,ajustes:{...settings,...player?.ajustes}}})
+      const ownPhoto=photo?await uploadProfilePhoto(photo,user.id):player?.ajustes?.foto_url
+      let result=await szApi('jugador',{method:'PUT',body:{...form,ajustes:{...settings,...player?.ajustes,...(ownPhoto?{foto_url:ownPhoto}:{}),apariencia:'clara'}}})
       if(!editing){
         result=await szApi('jugador/bienvenida',{method:'POST'})
         localStorage.setItem('suizamente:onboarding',new Date().toISOString())
       }
       savePlayer(result)
-      const destination=sessionStorage.getItem('suizamente:despues-perfil')||'/suizamente/nueva'
+      const destination=sessionStorage.getItem('suizamente:despues-perfil')||'/suizamente'
       sessionStorage.removeItem('suizamente:despues-perfil')
       navigate(editing?'/suizamente/ajustes':destination,{replace:true})
     }catch(e){setError(e.message)}finally{setBusy(false)}
   }
-  return <form className="sv-screen" onSubmit={submit}><Header title={editing?'Editar perfil':'Tu perfil'}/><div className="sv-content sv-profile-form">{player?.renombrar&&<Card><b>📝 Elige otro apodo</b><p>Hemos revisado tu apodo. Cámbialo para seguir jugando.</p></Card>}<div className="sv-profile-avatar"><Avatar name={form.apodo||'?'} color={form.color}/></div><label>Tu apodo<input required minLength={2} maxLength={20} value={form.apodo} onChange={e=>change('apodo',e.target.value)} autoComplete="nickname" pattern="[A-Za-zÀ-ÿ0-9 ._\-]{2,20}" placeholder="¿Cómo te llamamos?"/></label><fieldset><legend>Tu color</legend><div className="sv-color-options">{colors.map(color=><button type="button" key={color} className={'sv-color '+color} aria-label={color} aria-pressed={form.color===color} onClick={()=>change('color',color)}>{form.color===color?'✓':''}</button>)}</div></fieldset>
+  return <form className="sv-screen" onSubmit={submit}><Header title={editing?'Editar perfil':'Tu perfil'}/><div className="sv-content sv-profile-form">{player?.renombrar&&<Card><b>📝 Elige otro apodo</b><p>Hemos revisado tu apodo. Cámbialo para seguir jugando.</p></Card>}<div className="sv-profile-avatar"><Avatar name={form.apodo||'?'} color={form.color} photo={photo||player?.ajustes?.foto_url||avatarUrl}/><button className="sv-photo-button" type="button" disabled={busy||photoBusy} aria-label="Elegir o cambiar foto de perfil" onClick={()=>fileInput.current?.click()}><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="M4 7h4l2-3h4l2 3h4v13H4Z"/><circle cx="12" cy="13" r="4"/></svg></button><input ref={fileInput} type="file" accept="image/*" aria-label="Foto de perfil" hidden onChange={choosePhoto}/></div>{photoBusy&&<p role="status">Preparando tu foto...</p>}<label>Tu apodo<input required minLength={2} maxLength={20} value={form.apodo} onChange={e=>change('apodo',e.target.value)} autoComplete="nickname" pattern="[A-Za-zÀ-ÿ0-9 ._\-]{2,20}" placeholder="¿Cómo te llamamos?"/></label><fieldset><legend>Tu color</legend><div className="sv-color-options">{colors.map(color=><button type="button" key={color} className={'sv-color '+color} aria-label={color} aria-pressed={form.color===color} onClick={()=>change('color',color)}>{form.color===color?'✓':''}</button>)}</div></fieldset>
     <label>País de origen<select value={form.pais} onChange={e=>change('pais',e.target.value)}>{Object.entries(countryNames).map(([id,name])=><option key={id} value={id}>{name}</option>)}</select></label>
     <label>Tu cantón<select value={form.canton} onChange={e=>change('canton',e.target.value)}>{Object.entries(cantonNames).map(([id,name])=><option key={id} value={id}>{name}</option>)}</select></label>
     <fieldset><legend>¿Cuánto llevas en Suiza?</legend><div className="sv-choice-grid">{Object.entries(years).map(([id,label])=><button type="button" key={id} aria-pressed={form.anos_suiza===id} onClick={()=>change('anos_suiza',id)}>{label}</button>)}</div></fieldset>
-    {error&&<p className="sv-error" role="alert">{error}</p>}</div><footer className="sv-footer"><button className="sv-button" disabled={busy} type="submit">{busy?'Guardando…':editing?'Guardar cambios':'▶ ¡A jugar!'}</button></footer></form>
+    {error&&<p className="sv-error" role="alert">{error}</p>}</div><footer className="sv-footer"><button className="sv-button" disabled={busy||photoBusy} type="submit">{busy?'Guardando…':editing?'Guardar cambios':'▶ ¡A jugar!'}</button></footer></form>
 }
 export function Menu(){
   const {player,config,capabilities}=useSv()
@@ -131,12 +145,11 @@ export function Settings(){
   }
   return <section className="sv-screen"><Header title="Ajustes" back="/suizamente/menu"/><div className="sv-content sv-settings"><h2>Cuenta</h2><Link className="sv-settings-row" to="/suizamente/perfil/editar"><Avatar name={player.apodo} color={player.color}/><span>{player.apodo}<small>Editar perfil</small></span>›</Link>{!user&&<Button tone="quiet" to={'/auth?next='+encodeURIComponent('/suizamente/ajustes')}>Vincular con mi cuenta de Latido</Button>}<h2>Juego</h2>
     {[['sonidos','Sonidos'],['vibracion','Vibración'],['menosAnimaciones','Menos animaciones']].map(([key,label])=><label className="sv-settings-row" key={key}><span>{label}</span><input type="checkbox" role="switch" checked={!!settings[key]} onChange={e=>change(key,e.target.checked)}/></label>)}
-    <label className="sv-settings-row"><span>Apariencia</span><select aria-label="Apariencia" value={settings.apariencia||'auto'} onChange={e=>change('apariencia',e.target.value)}><option value="auto">Automática</option><option value="clara">Clara</option><option value="oscura">Oscura</option></select></label>
     <h2>Avisos</h2><label className="sv-settings-row"><span>Te toca en una partida</span><input type="checkbox" role="switch" checked={settings.avisos?.turnos!==false} onChange={e=>change('avisos',{...settings.avisos,turnos:e.target.checked})}/></label>
     {user&&<Button tone="quiet" disabled={busy} onClick={activatePush}>🔔 Activar avisos en este dispositivo</Button>}
     <h2>Privacidad</h2><label className="sv-settings-row"><span>Aparecer en los rankings</span><input type="checkbox" role="switch" checked={player.en_ranking} onChange={e=>privacy(e.target.checked)}/></label><p>Tus votos son anónimos. Tu rival solo ve tus sellos y tu barra.</p>
     <h2>Ayuda</h2><nav className="sv-menu"><Link to="/suizamente/como-se-juega">Cómo se juega <span/>›</Link><Link to="/suizamente/primera-vez">Ver la bienvenida otra vez <span/>›</Link></nav>
-    {user&&<Button tone="quiet" onClick={logout}>Cerrar sesión de Latido</Button>}
+    {user&&<Button tone="quiet" onClick={logout}>Cerrar sesión de Suizamente</Button>}
     <Button tone="danger-text" onClick={()=>setDeletion(1)}>Borrar mis datos de Suizamente</Button>
     {error&&<p role="alert" className="sv-error">{error}</p>}</div>
     {!!deletion&&<Sheet title={deletion===1?'¿Borrar tus datos de Suizamente?':'Confirma el borrado'} onClose={()=>setDeletion(0)}><p>{deletion===1?'Se borrarán tu perfil y tus partidas. Tus votos se conservarán anónimos. Tu cuenta de Latido seguirá disponible.':'Esta acción no se puede deshacer.'}</p><Button tone="danger" disabled={busy} onClick={()=>deletion===1?setDeletion(2):remove()}>{deletion===1?'Continuar':'Borrar definitivamente'}</Button></Sheet>}

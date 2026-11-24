@@ -2,9 +2,9 @@ const ORIGINS=['https://latido.ch','https://www.latido.ch']
 export function connectLatidoAccount({client,socialApi,popup=false,timeout=popup?120000:4500}) {
   return new Promise(resolve=>{
     const nonce=crypto.randomUUID(),sources=new Map()
-    let completed=false,exchanging=false,popupWindow
+    let completed=false,exchanging=false,popupWindow,closedTimer
     const frames=[]
-    function finish(value){if(completed)return;completed=true;clearTimeout(timer);window.removeEventListener('message',receive);frames.forEach(f=>f.remove());if(value&&popupWindow&&!popupWindow.closed)popupWindow.close();resolve(value)}
+    function finish(value){if(completed)return;completed=true;clearTimeout(timer);clearInterval(closedTimer);window.removeEventListener('message',receive);frames.forEach(f=>f.remove());if(popupWindow&&!popupWindow.closed)popupWindow.close();resolve(value)}
     async function receive(event){
       if(completed||!ORIGINS.includes(event.origin)||!sources.has(event.source))return
       if(event.data?.type==='suizamente:sso-ready'){sources.set(event.source,event.origin);event.source.postMessage({type:'suizamente:sso-request',nonce},event.origin);return}
@@ -26,6 +26,7 @@ export function connectLatidoAccount({client,socialApi,popup=false,timeout=popup
       if(popupWindow)sources.set(popupWindow,null)
     }else for(const origin of ORIGINS){const frame=document.createElement('iframe');frame.hidden=true;frame.title='Conectar tu cuenta de Latido';frame.src=origin+'/suizamente/conectar?appOrigin='+encodeURIComponent(location.origin);document.body.append(frame);sources.set(frame.contentWindow,null);frames.push(frame)}
     const timer=setTimeout(()=>finish(null),timeout)
+    if(popupWindow)closedTimer=setInterval(()=>{if(popupWindow.closed)finish(null)},500)
     if(popup&&!popupWindow)finish(null)
   })
 }

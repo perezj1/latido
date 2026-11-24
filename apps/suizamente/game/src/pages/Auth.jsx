@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { ArrowRight } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
+import { useEntry,rememberEntryDestination } from '../../entry'
 import { trackAnalyticsEvent } from '../lib/analytics'
 import { supabase } from '../lib/supabase'
 import { C, PP } from '../lib/theme'
@@ -9,7 +10,6 @@ import { BackButton, Btn, ChevronLeftIcon, Input, Select } from '../components/U
 import InterestOptionGrid from '../components/InterestOptionGrid'
 import { CANTONS } from '../lib/constants'
 import { ONBOARDING_INTEREST_OPTIONS } from '../lib/interests'
-import { getGooglePostAuthPath } from '../lib/oauthOnboarding'
 import toast from 'react-hot-toast'
 import './Auth.css'
 
@@ -578,6 +578,8 @@ function AuthFormScreen({ onBack, variant='', children }) {
 }
 export default function Auth() {
   const { signIn, signInWithGoogle, signInWithGoogleIdToken, signUp } = useAuth()
+  const {acceptAccount}=useEntry()
+  function enterGame(user,destination){rememberEntryDestination(destination);acceptAccount(user);navigate('/suizamente/perfil/nuevo',{replace:true})}
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const nextPath = getSafeNextPath(searchParams.get('next'))
@@ -763,7 +765,7 @@ export default function Auth() {
         trackAnalyticsEvent('login_success', {
           metadata: { method:'email', entry_point:authEntryPoint },
         })
-        navigate(nextPath, { replace:true })
+        enterGame(persisted.session.user,nextPath)
       } else {
         toast.error('No se pudo guardar la sesión. Inténtalo de nuevo.')
       }
@@ -777,8 +779,7 @@ export default function Auth() {
 
   const beginGoogleRedirect = async () => {
     const callbackUrl = new URL('/auth/callback', window.location.origin)
-    callbackUrl.searchParams.set('next', nextPath)
-    callbackUrl.searchParams.set('oauth', 'google')
+    rememberEntryDestination(nextPath)
 
     const { error } = await signInWithGoogle({ redirectTo:callbackUrl.toString() })
     if (error) throw error
@@ -836,7 +837,7 @@ export default function Auth() {
         user_id:persisted.session.user.id,
         metadata: { method:'google_id_token', entry_point:authEntryPoint },
       })
-      navigate(getGooglePostAuthPath(persisted.session.user, nextPath), { replace:true })
+      enterGame(persisted.session.user,nextPath)
     } catch (error) {
       console.error('Google ID token sign-in failed:', error)
       toast.error(getGoogleAuthErrorMessage(error))
@@ -947,7 +948,7 @@ export default function Auth() {
         },
       })
       toast.success('¡Cuenta creada! Bienvenido/a 🎉')
-      navigate(destination)
+      enterGame(data.session.user,destination)
     } finally {
       setLoading(false)
       setRegistrationIntent('')

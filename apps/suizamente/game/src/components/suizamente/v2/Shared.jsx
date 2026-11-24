@@ -8,9 +8,10 @@ export function Brand(){return <span className="sv-brand"><span>Suiza</span><spa
 export function Button({children,onClick,to,tone='',disabled=false,...props}){
   return to?<Link className={'sv-button '+tone} to={to} {...props}>{children}</Link>:<button type="button" className={'sv-button '+tone} onClick={onClick} disabled={disabled} {...props}>{children}</button>
 }
-export function Avatar({name='',color='menta',level,marco}){
-  const {player}=useSv(),frame=marco||(name===player?.apodo?player.marco:null)
-  return <span className={'sv-avatar '+color} style={frame?{outline:'3px solid '+frame.colores.at(-1),outlineOffset:3}:undefined} aria-label={level?'Nivel '+level:undefined}>{name==='🔍'?name:name.slice(0,1).toUpperCase()}{level&&<small>{level}</small>}</span>
+export function Avatar({name='',color='menta',level,marco,photo}){
+  const {player,avatarUrl}=useSv(),own=name===player?.apodo,frame=marco||(own?player.marco:null),image=photo||(own?(player.ajustes?.foto_url||avatarUrl):null),[failed,setFailed]=useState(null)
+  const safe=typeof image==='string'&&/^(https:\/\/|data:image\/jpeg;base64,)/.test(image)
+  return <span className={'sv-avatar '+color} style={frame?{outline:'3px solid '+frame.colores.at(-1),outlineOffset:3}:undefined} aria-label={level?'Nivel '+level:undefined}>{safe&&failed!==image?<img src={image} alt="" referrerPolicy="no-referrer" onError={()=>setFailed(image)}/>:name==='🔍'?name:name.slice(0,1).toUpperCase()}{level&&<small>{level}</small>}</span>
 }
 export function Header({title,back='/suizamente',right,close=false}){
   return <header className="sv-header"><Link className="sv-icon-button" to={back} aria-label="Volver">{close?'×':'←'}</Link><h1>{title}</h1>{right||<span className="sv-icon-space"/>}</header>
@@ -38,7 +39,7 @@ export function Wheel({categories,rotation=0,spinning=false,duration=2700,onSpin
 }
 export function Navigation({waiting=0,enabled=['mapa','album','inicio','tienda','amigos'],active='inicio'}){
   const tabs=[['mapa','🗺️','Mapa'],['album','🃏','Álbum'],['inicio','','Inicio'],['tienda','🛒','Tienda'],['amigos','👥','Amigos']]
-  return <nav className="sv-nav" aria-label="Navegación principal">{tabs.map(([id,emoji,label],i)=><span key={id} style={{gridColumn:i+1}}>{enabled.includes(id)&&<Link to={'/suizamente'+(id==='inicio'?'':'/'+id)} aria-label={label} aria-current={id===active?'page':undefined}><span className={'sv-nav-icon '+(id==='inicio'?'home':'')}>{emoji||<Logo size={30}/>} {!!waiting&&id==='inicio'&&<b aria-label={waiting+' partidas te esperan'}>{waiting}</b>}</span>{label}</Link>}</span>)}</nav>
+  return <nav className="sv-nav" aria-label="Navegación principal"><div className="sv-nav-pill">{tabs.map(([id,emoji,label],i)=><span key={id} style={{gridColumn:i+1}}>{enabled.includes(id)&&<Link to={'/suizamente'+(id==='inicio'?'':'/'+id)} aria-label={label} aria-current={id===active?'page':undefined}><span className={'sv-nav-icon '+(id==='inicio'?'home':'')}>{emoji||<span className="sv-nav-logo"><Logo size={30}/></span>} {!!waiting&&id==='inicio'&&<b aria-label={waiting+' partidas te esperan'}>{waiting}</b>}</span><span className="sv-nav-label">{label}</span></Link>}</span>)}</div></nav>
 }
 export function Sheet({title,children,onClose}){
   const dialog=useRef(null),previous=useRef(document.activeElement),close=useRef(onClose)
