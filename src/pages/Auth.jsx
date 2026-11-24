@@ -600,7 +600,7 @@ export default function Auth() {
   const [form, setForm] = useState({ name:'', email:'', password:'', canton:'', languages:[], interests:[] })
   const [errors, setErrors] = useState({})
   const passwordNoticeShownRef = useRef(false)
-  const googleAuthVisible = GOOGLE_AUTH_ENABLED && searchParams.get('metodo') !== 'email'
+  const googleAuthVisible = GOOGLE_AUTH_ENABLED
   const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
   useEffect(() => {

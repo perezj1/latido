@@ -153,7 +153,6 @@ function Privacidad() {
         <P><strong>Al usar la plataforma:</strong></P>
         <Ul items={[
           'Contenidos que publicas (anuncios, reseñas, perfiles de creador, enlaces a redes y datos de contacto que decides incluir), mensajes y respuestas a seguimientos.',
-          'Si juegas a Suizamente con tu cuenta: cantón de aprendizaje, alias, partidas, respuestas, puntos, niveles, etapas, racha, premios de la mochila, logros y avisos de errores. Estos datos permiten guardar y mostrar tu aprendizaje; no dependen del consentimiento de analítica.',
           'Con tu consentimiento para analítica: rutas generales, interacciones y contadores. La analítica propia puede asociarse a tu identificador de cuenta y a un identificador de sesión; es seudónima, no anónima. Los nuevos eventos no incluyen el texto de las búsquedas ni los parámetros de las URL.',
           'Datos técnicos, como dirección IP y agente de usuario (navegador), tratados por la infraestructura para prestar el servicio y prevenir abusos.',
         ]} />
@@ -166,7 +165,6 @@ function Privacidad() {
       </Section>
 
       <Section title="3. Datos visibles públicamente">
-        <P>En Suizamente, tus respuestas y tu perfil de conocimientos son privados. Solo si activas la clasificación se muestran tu alias y tu resultado semanal, incluido el puesto. Puedes desactivar esa visibilidad en las preferencias del juego.</P>
         <P>
           Si publicas anuncios, empleos, eventos, negocios, grupos, perfiles de creador, enlaces, fotos, logos o datos
           de contacto, esa información puede ser visible para otros usuarios o visitantes, indexarse
@@ -193,7 +191,6 @@ function Privacidad() {
       <Section title="5. Plazo de conservación">
         <Ul items={[
           'Datos de cuenta: mientras la cuenta esté activa. Puedes solicitar su supresión; revisaremos también los datos relacionados y las necesidades de conservación antes de confirmar su alcance.',
-          'Suizamente: el historial de aprendizaje se conserva con tu cuenta para mantener el progreso y los repasos. Puedes solicitar su supresión por email. Eliminar la cuenta en el sistema de autenticación elimina sus partidas, respuestas y progreso asociados.',
           'Anuncios y publicaciones: puedes borrarlos desde la aplicación. Los archivos asociados, copias de seguridad y cachés pueden requerir una retirada adicional; borrar una publicación no garantiza la desaparición inmediata de todas sus copias.',
           'Pedidos y suscripciones: se conservan para gestionar pagos, entrega, incidencias y las obligaciones de conservación aplicables.',
           'Analítica: retirar el consentimiento detiene nuevos eventos, pero no borra automáticamente los ya registrados. Puedes solicitar su supresión por email.',
@@ -305,12 +302,6 @@ function Cookies() {
       provider:'Latido.ch',
       purpose:'Recuerda funciones solicitadas como favoritos, alertas, notificaciones, mensajes leídos y avisos ya revisados.',
       duration:'Hasta desactivar la función o borrar los datos del navegador.',
-    },
-    {
-      name:'latido:suizamente:arcade-demo:v1 (sessionStorage; versiones anteriores: latido:suizamente:demo:v1)',
-      provider:'Latido.ch',
-      purpose:'Permite reanudar la demostración de Suizamente en esta pestaña, sin cuenta y sin registrar XP ni respuestas en el servidor.',
-      duration:'Hasta cerrar la pestaña o borrar los datos del navegador.',
     },
     {
       name:'latido_pwa_dismissed y sesión técnica',

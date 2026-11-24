@@ -24,6 +24,5 @@ export default function SuizamenteConnect() {
     <h1>Tu cuenta de Latido en Suizamente</h1>
     <p>{loading?'Comprobando tu sesión…':isLoggedIn?'Puedes volver a Suizamente. Estamos conectando tu cuenta.':'Entra con tu cuenta de Latido para continuar en Suizamente.'}</p>
     {!loading&&!isLoggedIn&&<Link to={'/auth?mode=login&next='+encodeURIComponent(next)}>Entrar a Latido</Link>}
-    <p><a href="https://suizamente.latido.ch">Volver a Suizamente</a></p>
   </main>
 }

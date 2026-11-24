@@ -3,10 +3,9 @@ import { Tag, InfoBanner, BackButton } from './UI'
 import GuideArticle from './GuideArticle'
 import RelatedResources from './RelatedResources'
 import { useAuth } from '../hooks/useAuth'
-import { Link, useSearchParams } from 'react-router-dom'
+import { useSearchParams } from 'react-router-dom'
 import GuidePackageJourney, { useGuideJourney } from './GuidePackageJourney'
 import { getResourcePackagePath, normalizePackageCanton } from '../lib/resourcePackages'
-import '../pages/Suizamente.css'
 
 export default function GuideDetailPage({ guide }) {
   const journey = useGuideJourney(guide)
@@ -32,11 +31,6 @@ export default function GuideDetailPage({ guide }) {
         <InfoBanner emoji="⚠️" title="Aviso" text="Esta guía es orientativa. Para casos específicos consulta la administración cantonal o un asesor certificado." />
         <GuidePackageJourney key={`${guide.id}:${journey.active?.resourcePackage.slug || ''}`} journey={journey} />
         <RelatedResources key={guide.id} guide={guide} canton={canton} />
-        <aside className="sz-entry sz-card" aria-label="Aprender con Suizamente">
-          <strong>🏔️ Pon a prueba lo que aprendes</strong>
-          <p className="sz-muted">Practica conocimientos sobre Suiza y tu cantón, con explicaciones y fuentes.</p>
-          <Link className="sz-text-link" to="/suizamente">Descubrir Suizamente →</Link>
-        </aside>
       </div>
     </div>
   )

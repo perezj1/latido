@@ -1,5 +1,4 @@
 const STATIC_ROUTES = new Set([
-  '/suizamente', '/suizamente/ascenso', '/suizamente/reto', '/suizamente/progreso', '/perfil/suizometro',
   '/', '/paquetes', '/explorar', '/tablon', '/publicar', '/comunidades',
   '/colaboraciones', '/tienda', '/club', '/tarjeta-latido', '/card',
   '/card/negocios', '/card/admin', '/guias', '/creadores', '/creadores/alta',
@@ -12,7 +11,6 @@ const STATIC_ROUTES = new Set([
   '/colaboradores/syna',
 ])
 const DYNAMIC_ROUTES = [
-  [/^\/suizamente\/partida\/[^/]+$/, '/suizamente/partida/[id]'],
   [/^\/card\/validacion\/[^/]+$/, '/card/validacion/[id]'],
   [/^\/card\/negocio\/[^/]+$/, '/card/negocio/[id]'],
   [/^\/card\/material\/[^/]+$/, '/card/material/[id]'],

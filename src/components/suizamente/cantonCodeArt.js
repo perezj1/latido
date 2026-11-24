@@ -1,4 +1,0 @@
-// Original code cards. Only the visible letters are described; no solution key.
-const codes='AG AI AR BE BL BS FR GE GL GR JU LU NE NW OW SG SH SO SZ TG TI UR VD VS ZG ZH'.split(' ')
-export const CANTON_CODE_IMG=Object.fromEntries(codes.map(code=>[`canton-code-${code.toLowerCase()}`,()=>`<svg viewBox="0 0 220 140" width="220" height="140" role="img" aria-label="Sigla ${code}"><rect x="8" y="10" width="204" height="120" rx="18" fill="#fff" stroke="#dce5f2" stroke-width="3"/><rect x="24" y="27" width="26" height="26" rx="6" fill="#f44043"/><path d="M34 31h6v6h6v6h-6v6h-6v-6h-6v-6h6z" fill="#fff"/><text x="110" y="103" text-anchor="middle" font-family="system-ui,sans-serif" font-size="64" font-weight="800" fill="#172441">${code}</text></svg>`]))
-export const CANTON_CODE_LABELS=Object.fromEntries(codes.map(code=>[`canton-code-${code.toLowerCase()}`,`Sigla ${code}`]))

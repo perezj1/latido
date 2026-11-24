@@ -1494,7 +1494,6 @@
         "npm:react@^18.2.0",
         "npm:run@^1.5.0",
         "npm:tailwindcss@^3.4.0",
-        "npm:three@0.128.0",
         "npm:vite@^7.3.6"
       ]
     }

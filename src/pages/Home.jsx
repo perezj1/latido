@@ -14,7 +14,6 @@ import { subscribeToPushNotifications, loadPushSettings, PUSH_SETTINGS_KEY } fro
 import GlobalSearch from '../components/GlobalSearch'
 import HomeLatidoCard from '../components/HomeLatidoCard'
 import ResourcePackagesStrip from '../components/ResourcePackagesStrip'
-import SuizamenteEntry from '../components/suizamente/SuizamenteVisuals'
 import HorizontalDragScroller from '../components/HorizontalDragScroller'
 import PartnersSection from '../components/PartnersSection'
 import { C, CAT_COLORS, PP } from '../lib/theme'
@@ -1696,7 +1695,6 @@ export default function Home() {
               searchFilters={initialGlobalSearchFilters}
             />
             <ResourcePackagesStrip scrollable />
-            <SuizamenteEntry />
           </div>
 
           {showAttentionSection && notifOpen && attentionPortalElement && createPortal(

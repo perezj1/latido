@@ -4,7 +4,7 @@ const ASSET_CACHE = `latido-assets-${BUILD_ID}`
 const IMAGE_CACHE = 'latido-images-v2'
 const PUBLIC_DATA_CACHE = 'latido-public-data-v1'
 const CURRENT_CACHES = new Set([SHELL_CACHE, ASSET_CACHE, IMAGE_CACHE, PUBLIC_DATA_CACHE])
-const APP_SHELL = ['/', '/index.html', '/manifest.json', '/favicon.svg', '/icon-192.png', '/suizamente.webmanifest', '/suizamente-assets/icon-180.png', '/suizamente-assets/icon-192.png', '/suizamente-assets/icon-512.png', '/suizamente-assets/icon-maskable-512.png']
+const APP_SHELL = ['/', '/index.html', '/manifest.json', '/favicon.svg', '/icon-192.png']
 const PRECACHE_ASSETS = []
 const MAX_IMAGE_CACHE_ENTRIES = 260
 const SUPABASE_STORAGE_OBJECT_SEGMENT = '/storage/v1/object/public/'
@@ -12,7 +12,7 @@ const SUPABASE_STORAGE_RENDER_SEGMENT = '/storage/v1/render/image/public/'
 const RASTER_IMAGE_EXTENSIONS = new Set(['avif', 'jpeg', 'jpg', 'png', 'webp'])
 const DEFAULT_OPTIMIZED_IMAGE_WIDTH = 960
 const DEFAULT_OPTIMIZED_IMAGE_QUALITY = 72
-const LOCAL_DEVELOPMENT = ['localhost', '127.0.0.1', '[::1]', '::1'].includes(self.location.hostname)
+const LOCAL_DEVELOPMENT = self.location.hostname === 'localhost'
 const PUBLIC_TABLES = new Set([
   'business_promotion_plans',
   'communities',
@@ -269,8 +269,7 @@ self.addEventListener('activate', event => {
     await Promise.all(deletions)
 
     if (self.registration.navigationPreload) {
-      if (LOCAL_DEVELOPMENT) await self.registration.navigationPreload.disable()
-      else await self.registration.navigationPreload.enable()
+      await self.registration.navigationPreload.enable()
     }
 
     await self.clients.claim()
@@ -282,10 +281,12 @@ self.addEventListener('fetch', event => {
   if (request.method !== 'GET') return
   if (request.cache === 'only-if-cached' && request.mode !== 'same-origin') return
 
-  // Keep local push testing, but let the browser and Vite handle navigation,
-  // source modules and HMR directly. Wrapping local fetches in respondWith()
-  // turns a temporary dev-server failure into a rejected worker response.
-  if (LOCAL_DEVELOPMENT) return
+  // En localhost el service worker se usa para probar push, pero Vite debe
+  // seguir sirviendo siempre los módulos y el HMR directamente desde red.
+  if (LOCAL_DEVELOPMENT) {
+    event.respondWith(fetch(request))
+    return
+  }
 
   if (request.headers.has('range') || request.destination === 'video' || request.destination === 'audio') {
     return
@@ -321,7 +322,7 @@ self.addEventListener('fetch', event => {
     return
   }
 
-  if (url.pathname === '/manifest.json' || url.pathname === '/suizamente.webmanifest') {
+  if (url.pathname === '/manifest.json') {
     event.respondWith(networkFirst(request, SHELL_CACHE, event, 40))
   }
 })

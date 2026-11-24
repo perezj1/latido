@@ -6,8 +6,6 @@ PWA + Web con landing page, tablón de anuncios con privacidad configurable, com
 
 ## ⚡ Arrancar en 4 pasos
 
-Para activar **Suizamente**, el juego integrado sobre Suiza y sus cantones, sigue [las instrucciones de instalación y pruebas](docs/SUIZAMENTE_SETUP.md). Ejecuta los tres SQL indicados para activar el sendero, las etapas y la mochila, conservando el progreso anterior.
-
 ### 1. Instalar y abrir en VS Code
 
 Requiere Node.js 20.19 o una versión posterior.

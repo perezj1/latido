@@ -4,10 +4,6 @@ export const APP_NOTIFICATION_KINDS = Object.freeze({
   CARD_BUSINESS:'card_business',
   CARD_MEMBER:'card_member',
   MESSAGE:'message',
-  SUIZAMENTE_TURN:'suizamente_turno',
-  SUIZAMENTE_DEADLINE:'suizamente_plazo',
-  SUIZAMENTE_RAID:'suizamente_asalto',
-  SUIZAMENTE_COMMUNITY:'suizamente_comunidad',
   CARD_PHYSICAL_REQUEST:'card_physical_request',
   CARD_PHYSICAL_STATUS:'card_physical_status',
   CREATOR_FOLLOW:'creator_follow',
@@ -30,10 +26,6 @@ const KIND_ORDER = [
   APP_NOTIFICATION_KINDS.CARD_PHYSICAL_REQUEST,
   APP_NOTIFICATION_KINDS.CARD_PHYSICAL_STATUS,
   APP_NOTIFICATION_KINDS.MESSAGE,
-  APP_NOTIFICATION_KINDS.SUIZAMENTE_TURN,
-  APP_NOTIFICATION_KINDS.SUIZAMENTE_DEADLINE,
-  APP_NOTIFICATION_KINDS.SUIZAMENTE_RAID,
-  APP_NOTIFICATION_KINDS.SUIZAMENTE_COMMUNITY,
   APP_NOTIFICATION_KINDS.CREATOR_FOLLOW,
   APP_NOTIFICATION_KINDS.CREATOR_HELPFUL,
   APP_NOTIFICATION_KINDS.CONTENT_HELPFUL,
@@ -81,13 +73,6 @@ function describeNotificationGroup(kind, rows) {
   const targetTitle = String(data.target_title || '').trim()
 
   switch (kind) {
-    case APP_NOTIFICATION_KINDS.SUIZAMENTE_COMMUNITY:
-      return {icon:'🎡',title:count===1?data.title:'Tienes '+count+' novedades en Suizamente',body:'Amigos y preguntas de la comunidad.',href:count===1?data.href:'/suizamente'}
-    case APP_NOTIFICATION_KINDS.SUIZAMENTE_RAID:
-      return {icon:'🛡️',title:count===1?data.title:'Tienes '+count+' avisos de asaltos',body:'Suizamente · Revisa tu mapa.',href:'/suizamente/mapa'}
-    case APP_NOTIFICATION_KINDS.SUIZAMENTE_TURN:
-    case APP_NOTIFICATION_KINDS.SUIZAMENTE_DEADLINE:
-      return {icon:'🎡',title:count===1?data.title:'Tienes '+count+' partidas que te esperan',body:'Suizamente · Juega tu turno.',href:count===1?data.href:'/suizamente'}
     case APP_NOTIFICATION_KINDS.CONVERSATION_FOLLOWUP:
       return { icon:'💬', title:count === 1 ? '¿Cómo fue tu consulta?' : `¿Cómo fueron tus ${count} consultas?`, body:'Cuéntanos si conseguiste lo que buscabas.', href:count === 1 ? data.href || '/mensajes' : '/mensajes' }
     case APP_NOTIFICATION_KINDS.STORE_ORDER:

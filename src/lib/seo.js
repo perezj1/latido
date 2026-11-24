@@ -31,7 +31,6 @@ export const DEFAULT_SEO = {
 }
 
 export const SEARCHABLE_SITE_PAGES = [
-  { id:'suizamente', icon:'🏔️', title:'Suizamente', section:'Aprender sobre Suiza', desc:'Un quiz sobre Suiza y tu cantón, con explicaciones, cinco montañas y tu Suizómetro.', href:'/suizamente' },
   { id:'paquetes', icon:'📦', title:'Paquetes', section:'Paquetes de recursos', desc:'Recursos para llegar a Suiza, encontrar piso, buscar trabajo, criar una familia, mudarte y volver a tu país.', href:'/paquetes' },
   ...RESOURCE_PACKAGES.map(resourcePackage => ({ id:`paquete-${resourcePackage.slug}`, icon:resourcePackage.emoji, title:resourcePackage.title, section:'Paquetes de recursos', desc:resourcePackage.description, href:getResourcePackagePath(resourcePackage) })),
   { id:'inicio', icon:'🏠', title:'Inicio', section:'Latido', desc:'Resumen de anuncios, empleos, negocios, eventos y guías.', href:'/' },
@@ -59,7 +58,6 @@ export const SEARCHABLE_SITE_PAGES = [
 ]
 
 const ROUTE_SEO = [
-  { path:'/suizamente',title:'Suizamente: ¿cuánto sabes de Suiza? | Latido.ch',description:'Aprende jugando sobre Suiza y tu cantón. Sube de Uetliberg a Matterhorn con etapas, preguntas variadas y tu Suizómetro.' },
   { path:'/club', title:CARD_MEMBERS_ENABLED ? 'Latido Club | Descuentos y negocios de tu comunidad' : 'Promociona tu negocio gratis | Latido Club', description:CARD_MEMBERS_ENABLED ? 'Ahorra en negocios hispanohablantes de Suiza con Latido Club. CHF 6,90 al mes para socios; participar es gratis para negocios.' : 'Publica una oferta y consigue que más personas de la comunidad hispanohablante descubran tu negocio. Participar es gratis.' },
   {
     path:'/',
@@ -141,8 +139,6 @@ const ROUTE_SEO = [
 ]
 
 const PRIVATE_PATHS = [
-  '/suizamente/progreso',
-  '/suizamente/partida',
   '/auth',
   '/perfil',
   '/mensajes',
@@ -1079,7 +1075,6 @@ export function getLlmsText(pages = getPublicSeoPages()) {
 export function getPublicSeoPages() {
   const routePages = [
     '/',
-    '/suizamente',
     '/tablon',
     '/tablon?cat=vivienda',
     '/tablon?cat=empleo',

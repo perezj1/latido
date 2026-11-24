@@ -25,7 +25,7 @@ import { C, PP } from './lib/theme'
 
 import Footer from './components/Footer'
 import BottomNav from './components/BottomNav'
-import { isExploreRoute,isSuizamenteRoute } from './lib/sections'
+import { isExploreRoute } from './lib/sections'
 import Seo from './components/Seo'
 import CookieConsent from './components/CookieConsent'
 import OfflineNotice from './components/OfflineNotice'
@@ -60,7 +60,6 @@ const CreadorPerfil = lazy(() => import('./pages/CreadorPerfil'))
 const CreadorAlta = lazy(() => import('./pages/CreadorAlta'))
 const CreadorPanel = lazy(() => import('./pages/CreadorPanel'))
 const Perfil = lazy(() => import('./pages/Perfil'))
-const Suizamente = lazy(() => import('./pages/Suizamente'))
 const Auth = lazy(() => import('./pages/Auth'))
 const OAuthOnboarding = lazy(() => import('./pages/OAuthOnboarding'))
 const PublicarEvento = lazy(() => import('./pages/PublicarEvento'))
@@ -524,10 +523,9 @@ function AppShell() {
   const isSantiagoCruzLanding = pathname === '/santiago-cruz' || pathname === '/santiago-cruz/'
   const isBusinessPartnerLanding = pathname.startsWith('/latido-x/')
   const isPuntoHispanoPublisher = pathname.startsWith('/publicar/punto-hispano/')
-  const isSuizamente = isSuizamenteRoute(pathname)
   const showLanding = isRoot && !isPWA && !isLoggedIn
   const isCardLanding = pathname === '/club' || pathname === '/club/'
-  const hideAppNavigation = isCardLanding || pathname.startsWith('/auth') || pathname === '/reset-password' || pathname === '/tienda' || (pathname === '/card' || pathname.startsWith('/card/')) || isPuntoHispanoPublisher || isSuizamente
+  const hideAppNavigation = isCardLanding || pathname.startsWith('/auth') || pathname === '/reset-password' || pathname === '/tienda' || (pathname === '/card' || pathname.startsWith('/card/')) || isPuntoHispanoPublisher
   const needsProfileOnboarding = needsGoogleProfileOnboarding(user)
 
   useLayoutEffect(() => {
@@ -795,7 +793,7 @@ function AppShell() {
       <CookieConsent showBanner={false} />
       <PushRegistrationSync />
       <UserPresenceSync />
-      <main ref={routeViewRef} className={`latido-route-view${isSuizamente?' sz-app-surface':''}`} style={{ minHeight:'100vh', paddingBottom:messagesChatOpen || hideAppNavigation ? 0 : 'calc(104px + env(safe-area-inset-bottom))', overflowX:isCardLanding ? 'visible' : 'hidden', background:'#fff' }}>
+      <main ref={routeViewRef} className="latido-route-view" style={{ minHeight:'100vh', paddingBottom:messagesChatOpen || hideAppNavigation ? 0 : 'calc(104px + env(safe-area-inset-bottom))', overflowX:isCardLanding ? 'visible' : 'hidden', background:'#fff' }}>
         <Suspense fallback={<AppLoading />}>
           <Routes>
             <Route path="/" element={<Home />} />
@@ -831,8 +829,6 @@ function AppShell() {
             <Route path="/creadores/mi-perfil" element={<ProtectedRoute><CreadorPanel /></ProtectedRoute>} />
             <Route path="/creadores/:creatorSlug" element={<CreadorPerfil />} />
             <Route path="/perfil" element={<ProtectedRoute><Perfil /></ProtectedRoute>} />
-            <Route path="/perfil/suizometro" element={<Navigate to="/suizamente" replace />} />
-            <Route path="/suizamente/*" element={<Suizamente />} />
             <Route path="/auth/onboarding" element={<ProtectedRoute><OAuthOnboarding /></ProtectedRoute>} />
             <Route path="/auth" element={<AuthRoute />} />
             <Route path="/suizamente/conectar" element={<SuizamenteConnect />} />
@@ -858,7 +854,7 @@ function AppShell() {
           </Routes>
         </Suspense>
       </main>
-      {!hideAppNavigation && !isSuizamente && <BottomNav />}
+      {!hideAppNavigation && <BottomNav />}
       {!hideAppNavigation && (
         <PWAInstallBanner
           canInstall={canInstall}

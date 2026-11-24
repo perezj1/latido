@@ -29,7 +29,6 @@ import PuntoHispanoContacts from '../components/admin/PuntoHispanoContacts'
 import PuntoHispanoPublishLinks from '../components/admin/PuntoHispanoPublishLinks'
 import LatidoClubMetrics from '../components/admin/LatidoClubMetrics'
 import StoreOrders from '../components/admin/StoreOrders'
-import {AdminEntry as SuizamenteAdmin} from '../components/suizamente/v2/Admin'
 import ConversationFollowUpReport from '../components/admin/ConversationFollowUpReport'
 import '../styles/admin.css'
 
@@ -117,7 +116,6 @@ const ADMIN_ANALYTICS_EVENT_TYPES = [
 ]
 const PARTNER_METRICS_EXCLUDED_EMAILS = new Set(['test@g.com'])
 const ADMIN_TAB_DATA_GROUPS = {
-  suizamente: [],
   followups: [],
   storeOrders: [],
   latidoClub: [], // El informe agregado se carga al abrir su sección.
@@ -2063,7 +2061,7 @@ export default function Admin() {
   const loadingDataGroupsRef = useRef(new Set())
   const dataRangeDaysByGroupRef = useRef(new Map())
   const periodRowsCacheRef = useRef(new Map())
-  const [tab, setTab] = useState(() => { const section = new URLSearchParams(window.location.search).get('section'); return ['storeOrders', 'followups', 'suizamente'].includes(section) ? section : 'overview' })
+  const [tab, setTab] = useState(() => { const section = new URLSearchParams(window.location.search).get('section'); return ['storeOrders', 'followups'].includes(section) ? section : 'overview' })
   const [followupRevision, setFollowupRevision] = useState(0)
   const [followupStatus, setFollowupStatus] = useState({ loading: true, error: false, updatedAt: null })
   const [ordersRevision, setOrdersRevision] = useState(0)
@@ -4495,7 +4493,6 @@ export default function Admin() {
     !isTabDataReady(tabId) || isTabDataLoading(tabId) ? '...' : value
 
   const NAV_ITEMS = [
-    { id:'suizamente', icon:'guides', label:'Suizamente', value:'Preguntas y aprendizaje', color:'#0E7490', bg:'#ECFEFF' },
     { id: 'followups', icon: 'messages', label: 'Seguimiento de consultas', short: 'Seguimiento', value: 'Respuestas y resultados', color: '#2563EB', bg: '#EFF6FF' },
     { id: 'storeOrders', icon: 'storeOrders', label: 'Tienda · Pedidos', value: 'Pagos y envíos', color: '#047857', bg: '#ECFDF5' },
     { id: 'latidoClub', icon: 'latidoClub', label: 'Latido Club', value: 'Miembros, ofertas y negocios', color: '#4F46E5', bg: '#EEF2FF' },
@@ -4516,7 +4513,7 @@ export default function Admin() {
   const NAV_GROUPS = [
     { label: 'Dirección', hint: 'Estado global y decisiones rápidas', items: ['overview', 'live'] },
     { label: 'Crecimiento', hint: 'Usuarios, creadores, Club, valoraciones y colaboraciones', items: ['users', 'creators', 'latidoClub', 'analytics', 'feedback', 'partners'] },
-    { label: 'Operación', hint: 'Seguimientos, pedidos, negocios, publicaciones y seguridad', items: ['suizamente', 'followups', 'storeOrders', 'businessVerification', 'content', 'reports', 'moderation'] },
+    { label: 'Operación', hint: 'Seguimientos, pedidos, negocios, publicaciones y seguridad', items: ['followups', 'storeOrders', 'businessVerification', 'content', 'reports', 'moderation'] },
   ]
   const BOTTOM_NAV_ITEMS = []
   for (const id of ['overview', 'users', 'creators', 'analytics']) {
@@ -4567,7 +4564,6 @@ export default function Admin() {
         : 'Datos completos'
 
   const SECTION_TITLES = {
-    suizamente: {icon:'guides',label:'Suizamente'},
     followups: { icon: 'messages', label: 'Seguimiento de consultas' },
     storeOrders: { icon: 'storeOrders', label: 'Tienda Latido · Pedidos' },
     latidoClub: { icon: 'latidoClub', label: 'Latido Club' },
@@ -4586,7 +4582,6 @@ export default function Admin() {
 
   const activeSection = SECTION_TITLES[tab]
   const SECTION_DETAILS = {
-    suizamente: {description:'Propuestas, jugadores, partidas y economía de Suizamente.',color:'#0E7490',badge:'Juego · Comunidad · Moderación'},
     followups: { description: 'Resultados confirmados por las personas que contactaron por el chat: respuestas, motivos e historial de cada seguimiento.', color: '#2563EB', badge: 'Consultas · Respuestas · Próximas preguntas' },
     storeOrders: { description: 'Pedidos, pagos confirmados, datos de envío y preparación. Marca cada pedido en proceso, enviado y entregado.', color: '#047857', badge: 'Pagos · Preparación · Envíos' },
     latidoClub: { description: 'Miembros, negocios participantes, ofertas y actividad de Latido Club. Estado actual e historial separados.', color: '#4F46E5', badge: 'Miembros · Ofertas · Negocios · Usos' },
@@ -5250,7 +5245,7 @@ export default function Admin() {
             <div className="adm-sidebar__user">
               <span className="adm-avatar" aria-hidden="true">{(user?.email || 'A').slice(0, 1).toUpperCase()}</span>
               <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {tab === 'suizamente' ? 'Equipo Latido' : user?.email || 'Panel de administración'}
+                {user?.email || 'Panel de administración'}
               </span>
             </div>
           </div>
@@ -5372,7 +5367,7 @@ export default function Admin() {
       )}
 
       {/* Indicadores clave de la sección */}
-      {isTabDataReady(tab) && !['latidoClub', 'storeOrders', 'followups', 'suizamente'].includes(tab) && (
+      {isTabDataReady(tab) && !['latidoClub', 'storeOrders', 'followups'].includes(tab) && (
         <>
           <BlockTitle>Indicadores clave</BlockTitle>
           <KpiGrid count={sectionMetrics.length}>
@@ -5393,7 +5388,6 @@ export default function Admin() {
 
       {/* Evolución del periodo */}
       {tab === 'latidoClub' && <LatidoClubMetrics refreshKey={clubRevision} onStatus={setClubStatus} />}
-      {tab === 'suizamente' && <SuizamenteAdmin />}
       {tab === 'storeOrders' && <StoreOrders refreshKey={ordersRevision} onStatus={setOrdersStatus} />}
       {tab === 'followups' && <ConversationFollowUpReport initiallyOpen refreshKey={followupRevision} onStatus={setFollowupStatus} />}
       {isTabDataReady(tab) && !loading && activeChart && tab !== 'partners' && (

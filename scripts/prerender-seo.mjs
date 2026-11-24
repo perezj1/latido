@@ -1,4 +1,4 @@
-import { mkdir, readFile, writeFile, readdir } from 'node:fs/promises'
+import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { createHash } from 'node:crypto'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -197,22 +197,6 @@ async function injectServiceWorkerPrecache() {
     }, [])
     .sort()
 
-  // The game must reopen its shell offline after installation; never cache its API.
-  const gameAssets=(await readdir(path.join(distDir,'assets'))).filter(name=>/^(Suizamente|poppins-).+\.(js|css|woff2?)$/.test(name))
-  // Follow static imports too: Vite can extract game components into shared chunks.
-  // Do not follow the main entry's dynamic routes into the rest of Latido.
-  const dependencies=new Set(gameAssets),queue=gameAssets.filter(name=>name.endsWith('.js'))
-  const otherStyles=(await readdir(path.join(distDir,'assets'))).filter(name=>name.endsWith('.css')&&!dependencies.has(name))
-  for(const result of await Promise.all(otherStyles.map(async name=>({name,code:await readFile(path.join(distDir,'assets',name),'utf8')}))))if(result.code.includes('.sv-'))dependencies.add(result.name)
-  while(queue.length){
-    const name=queue.pop(),code=await readFile(path.join(distDir,'assets',name),'utf8')
-    for(const match of code.matchAll(/(?:from\s*|import\s*)["']\.\/([^"']+\.(?:js|css))["']/g)){
-      const dependency=match[1]
-      if(!dependencies.has(dependency)){dependencies.add(dependency);if(dependency.endsWith('.js'))queue.push(dependency)}
-    }
-  }
-  // The heavy renderer/geometry load only when opening Map, then use runtime caching.
-  assets.push(...[...dependencies].map(name=>'/assets/'+name),'/suizamente-assets/mapa-cantones.svg','/suizamente-assets/logo-suizamente.svg')
   const marker = 'const PRECACHE_ASSETS = []'
   const buildIdMarker = '__LATIDO_BUILD_ID__'
   const serviceWorker = await readFile(serviceWorkerPath, 'utf8')
@@ -223,10 +207,9 @@ async function injectServiceWorkerPrecache() {
     throw new Error('Could not find service worker build ID marker')
   }
 
-  const uniqueAssets=[...new Set(assets)].sort()
   const serviceWorkerWithAssets = serviceWorker.replace(
     marker,
-    `const PRECACHE_ASSETS = ${JSON.stringify(uniqueAssets)}`,
+    `const PRECACHE_ASSETS = ${JSON.stringify(assets)}`,
   )
   const buildId = createHash('sha256')
     .update(serviceWorkerWithAssets)
@@ -239,7 +222,7 @@ async function injectServiceWorkerPrecache() {
     'utf8',
   )
 
-  return uniqueAssets.length
+  return assets.length
 }
 
 const baseHtml = await readFile(distIndex, 'utf8')
