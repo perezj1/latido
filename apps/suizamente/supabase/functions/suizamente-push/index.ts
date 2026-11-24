@@ -5,6 +5,7 @@ const secret=Deno.env.get('PUSH_WEBHOOK_SECRET')||''
 const publicKey=Deno.env.get('VAPID_PUBLIC_KEY')||'',privateKey=Deno.env.get('VAPID_PRIVATE_KEY')||''
 function validEndpoint(endpoint:string){try{const u=new URL(endpoint);return u.protocol==='https:'&&!u.username&&!u.password&&(u.hostname==='fcm.googleapis.com'||u.hostname==='web.push.apple.com'||u.hostname.endsWith('.push.apple.com')||u.hostname.endsWith('.push.services.mozilla.com')||u.hostname.endsWith('.notify.windows.com'))}catch{return false}}
 Deno.serve(async req=>{
+ if(req.method==='GET')return Response.json({publicKey,enabled:Boolean(publicKey&&privateKey)},{headers:{'Access-Control-Allow-Origin':'*','Cache-Control':'no-store'}})
  if(req.method!=='POST')return Response.json({error:'Método no disponible'},{status:405})
  if(!secret||req.headers.get('x-latido-webhook-secret')!==secret)return Response.json({error:'No autorizado'},{status:403})
  if(!publicKey||!privateKey)return Response.json({error:'Falta la configuración de avisos'},{status:503})

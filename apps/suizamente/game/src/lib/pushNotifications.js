@@ -4,7 +4,18 @@ import { normalizeAdCat } from './constants'
 export const PUSH_SETTINGS_KEY = 'latido_alerts'
 export const PUSH_STATUS_EVENT = 'latido_push_status_changed'
 
-const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY
+let VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY
+let publicKeyRequest
+async function ensurePublicKey(){
+  if(VAPID_PUBLIC_KEY)return
+  if(!publicKeyRequest)publicKeyRequest=fetch(import.meta.env.VITE_SUPABASE_URL+'/functions/v1/suizamente-push',{signal:AbortSignal.timeout(15000)}).then(async response=>{
+    if(!response.ok)throw new Error('No se pudo conectar con los avisos.')
+    const data=await response.json()
+    if(!data.enabled||!(/^[A-Za-z0-9_-]{80,100}$/).test(data.publicKey||''))throw new Error('Los avisos todavía no están disponibles.')
+    VAPID_PUBLIC_KEY=data.publicKey
+  }).catch(error=>{publicKeyRequest=null;throw error})
+  await publicKeyRequest
+}
 const VAPID_KEY_STORAGE_KEY = 'latido_vapid_public_key'
 const PUSH_MANUAL_DISABLED_KEY = 'latido_push_manual_disabled'
 const PUSH_USER_STORAGE_KEY = 'latido_push_user_id'
@@ -229,10 +240,11 @@ export async function getPushStatus() {
 
 export async function subscribeToPushNotifications({ user, settings, userCanton }) {
   if (!user?.id) throw new Error('Inicia sesión para activar las notificaciones.')
-  if (!VAPID_PUBLIC_KEY) throw new Error('Falta VITE_VAPID_PUBLIC_KEY en el entorno de la app.')
   if (!isPushSupported()) throw new Error('Este navegador no soporta push web en este contexto.')
 
-  const permission = await Notification.requestPermission()
+  const consent=Notification.requestPermission()
+  await ensurePublicKey()
+  const permission = await consent
   if (permission !== 'granted') throw new Error('Activa las notificaciones desde los ajustes del navegador para recibir alertas.')
 
   const registration = await ensureServiceWorkerRegistration()
@@ -253,7 +265,8 @@ export async function subscribeToPushNotifications({ user, settings, userCanton 
 }
 
 export async function syncExistingPushRegistration({ user, settings, userCanton }) {
-  if (!user?.id || !isPushSupported() || Notification.permission !== 'granted' || !VAPID_PUBLIC_KEY) return
+  if (!user?.id || !isPushSupported() || Notification.permission !== 'granted') return
+  await ensurePublicKey()
   if (isManuallyDisabled()) return
 
   const registration = await ensureServiceWorkerRegistration()

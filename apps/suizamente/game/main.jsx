@@ -19,7 +19,8 @@ function nextPath(search){const value=new URLSearchParams(search).get('next')||s
 function Account(){const {authUser,loading}=useAuth(),{search}=useLocation();return loading?<Loading/>:authUser?<Navigate replace to={nextPath(search)}/>:<Auth/>}
 function Return(){const [params]=useSearchParams();return <Navigate replace to={nextPath('?next='+encodeURIComponent(params.get('next')||'/suizamente'))}/>}
 function ExternalLegal({path}){React.useEffect(()=>location.replace('https://www.latido.ch'+path),[path]);return <Loading/>}
-function App(){return <AuthProvider><BrowserRouter><Suspense fallback={<Loading/>}><Routes>
+function PushSync(){const {authUser}=useAuth();React.useEffect(()=>{if(authUser)import('./src/lib/pushNotifications').then(p=>p.syncExistingPushRegistration({user:authUser,settings:p.loadPushSettings(),userCanton:authUser.user_metadata?.canton})).catch(()=>{})},[authUser?.id]);return null}
+function App(){return <AuthProvider><BrowserRouter><PushSync/><Suspense fallback={<Loading/>}><Routes>
  <Route path="/suizamente/*" element={<Game/>}/>
  <Route path="/auth" element={<Account/>}/><Route path="/cuenta" element={<Account/>}/>
  <Route path="/auth/callback" element={<Account/>}/><Route path="/auth/onboarding" element={<Return/>}/>
