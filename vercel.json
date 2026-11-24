@@ -1,7 +1,7 @@
 {
   "functions": {
     "api/card-share.js": { "includeFiles": "dist/index.html" },
-    "api/suizamente/[...path].js": { "includeFiles": "server/suizamente/data/**" }
+    "api/suizamente.js": { "includeFiles": "server/suizamente/data/**" }
   },
   "headers": [
     {
@@ -94,6 +94,7 @@
     { "source": "/tarjeta-latido", "destination": "/club", "permanent": true }
   ],
   "rewrites": [
+    { "source": "/api/suizamente/:ruta*", "destination": "/api/suizamente?_ruta=:ruta*" },
     { "source": "/card/negocio/:provider", "destination": "/api/card-share?provider=:provider" },
     { "source": "/card", "destination": "/api/card-share" },
     { "source": "/scanner", "destination": "/scanner/index.html" },

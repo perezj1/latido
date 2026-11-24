@@ -35,7 +35,7 @@ copia privada previa y omite fases instaladas. Está limitado al proyecto de Lat
 
 La producción de `www.latido.ch` está vinculada a `main` en GitHub; la sesión local
 de Vercel pertenece a otro espacio. Usar el proyecto existente del dominio, no crear
-otro ni cambiar DNS. Publicar juntos el frontend y `api/suizamente/[...path].js`.
+otro ni cambiar DNS. Publicar juntos el frontend y `api/suizamente.js`.
 El proyecto utiliza `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY` existentes; la API
 acepta además `SUPABASE_URL` y `SUPABASE_ANON_KEY`. No requiere clave de servicio.
 

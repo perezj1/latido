@@ -31,7 +31,9 @@ export function createSuizamenteHandler({ fetchImpl = fetch } = {}) {
     }
     try {
       const url = new URL(req.url, 'http://' + (req.headers.host || 'localhost'))
-      const route = url.pathname.replace(/^\/api\/suizamente\/?/, '').replace(/\/$/, '')
+      // Vercel's Node runtime uses one concrete function and an explicit rewrite.
+      const rewritten = url.pathname.replace(/\/$/,'')==='/api/suizamente'?url.searchParams.get('_ruta'):null
+      const route = (rewritten??url.pathname.replace(/^\/api\/suizamente\/?/, '')).replace(/\/$/, '')
       if (req.method === 'POST' && route === 'sesion/salir') {
         if (req.headers.origin && new URL(req.headers.origin).host !== req.headers.host) return send(403, {error:'Origen no permitido'})
         res.setHeader('Set-Cookie', COOKIE + '=; HttpOnly; SameSite=Lax; Path=/api/suizamente; Max-Age=0')

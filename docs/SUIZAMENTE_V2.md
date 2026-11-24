@@ -50,7 +50,7 @@ No volver a aplicar v2 por separado después de actualizar: si se reinstala, rep
 el orden completo hasta v12. v3 importa las recompensas de respuestas y partidas
 existentes una sola vez mediante las mismas referencias del libro.
 
-Desplegar el frontend y la función api/suizamente/[...path].js juntos en Vercel.
+Desplegar el frontend y la función api/suizamente.js juntos en Vercel.
 La API usa la conexión de Supabase existente:
 SUPABASE_URL y SUPABASE_ANON_KEY, o sus equivalentes VITE_SUPABASE_*.
 No necesita la clave de servicio. El JWT de Latido se verifica en Supabase.
@@ -626,7 +626,7 @@ de hora y recibos únicos. El panel verifica permisos, registro y Economía viva
 1. La base de Latido ya está actualizada hasta v13 y las dos tareas programadas
    se han ejecutado correctamente. No hace falta ejecutar SQL manual en esta
    entrega. Mantener `suizamente_private` fuera de los esquemas expuestos.
-2. Desplegar en Vercel este frontend y `api/suizamente/[...path].js` juntos con las
+2. Desplegar en Vercel este frontend y `api/suizamente.js` juntos con las
    variables de Supabase existentes. Ejecutar `npm run build`; los recursos del
    juego se incluyen en `dist` y los bancos de preguntas quedan privados.
 3. `latido_push_notification` está desplegada y el trabajo de plazos activo.

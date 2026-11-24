@@ -21,6 +21,10 @@ try{
   assert.equal(r.statusCode,200)
   assert.equal(r.body.partida.segundosPorPregunta,30)
   assert.ok(!/"(?:correcta|dato)"\s*:/.test(JSON.stringify(r.body)))
+  const rewritten=await request('?_ruta=config')
+  assert.equal(rewritten.statusCode,200,'The concrete Vercel function dispatches rewritten paths')
+  assert.equal(rewritten.body.partida.segundosPorPregunta,30)
+  assert.equal((await request('?_ruta=admin/resumen')).statusCode,403,'Rewritten paths retain admin checks')
   r=await request('jugador')
   const cookie=r.headers['set-cookie'].split(';')[0]
   assert.match(r.headers['set-cookie'],/HttpOnly/)
