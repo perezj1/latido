@@ -1,5 +1,9 @@
 # Suizamente · juego, comunidad y administración
 
+La revisión de acceso requiere cuenta de Latido: entrada con Latido, Google o
+email y API v14. Los recorridos antiguos como invitado descritos más abajo son
+históricos; los datos existentes solo se recuperan después de iniciar sesión.
+
 Esta entrega sustituye la entrada del juego de montañas por la base y las partidas
 1 contra 1 de los nuevos diseños. El esquema y el historial antiguos se conservan.
 La referencia local suizamente/ no forma parte del despliegue. Los efectos numéricos
@@ -32,6 +36,8 @@ En el mismo proyecto Supabase que utiliza Latido, ejecutar en este orden:
     con pg_cron, cada minuto. Ejecutarlo con la cuenta administradora de la base.
 13. supabase/suizamente_v13_produccion.sql: rivales reales disponibles, consulta
     del vestíbulo y bloqueo de turnos en partidas antiguas sin rival.
+14. supabase/suizamente_v14_cuentas.sql: cuenta de Latido obligatoria también
+    para las llamadas directas a la RPC; conserva la vinculación de invitados antiguos.
 
 Los SQL son transaccionales y repetibles. No requieren instalar de nuevo el
 Suizamente anterior. No exponer suizamente_private en la API de Supabase.

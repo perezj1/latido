@@ -12,11 +12,12 @@ try{
     try{return Response.json(await call(db,opts.headers.Authorization==='Bearer test-a'?A:opts.headers.Authorization==='Bearer test-b'?B:opts.headers.Authorization==='Bearer test-c'?C:null,b.p_action,b.p_args,b.p_guest_id,b.p_guest_token))}
     catch(e){return Response.json({message:e.message,code:e.code},{status:400})}
   }})
-  async function request(path,method='GET',body,headers={}){
+  async function request(path,method='GET',body,headers={},implementation=handler){
     const res={headers:{},setHeader(key,value){this.headers[key.toLowerCase()]=value},end(text){this.body=JSON.parse(text)}}
-    await handler({url:'/api/suizamente/'+path,method,body,headers:{host:'localhost',...headers}},res)
+    await implementation({url:'/api/suizamente/'+path,method,body,headers:{host:'localhost',...headers}},res)
     return res
   }
+  for(const [actor,name] of [[A,'Alex'],[B,'Lu']])await call(db,actor,'guardar_jugador',profile(name))
   let r=await request('config')
   assert.equal(r.statusCode,200)
   assert.equal(r.body.partida.segundosPorPregunta,30)
@@ -25,30 +26,33 @@ try{
   assert.equal(rewritten.statusCode,200,'The concrete Vercel function dispatches rewritten paths')
   assert.equal(rewritten.body.partida.segundosPorPregunta,30)
   assert.equal((await request('?_ruta=admin/resumen')).statusCode,403,'Rewritten paths retain admin checks')
-  r=await request('jugador')
+  r=await request('config')
   const cookie=r.headers['set-cookie'].split(';')[0]
+  const auth={authorization:'Bearer test-a',cookie}
+  const expired=await request('jugador','GET',null,auth,createSuizamenteHandler({fetchImpl:async()=>Response.json({message:'JWT expired',code:'PGRST301'},{status:401})}))
+  assert.equal(expired.statusCode,401);assert.equal(expired.body.sesionCaducada,true)
+  const guestCredential=await request('jugador/vincular','POST',{},auth,createSuizamenteHandler({fetchImpl:async()=>Response.json({message:'SZV2:401:Credencial de invitado no válida'},{status:400})}))
+  assert.equal(guestCredential.statusCode,401);assert.equal(guestCredential.body.sesionCaducada,undefined,'A guest-link failure must not sign out a valid Latido account')
   assert.match(r.headers['set-cookie'],/HttpOnly/)
   assert.equal(r.headers['cache-control'],'no-store')
-  r=await request('jugador','PUT',profile('Visita'),{cookie})
-  assert.equal(r.statusCode,200)
-  r=await request('jugador/bienvenida','POST',{}, {cookie})
-  assert.equal(r.body.jugador.monedas,100)
+  assert.equal((await request('jugador')).statusCode,401)
+  assert.equal((await request('jugador','PUT',profile('Visita'),{cookie})).statusCode,401)
+  assert.equal((await request('jugador/bienvenida','POST',{}, {cookie})).statusCode,401)
+  assert.equal((await request('partidas','POST',{rival:B}, {cookie})).statusCode,401)
   r=await request('jugador/bienvenida','POST',{}, {cookie,origin:'https://malicious.invalid'})
   assert.equal(r.statusCode,403)
-  r=await request('jugador','PUT',{...profile(),canton:'XX'}, {cookie})
+  r=await request('jugador','PUT',{...profile(),canton:'XX'}, auth)
   assert.equal(r.statusCode,400)
   const dilemma=(await db.query("SELECT id FROM suizamente_private.suizamente_preguntas WHERE payload->>'tipo'='dilema' LIMIT 1")).rows[0].id
-  r=await request('preguntas/'+dilemma)
+  r=await request('preguntas/'+dilemma,'GET',null,auth)
   assert.equal(r.statusCode,200)
   assert.equal(r.body.dato,undefined)
-  r=await request('votos','POST',{preguntaId:dilemma,opcion:0},{cookie})
+  r=await request('votos','POST',{preguntaId:dilemma,opcion:0},auth)
   assert.equal(r.body.yaVotado,false)
   assert.ok(r.body.dato)
-  r=await request('votos','POST',{preguntaId:dilemma,opcion:1},{cookie})
+  r=await request('votos','POST',{preguntaId:dilemma,opcion:1},auth)
   assert.equal(r.body.yaVotado,true)
   assert.equal(r.body.opcion,0)
-  for(const [actor,name] of [[A,'Alex'],[B,'Lu']])await call(db,actor,'guardar_jugador',profile(name))
-  const auth={authorization:'Bearer test-a',cookie}
   r=await request('partidas','POST',{rival:B},auth)
   assert.equal(r.statusCode,200)
   let m=r.body

@@ -12,7 +12,7 @@ const inspection=`SELECT jsonb_build_object(
  'perfiles',(SELECT count(*) FROM suizamente_private.suizamente_jugadores),
  'partidas',(SELECT count(*) FROM suizamente_private.suizamente_partidas),
  'movimientos',(SELECT count(*) FROM suizamente_private.suizamente_movimientos),
- 'versiones',(SELECT jsonb_object_agg(proname,true) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='suizamente_private' AND proname IN('v7_persona','v10_ligas_actualizar','v11_misiones_preparar','v12_tick','v13_rivales')),
+ 'versiones',(SELECT jsonb_object_agg(proname,true) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='suizamente_private' AND proname IN('v7_persona','v10_ligas_actualizar','v11_misiones_preparar','v12_tick','v13_rivales','v14_api_base')),
  'admin',to_regclass('suizamente_private.suizamente_admin_registro') IS NOT NULL,
  'tablas',(SELECT jsonb_agg(tablename ORDER BY tablename) FROM pg_tables WHERE schemaname='suizamente_private' AND (tablename LIKE 'suizamente_%' OR tablename='admins'))
 ) estado`
@@ -34,7 +34,8 @@ const phases=[
  ['suizamente_v10_admin_operaciones.sql',!before.versiones?.v10_ligas_actualizar],
  ['suizamente_v11_duracion.sql',!before.versiones?.v11_misiones_preparar],
  ['suizamente_v12_progreso.sql',!before.versiones?.v12_tick],
- ['suizamente_v13_produccion.sql',true],
+ ['suizamente_v13_produccion.sql',!before.versiones?.v14_api_base],
+ ['suizamente_v14_cuentas.sql',true],
  ['suizamente_v12_tareas.sql',true],
  ['suizamente_v2_avisos.sql',true]
 ]
@@ -53,4 +54,4 @@ const checks=await query(`SELECT jsonb_build_object(
  ) checks`)
 const report={fecha:new Date().toISOString(),project,antes:{...before,tablas:before.tablas.length},despues:{...after,tablas:after.tablas.length},applied,checks:checks[0].checks,backup:backupPath}
 await writeFile(folder+'/resultado.json',JSON.stringify(report,null,2));console.log('Verificación:',JSON.stringify(report.checks))
-if(report.checks.apiVersion!==13||report.checks.privadasExpuestas)throw Error('La comprobación final de producción no pasa')
+if(report.checks.apiVersion!==14||report.checks.privadasExpuestas)throw Error('La comprobación final de producción no pasa')

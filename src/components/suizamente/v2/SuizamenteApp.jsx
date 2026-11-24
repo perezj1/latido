@@ -35,14 +35,11 @@ function Invitation(){
   return <NewGame invitation={pathname.split('/').pop()}/>
 }
 function ProfileGate({children,player,ready}){
-  const {pathname}=useLocation()
+  const {pathname,search}=useLocation()
   if(!ready)return <Loading/>
   if(!player){
-    if(pathname.startsWith('/suizamente/invitar/')){
-      sessionStorage.setItem('suizamente:despues-perfil',pathname)
-      return <ProfileForm/>
-    }
-    return <Navigate to={localStorage.getItem('suizamente:onboarding')?'/suizamente/bienvenida':'/suizamente/primera-vez'} replace/>
+    if(pathname!=='/suizamente'&&pathname!=='/suizamente/')sessionStorage.setItem('suizamente:despues-perfil',pathname+search)
+    return <ProfileForm/>
   }
   if(player.renombrar&&pathname!=='/suizamente/perfil/editar')return <Navigate to="/suizamente/perfil/editar" replace/>
   return children
@@ -82,7 +79,7 @@ export default function SuizamenteApp(){
   useEffect(()=>{
     const update=e=>{
       const data=e.detail
-      if(user?data.jugador.jugador_id!==user.id:!data.jugador.jugador_id.startsWith('invitado-'))return
+      if(!user||data.jugador.jugador_id!==user.id)return
       savePlayer(data)
       if(data.configVersion!==undefined&&data.configVersion!==configRevision.current)refreshConfig().catch(()=>{})
       const fresh=(data.novedades||[]).filter(n=>!seen.current.has(data.jugador.jugador_id+':'+n.id))
@@ -105,11 +102,13 @@ export default function SuizamenteApp(){
     szApi('config').then(data=>{if(active){configRevision.current=data.version??0;setConfig(data)}}).catch(e=>{if(active)setError(e.message)})
     return()=>{active=false}
   },[retry])
-  useEffect(()=>{let active=true;setCapabilities(null);szApi('capacidades').then(d=>{if(active)setCapabilities(d)}).catch(()=>{if(active)setCapabilities({admin:false})});return()=>{active=false}},[user?.id,retry])
+  useEffect(()=>{let active=true;setCapabilities(null);if(!user)return;szApi('capacidades').then(d=>{if(active)setCapabilities(d)}).catch(()=>{if(active)setCapabilities({admin:false})});return()=>{active=false}},[user?.id,retry])
   useEffect(()=>{
     if(authLoading)return
     let active=true
     setReady(false);setPlayer(null);setError('')
+    currentPlayer.current=null;setMap(null);setNotices([])
+    if(!user){setReady(true);return}
     ;(async()=>{
       if(user&&localStorage.getItem('suizamente:invitado-con-datos')){
         try{
@@ -159,13 +158,13 @@ export default function SuizamenteApp(){
   }
   const gate=element=><ProfileGate player={player} ready={ready}>{element}</ProfileGate>
   const reduced=!!settings.menosAnimaciones||systemReduced
-  const admin=location.pathname.startsWith('/suizamente/admin'),showNavigation=!!player&&ready&&!questionVisible
+  const admin=location.pathname.startsWith('/suizamente/admin'),showNavigation=!!user&&!!player&&ready&&!questionVisible
   const activeTab=['mapa','album','tienda','amigos'].find(tab=>location.pathname.startsWith('/suizamente/'+tab))||'inicio'
   return <SuizamenteContext.Provider value={{player,map,config,user,capabilities,refreshConfig,settings,reduced,savePlayer,updateSettings,signOut,setQuestionVisible}}><div className={'sv-root'+(admin?' sv-admin-root':'')+(showNavigation?' sv-has-nav':'')}>
     <Feedback/><InstallMetadata/>
     {networkFailure&&<div className="sv-connection" role="alert">Algo ha fallado. Inténtalo otra vez. <button className="sv-text-button" onClick={()=>{setNetworkFailure(false);setRetry(n=>n+1)}}>Reintentar conexión</button></div>}
     {!online&&<p className="sv-connection" role="status">Sin conexión · reintentando…</p>}
-    {error?<section className="sv-screen"><div className="sv-welcome"><Logo size={90}/><h1>No se pudo abrir Suizamente</h1><p role="alert">{error}</p><Button onClick={()=>setRetry(n=>n+1)}>Reintentar</Button></div></section>:!config||!ready?<Loading/>:
+    {authLoading?<Loading/>:!user?<Login/>:error?<section className="sv-screen"><div className="sv-welcome"><Logo size={90}/><h1>No se pudo abrir Suizamente</h1><p role="alert">{error}</p><Button onClick={()=>setRetry(n=>n+1)}>Reintentar</Button></div></section>:!config||!ready?<Loading/>:
     <Routes>
       <Route path="admin/*" element={<AdminPanel/>}/>
       <Route path="primera-vez" element={<Onboarding/>}/>
@@ -203,7 +202,7 @@ export default function SuizamenteApp(){
       <Route path="*" element={<Navigate to="/suizamente" replace/>}/>
     </Routes>}
     {showNavigation&&<Navigation active={activeTab}/>}
-    {opening&&<Opening onDone={finishOpening} reduced={reduced}/>}
+    {opening&&user&&<Opening onDone={finishOpening} reduced={reduced}/>}
     {!!notices.length&&<div className={'sv-notice'+(notices[0].datos.href?' has-link':'')} role="status" aria-live="polite">{notices[0].datos.texto}{notices[0].datos.href&&<><Link to={notices[0].datos.href} onClick={()=>setNotices(old=>old.slice(1))}>{notices[0].tipo==='asalto'?'Ver mapa':'Ver'}</Link><button aria-label="Cerrar aviso" onClick={()=>setNotices(old=>old.slice(1))}>×</button></>}</div>}
   </div></SuizamenteContext.Provider>
 }

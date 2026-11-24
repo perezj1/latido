@@ -5,7 +5,7 @@
 Actualizada el 24 de noviembre de 2026 en el proyecto Supabase de Latido
 `zmievixfjefjppofebbh`. No hace falta ejecutar SQL manualmente para esta entrega.
 Se ha importado el banco canónico y aplicado Comunidad, administración, Economía,
-eventos, ligas, misiones, vueltas y v13. No se reinstaló el motor base ni se borraron
+eventos, ligas, misiones, vueltas y v14. No se reinstaló el motor base ni se borraron
 perfiles, partidas, votos o movimientos. Las tareas de progreso y plazos están
 activas; la función de avisos push está desplegada.
 
@@ -18,7 +18,7 @@ npm run suizamente:production:check
 En el editor SQL de Supabase se puede comprobar, sin modificar datos:
 
 ```sql
-SELECT public.suizamente_v2('config')->>'apiVersion' AS version; -- 13
+SELECT public.suizamente_v2('config')->>'apiVersion' AS version; -- 14
 SELECT jobname, schedule, active FROM cron.job
 WHERE jobname IN ('suizamente-progreso', 'suizamente-turnos');
 SELECT j.jobname, r.status, r.start_time
@@ -27,7 +27,7 @@ WHERE j.jobname IN ('suizamente-progreso', 'suizamente-turnos')
 ORDER BY r.start_time DESC LIMIT 10;
 ```
 
-Las migraciones futuras van después de `suizamente_v13_produccion.sql`; no hay que
+Las migraciones futuras van después de `suizamente_v14_cuentas.sql`; no hay que
 reaplicar v2 por separado. `scripts/suizamente-production.ps1 aplicar` conserva una
 copia privada previa y omite fases instaladas. Está limitado al proyecto de Latido.
 
@@ -39,7 +39,7 @@ otro ni cambiar DNS. Publicar juntos el frontend y `api/suizamente.js`.
 El proyecto utiliza `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY` existentes; la API
 acepta además `SUPABASE_URL` y `SUPABASE_ANON_KEY`. No requiere clave de servicio.
 
-Tras publicar, `/api/suizamente/config` debe responder JSON con `apiVersion:13`,
+Tras publicar, `/api/suizamente/config` debe responder JSON con `apiVersion:14`,
 no el HTML de la aplicación. No dar por publicado el juego hasta comprobarlo.
 El Service Worker actualiza los recursos de la interfaz; recargar una vez si sigue
 abierta una versión antigua. Las respuestas de la API y los votos no se cachean.
@@ -103,3 +103,30 @@ de liga sin afectar a personas reales: `npm run suizamente:simulate:week`.
 - Falta la validación humana en dispositivos físicos y revisar el contenido y las
   fechas antes de invitar a toda la comunidad. Las pruebas de WebKit son automáticas,
   no una ejecución en un iPhone físico.
+
+
+## Acceso obligatorio y ajuste de textos
+
+La entrada pública tiene una ilustración propia de Suizamente y tres opciones,
+por este orden: cuenta de Latido, Google y email. No se crean perfiles invitados
+nuevos ni se permite votar, construir o jugar sin sesión. La API HTTP y Supabase
+rechazan estas peticiones con 401; administración mantiene 403. Las preguntas y
+los enlaces de invitación también pasan por el acceso, conservando su destino.
+Los datos de invitados anteriores se pueden vincular al iniciar sesión.
+
+La migración incremental es `supabase/suizamente_v14_cuentas.sql`, después de v13.
+El transporte de sesión comparte una recuperación entre peticiones rechazadas,
+reintenta una sola vez y cierra localmente las sesiones inválidas. No se toma como
+usuario conectado una cuenta encontrada en el almacenamiento de otro proyecto.
+
+El filtro muestra «Todas», «Mi turno» y «Su turno». La cabecera se adapta en dos
+filas cuando hace falta, los apodos largos caben en sus tarjetas y los botones
+permiten texto en varias líneas. Se comprueban 320, 390 y escritorio.
+
+```powershell
+npm run test:auth:session
+npm run test:suizamente:v14
+npm run test:suizamente:login:browser
+node scripts/test-suizamente-login-browser.mjs --webkit
+node scripts/check-suizamente-live.mjs
+```

@@ -6,7 +6,8 @@ export const B='22222222-2222-4222-8222-222222222222'
 export const C='33333333-3333-4333-8333-333333333333'
 export const G='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'
 export const TOKEN='a'.repeat(64)
-export async function database({economia=false,tienda=false,mapa=false,album=false,comunidad=false,admin=false,operaciones=false,duracion=false,progreso=false,produccion=false}={}) {
+export async function database({economia=false,tienda=false,mapa=false,album=false,comunidad=false,admin=false,operaciones=false,duracion=false,progreso=false,produccion=false,cuentas=false}={}) {
+  if(cuentas)produccion=true
   if(produccion)progreso=true
   if(progreso)duracion=true
   if(duracion)operaciones=true
@@ -28,6 +29,7 @@ export async function database({economia=false,tienda=false,mapa=false,album=fal
   if(duracion)await db.exec(await readFile('supabase/suizamente_v11_duracion.sql','utf8'))
   if(progreso)await db.exec(await readFile('supabase/suizamente_v12_progreso.sql','utf8'))
   if(produccion)await db.exec(await readFile('supabase/suizamente_v13_produccion.sql','utf8'))
+  if(cuentas)await db.exec(await readFile('supabase/suizamente_v14_cuentas.sql','utf8'))
   return db
   }catch(error){await db.close();throw error}
 }

@@ -58,6 +58,7 @@ export function createSuizamenteHandler({ fetchImpl = fetch } = {}) {
         if(req.method==='POST')action={cofres:{abrir:'abrir_cofre'},asaltos:{empezar:'asalto_empezar',respuesta:'asalto_respuesta',comodin:'asalto_comodin',descartar:'asalto_descartar'},sobres:{girar:'girar_carta'}}[kind]?.[operation]
       }
       if (!action) return send(404, { error:'Ruta no disponible' })
+      if(!req.headers.authorization&&!['config','capacidades'].includes(action))return send(adminRoute?403:401,{error:adminRoute?'Solo administración de Latido':'Entra con tu cuenta de Latido para jugar'})
       let body = req.body
       if (req.method !== 'GET' && !body) {
         const chunks = []
@@ -109,7 +110,7 @@ export function createSuizamenteHandler({ fetchImpl = fetch } = {}) {
         const message = String(data.message || '')
         const known = message.match(/SZV2:(400|401|402|403|404|409|429|503):(.+)/)
         if (known) return send(Number(known[1]), { error:known[2] })
-        if (response.status === 401) return send(401, { error:'Tu sesión ha caducado. Vuelve a entrar.' })
+        if (response.status === 401) return send(401, { error:'Tu sesión ha caducado. Vuelve a entrar.',sesionCaducada:true })
         if (data.code === '22P02' || data.code === '23514') return send(400, { error:'Revisa los datos enviados' })
         if (data.code === 'PGRST202' || data.code === '42883') return send(503, { error:'Falta instalar la migración de Suizamente' })
         console.error('suizamente_api', data.code || response.status)

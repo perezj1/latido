@@ -7,6 +7,7 @@ import './latido-cards.css'
 export default function LatidoCard({surface='home'}){
   const {authUser}=useAuth(),[data,setData]=useState(null),[player,setPlayer]=useState(null)
   useEffect(()=>{let active=true
+    if(!authUser){setData(null);setPlayer(null);return}
     Promise.all([szApi('portada'),szApi('jugador')]).then(([d,p])=>{if(active){setData(d);setPlayer(p.jugador)}}).catch(()=>{})
     const update=e=>{if(active&&e.detail?.jugador)setPlayer(e.detail.jugador)}
     window.addEventListener(SV_STATE,update)

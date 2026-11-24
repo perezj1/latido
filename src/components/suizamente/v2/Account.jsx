@@ -1,5 +1,6 @@
 import {useState} from 'react'
-import {Link,useNavigate} from 'react-router-dom'
+import {Link,Navigate,useLocation,useNavigate} from 'react-router-dom'
+import {useAuth} from '../../../hooks/useAuth'
 import {useSv} from './Context'
 import {Avatar,Brand,Button,Card,Chip,Header,Logo,Sheet,StampBar,Stamps,Wheel} from './Shared'
 import {szApi,cantonNames,countryNames} from '../../../lib/suizamenteV2'
@@ -45,14 +46,19 @@ export function Onboarding(){
   </section>
 }
 export function Welcome(){
-  return <section className="sv-screen"><div className="sv-welcome"><Logo size={140}/><Brand/><h1>El juego de preguntas de Suiza</h1><p>Gira, responde y consigue los seis sellos.</p></div><footer className="sv-footer"><Button to="/suizamente/como-se-juega">Empezar</Button><Button to={'/auth?next='+encodeURIComponent('/suizamente')} tone="quiet">Ya tengo cuenta</Button></footer></section>
+  return <Login/>
 }
+function LoginArt(){
+ return <div className="sv-login-art" aria-hidden="true"><svg viewBox="0 0 360 280" focusable="false"><circle cx="180" cy="136" r="116" fill="#D3F8F3"/><circle cx="285" cy="55" r="24" fill="#F9A719"/><path d="M0 222 112 55 200 177 254 88 360 222Z" fill="#03AA98"/><path d="m112 55-44 66 28-6 16 17 16-18 29 7Z" fill="#FFFFFF"/><path d="m254 88-32 48 20-4 12 12 11-13 21 5Z" fill="#FFFFFF"/><path d="M0 224Q90 164 180 224T360 224V280H0Z" fill="#24E2C9"/><path d="M0 256Q90 216 180 256T360 256V280H0Z" fill="#24BFE2"/><g fill="#FFFFFF"><rect x="42" y="208" width="39" height="29" rx="4"/><rect x="268" y="203" width="42" height="30" rx="4"/></g><g fill="#F9A719"><path d="m34 208 28-23 28 23Z"/><path d="m260 203 29-23 29 23Z"/></g><g fill="#4A76EF"><rect x="56" y="220" width="10" height="17" rx="2"/><rect x="283" y="216" width="11" height="17" rx="2"/></g></svg><div className="sv-login-passport"><Logo size={70}/><span>Tu próxima aventura</span><b>empieza en Suiza</b></div><span className="sv-login-stamp one">🎡</span><span className="sv-login-stamp two">🛂</span><span className="sv-login-stamp three">🃏</span></div>
+}
+function GoogleMark(){return <svg viewBox="0 0 18 18" width="22" height="22" aria-hidden="true"><path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.71v2.26h2.91c1.7-1.57 2.69-3.88 2.69-6.61Z"/><path fill="#34A853" d="M9 18c2.43 0 4.47-.81 5.96-2.19l-2.91-2.26c-.81.54-1.84.86-3.05.86-2.34 0-4.33-1.58-5.04-3.71H.96v2.33A9 9 0 0 0 9 18Z"/><path fill="#FBBC05" d="M3.96 10.7A5.42 5.42 0 0 1 3.68 9c0-.59.1-1.16.28-1.7V4.97H.96A9 9 0 0 0 0 9c0 1.45.35 2.82.96 4.03l3-2.33Z"/><path fill="#EA4335" d="M9 3.58c1.32 0 2.51.46 3.44 1.35l2.58-2.58A8.64 8.64 0 0 0 9 0 9 9 0 0 0 .96 4.97l3 2.33C4.67 5.17 6.66 3.58 9 3.58Z"/></svg>}
 export function Login(){
-  const {user}=useSv()
-  return <section className="sv-screen"><Header title="Entrar"/><div className="sv-welcome"><Logo size={110}/><Brand/><h2>Juega con tu comunidad</h2><p>Tu cuenta de Latido guarda tus partidas en todos tus dispositivos.</p></div><footer className="sv-footer">
-    <Button to={user?'/suizamente/perfil/nuevo':'/auth?next='+encodeURIComponent('/suizamente/perfil/nuevo')}>{user?'Continuar con mi cuenta':'Entrar con Latido'}</Button>
-    {!user&&<Button to="/suizamente/perfil/nuevo" tone="quiet">Jugar sin cuenta</Button>}
-  </footer></section>
+  const {authUser:user,signInWithGoogle}=useAuth(),{pathname,search}=useLocation(),[busy,setBusy]=useState(false),[error,setError]=useState('')
+  const destination=['/suizamente/entrar','/suizamente/bienvenida','/suizamente/primera-vez'].includes(pathname)?'/suizamente':pathname+search
+  const auth='/auth?next='+encodeURIComponent(destination)
+  async function google(){setBusy(true);setError('');try{const callback=new URL('/auth',location.origin);callback.searchParams.set('next',destination);callback.searchParams.set('oauth','google');const result=await signInWithGoogle({redirectTo:callback.toString()});if(result.error)throw result.error}catch{setError('No se pudo abrir Google. Inténtalo otra vez o entra con tu email.');setBusy(false)}}
+  if(user)return <Navigate to="/suizamente" replace/>
+  return <section className="sv-screen sv-login-screen"><header className="sv-login-heading"><Logo size={62}/><h1><Brand/></h1><p>Descubre Suiza. Juega en comunidad.</p></header><LoginArt/><div className="sv-login-actions"><Link className="sv-login-button latido" to={auth+'&mode=login'}><span aria-hidden="true">L</span><b>Iniciar sesión con Latido</b></Link><button className="sv-login-button google" disabled={busy} onClick={google}><GoogleMark/><b>{busy?'Conectando con Google…':'Continuar con Google'}</b></button><Link className="sv-login-button email" to={auth+'&mode=login&metodo=email'}><span aria-hidden="true">✉</span><b>Entrar con email</b></Link><p className="sv-login-account-note">Necesitas una cuenta para jugar.<br/>Las tres opciones usan tu cuenta de Latido.</p>{error&&<p role="alert">{error}</p>}</div><p className="sv-login-legal">Al continuar, aceptas los <Link to="/terminos">Términos</Link> y la <Link to="/privacidad">Política de privacidad</Link>.</p></section>
 }
 export function HowTo(){
   const {config,player}=useSv()
@@ -68,7 +74,6 @@ export function ProfileForm({editing=false}){
     e.preventDefault();setBusy(true);setError('')
     try{
       let result=await szApi('jugador',{method:'PUT',body:{...form,ajustes:{...settings,...player?.ajustes}}})
-      if(!user)localStorage.setItem('suizamente:invitado-con-datos','1')
       if(!editing){
         result=await szApi('jugador/bienvenida',{method:'POST'})
         localStorage.setItem('suizamente:onboarding',new Date().toISOString())

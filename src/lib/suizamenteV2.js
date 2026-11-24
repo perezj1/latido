@@ -1,4 +1,4 @@
-import {supabase} from './supabase'
+import {supabase,recoverSupabaseSession,invalidateSupabaseSession} from './supabase'
 const pendingReads=new Map()
 let guestQueue=Promise.resolve()
 export const SV_STATE='suizamente:estado'
@@ -16,11 +16,14 @@ export async function szApi(path, {method='GET',body}={}) {
   const key=path+'|'+(session?.user?.id||'invitado')
   if(method==='GET'&&pendingReads.has(key))return pendingReads.get(key)
   const execute=async()=>{
-  const response=await fetch('/api/suizamente/'+path,{
+  const send=token=>fetch('/api/suizamente/'+path,{
     method,credentials:'same-origin',cache:'no-store',
-    headers:{'Content-Type':'application/json',...(guest?{'X-Jugador-Id':guest}:{}),...(session?.access_token?{Authorization:'Bearer '+session.access_token}:{})},
+    headers:{'Content-Type':'application/json',...(guest?{'X-Jugador-Id':guest}:{}),...(token?{Authorization:'Bearer '+token}:{})},
     ...(body?{body:JSON.stringify(body)}:{}),
   }).catch(()=>{window.dispatchEvent(new Event('suizamente:error-conexion'));throw new Error('Algo ha fallado. Inténtalo otra vez.')})
+  let response=await send(session?.access_token)
+  const sessionRejected=response.status===401&&(await response.clone().json().catch(()=>null))?.sesionCaducada
+  if(sessionRejected&&session?.access_token){const fresh=await recoverSupabaseSession(session.access_token,session.user?.id);if(fresh?.access_token){response=await send(fresh.access_token);if(response.status===401&&(await response.clone().json().catch(()=>null))?.sesionCaducada)await invalidateSupabaseSession(fresh.access_token)}}
   let data
   try{data=await response.json()}catch{throw new Error('No se pudo conectar con Suizamente. Inténtalo otra vez.')}
   if(!response.ok){if(response.status>=500)window.dispatchEvent(new Event('suizamente:error-conexion'));const error=new Error(data.error||'Algo ha fallado. Inténtalo otra vez.');error.status=response.status;error.partida=data.partida;throw error}

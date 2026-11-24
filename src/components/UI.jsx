@@ -284,6 +284,8 @@ export function PrivacyTag({ privacy }) {
 // ── Input ──────────────────────────────────────────────────────
 export function Input({ label, placeholder, value, onChange, type='text', rows, required, style={}, leftElement, rightElement, error, errorKey }) {
   const hasError = Boolean(error)
+  const controlId=useId(),errorId=controlId+'-error'
+  const accessibility={id:controlId,'aria-required':required||undefined,'aria-describedby':hasError?errorId:undefined}
   const base = {
     width:'100%', border:`1.5px solid ${C.border}`, borderRadius:12,
     padding:'11px 13px', fontSize:13, fontFamily:PP, outline:'none',
@@ -294,9 +296,9 @@ export function Input({ label, placeholder, value, onChange, type='text', rows, 
   const controlStyle = { ...base, ...style, ...errorStyle }
   return (
     <div data-error-field={errorKey || undefined} style={{ marginBottom: 10 }}>
-      {label && <label style={{ fontFamily:PP, fontSize:10, fontWeight:700, color:C.light, letterSpacing:1, display:'block', marginBottom:6 }}>{label}{required&&' *'}</label>}
+      {label && <label htmlFor={controlId} style={{ fontFamily:PP, fontSize:10, fontWeight:700, color:C.light, letterSpacing:1, display:'block', marginBottom:6 }}>{label}{required&&<span aria-hidden="true"> *</span>}</label>}
       {rows
-        ? <textarea aria-invalid={hasError || undefined} style={{ ...controlStyle, resize:'none', minHeight: rows*24 }} placeholder={placeholder} value={value} onChange={onChange} rows={rows} />
+        ? <textarea {...accessibility} aria-invalid={hasError || undefined} style={{ ...controlStyle, resize:'none', minHeight: rows*24 }} placeholder={placeholder} value={value} onChange={onChange} rows={rows} />
         : leftElement || rightElement ? (
           <div style={{ position:'relative' }}>
             {leftElement && (
@@ -304,17 +306,17 @@ export function Input({ label, placeholder, value, onChange, type='text', rows, 
                 {leftElement}
               </div>
             )}
-            <input aria-invalid={hasError || undefined} style={{ ...controlStyle, ...(leftElement ? { paddingLeft:31 } : {}), ...(rightElement ? { paddingRight:46 } : {}) }} type={type} placeholder={placeholder} value={value} onChange={onChange} />
+            <input {...accessibility} aria-invalid={hasError || undefined} style={{ ...controlStyle, ...(leftElement ? { paddingLeft:31 } : {}), ...(rightElement ? { paddingRight:46 } : {}) }} type={type} placeholder={placeholder} value={value} onChange={onChange} />
             {rightElement && (
               <div style={{ position:'absolute', right:8, top:'50%', transform:'translateY(-50%)', display:'flex', alignItems:'center' }}>
                 {rightElement}
               </div>
             )}
           </div>
-        ) : <input aria-invalid={hasError || undefined} style={controlStyle} type={type} placeholder={placeholder} value={value} onChange={onChange} />
+        ) : <input {...accessibility} aria-invalid={hasError || undefined} style={controlStyle} type={type} placeholder={placeholder} value={value} onChange={onChange} />
       }
       {hasError && (
-        <p style={{ fontFamily:PP, fontSize:10.5, color:'#DC2626', margin:'5px 2px 0', lineHeight:1.45 }}>
+        <p id={errorId} style={{ fontFamily:PP, fontSize:10.5, color:'#DC2626', margin:'5px 2px 0', lineHeight:1.45 }}>
           {error}
         </p>
       )}

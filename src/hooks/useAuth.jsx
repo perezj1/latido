@@ -6,25 +6,9 @@ import { getAccountUser, requiresCooperatorAccess } from '../lib/accountAccess'
 
 const AuthContext = createContext(null)
 
-function getLocalUser() {
-  try {
-    for (const key of Object.keys(localStorage)) {
-      if (key.startsWith('sb-') && key.endsWith('-auth-token')) {
-        const parsed = JSON.parse(localStorage.getItem(key) || '{}')
-        const user = parsed?.user ?? null
-        const expiresAt = parsed?.expires_at
-        if (!user) continue
-        if (expiresAt && expiresAt < Date.now() / 1000) continue
-        return user
-      }
-    }
-  } catch {}
-  return null
-}
-
 export function AuthProvider({ children }) {
-  const localUser = getLocalUser()
-  const [authUser, setAuthUser] = useState(localUser)
+  // Supabase owns the project-scoped session and refreshes it before we expose a user.
+  const [authUser, setAuthUser] = useState(null)
   const [accountAccess, setAccountAccess] = useState(null)
   const resolvedAccess = accountAccess?.userId === authUser?.id ? accountAccess : null
   const restrictedLogin = requiresCooperatorAccess(authUser)
@@ -32,11 +16,10 @@ export function AuthProvider({ children }) {
   const user = isCooperator && (!resolvedAccess || resolvedAccess.error || resolvedAccess.data?.role !== 'cooperator')
     ? null
     : getAccountUser(authUser, resolvedAccess?.data)
-  // Only show loading spinner if we have no cached user to show immediately
-  const [loading, setLoading] = useState(!localUser)
+  const [loading, setLoading] = useState(true)
   const [avatarUrl, setAvatarUrl] = useState(null)
   const [profileMeta, setProfileMeta] = useState({ banned: false, bannedReason: '', bannedAt: null, interests: [] })
-  const [profileMetaLoaded, setProfileMetaLoaded] = useState(!localUser)
+  const [profileMetaLoaded, setProfileMetaLoaded] = useState(true)
   const authRevisionRef = useRef(0)
 
   const applySession = useCallback(session => {
