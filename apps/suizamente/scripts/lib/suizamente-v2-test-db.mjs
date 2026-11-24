@@ -6,7 +6,8 @@ export const B='22222222-2222-4222-8222-222222222222'
 export const C='33333333-3333-4333-8333-333333333333'
 export const G='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'
 export const TOKEN='a'.repeat(64)
-export async function database({economia=false,tienda=false,mapa=false,album=false,comunidad=false,admin=false,operaciones=false,duracion=false,progreso=false,produccion=false,cuentas=false,independiente=false,ataques=false,avatares=false,compartir=false}={}) {
+export async function database({economia=false,tienda=false,mapa=false,album=false,comunidad=false,admin=false,operaciones=false,duracion=false,progreso=false,produccion=false,cuentas=false,independiente=false,ataques=false,avatares=false,compartir=false,onboarding=false}={}) {
+  if(onboarding)compartir=true
   if(compartir)avatares=true
   if(avatares)ataques=true
   if(ataques)independiente=true
@@ -38,6 +39,7 @@ export async function database({economia=false,tienda=false,mapa=false,album=fal
   if(ataques)await db.exec(await readFile('supabase/suizamente_v17_ataques.sql','utf8'))
   if(avatares){await db.exec("ALTER TABLE public.profiles ADD COLUMN avatar_url text; ALTER TABLE auth.users ADD COLUMN raw_user_meta_data jsonb DEFAULT '{}';");await db.exec(await readFile('supabase/suizamente_v18_avatares.sql','utf8'))}
   if(compartir)await db.exec(await readFile('supabase/suizamente_v19_compartir.sql','utf8'))
+  if(onboarding)await db.exec(await readFile('supabase/suizamente_v20_primera_vez.sql','utf8'))
   return db
   }catch(error){await db.close();throw error}
 }

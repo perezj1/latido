@@ -11,7 +11,7 @@ try{
  browser=await(engine==='webkit'?webkit:chromium).launch({headless:true,args:engine==='chromium'?['--enable-unsafe-swiftshader']:[]})
  const context=await browser.newContext({viewport:{width:390,height:844},reducedMotion:'reduce'})
  // A leftover token for a different Supabase project must never expose a cached user.
- await context.addInitScript(()=>localStorage.setItem('sb-other-project-auth-token',JSON.stringify({access_token:'unrelated',user:{id:'foreign-user'},expires_at:Math.floor(Date.now()/1000)+3600})))
+ await context.addInitScript(()=>{localStorage.setItem('suizamente:onboarding','2026-01-01');localStorage.setItem('sb-other-project-auth-token',JSON.stringify({access_token:'unrelated',user:{id:'foreign-user'},expires_at:Math.floor(Date.now()/1000)+3600}))})
  page=await context.newPage();page.on('pageerror',e=>errors.push(e.message));const requests=[];page.on('request',r=>requests.push(r.url()))
  const initialGuests=(await preview.db.query('SELECT count(*) n FROM suizamente_private.suizamente_sesiones_invitado')).rows[0].n
  for(const width of [320,390,1440]){

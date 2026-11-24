@@ -3,8 +3,8 @@ import {useSv} from './Context'
 import {MapDrawing} from './Map'
 
 import {loadMapAssets,flatMapPhoto} from './mapPhotos'
-export const WorldMap=forwardRef(function WorldMap({state,selected,onSelect=()=>{},animated,onMetadata,onAnimationDone,preview=false,mini=false,home=false},ref){
- const {reduced:preference,config}=useSv(),reduced=preference||preview,box=useRef(null),world=useRef(null),visible=useRef(true),latest=useRef({state,selected,onSelect,reduced})
+export const WorldMap=forwardRef(function WorldMap({state,selected,onSelect=()=>{},animated,onMetadata,onAnimationDone,preview=false,demo=false,mini=false,home=false},ref){
+ const {reduced:preference,config}=useSv(),reduced=preference||(preview&&!demo),box=useRef(null),world=useRef(null),visible=useRef(true),latest=useRef({state,selected,onSelect,reduced})
  const [interactive,setInteractive]=useState(false)
  const [ready,setReady]=useState(false)
  const [failed,setFailed]=useState(false),[inView,setInView]=useState(!mini&&!preview)

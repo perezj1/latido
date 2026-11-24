@@ -16,6 +16,13 @@ export function rewardTokens(reward={},config={}){
   return items
 }
 const league=(config,key)=>{const n=config.ligas?.puntos?.[key];return n>0?[['🏅','+'+n,n===1?'punto de liga':'puntos de liga']]:[]}
+export function welcomeSteps(config){const gift=config.bienvenida;return [
+ {title:'¡Tu regalo de bienvenida!',subtitle:'Para empezar con buen pie',open:true,body:<MomentObject/>},
+ {title:'¡Esto es para ti!',subtitle:'Para tu primera partida',confetti:true,footer:'Toca para jugar',body:<MomentTokens items={[
+  ['🪙','+'+gift.monedas,'monedas'],['🃏',String(gift.sobres),gift.sobres===1?'sobre de cartas':'sobres de cartas'],
+  ...Object.entries(gift.comodines).map(([id,n])=>{const c=config.comodines.find(c=>c.id===id);return [c.emoji,'+'+n,'comodín «'+c.nombre+'»']}),
+ ]}/>},
+]}
 export function giftSteps(result,shop){
   const power=shop.comodines.find(c=>c.id===result.comodin)
   return [{title:'¡Regalo diario!',subtitle:'Hay uno nuevo cada día',open:true,body:<MomentObject/>},

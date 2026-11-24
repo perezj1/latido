@@ -27,6 +27,7 @@ try{
  // A new game player inherits the Latido identity only after choosing it.
  await preview.db.query('DELETE FROM suizamente_private.suizamente_jugadores WHERE jugador_id=$1',[A])
  await page.goto(preview.origin+'/suizamente');await page.getByRole('button',{name:'Entrar con cuenta de Latido',exact:true}).click()
+ await page.getByRole('button',{name:'Saltar',exact:true}).click();await page.getByRole('button',{name:'🎁 Abrir mi regalo',exact:true}).click();await page.getByRole('button',{name:'Omitir',exact:true}).click()
  await expect(page.getByRole('heading',{name:'Tu perfil',exact:true})).toBeVisible();await expect(page.getByRole('textbox',{name:'Tu apodo',exact:true})).toHaveValue('Alex de Latido')
  await expect(page.locator('.sv-profile-avatar img')).toHaveAttribute('src','https://photos.suizamente.test/latido.jpg')
  for(const width of [320,390,1440]){await page.setViewportSize({width,height:844});assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));await page.screenshot({path:out+'/perfil-'+width+'.png',fullPage:true})}
@@ -38,7 +39,7 @@ try{
  await input.setInputFiles({name:'foto.png',mimeType:'image/png',buffer:Buffer.from(image,'base64')});await expect(page.locator('.sv-profile-avatar img')).toHaveAttribute('src',/^data:image\/jpeg/)
  let uploaded
  await page.route('**/mock-supabase/storage/v1/object/suizamente-avatars/**',async r=>{uploaded=r.request();await r.fulfill({json:{Key:'suizamente-avatars/photo.jpg',Id:'qa'}})})
- phase='save photo';await page.getByRole('button',{name:/A jugar/}).click();await expect(page).toHaveURL(preview.origin+'/suizamente');await page.waitForLoadState('networkidle')
+ phase='save photo';await page.getByRole('button',{name:/A jugar/}).click();await expect(page).toHaveURL(preview.origin+'/suizamente/nueva');await page.waitForLoadState('networkidle')
  const player=(await call(preview.db,A,'jugador')).jugador
  assert.equal(player.apodo,'Alex de Latido');assert.equal(player.ajustes.apariencia,'clara');assert.ok(player.ajustes.foto_url.includes('/suizamente-avatars/'+A+'/'))
  assert.ok(uploaded.url().includes('/suizamente-avatars/'+A+'/'));assert.ok(uploaded.postDataBuffer().includes(Buffer.from('Content-Type: image/jpeg')));assert.ok(uploaded.postDataBuffer().length<200000)
@@ -51,7 +52,7 @@ try{
  await sso.route('https://latido.ch/suizamente/conectar?**',r=>r.fulfill({contentType:'text/html',body:`<script>window.opener.postMessage({type:'suizamente:sso-ready'},${JSON.stringify(preview.origin)});addEventListener('message',e=>{if(e.origin!==${JSON.stringify(preview.origin)})return;window.opener.postMessage({type:'suizamente:sso-session',nonce:e.data.nonce,accessToken:'trusted-latido-token',userId:${JSON.stringify(A)}},e.origin)})</script>`}))
  await sso.route('**/mock-supabase/functions/v1/suizamente-social/sso',r=>r.fulfill({json:{userId:A,tokenHash:'qa-otp'}}))
  await sso.route('**/mock-supabase/auth/v1/verify',r=>r.fulfill({json:{...session,expires_in:86400}}))
- page=await sso.newPage();page.on('pageerror',e=>{errors.push(e.message);console.error('Browser error during '+phase+': '+e.stack)});await page.goto(preview.origin+'/suizamente');await page.getByRole('button',{name:'Entrar con cuenta de Latido',exact:true}).click();await expect(page.getByRole('heading',{name:'Tu perfil',exact:true})).toBeVisible()
+ page=await sso.newPage();page.on('pageerror',e=>{errors.push(e.message);console.error('Browser error during '+phase+': '+e.stack)});await page.goto(preview.origin+'/suizamente/entrar');await page.getByRole('button',{name:'Entrar con cuenta de Latido',exact:true}).click();await expect(page.getByRole('heading',{name:'Tu perfil',exact:true})).toBeVisible()
  assert.deepEqual(errors,[]);await writeFile(out+'/resultado.json',JSON.stringify({engine,checks:['four explicit choices with a cached session','forced light with stored/system dark','email/create remain selectable','Latido trusted popup and distinct OTP session','name/avatar from Latido','camera picker and invalid file','JPEG resize and own bucket persistence','A jugar enters game','fresh visit presents menu','no appearance selector'],errors},null,2))
  console.log('Entry/profile '+engine+': cached and SSO identities, four explicit choices, light-only, camera/upload/save and 320/390/1440 passed.')
 }catch(e){await page?.screenshot({path:out+'/fallo.png',fullPage:true}).catch(()=>{});console.error(e.stack);process.exitCode=1}

@@ -4,6 +4,7 @@ import { publicSuizamenteConfig } from './config.mjs'
 const COOKIE = 'szm_invitado'
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 const methods = {
+  'GET primera-vez':'primera_vez', 'POST primera-vez/respuesta':'primera_vez_responder', 'POST primera-vez/finalizar':'primera_vez_finalizar',
   'GET jugador':'jugador', 'PUT jugador':'guardar_jugador', 'DELETE jugador':'borrar_jugador',
   'POST jugador/vincular':'vincular', 'POST jugador/bienvenida':'bienvenida',
   'GET inicio':'inicio', 'GET partidas':'partidas', 'POST partidas':'crear_partida',
@@ -63,7 +64,7 @@ export function createSuizamenteHandler({ fetchImpl = fetch } = {}) {
         if(req.method==='POST')action={cofres:{abrir:'abrir_cofre'},asaltos:{empezar:'asalto_empezar',siguiente:'asalto_siguiente',respuesta:'asalto_respuesta',comodin:'asalto_comodin',descartar:'asalto_descartar'},sobres:{girar:'girar_carta'}}[kind]?.[operation]
       }
       if (!action) return send(404, { error:'Ruta no disponible' })
-      if(!req.headers.authorization&&!['config','capacidades'].includes(action))return send(adminRoute?403:401,{error:adminRoute?'Solo administración de Latido':'Entra con tu cuenta de Latido para jugar'})
+      if(!req.headers.authorization&&!['config','capacidades','primera_vez','primera_vez_responder','primera_vez_finalizar'].includes(action))return send(adminRoute?403:401,{error:adminRoute?'Solo administración de Latido':'Entra con tu cuenta de Latido para jugar'})
       let body = req.body
       if (req.method !== 'GET' && !body) {
         const chunks = []

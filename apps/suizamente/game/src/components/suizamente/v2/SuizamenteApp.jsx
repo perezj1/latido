@@ -5,7 +5,7 @@ import {useEntry} from '../../../../entry'
 import {szApi,szSettings,SV_STATE,SV_AVATARS} from '../../../lib/suizamenteV2'
 import {SuizamenteContext} from './Context'
 import {Brand,Button,Logo,Navigation} from './Shared'
-import {HowTo,Login,Menu,Onboarding,ProfileForm,Settings,Welcome} from './Account'
+import {HowTo,Login,Menu,ProfileForm,Settings,Welcome} from './Account'
 import {Home,NewGame} from './Lobby'
 import {MapHelp} from './Map'
 import './suizamente.css'
@@ -23,6 +23,7 @@ import {isAbsenceNotice} from './moments'
 
 // Only load a screen when its route is opened. Navigation remains mounted.
 const screen=(load,name)=>lazy(()=>load().then(module=>({default:module[name]})))
+const Onboarding=screen(()=>import('./Onboarding'),'Onboarding')
 const Game=screen(()=>import('./Game'),'Game')
 const Profile=screen(()=>import('./Economy'),'Profile')
 const Achievements=screen(()=>import('./Economy'),'Achievements')
@@ -192,12 +193,14 @@ export default function SuizamenteApp(){
   }
   const gate=element=><ProfileGate player={player} ready={ready}>{element}</ProfileGate>
   const reduced=!!settings.menosAnimaciones||systemReduced
-  const admin=location.pathname.startsWith('/suizamente/admin'),showNavigation=entered&&!!player&&ready&&!questionVisible&&!playing
+  const bypassOnboarding=/^\/suizamente\/(invitar|pregunta|pregunta-del-dia|entrar|bienvenida)(\/|$)/.test(location.pathname)||new URLSearchParams(location.search).has('p')
+  const onboarding=location.pathname==='/suizamente/primera-vez'||!bypassOnboarding&&!player&&(entered?ready&&!localStorage.getItem('suizamente:bienvenida-pendiente'):!user&&!localStorage.getItem('suizamente:onboarding'))
+  const admin=location.pathname.startsWith('/suizamente/admin'),showNavigation=!onboarding&&entered&&!!player&&ready&&!questionVisible&&!playing
   const activeTab=['mapa','album','tienda','amigos'].find(tab=>location.pathname.startsWith('/suizamente/'+tab))||'inicio'
-  return <SuizamenteContext.Provider value={{player,map,config,user,avatarUrl,avatars,latidoName:profileName,capabilities,refreshConfig,settings,reduced,savePlayer,updateSettings,signOut,setQuestionVisible}}><MomentProvider reduced={reduced} owner={player?.jugador_id}><MomentArrival enabled={entered&&ready&&!!config&&!opening}/><div className={'sv-root'+(admin?' sv-admin-root':'')+(showNavigation?' sv-has-nav':'')}>
+  return <SuizamenteContext.Provider value={{player,map,config,user,avatarUrl,avatars,latidoName:profileName,capabilities,refreshConfig,settings,reduced,savePlayer,updateSettings,signOut,setQuestionVisible}}><MomentProvider reduced={reduced} owner={player?.jugador_id}><MomentArrival enabled={!onboarding&&entered&&ready&&!!config&&!opening}/><div className={'sv-root'+(admin?' sv-admin-root':'')+(showNavigation?' sv-has-nav':'')}>
     <Feedback/><InstallMetadata/>
-    <InstallBanner hidden={playing||location.pathname==='/suizamente/perfil/nuevo'}/>
-    {authLoading?<Loading/>:!entered?<Login/>:error?<section className="sv-screen"><div className="sv-welcome"><Logo size={90}/><h1>No se pudo abrir Suizamente</h1><p role="alert">{error}</p><Button onClick={()=>setRetry(n=>n+1)}>Reintentar</Button></div></section>:!config||!ready||!profileMetaLoaded?<Loading/>:
+    <InstallBanner hidden={onboarding||playing||location.pathname==='/suizamente/perfil/nuevo'}/>
+    {authLoading?<Loading/>:onboarding&&config?<Suspense fallback={<Loading/>}><Onboarding/></Suspense>:!entered?<Login/>:error?<section className="sv-screen"><div className="sv-welcome"><Logo size={90}/><h1>No se pudo abrir Suizamente</h1><p role="alert">{error}</p><Button onClick={()=>setRetry(n=>n+1)}>Reintentar</Button></div></section>:!config||!ready||!profileMetaLoaded?<Loading/>:
     <Suspense fallback={<Loading/>}><Routes>
       <Route path="admin/*" element={<AdminPanel/>}/>
       <Route path="primera-vez" element={<Onboarding/>}/>
@@ -236,7 +239,7 @@ export default function SuizamenteApp(){
       <Route path="*" element={<Navigate to="/suizamente" replace/>}/>
     </Routes></Suspense>}
     {showNavigation&&<Navigation active={activeTab} waiting={waiting}/>}
-    {opening&&entered&&ready&&!player&&<Opening onDone={finishOpening} reduced={reduced}/>}
+    {opening&&onboarding&&config&&<Opening onDone={finishOpening} reduced={reduced}/>}
     {!!notices.length&&<div className={'sv-notice'+(notices[0].datos.href?' has-link':'')} role="status" aria-live="polite">{notices[0].datos.texto}{notices[0].datos.href&&<><Link to={notices[0].datos.href} onClick={()=>setNotices(old=>old.slice(1))}>{notices[0].tipo==='asalto'?'Ver mapa':'Ver'}</Link><button aria-label="Cerrar aviso" onClick={()=>setNotices(old=>old.slice(1))}>×</button></>}</div>}
   </div></MomentProvider></SuizamenteContext.Provider>
 }

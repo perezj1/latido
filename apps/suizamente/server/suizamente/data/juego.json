@@ -986,5 +986,6 @@
    "condicion": "Completa las misiones de 30 días",
    "meta": 30
   }
- ]
+ ],
+ "primeraVez": {"_nota": "Onboarding (FUNCIONES.md, sección 22). ejemplos: las 3 preguntas de la bienvenida (solo se ve la pregunta). pregunta: la que se prueba en el paso 2; no da premio y no sale después en partidas. El regalo es recompensas.bienvenida.", "ejemplos": ["voc_1s99qa8", "v_j88frh", "r_5vsvsx"], "pregunta": "vidrio_domingo"}
 }

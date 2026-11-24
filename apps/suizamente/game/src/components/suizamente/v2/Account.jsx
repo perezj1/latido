@@ -6,49 +6,12 @@ import {useEntry,rememberEntryDestination} from '../../../../entry'
 import {connectLatidoAccount} from '../../../../latidoSso'
 import {prepareProfilePhoto,uploadProfilePhoto} from '../../../lib/suizamentePhoto'
 import {useSv} from './Context'
-import {Avatar,Brand,Button,Card,Chip,Header,Logo,Sheet,StampBar,Stamps,Wheel} from './Shared'
+import {Avatar,Brand,Button,Card,Chip,Header,Logo,Sheet,Stamps} from './Shared'
 import {szApi,cantonNames,countryNames} from '../../../lib/suizamenteV2'
 import {loadPushSettings,subscribeToPushNotifications} from '../../../lib/pushNotifications'
 
 const years={menos1:'Menos de 1 año','1a3':'1–3 años','3a10':'3–10 años',mas10:'Más de 10 años'}
 const colors=['menta','naranja','rojo','azul','cielo','mar']
-export function Onboarding(){
-  const {config,player,savePlayer}=useSv(),navigate=useNavigate()
-  const [step,setStep]=useState(0),[busy,setBusy]=useState(false),[error,setError]=useState(''),[touch,setTouch]=useState(null)
-  const steps=[
-    ['BIENVENIDA','El juego de preguntas de Suiza','Partidas 1 contra 1 sobre la vida en Suiza. Para la comunidad hispanohablante de Latido.'],
-    ['🎡 LA RULETA','Gira y responde','Seis categorías: idioma, cultura, comida y naturaleza, papeles y dinero, casa y trabajo, y el día a día.'],
-    ['🛂 LOS SELLOS','Consigue los '+config.partida.sellosParaGanar+' sellos',config.partida.barraParaSello+' aciertos seguidos y juegas por un sello. Quien llene antes su pasaporte, gana.'],
-    ['🗺️ TU MAPA','Construye tu Suiza','Con las monedas que ganas levantas los cantones, región a región. Y llenas tu álbum de cartas.'],
-    ['🎁 REGALO DE BIENVENIDA','Todo listo','Tienes monedas, un sobre de cartas y dos comodines para empezar.'],
-  ]
-  async function finish(){
-    setBusy(true);setError('')
-    try{
-      if(player)savePlayer(await szApi('jugador/bienvenida',{method:'POST'}))
-      localStorage.setItem('suizamente:onboarding',new Date().toISOString())
-      sessionStorage.setItem('suizamente:despues-perfil','/suizamente/nueva')
-      navigate(player?'/suizamente/nueva':'/suizamente/entrar')
-    }catch(e){setError(e.message)}finally{setBusy(false)}
-  }
-  return <section className="sv-screen sv-onboarding" onTouchStart={e=>setTouch(e.changedTouches[0].clientX)} onTouchEnd={e=>{
-    if(touch!==null&&touch-e.changedTouches[0].clientX>60)setStep(s=>Math.min(4,s+1))
-    else if(touch!==null&&e.changedTouches[0].clientX-touch>60)setStep(s=>Math.max(0,s-1))
-    setTouch(null)
-  }}>
-    <header className="sv-onboarding-progress"><div aria-label={'Paso '+(step+1)+' de 5'}>{steps.map((_,i)=><i key={i} className={i<=step?'done':''}/>)}</div>{step<4&&<button onClick={finish} disabled={busy}>Saltar</button>}</header>
-    <div className="sv-onboarding-art">
-      {step===0&&<><Logo size={150}/><Brand/></>}
-      {step===1&&<Wheel categories={config.categorias}/>}
-      {step===2&&<><Card><b>TU PASAPORTE</b><Stamps categories={config.categorias} owned={[]} large/></Card><StampBar value={0} max={config.partida.barraParaSello}/></>}
-      {step===3&&<><img className="sv-map-preview" src="/suizamente-assets/mapa-cantones.svg" alt="Los cantones de Suiza"/><div className="sv-chips"><Chip>🏗️ {config.mapa.nivelesPorCanton} niveles por cantón</Chip><Chip>🛡️ Escudos</Chip></div></>}
-      {step===4&&<><span className="sv-gift" aria-hidden="true">🎁</span><div className="sv-chips"><Chip>🪙 {config.bienvenida.monedas}</Chip><Chip>🃏 {config.bienvenida.sobres} sobre</Chip><Chip>✂️ {config.bienvenida.comodines.quita}</Chip></div></>}
-    </div>
-    <div className="sv-onboarding-copy" key={step} aria-live="polite"><small>{steps[step][0]}</small><h1>{steps[step][1]}</h1><p>{steps[step][2]}</p></div>
-    {error&&<p role="alert" className="sv-error">{error}</p>}
-    <footer className="sv-footer"><Button disabled={busy} onClick={()=>step===4?finish():setStep(step+1)}>{busy?'Preparando…':step===0?'Empezar':step===4?'▶ Jugar mi primera partida':'Siguiente'}</Button></footer>
-  </section>
-}
 export function Welcome(){
   return <Login/>
 }
@@ -58,7 +21,7 @@ function LoginArt(){
 function GoogleMark(){return <svg viewBox="0 0 18 18" width="22" height="22" aria-hidden="true"><path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.71v2.26h2.91c1.7-1.57 2.69-3.88 2.69-6.61Z"/><path fill="#34A853" d="M9 18c2.43 0 4.47-.81 5.96-2.19l-2.91-2.26c-.81.54-1.84.86-3.05.86-2.34 0-4.33-1.58-5.04-3.71H.96v2.33A9 9 0 0 0 9 18Z"/><path fill="#FBBC05" d="M3.96 10.7A5.42 5.42 0 0 1 3.68 9c0-.59.1-1.16.28-1.7V4.97H.96A9 9 0 0 0 0 9c0 1.45.35 2.82.96 4.03l3-2.33Z"/><path fill="#EA4335" d="M9 3.58c1.32 0 2.51.46 3.44 1.35l2.58-2.58A8.64 8.64 0 0 0 9 0 9 9 0 0 0 .96 4.97l3 2.33C4.67 5.17 6.66 3.58 9 3.58Z"/></svg>}
 export function Login(){
   const {authUser:user,signInWithGoogle}=useAuth(),{acceptAccount}=useEntry(),navigate=useNavigate(),{pathname,search}=useLocation(),[busy,setBusy]=useState(''),[error,setError]=useState('')
-  const destination=['/suizamente/entrar','/suizamente/bienvenida','/suizamente/primera-vez'].includes(pathname)?'/suizamente':pathname+search
+  const destination=localStorage.getItem('suizamente:bienvenida-pendiente')&&pathname==='/suizamente/perfil/nuevo'?'/suizamente/nueva':['/suizamente/entrar','/suizamente/bienvenida','/suizamente/primera-vez'].includes(pathname)?'/suizamente':pathname+search
   const auth='/auth?next='+encodeURIComponent(destination)
   async function google(){setBusy('google');setError('');try{rememberEntryDestination(destination);const callback=new URL('/auth/callback',location.origin);const result=await signInWithGoogle({redirectTo:callback.toString()});if(result.error)throw result.error}catch{setError('No se pudo abrir Google. Inténtalo otra vez o entra con tu email.');setBusy('')}}
   async function latido(){
@@ -89,7 +52,8 @@ export function ProfileForm({editing=false}){
       const ownPhoto=photo?await uploadProfilePhoto(photo,user.id):player?.ajustes?.foto_url
       let result=await szApi('jugador',{method:'PUT',body:{...form,ajustes:{...settings,...player?.ajustes,...(ownPhoto?{foto_url:ownPhoto}:{}),apariencia:'clara'}}})
       if(!editing){
-        result=await szApi('jugador/bienvenida',{method:'POST'})
+        result=await szApi(localStorage.getItem('suizamente:bienvenida-pendiente')?'primera-vez/finalizar':'jugador/bienvenida',{method:'POST'})
+        localStorage.removeItem('suizamente:bienvenida-pendiente')
         localStorage.setItem('suizamente:onboarding',new Date().toISOString())
       }
       savePlayer(result)
@@ -149,7 +113,7 @@ export function Settings(){
     <h2>Avisos</h2><label className="sv-settings-row"><span>Te toca en una partida</span><input type="checkbox" role="switch" checked={settings.avisos?.turnos!==false} onChange={e=>change('avisos',{...settings.avisos,turnos:e.target.checked})}/></label>
     {user&&<Button tone="quiet" disabled={busy} onClick={activatePush}>🔔 Activar avisos en este dispositivo</Button>}
     <h2>Privacidad</h2><label className="sv-settings-row"><span>Aparecer en los rankings</span><input type="checkbox" role="switch" checked={player.en_ranking} onChange={e=>privacy(e.target.checked)}/></label><p>Tus votos son anónimos. Tu rival solo ve tus sellos y tu barra.</p>
-    <h2>Ayuda</h2><nav className="sv-menu"><Link to="/suizamente/como-se-juega">Cómo se juega <span/>›</Link><Link to="/suizamente/primera-vez">Ver la bienvenida otra vez <span/>›</Link></nav>
+    <h2>Ayuda</h2><nav className="sv-menu"><Link to="/suizamente/como-se-juega">Cómo se juega <span/>›</Link><Link to="/suizamente/primera-vez?repetir=1">Ver la bienvenida otra vez <span/>›</Link></nav>
     {user&&<Button tone="quiet" onClick={logout}>Cerrar sesión de Suizamente</Button>}
     <Button tone="danger-text" onClick={()=>setDeletion(1)}>Borrar mis datos de Suizamente</Button>
     {error&&<p role="alert" className="sv-error">{error}</p>}</div>

@@ -75,7 +75,7 @@ export function Moment({steps,onFinish,reduced=false}){
     </div><button className="sv-moment-skip" disabled={closing} onClick={e=>{e.stopPropagation();close()}}>Omitir</button>
     <div className="sv-moment-page" key={index} aria-live="polite" aria-atomic="true"><h1 id={titleId}>{step.title}</h1>{step.subtitle&&<p className="sv-moment-sub">{step.subtitle}</p>}<div id={descriptionId} className="sv-moment-body"><div className={'sv-moment-content'+(opening?' opening':'')}>{step.body}</div></div></div>
     {step.image&&<button data-m="compartir" className="sv-moment-share" disabled={!shareReady||sharing} onClick={e=>{e.stopPropagation();share()}}>📤 {step.shareLabel||'Compartir'}</button>}
-    <footer className="sv-moment-footer"><p>{closing?'Guardando…':step.open?'Toca para abrirlo':'Toca para continuar'}</p>{steps.length>1&&<span>{index+1} de {steps.length}</span>}{error&&<p role="alert">{error}</p>}</footer>
+    <footer className="sv-moment-footer"><p>{closing?'Guardando…':step.footer||(step.open?'Toca para abrirlo':'Toca para continuar')}</p>{steps.length>1&&<span>{index+1} de {steps.length}</span>}{error&&<p role="alert">{error}</p>}</footer>
   </div></div>,document.body)
 }
 
