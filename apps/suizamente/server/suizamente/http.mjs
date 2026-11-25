@@ -16,6 +16,7 @@ const methods = {
   'GET album':'album', 'POST sobres':'abrir_sobre',
   'GET config':'config','GET capacidades':'capacidades','GET portada':'portada',
   'GET dia':'dia','POST dia/voto':'votar_dia','GET amigos':'amigos','GET amigos/buscar':'buscar','POST amigos':'amistad',
+  'POST amigos/invitaciones':'invitar_amigo','POST amigos/invitaciones/aceptar':'aceptar_amigo',
   'GET ranking':'ranking','GET libreta':'libreta','PUT libreta':'guardar_dato',
   'GET propuestas':'propuestas','POST propuestas':'proponer','GET valoraciones':'valorar_siguiente','POST valoraciones':'valorar',
   'POST denuncias':'denunciar','POST reportes':'reportar',

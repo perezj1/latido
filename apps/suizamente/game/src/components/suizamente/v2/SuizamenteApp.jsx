@@ -44,6 +44,7 @@ const Pack=screen('Rewards','Pack')
 const Raid=screen('Raid','Raid')
 const DayQuestion=screen('Community','DayQuestion')
 const Friends=screen('Community','Friends')
+const FriendInvitation=screen('Community','FriendInvitation')
 const Notebook=screen('Community','Notebook')
 const OtherProfile=screen('Community','OtherProfile')
 const Proposals=screen('Community','Proposals')
@@ -206,7 +207,7 @@ export default function SuizamenteApp(){
   }
   const gate=element=><ProfileGate player={player} ready={ready}>{element}</ProfileGate>
   const reduced=!!settings.menosAnimaciones||systemReduced
-  const bypassOnboarding=/^\/suizamente\/(invitar|pregunta|pregunta-del-dia|partida|asalto|ataque|entrar|bienvenida)(\/|$)/.test(location.pathname)||new URLSearchParams(location.search).has('p')
+  const bypassOnboarding=/^\/suizamente\/(amigo|invitar|pregunta|pregunta-del-dia|partida|asalto|ataque|entrar|bienvenida)(\/|$)/.test(location.pathname)||new URLSearchParams(location.search).has('p')
   const onboarding=entered&&(location.pathname==='/suizamente/primera-vez'||!bypassOnboarding&&ready&&(player?!player.ajustes?.onboarding:!localStorage.getItem('suizamente:bienvenida-pendiente')))
   const admin=location.pathname.startsWith('/suizamente/admin'),showNavigation=!resetting&&!onboarding&&entered&&!!player&&ready&&!questionVisible&&!playing
   const activeTab=['mapa','album','tienda','amigos'].find(tab=>location.pathname.startsWith('/suizamente/'+tab))||'inicio'
@@ -236,6 +237,7 @@ export default function SuizamenteApp(){
       <Route path="asalto/:id" element={gate(<Raid/>)}/>
       <Route path="ataque/:id" element={gate(<VictoryAttack/>)}/>
       <Route path="amigos" element={gate(<Friends/>)}/>
+      <Route path="amigo/:codigo" element={gate(<FriendInvitation/>)}/>
       <Route path="ranking" element={gate(<Ranking/>)}/>
       <Route path="jugador/:id" element={gate(<OtherProfile key={location.pathname}/>)}/>
       <Route path="pregunta-del-dia" element={<DayQuestion key={location.pathname}/>}/>

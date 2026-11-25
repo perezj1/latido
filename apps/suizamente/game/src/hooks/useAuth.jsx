@@ -126,11 +126,14 @@ export function AuthProvider({ children }) {
   }, [applySession])
 
   const signUp = async ({ email, password, name, canton, languages=[], interests=[] }) => {
+    const emailReturn=new URL('/auth/callback',window.location.origin),destination=sessionStorage.getItem('suizamente:auth-destino')
+    // Email confirmation can open in another tab/device, without sessionStorage.
+    if(/^\/suizamente\/amigo\/[a-f0-9]{32}$/.test(destination||''))emailReturn.searchParams.set('next',destination)
     const result = await supabase.auth.signUp({
       email,
       password,
       options: {
-        emailRedirectTo:new URL('/auth/callback',window.location.origin).toString(),
+        emailRedirectTo:emailReturn.toString(),
         data: {
           name,
           canton,

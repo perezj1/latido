@@ -1,0 +1,44 @@
+import assert from 'node:assert/strict'
+import {mkdir,writeFile} from 'node:fs/promises'
+import {chromium,webkit,expect as rawExpect} from '@playwright/test'
+import {startSuizamentePreview,testToken,testUser} from './lib/suizamente-v2-preview.mjs'
+import {A,B,C,call} from './lib/suizamente-v2-test-db.mjs'
+const expect=rawExpect.configure({timeout:20000}),engine=process.argv.includes('--webkit')?'webkit':'chromium',out='output/invitar-amigos/'+engine,errors=[],checks=[]
+let preview,browser
+const session=(id,name)=>({access_token:testToken(id),refresh_token:'test-refresh',expires_in:86400,expires_at:Math.floor(Date.now()/1000)+86400,token_type:'bearer',user:testUser(id,name)})
+async function signed(id,name){const ctx=await browser.newContext({viewport:{width:390,height:844},reducedMotion:'reduce'});await ctx.addInitScript(s=>{localStorage.setItem('sb-127-auth-token',JSON.stringify(s));sessionStorage.setItem('suizamente:apertura','1');Object.defineProperty(navigator,'standalone',{get:()=>true})},session(id,name));const page=await ctx.newPage();page.on('pageerror',e=>errors.push(e.message));return {ctx,page}}
+async function fits(page){assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),'No horizontal overflow')}
+try{
+ await mkdir(out,{recursive:true});preview=await startSuizamentePreview(engine==='webkit'?5482:5481);browser=await(engine==='webkit'?webkit:chromium).launch({headless:true})
+ const {page:owner}=await signed(A,'Alex');await owner.addInitScript(()=>{window.shared=[];window.copied=[];Object.defineProperty(navigator,'share',{configurable:true,value:async value=>window.shared.push(value)});Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async value=>window.copied.push(value)}})})
+ await owner.goto(preview.origin+'/suizamente/amigos');await expect(owner.getByRole('heading',{name:'Amigos',exact:true})).toBeVisible();await expect(owner.getByText('¿Con quién quieres jugar?',{exact:true})).toBeVisible()
+ for(const [width,height] of [[320,568],[375,667],[390,844],[1440,900]]){await owner.setViewportSize({width,height});await fits(owner);await owner.screenshot({path:out+'/amigos-'+width+'.png',fullPage:true})}
+ await owner.setViewportSize({width:375,height:667});await owner.getByRole('button',{name:'Invitar a un amigo',exact:true}).first().click()
+ const sheet=owner.getByRole('dialog',{name:'Invitar a un amigo'}),input=sheet.getByRole('textbox',{name:'Enlace de invitación'});await expect(input).toHaveValue(/^https:\/\/suizamente\.latido\.ch\/suizamente\/amigo\/[a-f0-9]{32}$/)
+ const link=await input.inputValue(),path=new URL(link).pathname,code=path.split('/').pop();await fits(owner)
+ await sheet.getByRole('button',{name:/Copiar enlace$/}).click();await expect(sheet.getByRole('status')).toHaveText('Enlace copiado');assert.deepEqual(await owner.evaluate(()=>window.copied),[link])
+ await sheet.getByRole('button',{name:'Compartir enlace',exact:true}).click();assert.equal((await owner.evaluate(()=>window.shared))[0].url,link)
+ const whatsapp=new URL(await sheet.getByRole('link',{name:'Enviar por WhatsApp'}).getAttribute('href'));assert.equal(whatsapp.hostname,'wa.me');assert.ok(whatsapp.searchParams.get('text').endsWith(link));assert.ok(decodeURIComponent(await sheet.getByRole('link',{name:'Enviar por email'}).getAttribute('href')).includes(link))
+ await owner.screenshot({path:out+'/compartir-375.png',fullPage:true})
+ await owner.evaluate(()=>Object.defineProperty(navigator,'share',{configurable:true,value:async()=>{throw new DOMException('Cancelled','AbortError')}}));await sheet.getByRole('button',{name:'Compartir enlace',exact:true}).click();await expect(sheet.getByRole('alert')).toHaveCount(0)
+ await sheet.getByRole('button',{name:'Cerrar',exact:true}).click();await owner.evaluate(()=>Object.defineProperty(navigator,'share',{configurable:true,value:undefined}));await owner.getByRole('button',{name:'Invitar a un amigo',exact:true}).first().click();await expect(input).toHaveValue(/^https:\/\/suizamente\.latido\.ch\/suizamente\/amigo\/[a-f0-9]{32}$/);await expect(sheet.getByRole('button',{name:'Compartir enlace',exact:true})).toHaveCount(0);await sheet.getByRole('button',{name:/Copiar enlace$/}).click();await expect(sheet.getByRole('status')).toHaveText('Enlace copiado');await sheet.getByRole('button',{name:'Cerrar',exact:true}).click();checks.push('Canonical anonymous link; native sharing/cancellation, copy, WhatsApp/email and no-share fallback; accessible 320/375/390/desktop layout')
+ // A recipient with no account opens the actual link, registers and creates the game profile.
+ await preview.db.query('DELETE FROM suizamente_private.suizamente_jugadores WHERE jugador_id=$1',[B])
+ const recipient=await browser.newContext({viewport:{width:390,height:844},reducedMotion:'reduce'}),page=await recipient.newPage();page.on('pageerror',e=>errors.push(e.message));let signupReturn
+ await page.route('**/mock-supabase/auth/v1/signup**',async route=>{signupReturn=new URL(route.request().url()).searchParams.get('redirect_to');await route.fulfill({json:session(B,'Lu Nueva')})})
+ await page.goto(preview.origin+path);await expect(page.locator('.sv-login-screen')).toBeVisible();assert.deepEqual((await call(preview.db,A,'amigos')).lista,[])
+ await page.getByRole('link',{name:'Crear cuenta gratis',exact:true}).click();assert.equal(new URL(page.url()).searchParams.get('next'),path)
+ await page.getByRole('textbox',{name:/^Nombre completo/}).fill('Lu Nueva');await page.getByRole('textbox',{name:/^Email/}).fill('lu@suizamente.test');await page.getByLabel('Contraseña',{exact:false}).first().fill('local-test-password')
+ await page.getByRole('button',{name:'Continuar →',exact:true}).click();await page.locator('[data-error-field="canton"] select').selectOption('ZH');await page.getByRole('button',{name:'Continuar →',exact:true}).click();await page.getByRole('button',{name:'🎉 Crear cuenta gratis',exact:true}).click()
+ await expect(page.getByRole('heading',{name:'Tu perfil',exact:true})).toBeVisible();assert.equal(new URL(signupReturn).searchParams.get('next'),path,'Email callback carries the invitation to a new tab/device')
+ await page.getByRole('textbox',{name:'Tu apodo',exact:true}).fill('Lu Nueva');await page.getByRole('button',{name:'▶ ¡A jugar!',exact:true}).click()
+ await expect.poll(async()=>(await call(preview.db,A,'amigos')).lista.map(p=>p.id)).toContain(B);assert.deepEqual((await call(preview.db,B,'amigos')).lista.map(p=>p.id),[A]);await expect(page.locator('.sv-people')).toContainText('Alex');checks.push('No existing account: invitation survives registration and game profile; friendship is reciprocal; email callback retains code')
+ // Existing accounts land straight in Friends. Repeat/reload has no extra relationship.
+ const {page:existing}=await signed(C,'Caro');await existing.goto(preview.origin+path);await expect(existing).toHaveURL(preview.origin+'/suizamente/amigos');await expect(existing.locator('.sv-people')).toContainText('Alex');await existing.reload();await expect(existing.locator('.sv-people')).toContainText('Alex')
+ await existing.goto(preview.origin+path);await expect(existing).toHaveURL(preview.origin+'/suizamente/amigos');assert.equal((await preview.db.query('SELECT count(*) n FROM suizamente_private.suizamente_amigos WHERE seguidor=$1',[C])).rows[0].n,1)
+ await owner.evaluate(()=>window.dispatchEvent(new Event('focus')));await expect(owner.locator('.sv-people')).toContainText('Caro');await expect(owner.locator('.sv-people')).toContainText('Lu Nueva');await owner.screenshot({path:out+'/amistad-mutua.png',fullPage:true})
+ // The returned callback also works with an authenticated recipient in a fresh tab.
+ await existing.goto(signupReturn);await expect(existing).toHaveURL(preview.origin+'/suizamente/amigos');checks.push('Existing account and fresh callback; both friend lists refresh; reload/replay stays unique')
+ await existing.goto(preview.origin+'/suizamente/amigo/'+'0'.repeat(32));await expect(existing.locator('.sv-screen').getByRole('alert')).toContainText('La invitación ha caducado');await expect(existing.getByRole('link',{name:'Ver amigos',exact:true})).toBeVisible()
+ assert.deepEqual(errors,[]);await writeFile(out+'/resultado.json',JSON.stringify({engine,checks,errors},null,2));console.log(JSON.stringify({engine,checks,errors},null,2))
+}catch(e){for(const [i,ctx] of (browser?.contexts()||[]).entries())for(const page of ctx.pages()){await page.screenshot({path:out+'/error-'+i+'.png',fullPage:true}).catch(()=>{});console.error('Page at failure:',page.url(),await page.locator('h1,[role="alert"]').allTextContents().catch(()=>[]))}throw e}finally{await browser?.close();await preview?.close()}

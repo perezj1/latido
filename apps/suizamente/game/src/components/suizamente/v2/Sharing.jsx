@@ -19,6 +19,18 @@ export async function inviteSomeone(){
   else await copyText(url)
   return url
 }
+export function FriendInviteSheet({onClose}){
+  const request=useRef(null),[url,setUrl]=useState(''),[error,setError]=useState(''),[notice,setNotice]=useState(''),[busy,setBusy]=useState(false),[attempt,setAttempt]=useState(0)
+  useEffect(()=>{
+    let active=true
+    if(!request.current)request.current=szApi('amigos/invitaciones',{method:'POST'})
+    request.current.then(data=>{if(active)setUrl(SHARE_URL+data.enlace)}).catch(e=>{if(active)setError(e.message)})
+    return()=>{active=false}
+  },[attempt])
+  const text='¿Jugamos a Suizamente? Entra con tu cuenta o crea una gratis y apareceremos en Amigos.',message=text+'\n'+url
+  async function run(action){setBusy(true);setError('');setNotice('');try{await action()}catch(e){if(e.name!=='AbortError')setError(e.message)}finally{setBusy(false)}}
+  return <Sheet title="Invitar a un amigo" onClose={onClose}><p>Invita a quien quieras, aunque aún no tenga cuenta. Al entrar, apareceréis en Amigos.</p>{url?<><input aria-label="Enlace de invitación" readOnly value={url} onFocus={e=>e.target.select()}/><div className="sv-share-actions">{navigator.share&&<Button disabled={busy} onClick={()=>run(()=>navigator.share({title:'Suizamente',text,url}))}><Icono nombre="compartir"/> Compartir enlace</Button>}<Button tone="quiet" disabled={busy} onClick={()=>run(async()=>{await copyText(url);setNotice('Enlace copiado')})}>📋 Copiar enlace</Button><a className="sv-button quiet" href={'https://wa.me/?text='+encodeURIComponent(message)} target="_blank" rel="noopener noreferrer">Enviar por WhatsApp</a><a className="sv-button quiet" href={'mailto:?subject='+encodeURIComponent('¿Jugamos a Suizamente?')+'&body='+encodeURIComponent(message)}>Enviar por email</a></div></>:!error&&<p role="status">Preparando tu enlace…</p>}{notice&&<p role="status">{notice}</p>}{error&&<p className="sv-error" role="alert">{error} {!url&&<button className="sv-text-button" onClick={()=>{request.current=null;setError('');setAttempt(n=>n+1)}}>Reintentar</button>}</p>}</Sheet>
+}
 export function ShareSheet({data,onClose}){
   const {user}=useSv(),navigate=useNavigate(),canvas=useRef(null),prepared=useRef(null),[imageReady,setImageReady]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState(''),[busy,setBusy]=useState(false)
   const previewKey=JSON.stringify(data)

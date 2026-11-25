@@ -6,22 +6,32 @@ import {Link,useNavigate,useParams} from 'react-router-dom'
 import {useSv,useQuestionScreen} from './Context'
 import {Avatar,Button,Card,Earnings,Header,Sheet,Wallet} from './Shared'
 import {cantonNames,szApi} from '../../../lib/suizamenteV2'
-import {Breakdown,FactCard,inviteSomeone,ShareSheet,storyData} from './Sharing'
+import {Breakdown,FactCard,FriendInviteSheet,ShareSheet,storyData} from './Sharing'
 
 import {useData} from './useData'
 export function Friends(){
-  const {user}=useSv(),navigate=useNavigate(),{data,error,setError,reload}=useData('amigos'),[query,setQuery]=useState(''),[found,setFound]=useState([]),[busy,setBusy]=useState(false),[link,setLink]=useState('')
+  const {user}=useSv(),navigate=useNavigate(),{data,error,setError,reload}=useData('amigos',{refreshMs:15000}),[query,setQuery]=useState(''),[found,setFound]=useState([]),[busy,setBusy]=useState(false),[inviting,setInviting]=useState(false)
   useEffect(()=>{if(!user||!query.trim()){setFound([]);return}let active=true;const timer=setTimeout(()=>szApi('amigos/buscar?q='+encodeURIComponent(query)).then(d=>{if(active)setFound(d.jugadores)}).catch(e=>{if(active)setError(e.message)}),300);return()=>{active=false;clearTimeout(timer)}},[query,user?.id])
   async function relation(id,operacion){setBusy(true);setError('');try{await szApi('amigos',{method:'POST',body:{jugadorId:id,operacion}});reload();if(query)setFound(old=>old.map(p=>p.id===id?{...p,relacion:'pendiente'}:p))}catch(e){setError(e.message)}finally{setBusy(false)}}
-  async function invite(){if(!user){navigate('/suizamente/entrar');return}setBusy(true);try{setLink(await inviteSomeone())}catch(e){if(e.name!=='AbortError')setError(e.message)}finally{setBusy(false)}}
+  function invite(){if(!user){navigate('/suizamente/entrar');return}setInviting(true)}
   async function play(id){if(!user){navigate('/suizamente/entrar');return}setBusy(true);try{const m=await szApi('partidas',{method:'POST',body:{rival:id}});navigate('/suizamente/partida/'+m.id)}catch(e){setError(e.message)}finally{setBusy(false)}}
   const person=p=><Link className="sv-person-main" to={'/suizamente/jugador/'+p.id}><Avatar id={p.id} name={p.apodo} color={p.color} marco={p.marco}/><span><b>{p.apodo}</b><small>Nivel {p.nivel}{p.online&&<em> · en línea</em>}</small></span></Link>
-  return <section className="sv-screen sv-friends"><header className="sv-shop-header"><h1><Icono nombre="amigos"/> Amigos</h1><button className="sv-mini-button" disabled={busy} onClick={invite}>➕ Invitar</button></header><div className="sv-content">
-    {user?<><label className="sv-search"><span>🔍</span><input type="search" aria-label="Buscar jugadores" placeholder="Busca jugadores de Latido" value={query} onChange={e=>setQuery(e.target.value)}/></label><Link className="sv-ranking-entry" to="/suizamente/ranking"><Icono nombre="trofeo"/> <span><b>Ranking de la semana</b><small>Tus amigos y toda Suiza</small></span>›</Link>
+  return <section className="sv-screen sv-friends"><header className="sv-shop-header"><h1><Icono nombre="amigos"/> Amigos</h1><button className="sv-mini-button" disabled={busy} onClick={invite}>Invitar a un amigo</button></header><div className="sv-content">
+    {user?<><label className="sv-search"><span>🔍</span><input type="search" aria-label="Buscar jugadores" placeholder="Busca jugadores de Suizamente" value={query} onChange={e=>setQuery(e.target.value)}/></label><Link className="sv-ranking-entry" to="/suizamente/ranking"><Icono nombre="trofeo"/> <span><b>Ranking de la semana</b><small>Tus amigos y toda Suiza</small></span>›</Link>
     {query?<div className="sv-people">{found.map(p=><div key={p.id}>{person(p)}<button className="sv-mini-button" disabled={busy||!!p.relacion} onClick={()=>relation(p.id,'solicitar')}>{p.relacion==='aceptado'?'Siguiendo':p.relacion?'Enviada':'＋ Añadir'}</button></div>)}{!found.length&&<Card>No hay jugadores que coincidan.</Card>}</div>:<>{data?.solicitudes.length>0&&<><h2>Solicitudes · {data.solicitudes.length}</h2><div className="sv-people requests">{data.solicitudes.map(p=><div key={p.id}>{person(p)}<button className="sv-icon-button" disabled={busy} aria-label={'Rechazar a '+p.apodo} onClick={()=>relation(p.id,'rechazar')}>✕</button><button className="sv-mini-button green" disabled={busy} onClick={()=>relation(p.id,'aceptar')}>Aceptar</button></div>)}</div></>}
-    <h2>Tu gente</h2><div className="sv-people">{data?.lista.map(p=><div key={p.id}>{person(p)}<button className="sv-mini-button" disabled={busy} onClick={()=>play(p.id)}>▶ Jugar</button></div>)}</div>{data&&!data.lista.length&&<Card className="sv-empty"><span><Icono nombre="amigos"/></span><p>Invita a alguien de Latido</p><Button onClick={invite}>➕ Invitar</Button></Card>}</>}</>:<Card className="sv-empty"><span><Icono nombre="amigos"/></span><p>Entra con Latido para añadir amigos y enviar invitaciones.</p><Button to="/suizamente/entrar">Entrar con Latido</Button></Card>}
-    {link&&<Card><p>Invitación lista</p><input aria-label="Enlace de invitación" readOnly value={link} onFocus={e=>e.target.select()}/></Card>}{error&&<p className="sv-error" role="alert">{error}</p>}
-  </div></section>
+    <h2>Tu gente</h2><div className="sv-people">{data?.lista.map(p=><div key={p.id}>{person(p)}<button className="sv-mini-button" disabled={busy} onClick={()=>play(p.id)}>▶ Jugar</button></div>)}</div>{data&&!data.lista.length&&<Card className="sv-empty"><span><Icono nombre="amigos"/></span><p>¿Con quién quieres jugar?</p><Button onClick={invite}>Invitar a un amigo</Button></Card>}</>}</>:<Card className="sv-empty"><span><Icono nombre="amigos"/></span><p>Entra con tu cuenta para añadir amigos y enviar invitaciones.</p><Button to="/suizamente/entrar">Entrar con tu cuenta</Button></Card>}
+    {error&&<p className="sv-error" role="alert">{error}</p>}
+  </div>{inviting&&<FriendInviteSheet onClose={()=>setInviting(false)}/>}</section>
+}
+export function FriendInvitation(){
+  const {codigo}=useParams(),navigate=useNavigate(),request=useRef(null),[error,setError]=useState(''),[attempt,setAttempt]=useState(0)
+  useEffect(()=>{
+    let active=true
+    if(request.current?.codigo!==codigo)request.current={codigo,promise:szApi('amigos/invitaciones/aceptar',{method:'POST',body:{codigo}})}
+    request.current.promise.then(()=>{if(active)navigate('/suizamente/amigos',{replace:true})}).catch(e=>{if(active)setError(e.message)})
+    return()=>{active=false}
+  },[codigo,navigate,attempt])
+  return <section className="sv-screen"><Header title="Invitación de un amigo" back="/suizamente/amigos"/><div className="sv-content"><Card>{error?<><p className="sv-error" role="alert">{error}</p><Button onClick={()=>{request.current=null;setError('');setAttempt(n=>n+1)}}>Reintentar</Button><Button tone="quiet" to="/suizamente/amigos">Ver amigos</Button></>:<p role="status">Añadiendo a tu amigo…</p>}</Card></div></section>
 }
 export function OtherProfile(){
   const {id}=useParams(),{user,player,config}=useSv(),navigate=useNavigate(),{data,setData,error,setError,reload}=useData('perfiles/'+encodeURIComponent(id)),[busy,setBusy]=useState(false),[report,setReport]=useState(false),[reason,setReason]=useState(''),[notice,setNotice]=useState('')
