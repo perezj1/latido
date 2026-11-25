@@ -74,8 +74,7 @@ async function ensureServiceWorkerRegistration() {
 
   const current = await navigator.serviceWorker.getRegistration('/')
   if (current) {
-    await current.update().catch(() => {})
-    return navigator.serviceWorker.ready
+    return current.active ? current : navigator.serviceWorker.ready
   }
 
   await navigator.serviceWorker.register('/sw.js')

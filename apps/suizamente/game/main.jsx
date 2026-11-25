@@ -9,7 +9,7 @@ import '@fontsource/poppins/latin-700.css'
 import '@fontsource/poppins/latin-800.css'
 import {AuthProvider,useAuth} from './src/hooks/useAuth'
 import {EntryProvider,useEntry,rememberEntryDestination} from './entry'
-import {GameNavigationProvider,initializeGameHistory} from './navigation'
+import {GameNavigationProvider,initializeGameHistory,useGameNavigation} from './navigation'
 import './src/styles/tokens.css'
 import './standalone.css'
 
@@ -20,10 +20,10 @@ function Loading(){return <div className="standalone-loading" role="status">Carg
 function nextPath(search){const value=new URLSearchParams(search).get('next')||sessionStorage.getItem('suizamente:auth-destino');return /^\/suizamente(?:\/|\?|$)/.test(value||'')?value:'/suizamente'}
 function Account(){return <Auth/>}
 function Callback(){
- const {authUser,loading}=useAuth(),{acceptAccount}=useEntry(),{search,hash}=useLocation()
+ const {authUser,loading}=useAuth(),{acceptAccount}=useEntry(),{enter}=useGameNavigation(),{search,hash}=useLocation()
  const failed=new URLSearchParams(search).has('error')||new URLSearchParams(hash.slice(1)).has('error')
- React.useEffect(()=>{if(!loading&&authUser&&!failed){rememberEntryDestination(nextPath(search));acceptAccount(authUser)}},[loading,authUser?.id,failed])
- return loading?<Loading/>:authUser&&!failed?<Navigate replace to="/suizamente/perfil/nuevo"/>:<Auth/>
+ React.useEffect(()=>{if(!loading&&authUser&&!failed){rememberEntryDestination(nextPath(search));acceptAccount(authUser);enter(nextPath(search))}},[loading,authUser?.id,failed])
+ return loading||authUser&&!failed?<Loading/>:<Auth/>
 }
 function Return(){const [params]=useSearchParams();return <Navigate replace to={nextPath('?next='+encodeURIComponent(params.get('next')||'/suizamente'))}/>}
 function ExternalLegal({path}){React.useEffect(()=>location.replace('https://www.latido.ch'+path),[path]);return <Loading/>}

@@ -1,3 +1,4 @@
+import {ObjectArt} from './ObjectArt'
 import {useDailyGift} from './MomentArrival'
 import {useEffect,useState} from 'react'
 import {Link} from 'react-router-dom'
@@ -74,9 +75,9 @@ export function Shop(){
   }
   const owned=article=>player.inventario?.[article]||0
   return <section className="sv-screen sv-shop"><header className="sv-shop-header"><h1>🛒 Tienda</h1><Wallet/></header><div className="sv-content">
-    {data?<><button className={'sv-daily-gift '+(!data.regaloDisponible?'opened':'')} disabled={busy||!data.regaloDisponible} onClick={gift}><span>🎁</span><div><b>Regalo diario</b><small>{data.regaloDisponible?'Monedas y un comodín, gratis':'Vuelve mañana a por otro'}</small></div><strong>{data.regaloDisponible?'Abrir':'✓'}</strong></button>
+    {data?<><button className={'sv-daily-gift '+(!data.regaloDisponible?'opened':'')} disabled={busy||!data.regaloDisponible} onClick={gift}><span className="sv-store-object"><ObjectArt/></span><div><b>Regalo diario</b><small>{data.regaloDisponible?'Monedas y un comodín, gratis':'Vuelve mañana a por otro'}</small></div><strong>{data.regaloDisponible?'Abrir':'✓'}</strong></button>
       <h2>Comodines</h2><div className="sv-shop-grid">{data.comodines.map(c=><div className="sv-shop-card" key={c.id}><div className="sv-between"><span>{c.emoji}</span><small>Tienes {owned(c.id)}</small></div><b>{c.nombre}</b><p>{c.efecto}</p><button className={player.monedas>=c.precio?'affordable':''} disabled={busy} onClick={()=>buy(c.id)} aria-label={'Comprar '+c.nombre+' por '+c.precio+' monedas'}>🪙 {c.precio}</button></div>)}</div>
-      <h2>Más</h2>{[['escudo','🛡️','Escudo','Reduce lo que te roban · tienes '+owned('escudos')+'/'+data.maxEscudos],['sobre','🃏','Sobre de cartas','Para tu álbum · tienes '+owned('sobres')]].map(([id,emoji,name,description])=><button key={id} className="sv-shop-row" disabled={busy||(id==='escudo'&&owned('escudos')>=data.maxEscudos)} onClick={()=>buy(id)}><span>{emoji}</span><div><b>{name}</b><small>{description}</small></div><strong className={player.monedas>=data.precios[id]?'affordable':''}>🪙 {data.precios[id]}</strong></button>)}
+      <h2>Más</h2>{[['escudo','🛡️','Escudo','Reduce lo que te roban · tienes '+owned('escudos')+'/'+data.maxEscudos],['sobre','🃏','Sobre de cartas','Para tu álbum · tienes '+owned('sobres')]].map(([id,emoji,name,description])=><button key={id} className="sv-shop-row" disabled={busy||(id==='escudo'&&owned('escudos')>=data.maxEscudos)} onClick={()=>buy(id)}><span className={id==='sobre'?'sv-store-object':undefined}>{id==='sobre'?<ObjectArt kind="pack"/>:emoji}</span><div><b>{name}</b><small>{description}</small></div><strong className={player.monedas>=data.precios[id]?'affordable':''}>🪙 {data.precios[id]}</strong></button>)}
     </>:!error&&<div className="sv-skeleton" role="status" aria-label="Cargando tienda"/>}
     {notice&&<p className="sv-shop-notice" role="status">{notice}</p>}{error&&<p role="alert" className="sv-error">{error}</p>}
   </div></section>

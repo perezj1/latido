@@ -42,7 +42,7 @@ export function Breakdown({id,initial,real=false}){
   const {config}=useSv(),[data,setData]=useState(initial||null),[tab,setTab]=useState('pais')
   useEffect(()=>{let active=true;if(!initial&&id)szApi('resultados/'+encodeURIComponent(id)).then(d=>{if(active)setData(d.desglose)}).catch(()=>{});return()=>{active=false}},[id,initial])
   const countries=data?.pais||[],years=data?.anos||[]
-  if(!countries.length&&!years.length)return <p className="sv-privacy">🔒 Por país y por años en Suiza · Se ve cuando cada grupo tenga {config.minimoVotosParaPorcentajes||20} votos</p>
+  if(!countries.length&&!years.length)return null
   const actual=tab==='pais'&&countries.length?'pais':years.length?'anos':'pais'
   const labels={menos1:'Menos de 1 año','1a3':'De 1 a 3 años','3a10':'De 3 a 10 años',mas10:'Más de 10 años'}
   return <Card className="sv-breakdown"><h2>{real?'¿Quién lo sabía?':'Eligieron lo mismo'}</h2><div className="sv-tab-pills" role="tablist">{countries.length>0&&<button role="tab" aria-selected={actual==='pais'} onClick={()=>setTab('pais')}>País</button>}{years.length>0&&<button role="tab" aria-selected={actual==='anos'} onClick={()=>setTab('anos')}>Años en Suiza</button>}</div>{(data[actual]||[]).map(g=><div key={g.grupo} className={g.tuyo?'yours':''}><div className="sv-between"><b>{actual==='pais'?(countryLabel(g.grupo)):labels[g.grupo]||g.grupo}</b><b>{g.pct} %</b></div><div className="sv-xp-bar"><i style={{width:g.pct+'%'}}/></div></div>)}</Card>

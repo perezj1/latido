@@ -1,3 +1,4 @@
+import {ObjectArt} from './ObjectArt'
 import {createContext,useCallback,useContext,useEffect,useId,useRef,useState} from 'react'
 import {createPortal} from 'react-dom'
 import './moment.css'
@@ -79,8 +80,8 @@ export function Moment({steps,onFinish,reduced=false}){
   </div></div>,document.body)
 }
 
-export function MomentObject({pack=false,total}){
-  return <div className={'sv-moment-object'+(pack?' pack':'')}><div aria-hidden="true" className="sv-moment-sparkles">{[[-96,-78,28,'#F9A719',0],[100,-48,20,'#24BFE2',.5],[78,92,24,'#FA2F35',1],[-84,70,16,'#24E2C9',.8]].map(([x,y,s,c,d],i)=><svg key={i} viewBox="0 0 24 24" width={s} height={s} style={{left:'50%',top:'50%',margin:`${y-s/2}px 0 0 ${x-s/2}px`,animationDelay:d+'s'}}><path d="M12 0C13 8 16 11 24 12C16 13 13 16 12 24C11 16 8 13 0 12C8 11 11 8 12 0Z" fill={c}/></svg>)}</div>{pack?<div className="sv-moment-envelope" aria-hidden="true"><i className="sv-moment-envelope-band"/><span><img src="/suizamente-assets/logo-suizamente.svg" width="68" alt=""/></span><b>{total} cartas</b></div>:<span aria-hidden="true" className="sv-moment-gift">🎁</span>}</div>
+export function MomentObject({pack=false,total,kind='gift'}){
+  return <div className={'sv-moment-object'+(pack?' pack':'')}><div aria-hidden="true" className="sv-moment-sparkles">{[[-96,-78,28,'#F9A719',0],[100,-48,20,'#24BFE2',.5],[78,92,24,'#FA2F35',1],[-84,70,16,'#24E2C9',.8]].map(([x,y,s,c,d],i)=><svg key={i} viewBox="0 0 24 24" width={s} height={s} style={{left:'50%',top:'50%',margin:`${y-s/2}px 0 0 ${x-s/2}px`,animationDelay:d+'s'}}><path d="M12 0C13 8 16 11 24 12C16 13 13 16 12 24C11 16 8 13 0 12C8 11 11 8 12 0Z" fill={c}/></svg>)}</div>{pack?<div className="sv-moment-envelope" aria-hidden="true"><i className="sv-moment-envelope-band"/><span><img src="/suizamente-assets/logo-suizamente.svg" width="68" alt=""/></span><b>{total} cartas</b></div>:<span aria-hidden="true" className="sv-moment-gift"><ObjectArt kind={kind}/></span>}</div>
 }
 export function MomentStamp({category,size=44}){return <span className="sv-moment-stamp" style={{width:size,height:size,fontSize:size/2,background:category?.color,boxShadow:`inset 0 0 0 ${Math.round(size*.08)}px rgba(255,255,255,.6)`}} role="img" aria-label={'Sello de '+category?.nombre}>{category?.emoji}</span>}
 export function MomentTokens({items,type='gain',label}){

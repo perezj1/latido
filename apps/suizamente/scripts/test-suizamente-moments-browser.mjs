@@ -1,4 +1,5 @@
 // Real React + real SQL, disposable in-memory database. No production credentials.
+/* global PopStateEvent, innerHeight, devicePixelRatio, getComputedStyle */
 import assert from 'node:assert/strict'
 import {mkdir,readFile,writeFile} from 'node:fs/promises'
 import {createServer} from 'node:http'
@@ -30,9 +31,9 @@ try{
     await ctx.addInitScript(session=>{localStorage.setItem('sb-127-auth-token',JSON.stringify(session));sessionStorage.setItem('suizamente:apertura','1');Object.defineProperty(navigator,'standalone',{get:()=>true})},{access_token:testToken(actor),refresh_token:'test',expires_at:Math.floor(Date.now()/1000)+86400,user:testUser(actor,actor===A?'Alex':actor===B?'Lu':'Caro')})
     return ctx
   }
-  async function choose(p){if(await p.evaluate(()=>!!sessionStorage.getItem('suizamente:cuenta-activa')))return;await p.getByRole('button',{name:'Entrar con cuenta de Latido',exact:true}).click();await p.getByRole('button',{name:/A jugar/}).click()}
+  async function choose(p){await expect(p.locator('.sv-login-screen')).toHaveCount(0)}
   async function enter(p,path){await p.goto(preview.origin+path);await choose(p)}
-  async function navigate(path){await page.evaluate(path=>{history.pushState({},'',path);window.dispatchEvent(new PopStateEvent('popstate'))},path)}
+  async function navigate(path){await page.bringToFront();await page.evaluate(path=>{history.pushState({},'',path);window.dispatchEvent(new PopStateEvent('popstate'))},path)}
   const ctx=await context();page=await ctx.newPage();page.on('pageerror',e=>errors.push(e.message))
   const dialog=()=>page.getByRole('dialog'),title=()=>dialog().getByRole('heading',{level:1})
   async function layout(name){
@@ -41,7 +42,7 @@ try{
       assert.equal(await page.locator('[data-momento]').count(),1,'Only one moment')
       assert.ok(await dialog().evaluate(el=>el.clientWidth===innerWidth&&el.clientHeight===innerHeight&&el.scrollWidth<=el.clientWidth),'Fullscreen, no horizontal overflow '+JSON.stringify(await dialog().evaluate(el=>({w:el.clientWidth,h:el.clientHeight,sw:el.scrollWidth,iw:innerWidth,ih:innerHeight,dpr:devicePixelRatio,css:getComputedStyle(el).height}))))
       assert.ok(await page.locator('.sv-moment-page').evaluate(el=>el.scrollWidth<=el.clientWidth),'Content fits')
-      assert.ok(await dialog().evaluate(el=>el===document.activeElement||el.contains(document.activeElement)),'Focus stays in dialog')
+      await expect.poll(()=>dialog().evaluate(el=>el===document.activeElement||el.contains(document.activeElement)),{message:'Focus stays in dialog'}).toBe(true)
       assert.equal(await page.locator('#root').evaluate(el=>el.inert),true)
       assert.ok(await page.evaluate(()=>!!document.elementFromPoint(20,innerHeight-20)?.closest('[data-momento]')),'Layer covers bottom navigation')
       if(process.argv.includes('--small')&&width===375)assert.ok(await page.locator('.sv-moment-page').evaluate(el=>el.scrollHeight<=el.clientHeight+1),'Moment fits 375x667: '+name)

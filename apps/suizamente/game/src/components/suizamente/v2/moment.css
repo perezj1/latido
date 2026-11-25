@@ -56,3 +56,7 @@
 @media(prefers-reduced-motion:reduce){[data-momento],[data-momento] *{animation:none!important;transition:none!important}}
 .sv-moment-decoration{position:absolute;inset:0;overflow:hidden;pointer-events:none}
 .sv-moment-icon>.sv-map-drawing{width:46px;height:40px;display:block}.sv-moment-event.loss b{color:#C5232A}
+
+.sv-moment-gift:has(.sv-object-art){display:block;width:220px;height:220px}.sv-object-art{display:block;width:100%;height:100%;overflow:visible}.sv-moment-envelope{border:1px solid #FFFFFF66}.sv-moment-envelope-band{box-shadow:inset 0 1px 0 #FFFFFF80,0 1px 0 #315BC933}
+
+.sv-root .sv-store-object{display:block;width:52px;height:52px;flex:none}.sv-root .sv-reward-heading>.sv-store-object{width:64px;height:64px}

@@ -1,14 +1,12 @@
-import {createContext,useContext,useEffect,useState} from 'react'
+import {createContext,useContext} from 'react'
 import {useAuth} from './src/hooks/useAuth'
 const EntryContext=createContext(null)
 const ACTIVE_ACCOUNT='suizamente:cuenta-activa'
-function selectedAccount(){try{return sessionStorage.getItem(ACTIVE_ACCOUNT)}catch{return null}}
-// Remember the deliberate choice in this tab, never another account's credentials.
-// Supabase still validates the session before the game can load personal data.
+// Supabase persists and refreshes the actual session across tabs/app restarts.
+// A per-tab preference must never make a signed-in person log in again.
 export function EntryProvider({children}){
- const {authUser,loading}=useAuth(),[account,setAccount]=useState(selectedAccount)
- function acceptAccount(user){const id=user?.id||null;try{if(id)sessionStorage.setItem(ACTIVE_ACCOUNT,id);else sessionStorage.removeItem(ACTIVE_ACCOUNT)}catch{/* The current in-memory choice remains usable. */}setAccount(id)}
- useEffect(()=>{if(!loading&&account&&account!==authUser?.id)acceptAccount(null)},[loading,authUser?.id,account])
+ const {authUser}=useAuth(),account=authUser?.id||null
+ function acceptAccount(){try{sessionStorage.removeItem(ACTIVE_ACCOUNT);localStorage.removeItem(ACTIVE_ACCOUNT)}catch{/* The verified Supabase session remains authoritative. */}}
  return <EntryContext.Provider value={{account,acceptAccount}}>{children}</EntryContext.Provider>
 }
 export const useEntry=()=>useContext(EntryContext)

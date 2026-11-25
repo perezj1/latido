@@ -4,7 +4,7 @@ import {MapDrawing} from './Map'
 
 import {loadMapAssets,flatMapPhoto} from './mapPhotos'
 export const WorldMap=forwardRef(function WorldMap({state,selected,onSelect=()=>{},animated,onMetadata,onAnimationDone,preview=false,demo=false,mini=false,home=false},ref){
- const {reduced:preference,config}=useSv(),reduced=preference||(preview&&!demo),box=useRef(null),world=useRef(null),visible=useRef(true),latest=useRef({state,selected,onSelect,reduced})
+ const {reduced:preference,config}=useSv(),reduced=preference||mini||home||(preview&&!demo),box=useRef(null),world=useRef(null),visible=useRef(true),latest=useRef({state,selected,onSelect,reduced})
  const [interactive,setInteractive]=useState(false)
  const [ready,setReady]=useState(false)
  const [failed,setFailed]=useState(false),[inView,setInView]=useState(!mini&&!preview)
@@ -13,7 +13,7 @@ export const WorldMap=forwardRef(function WorldMap({state,selected,onSelect=()=>
  useImperativeHandle(ref,()=>({async capture(){if(world.current){world.current.saltar();return {foto:world.current.foto('image/jpeg',.9,3),ajuste:'cubrir'}}return flatMapPhoto(latest.current.state,config,latest.current.selected)}}),[config])
  function animationFor(mark,lessMotion){if(mark===lastAnimation.current)return;lastAnimation.current=mark;return lessMotion?undefined:mark?.canton}
  useEffect(()=>{
-  const observer=new IntersectionObserver(entries=>{visible.current=entries[0].isIntersecting;if(mini||preview)setInView(entries[0].isIntersecting)})
+  const observer=new IntersectionObserver(entries=>{visible.current=entries[0].isIntersecting;if(visible.current)world.current?.reanudar();if(mini||preview)setInView(entries[0].isIntersecting)})
   observer.observe(box.current)
   return()=>observer.disconnect()
  },[])

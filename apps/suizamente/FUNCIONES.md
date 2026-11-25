@@ -3,11 +3,12 @@
 Estas decisiones actualizan la especificación de Suizamente por petición expresa.
 No cambian las reglas, los precios ni los premios del juego.
 
-- **Acceso explícito:** la primera entrada de la pestaña presenta Crear cuenta gratis, Ya tengo cuenta,
-  Entrar con Google y Entrar con cuenta de Latido, aunque haya una sesión guardada.
-  No se puede jugar sin cuenta. La selección permanece en esa pestaña, también al recargar. El perfil y su botón «¡A jugar!» aparecen después de identificarse.
+- **Sesión persistente:** Supabase guarda y renueva la sesión entre aperturas y pestañas.
+  Sin sesión aparecen Crear cuenta gratis, Ya tengo cuenta, Entrar con Google y
+  Conectar con tu cuenta de Latido. La bienvenida se hace después del login;
+  el perfil se completa después del regalo si todavía no existe.
 - **Identidad:** Latido aporta el nombre y la foto inicial, mediante lectura del
-  perfil y el puente SSO existente. Un apodo o foto ya elegidos en Suizamente se
+  perfil y el mismo acceso de Supabase, dentro de Suizamente. Un apodo o foto ya elegidos en Suizamente se
   conservan. Los cambios se guardan solo en el juego; no editan el perfil de Latido.
 - **Foto:** botón de cámara accesible junto al avatar, selección de galería/cámara
   según el dispositivo, vista previa y guardado al confirmar el formulario. Recorte
@@ -227,7 +228,7 @@ No cambian las reglas, los precios ni los premios del juego.
 ## Navegación, recarga y Atrás (25 de noviembre de 2026)
 
 - Recargar conserva la URL, sus parámetros y la cuenta elegida en la misma pestaña. No vuelve al acceso, al formulario de perfil ni a Inicio. Una partida vuelve a cargar su estado del servidor en su misma URL.
-- La elección explícita de cuenta se guarda en `sessionStorage`, sin tokens nuevos. Solo vale si coincide con la sesión que valida Supabase. Cerrar sesión, perderla o cambiar de identidad elimina la elección anterior. Una pestaña nueva sin elección sigue mostrando el acceso.
+- La identidad depende de la sesión persistida y validada por Supabase. No requiere una elección adicional por pestaña. Una nueva pestaña o apertura conserva la cuenta y la ruta; cerrar sesión elimina el acceso.
 - Las flechas «Volver» recorren el historial real. El destino declarado en la pantalla queda como alternativa si no hay historial interno.
 - Un enlace directo tiene Inicio debajo de él. Recargar no añade más entradas.
 - Los pasos de bienvenida se reflejan en el parámetro `paso` de la URL: recargar conserva el paso y Atrás vuelve al paso anterior.
@@ -311,3 +312,23 @@ Archivos de producto: `compact.css`, `SuizamenteApp.jsx`, `LatidoBackdrop.jsx`, 
 `npm run test:small` usa React y PostgreSQL temporal. Captura las 12 pantallas del grupo 12 en 375 × 667 junto a su referencia; verifica geometría normal contra la versión previa (390 × 844), ausencia de desbordamiento horizontal en 320 × 568, selección de sello, resultado del duelo, cofre, sobre, cantón enfocado, preguntas largas y los iconos accesibles. Comprueba el banco revisado con cuatro opciones y la pista, sin emitir votos. El dato largo permite scroll con el pie visible. `node scripts/test-suizamente-moments-browser.mjs --small --webkit` amplía los momentos a WebKit. `test:first-visit`, `test:four-options`, build y entrega completan la regresión.
 
 Capturas y resultados: `output/pantallas-bajas/{chromium,webkit}/comparacion.html`, `comparacion.png` y `resultado.json`. Las capturas normales anteriores sirven como base de geometría; no se regeneran para aceptar un cambio de aspecto sin justificarlo. Queda probar en un iPhone físico con la barra de Safari expandida, zonas seguras y los ajustes de tamaño de texto del sistema.
+
+## Sesión, avisos y fluidez (25 de noviembre de 2026)
+
+- Se elimina la elección de cuenta por pestaña que hacía aparecer el acceso aunque Supabase conservase una sesión válida. Se reutilizan su almacenamiento persistente, renovación y recuperación de conexión. Cerrar sesión sigue cerrando el acceso. No se guardan credenciales adicionales.
+- «Conectar con tu cuenta de Latido» lleva el logo oficial y utiliza el formulario de acceso de Suizamente con la misma cuenta de Supabase. No abre Latido ni una ventana de enlace. Email y Google conservan la ruta solicitada. La primera bienvenida se presenta después de identificarse; un enlace directo a una partida abre esa partida.
+- `NotificationBell` añade una campana junto al monedero y Menú. Muestra los turnos pendientes del servidor y enlaces a sus partidas. La activación reutiliza el permiso, suscripción y ajuste de avisos existentes. El service worker normaliza los destinos de Suizamente al origen actual; al tocar una notificación abre la partida exacta o navega y enfoca una ventana existente. No se crea una API nueva. En iPhone, el push web requiere instalar la app en la pantalla de inicio y conceder el permiso desde una acción del usuario: [WebKit](https://webkit.org/blog/13878/web-push-for-web-apps-on-ios-and-ipados/).
+- Se retira la frase del desglose bloqueado «Por país y por años en Suiza…». Los datos elegibles siguen apareciendo y se conserva el umbral de privacidad del servidor.
+- Regalo, cofre y sobre de la tienda utilizan dibujos SVG propios, sin pixelación al ampliar. Los momentos de regalo/cofre usan los mismos dibujos; el sobre grande conserva su construcción vectorial y logo SVG. Se mantienen las animaciones de apertura y el movimiento reducido.
+- La partida y el asalto dejan de renderizarse cinco veces por segundo en reposo: el reloj solo actualiza durante una pregunta, una vez por segundo. La caducidad y los tiempos del servidor se conservan. No consulta partidas con la pestaña oculta.
+- Los mapas estáticos y miniaturas dibujan solo al cambiar; el mapa interactivo mantiene su animación. El motor detiene su bucle fuera de pantalla o con la app oculta, lo reanuda al volver y cancela recursos al desmontar. Se conservan las referencias de jugador/mapa/ajustes cuando la respuesta no cambia. La campana se carga aparte; no añade el catálogo de Latido al acceso inicial ni fuerza comprobaciones de actualización del service worker al enfocar.
+
+Medición local reproducible en Chromium, mapa 390 × 844 con cuatro lienzos y dos segundos de observación: solicitudes de fotograma 480 → 121 y dibujos 159 → 46. Es trabajo de renderizado medido en la vista de prueba, no una garantía de FPS en dispositivos. Con movimiento reducido: cero fotogramas y dibujos en reposo; al ocultar el documento: cero, con reanudación comprobada. `npm run test:fluidity` guarda la medición actual en `output/sesion-fluidez/fluidez.json`.
+
+Archivos de producto: `game/entry.jsx`, `game/main.jsx`, `Account.jsx`, `Auth.jsx`, `SuizamenteApp.jsx`, `NotificationBell.jsx`, `Lobby.jsx`, `Game.jsx`, `Raid.jsx`, `WorldMap.jsx`, `world3d.js`, `ObjectArt.jsx`, `Moment.jsx`, `moments.jsx`, `Economy.jsx`, `Rewards.jsx`, `Sharing.jsx`, `moment.css`, `production.css`, `pushNotifications.js`, `public/sw.js` y `public/suizamente-assets/latido.svg`. Sin migraciones, cambios de API, banco, reglas, premios ni precios.
+
+Pruebas: `npm run test:session`, `npm run test:entry`, `npm run test:navigation`, `npm run test:first-visit`, `npm run test:small`, momentos en WebKit, `npm run test:play`, `npm run test:fluidity`, build y entrega. Las pruebas usan SQL temporal y sesiones de prueba; no envían avisos ni crean perfiles en producción. Chromium y WebKit verifican reapertura, pestaña nueva, recarga, renovación del token, cierre explícito, login de Latido sin ventana externa, bienvenida posterior, regalo único y campana con partida real. La prueba del service worker cubre app abierta/cerrada y destinos. La base de geometría normal solo cambia en Inicio por la campana solicitada.
+
+Capturas: `output/sesion-fluidez/`, `output/primera-vez/`, `output/pantallas-bajas/` y `output/momentos/`. Queda la comprobación en un iPhone físico: cerrar/reabrir Safari y app instalada, aceptar push y tocar un aviso real desde la pantalla bloqueada; también la escucha manual con VoiceOver.
+
+Comprobación pública de producción, sin cuentas ni escrituras: `node scripts/smoke-suizamente-public.mjs`. Verifica acceso antes de la bienvenida, logo, formulario de Latido en el mismo origen, tres anchos, configuración pública, álbum privado protegido y service worker actualizado en Chromium/WebKit.

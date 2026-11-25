@@ -1,4 +1,5 @@
 // Real UI and SQL, isolated in memory. Never connects to production.
+/* global PopStateEvent, getComputedStyle, MutationObserver, performance */
 import assert from 'node:assert/strict'
 import {mkdir,readFile,writeFile} from 'node:fs/promises'
 import {createServer} from 'node:http'
@@ -22,7 +23,8 @@ try{
   await ctx.addInitScript(s=>{localStorage.setItem('sb-127-auth-token',JSON.stringify(s));sessionStorage.setItem('suizamente:apertura','1');Object.defineProperty(navigator,'standalone',{get:()=>true})},{access_token:testToken(actor),refresh_token:'test',expires_at:Math.floor(Date.now()/1000)+86400,user:testUser(actor,actor===A?'Alex':'Lu')})
   return ctx
  }
- async function enter(p,path){await p.goto(preview.origin+path);if(await p.evaluate(()=>!!sessionStorage.getItem('suizamente:cuenta-activa')))return;await p.getByRole('button',{name:'Entrar con cuenta de Latido',exact:true}).click();await p.getByRole('button',{name:/A jugar/}).click()}
+ async function enter(p,path){await p.goto(preview.origin+path);await expect(p.locator('.sv-login-screen')).toHaveCount(0)}
+ async function dismissMoments(){for(let i=0;i<8&&await page.getByRole('dialog').count();i++){await page.getByRole('button',{name:'Omitir',exact:true}).click();await page.waitForTimeout(50)}await expect(page.getByRole('dialog')).toHaveCount(0)}
  async function navigate(path){await page.evaluate(path=>{history.pushState({},'',path);window.dispatchEvent(new PopStateEvent('popstate'))},path)}
  const ctx=await context();page=await ctx.newPage();page.on('pageerror',e=>errors.push(e.message))
  const match=await call(preview.db,A,'crear_partida',{rival:B}),mid=match.id,config=await call(preview.db,A,'config')
@@ -110,11 +112,11 @@ try{
  await preview.db.exec('DELETE FROM suizamente_private.suizamente_limites')
  await preview.db.query('UPDATE suizamente_private.suizamente_partidas SET sellos_a=$2,sellos_b=$3 WHERE id=$1',[mid,config.categorias.map(c=>c.id),config.categorias.slice(0,2).map(c=>c.id)])
  await preview.db.query('SELECT suizamente_private.v2_cerrar($1,$2,$3)',[mid,A,'sellos'])
- await navigate('/suizamente');await expect(page.locator('.sv-home-screen')).toBeVisible();await navigate('/suizamente/partida/'+mid+'?continuar=1');await expect(page.locator('.sv-game-finish')).toBeVisible()
+ await navigate('/suizamente');await expect(page.locator('.sv-home-screen')).toBeVisible();await navigate('/suizamente/partida/'+mid+'?continuar=1');await expect(page.locator('.sv-game-finish')).toBeVisible();await expect(page.getByRole('dialog')).toBeVisible();await dismissMoments()
  for(const width of [320,390,1440])await layout('fin-partida',width)
  const finished=await call(preview.db,A,'partida',{id:mid})
- if(finished.cofre){await navigate('/suizamente/cofre/'+finished.cofre.id);await expect(page.locator('.sv-reward-row')).not.toHaveCount(0);await layout('cofre',390)}
- const pack=await call(preview.db,A,'abrir_sobre',{clave:crypto.randomUUID()});await navigate('/suizamente/sobre/'+pack.id);await expect(page.locator('.sv-card-back')).not.toHaveCount(0);await layout('sobre',390)
+ if(finished.cofre){await navigate('/suizamente/cofre/'+finished.cofre.id);await expect(page.locator('.sv-chest')).toBeVisible();await expect(page.getByRole('dialog')).toBeVisible();await dismissMoments();await expect(page.locator('.sv-chest .sv-reward-row')).not.toHaveCount(0);await layout('cofre',390)}
+ const pack=await call(preview.db,A,'abrir_sobre',{clave:crypto.randomUUID()});await navigate('/suizamente/sobre/'+pack.id);await expect(page.getByRole('dialog').getByRole('heading')).toHaveText('¡Nuevo sobre!');await page.getByRole('button',{name:'Omitir',exact:true}).click();await expect(page.getByRole('dialog')).toHaveCount(0);await expect(page.locator('.sv-pack-cards')).toBeVisible();await layout('sobre',390)
  await navigate('/suizamente/ataque/'+mid);await expect(page.getByRole('button',{name:'Atacar Lucerna, nivel 1',exact:true})).toBeVisible();for(const width of [320,390,1440])await layout('asalto-elegir-canton',width)
  await page.getByRole('button',{name:'Atacar Lucerna, nivel 1',exact:true}).click();await expect(page.locator('.sv-question-card')).toBeVisible()
  const raidId=page.url().split('/').pop()
@@ -125,7 +127,7 @@ try{
   await page.getByRole('button',{name:i<5?'Siguiente pregunta '+(i+1)+'/5':'Ver el asalto',exact:true}).click()
   if(i<5)await expect(page.locator('.sv-question-card')).toBeVisible()
  }
- await expect(page.locator('.sv-raid.finished')).toBeVisible();for(const width of [320,390,1440])await layout('asalto-hecho',width)
+ await expect(page.locator('.sv-raid.finished')).toBeVisible();await expect(page.getByRole('dialog')).toBeVisible();await page.getByRole('button',{name:'Omitir',exact:true}).click();await navigate('/suizamente/asalto/'+raidId);await expect(page.locator('.sv-raid.finished')).toBeVisible();for(const width of [320,390,1440])await layout('asalto-hecho',width)
  checks.push('finish, chest, pack and five-question raid backgrounds; transparent non-covering footers')
  await preview.db.exec('DELETE FROM suizamente_private.suizamente_limites')
  const duelMatch=await call(preview.db,A,'crear_partida',{rival:B})
@@ -164,7 +166,7 @@ try{
  // Optional local design source: serve, play the reference and save exact side-by-side evidence.
  try{
   const original=await readFile(resolve(design,'disenos/juego.html'),'utf8'),assets=await readFile('game/src/components/suizamente/v2/latidoBackdropAssets.js','utf8')
-  for(const name of ['DECO','ESCENA'])assert.equal(JSON.parse(assets.match(new RegExp('export const '+name+'\\s*=\\s*(.+);?'))[1].replace(/;$/,'')),original.match(new RegExp('const '+name+' = `([\\s\\S]*?)`;'))[1],'Exact '+name+' SVG')
+  for(const name of ['DECO','ESCENA'])assert.equal(JSON.parse(assets.match(new RegExp('export const '+name+'\\s*=\\s*(.+);?'))[1].replace(/;$/,'')),original.match(new RegExp('const '+name+' = `([\\s\\S]*?)`;'))[1].replace('display: var(--sz-escena, block)','display: block'),'Exact '+name+' SVG')
   referenceServer=createServer(async(req,res)=>{try{const p=resolve(design,'.'+decodeURIComponent(new URL(req.url,'http://localhost').pathname));if(!p.startsWith(design+'/')&&!p.startsWith(design+'\\'))throw Error('path');res.setHeader('Content-Type',({'.html':'text/html; charset=utf-8','.js':'text/javascript','.json':'application/json','.svg':'image/svg+xml'})[extname(p)]||'application/octet-stream');res.end(await readFile(p))}catch{res.statusCode=404;res.end()}})
   await new Promise(r=>referenceServer.listen(0,'127.0.0.1',r));const refOrigin='http://127.0.0.1:'+referenceServer.address().port,ref=await browser.newPage({viewport:{width:1440,height:1000},reducedMotion:'reduce'})
   await ref.goto(refOrigin+'/disenos/juego.html#Inicio',{waitUntil:'domcontentloaded'});await ref.locator('[data-a=abrir][data-v="1"]').click();await expect(ref.locator('[data-ruleta]')).toBeVisible();await ref.locator('[data-a=girar]').first().click();await ref.waitForTimeout(600);await ref.screenshot({path:out+'/referencia-jugable.png',fullPage:true})

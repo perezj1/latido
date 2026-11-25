@@ -1,4 +1,4 @@
-import {useEffect,useState} from 'react'
+import {lazy,Suspense,useEffect,useState} from 'react'
 import {Link,useLocation,useNavigate} from 'react-router-dom'
 import {useSv} from './Context'
 import {Avatar,Button,Card,Header,Wallet} from './Shared'
@@ -6,6 +6,7 @@ import {szApi,timeLeft} from '../../../lib/suizamenteV2'
 import {HomeMap} from './Map'
 import {DurationHome} from './Duration'
 import {useData} from './useData'
+const NotificationBell=lazy(()=>import('./NotificationBell').then(m=>({default:m.NotificationBell})))
 
 function MatchHistoryRow({match}){
   const {config}=useSv()
@@ -17,7 +18,7 @@ export function Home(){
   const {player,config}=useSv(),{search}=useLocation(),navigate=useNavigate(),history=new URLSearchParams(search).get('terminadas')==='1'
   const {data,error,reload:load}=useData('partidas'+(history?'?terminadas=true':''),{refreshMs:15000}),matches=(data?.partidas||[]).filter(m=>!history||!['buscando','jugando'].includes(m.estado)),event=data?.evento
   const waiting=matches.filter(m=>m.teToca&&['jugando','buscando'].includes(m.estado)).length
-  return <section className="sv-screen sv-home-screen"><header className="sv-home-header"><Link to="/suizamente/perfil" aria-label={'Tu perfil. Nivel '+player.nivel}><Avatar id={player.jugador_id} name={player.apodo} color={player.color} level={player.nivel}/></Link><span className="sv-chip" aria-label={'Racha de '+(player.racha||0)+' días'}>🔥 {player.racha||0}</span><Wallet/><Link className="sv-icon-button" to="/suizamente/menu" aria-label="Menú">☰</Link></header>
+  return <section className="sv-screen sv-home-screen"><header className="sv-home-header"><Link to="/suizamente/perfil" aria-label={'Tu perfil. Nivel '+player.nivel}><Avatar id={player.jugador_id} name={player.apodo} color={player.color} level={player.nivel}/></Link><span className="sv-chip" aria-label={'Racha de '+(player.racha||0)+' días'}>🔥 {player.racha||0}</span><Wallet/><Suspense fallback={<span className="sv-icon-space"/>}><NotificationBell matches={data?.partidas||[]}/></Suspense><Link className="sv-icon-button" to="/suizamente/menu" aria-label="Menú">☰</Link></header>
     <div className="sv-content">{event&&Date.parse(event.fin)>Date.now()&&<Card className="sv-weekend-event"><b>🎉 {event.titulo}</b><p>{event.efecto}</p><small>⏳ {timeLeft(event.fin)}</small></Card>}<h1 className="sv-sr-only">Hola, {player.apodo}</h1><HomeMap/><Button to="/suizamente/nueva">▶ Jugar</Button><div className="sv-between sv-section-heading"><h2>Tus partidas</h2><span>{waiting?waiting+' te esperan':''}</span></div>
     {!data&&!error?<div className="sv-skeleton" role="status" aria-label="Cargando partidas"/>:error?<Card><p className="sv-error" role="alert">{error}</p><Button onClick={load} tone="quiet">Reintentar</Button></Card>:!matches.length?<Card className="sv-empty"><span aria-hidden="true">🎡</span><p>{history?'Aún no tienes partidas terminadas':'Aún no tienes partidas'}</p><Link to="/suizamente/nueva">▶ Jugar</Link></Card>:<div className={history?"sv-match-list":"sv-match-carousel"}>{!history&&<Link className="sv-new-match" to="/suizamente/nueva"><span>＋</span>Nueva</Link>}{matches.map(m=>history?<MatchHistoryRow key={m.id} match={m}/>:<Link key={m.id} className={'sv-match '+(m.teToca?'your-turn':'')} to={'/suizamente/partida/'+m.id}><Avatar id={m.rival?.id} name={m.rival?.apodo||'?'} color={m.rival?.color}/><div><b>{m.rival?.apodo||'Buscando rival…'}</b><small>{m.tusSellos.length} – {m.susSellos.length} sellos</small></div><div><b>{!['jugando','buscando'].includes(m.estado)?m.ganador===m.tuId?'Victoria':'Terminada':m.teToca?'¡Te toca!':'Su turno'}</b><small>{['jugando','buscando'].includes(m.estado)?'⏳ '+timeLeft(m.plazo):''}</small></div></Link>)}</div>}
     <button className="sv-text-button" onClick={()=>navigate('/suizamente'+(history?'':'?terminadas=1'))}>{history?'Ver solo abiertas':'Ver terminadas ›'}</button><DurationHome/></div>

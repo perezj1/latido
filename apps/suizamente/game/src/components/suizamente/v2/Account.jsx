@@ -4,7 +4,6 @@ import {useAuth} from '../../../hooks/useAuth'
 import {supabase} from '../../../lib/supabase'
 import {useEntry,rememberEntryDestination} from '../../../../entry'
 import {useGameNavigation} from '../../../../navigation'
-import {connectLatidoAccount} from '../../../../latidoSso'
 import {prepareProfilePhoto,uploadProfilePhoto} from '../../../lib/suizamentePhoto'
 import {useSv} from './Context'
 import {Avatar,Brand,Button,Card,Chip,Header,Logo,Sheet,Stamps} from './Shared'
@@ -25,15 +24,12 @@ export function Login(){
   const destination=localStorage.getItem('suizamente:bienvenida-pendiente')&&pathname==='/suizamente/perfil/nuevo'?'/suizamente/nueva':['/suizamente/entrar','/suizamente/bienvenida','/suizamente/primera-vez'].includes(pathname)?'/suizamente':pathname+search
   const auth='/auth?next='+encodeURIComponent(destination)
   async function google(){setBusy('google');setError('');try{rememberEntryDestination(destination);const callback=new URL('/auth/callback',location.origin);const result=await signInWithGoogle({redirectTo:callback.toString()});if(result.error)throw result.error}catch{setError('No se pudo abrir Google. Inténtalo otra vez o entra con tu email.');setBusy('')}}
-  async function latido(){
-    setBusy('latido');setError('');rememberEntryDestination(destination)
-    try{
-      const session=user?{user}:await connectLatidoAccount({client:supabase,socialApi:import.meta.env.VITE_SUPABASE_URL+'/functions/v1/suizamente-social',popup:true})
-      if(!session?.user)throw new Error('Abre Latido e inicia sesión allí. Después vuelve y pulsa «Entrar con cuenta de Latido». También puedes entrar con Google o email.')
-      acceptAccount(session.user);navigate('/suizamente/perfil/nuevo')
-    }catch(e){setError(e.message)}finally{setBusy('')}
+  function latido(){
+    rememberEntryDestination(destination)
+    if(user){acceptAccount(user);navigate(destination);return}
+    navigate(auth+'&mode=login&metodo=email&cuenta=latido')
   }
-  return <section className="sv-screen sv-login-screen"><header className="sv-login-heading"><Logo size={62}/><h1><Brand/></h1><p>Descubre Suiza. Juega en comunidad.</p></header><LoginArt/><div className="sv-login-actions"><Link className="sv-login-button create" to={auth+'&mode=register&metodo=email'} onClick={()=>rememberEntryDestination(destination)}><b>Crear cuenta gratis</b></Link><Link className="sv-login-button existing" to={auth+'&mode=login&metodo=email'} onClick={()=>rememberEntryDestination(destination)}><b>Ya tengo cuenta</b></Link><div className="sv-login-divider" aria-hidden="true">o</div><button className="sv-login-button google" disabled={!!busy} onClick={google}><GoogleMark/><b>{busy==='google'?'Conectando con Google…':'Entrar con Google'}</b></button><button className="sv-login-button latido" disabled={!!busy} onClick={latido}><span aria-hidden="true">L</span><b>{busy==='latido'?'Conectando con Latido…':'Entrar con cuenta de Latido'}</b></button><p className="sv-login-account-note">Necesitas una cuenta para jugar.</p>{error&&<p className="sv-error" role="alert">{error}</p>}</div><p className="sv-login-legal">Al continuar, aceptas los <Link to="/terminos">Términos</Link> y la <Link to="/privacidad">Política de privacidad</Link>.</p></section>
+  return <section className="sv-screen sv-login-screen"><header className="sv-login-heading"><Logo size={62}/><h1><Brand/></h1><p>Descubre Suiza. Juega en comunidad.</p></header><LoginArt/><div className="sv-login-actions"><Link className="sv-login-button create" to={auth+'&mode=register&metodo=email'} onClick={()=>rememberEntryDestination(destination)}><b>Crear cuenta gratis</b></Link><Link className="sv-login-button existing" to={auth+'&mode=login&metodo=email'} onClick={()=>rememberEntryDestination(destination)}><b>Ya tengo cuenta</b></Link><div className="sv-login-divider" aria-hidden="true">o</div><button className="sv-login-button google" disabled={!!busy} onClick={google}><GoogleMark/><b>{busy==='google'?'Conectando con Google…':'Entrar con Google'}</b></button><button className="sv-login-button latido" disabled={!!busy} onClick={latido}><img src="/suizamente-assets/latido.svg" width="24" height="24" alt="" aria-hidden="true"/><b>{busy==='latido'?'Conectando con Latido…':'Conectar con tu cuenta de Latido'}</b></button><p className="sv-login-account-note">Necesitas una cuenta para jugar.</p>{error&&<p className="sv-error" role="alert">{error}</p>}</div><p className="sv-login-legal">Al continuar, aceptas los <Link to="/terminos">Términos</Link> y la <Link to="/privacidad">Política de privacidad</Link>.</p></section>
 }
 export function HowTo(){
   const {config,player}=useSv()

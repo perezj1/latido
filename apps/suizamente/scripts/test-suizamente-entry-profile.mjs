@@ -16,17 +16,13 @@ try{
  await page.route('**/mock-supabase/rest/v1/profiles?**',r=>r.fulfill({json:{id:A,name:'Alex de Latido',avatar_url:'https://photos.suizamente.test/latido.jpg',interests:[]}}))
  await page.route('https://photos.suizamente.test/**',r=>r.fulfill({contentType:'image/svg+xml',body:'<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64"><rect width="64" height="64" fill="#03AA98"/></svg>'}))
  for(const width of [320,390,1440]){
-  await page.setViewportSize({width,height:844});await page.goto(preview.origin+'/suizamente');await expect(page.locator('.sv-login-screen')).toBeVisible()
-  await expect(page.locator('.sv-login-button')).toHaveCount(4);await expect(page.locator('.sv-nav')).toHaveCount(0)
+  await page.setViewportSize({width,height:844});await page.goto(preview.origin+'/suizamente');await expect(page.locator('.sv-home-screen')).toBeVisible();await expect(page.locator('.sv-login-screen')).toHaveCount(0)
   assert.equal(await page.locator('html').getAttribute('data-suizamente-theme'),'clara');assert.equal(await page.locator('html').getAttribute('data-theme'),'light')
-  assert.ok(!requests.some(u=>/\/api\/suizamente\/(jugador|inicio|mapa)/.test(u)),'Cached identity alone never loads game data')
   assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));await page.screenshot({path:out+'/entrada-'+width+'.png',fullPage:true})
  }
- await page.getByRole('link',{name:'Ya tengo cuenta',exact:true}).click();await expect(page.getByRole('textbox',{name:/^Email/})).toBeVisible()
- await page.goto(preview.origin+'/suizamente');await page.getByRole('link',{name:'Crear cuenta gratis',exact:true}).click();await expect(page).toHaveURL(/mode=register/)
  // A new game player inherits the Latido identity only after choosing it.
  await preview.db.query('DELETE FROM suizamente_private.suizamente_jugadores WHERE jugador_id=$1',[A])
- await page.goto(preview.origin+'/suizamente');await page.getByRole('button',{name:'Entrar con cuenta de Latido',exact:true}).click()
+ await page.goto(preview.origin+'/suizamente')
  await page.getByRole('button',{name:'Saltar',exact:true}).click();await page.getByRole('button',{name:'Omitir',exact:true}).click()
  await expect(page.getByRole('heading',{name:'Tu perfil',exact:true})).toBeVisible();await expect(page.getByRole('textbox',{name:'Tu apodo',exact:true})).toHaveValue('Alex de Latido')
  await expect(page.locator('.sv-profile-avatar img')).toHaveAttribute('src','https://photos.suizamente.test/latido.jpg')
@@ -47,13 +43,10 @@ try{
  phase='settings';await page.goto(preview.origin+'/suizamente/ajustes');await expect(page.locator('.sv-login-screen')).toHaveCount(0)
  await expect(page.getByRole('heading',{name:'Ajustes',exact:true})).toBeVisible();await expect(page.getByRole('combobox',{name:'Apariencia'})).toHaveCount(0);assert.equal(await page.locator('html').getAttribute('data-suizamente-theme'),'clara')
  await page.waitForLoadState('networkidle');phase='closing first context';await ctx.close();phase='SSO'
- // No local session: a deliberate Latido click opens the trusted SSO bridge.
+ // A Latido account is authenticated within Suizamente, with no external window.
  const sso=await browser.newContext({viewport:{width:390,height:844},reducedMotion:'reduce'})
- await sso.route('https://latido.ch/suizamente/conectar?**',r=>r.fulfill({contentType:'text/html',body:`<script>window.opener.postMessage({type:'suizamente:sso-ready'},${JSON.stringify(preview.origin)});addEventListener('message',e=>{if(e.origin!==${JSON.stringify(preview.origin)})return;window.opener.postMessage({type:'suizamente:sso-session',nonce:e.data.nonce,accessToken:'trusted-latido-token',userId:${JSON.stringify(A)}},e.origin)})</script>`}))
- await sso.route('**/mock-supabase/functions/v1/suizamente-social/sso',r=>r.fulfill({json:{userId:A,tokenHash:'qa-otp'}}))
- await sso.route('**/mock-supabase/auth/v1/verify',r=>r.fulfill({json:{...session,expires_in:86400}}))
- page=await sso.newPage();page.on('pageerror',e=>{errors.push(e.message);console.error('Browser error during '+phase+': '+e.stack)});await page.goto(preview.origin+'/suizamente/entrar');await page.getByRole('button',{name:'Entrar con cuenta de Latido',exact:true}).click();await expect(page.getByRole('heading',{name:'Tu perfil',exact:true})).toBeVisible()
- assert.deepEqual(errors,[]);await writeFile(out+'/resultado.json',JSON.stringify({engine,checks:['four explicit choices with a cached session','forced light with stored/system dark','email/create remain selectable','Latido trusted popup and distinct OTP session','name/avatar from Latido','camera picker and invalid file','JPEG resize and own bucket persistence','A jugar enters game','same tab keeps its chosen account','no appearance selector'],errors},null,2))
- console.log('Entry/profile '+engine+': cached and SSO identities, four explicit choices, light-only, camera/upload/save and 320/390/1440 passed.')
+ page=await sso.newPage();page.on('pageerror',e=>errors.push(e.message));await page.goto(preview.origin+'/suizamente/entrar');await page.getByRole('button',{name:'Conectar con tu cuenta de Latido',exact:true}).click();await expect(page.getByRole('textbox',{name:/^Email/})).toBeVisible();assert.ok(page.url().startsWith(preview.origin+'/auth?'));assert.equal(sso.pages().length,1)
+ assert.deepEqual(errors,[]);await writeFile(out+'/resultado.json',JSON.stringify({engine,checks:['persistent cached session restored','forced light with stored/system dark','email/create remain selectable','Latido login within the app','name/avatar from Latido','camera picker and invalid file','JPEG resize and own bucket persistence','A jugar enters game','new tabs keep the authenticated account','no appearance selector'],errors},null,2))
+ console.log('Entry/profile '+engine+': persistent identities and in-app Latido login, light-only, camera/upload/save and 320/390/1440 passed.')
 }catch(e){await page?.screenshot({path:out+'/fallo.png',fullPage:true}).catch(()=>{});console.error(e.stack);process.exitCode=1}
 finally{await browser?.close();await preview?.close()}

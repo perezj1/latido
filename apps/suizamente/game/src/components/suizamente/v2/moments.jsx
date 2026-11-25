@@ -29,7 +29,7 @@ export function giftSteps(result,shop){
     {title:'¡Esto es para ti!',subtitle:'Tu regalo de hoy',confetti:true,body:<MomentTokens items={rewardTokens({monedas:shop.regalo.monedas,inventario:{[result.comodin]:shop.regalo.comodinesAlAzar}},shop)}/> }]
 }
 export function chestSteps(chest,config){return [
-  {title:chest.titulo,subtitle:'¡Te lo has ganado!',open:true,body:<MomentObject/>},
+  {title:chest.titulo,subtitle:'¡Te lo has ganado!',open:true,body:<MomentObject kind="chest"/>},
   {title:'Dentro había…',confetti:true,body:<><MomentTokens items={rewardTokens(chest.contenido,config)}/>{chest.contenido.escudosAlMaximo&&<p className="sv-moment-note">🛡️ Ya tienes el máximo de escudos.</p>}</>},
 ]}
 export function packSteps(pack){

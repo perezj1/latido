@@ -19,7 +19,7 @@ try{
   for(const path of ['','nueva','perfil/nuevo','mapa','pregunta-del-dia','invitar/abcdefgh']){
    await page.goto(preview.origin+'/suizamente/'+path);await page.waitForLoadState('networkidle')
    await expect(page.locator('.sv-login-screen')).toBeVisible();await expect(page.getByText('Jugar sin cuenta',{exact:true})).toHaveCount(0)
-   assert.deepEqual(await page.locator('.sv-login-button b').allTextContents(),['Crear cuenta gratis','Ya tengo cuenta','Entrar con Google','Entrar con cuenta de Latido'])
+   assert.deepEqual(await page.locator('.sv-login-button b').allTextContents(),['Crear cuenta gratis','Ya tengo cuenta','Entrar con Google','Conectar con tu cuenta de Latido'])
    assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1))
   }
   await page.screenshot({path:out+'/acceso-cuenta-'+width+'.png',fullPage:true})
@@ -38,7 +38,7 @@ try{
  page=await signed.newPage();page.on('pageerror',e=>errors.push(e.message))
  await call(preview.db,A,'guardar_jugador',{apodo:'Apodo de veinte abc',color:'menta',pais:'ES',canton:'ZH',anos_suiza:'1a3',ajustes:{}})
  for(const width of [320,390,1440]){
-  await page.setViewportSize({width,height:844});await page.goto(preview.origin+'/suizamente/nueva');if(width===320){await page.getByRole('button',{name:'Entrar con cuenta de Latido',exact:true}).click();await page.getByRole('button',{name:/A jugar/}).click()}await page.waitForLoadState('networkidle')
+  await page.setViewportSize({width,height:844});await page.goto(preview.origin+'/suizamente/nueva');await page.waitForLoadState('networkidle')
   const filter=page.getByRole('combobox',{name:'Filtrar partidas'})
   for(const value of ['todas','turno','rival']){
    await filter.selectOption(value)

@@ -11,11 +11,12 @@ export function testToken(id){
   const b64=value=>Buffer.from(JSON.stringify(value)).toString('base64url')
   return b64({alg:'HS256',typ:'JWT'})+'.'+b64({sub:id,aud:'authenticated',role:'authenticated',exp:Math.floor(Date.now()/1000)+86400})+'.test-signature'
 }
-export async function startSuizamentePreview(port=5265,{demo=false,host='127.0.0.1',hmr=true}={}){
+export async function startSuizamentePreview(port=5265,{demo=false,host='127.0.0.1',hmr=demo}={}){
   const db=await database({tres:true})
   for(const [id,name] of [[A,'Alex'],[B,'Lu'],[C,'Caro']]){
     await call(db,id,'guardar_jugador',profile(name))
     await call(db,id,'bienvenida')
+    await db.query("UPDATE suizamente_private.suizamente_jugadores SET ajustes=ajustes||'{\"onboarding\":\"2026-01-01T00:00:00Z\"}'::jsonb WHERE jugador_id=$1",[id])
   }
   if(demo){
     for(const actor of [A,B])await db.query("SELECT suizamente_private.v3_anotar($1,'fixture','preview',5000,0,'{\"sobres\":5,\"otra\":3,\"salta\":3,\"tiempo\":3}')",[actor])

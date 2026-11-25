@@ -105,11 +105,12 @@ export default function SuizamenteApp(){
     const old=currentPlayer.current,next=data.jugador
     if(old&&next&&old.jugador_id===next.jugador_id&&Date.parse(old.actualizado_en)>Date.parse(next.actualizado_en))return
     currentPlayer.current=next
-    setPlayer(next?{...next,marco:data.marco??next.marco}:next)
-    if(data.mapa)setMap(data.mapa)
+    const nextPlayer=next?{...next,marco:data.marco??next.marco}:next
+    setPlayer(old=>JSON.stringify(old)===JSON.stringify(nextPlayer)?old:nextPlayer)
+    if(data.mapa)setMap(old=>JSON.stringify(old)===JSON.stringify(data.mapa)?old:data.mapa)
     if(!next)setMap(null)
     if(data.jugador?.ajustes){
-      setSettings(old=>({...old,...data.jugador.ajustes,apariencia:'clara'}))
+      setSettings(old=>{const next={...old,...data.jugador.ajustes,apariencia:'clara'};return JSON.stringify(old)===JSON.stringify(next)?old:next})
       if(data.jugador.ajustes.onboarding)localStorage.setItem('suizamente:onboarding',data.jugador.ajustes.onboarding)
     }
   },[])
@@ -195,8 +196,8 @@ export default function SuizamenteApp(){
   }
   const gate=element=><ProfileGate player={player} ready={ready}>{element}</ProfileGate>
   const reduced=!!settings.menosAnimaciones||systemReduced
-  const bypassOnboarding=/^\/suizamente\/(invitar|pregunta|pregunta-del-dia|entrar|bienvenida)(\/|$)/.test(location.pathname)||new URLSearchParams(location.search).has('p')
-  const onboarding=location.pathname==='/suizamente/primera-vez'||!bypassOnboarding&&!player&&(entered?ready&&!localStorage.getItem('suizamente:bienvenida-pendiente'):!user&&!localStorage.getItem('suizamente:onboarding'))
+  const bypassOnboarding=/^\/suizamente\/(invitar|pregunta|pregunta-del-dia|partida|asalto|ataque|entrar|bienvenida)(\/|$)/.test(location.pathname)||new URLSearchParams(location.search).has('p')
+  const onboarding=entered&&(location.pathname==='/suizamente/primera-vez'||!bypassOnboarding&&ready&&(player?!player.ajustes?.onboarding:!localStorage.getItem('suizamente:bienvenida-pendiente')))
   const admin=location.pathname.startsWith('/suizamente/admin'),showNavigation=!resetting&&!onboarding&&entered&&!!player&&ready&&!questionVisible&&!playing
   const activeTab=['mapa','album','tienda','amigos'].find(tab=>location.pathname.startsWith('/suizamente/'+tab))||'inicio'
   return <SuizamenteContext.Provider value={{player,map,config,user,avatarUrl,avatars,latidoName:profileName,capabilities,refreshConfig,settings,reduced,savePlayer,updateSettings,signOut,setQuestionVisible}}><MomentProvider reduced={reduced} owner={player?.jugador_id}><MomentArrival enabled={!resetting&&!onboarding&&entered&&ready&&!!config&&!opening}/><div className={'sv-root'+(admin?' sv-admin-root':'')+(showNavigation?' sv-has-nav':'')}>

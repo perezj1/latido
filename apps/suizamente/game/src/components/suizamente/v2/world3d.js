@@ -423,7 +423,7 @@ function crear(op) {
   // Distancia para que quepa un ancho w (y un fondo h) en pantalla
   const distPara = (w, h) => { const v = THREE.MathUtils.degToRad(camara.fov) / 2, hz = Math.atan(Math.tan(v) * camara.aspect); return Math.max((w / 2) / Math.tan(hz), (h / 2) / Math.tan(v)) * 1.08; };
   const verTodo = () => { Object.values(cantones).forEach(c => { c.grupo.visible = true; }); volarA(new THREE.Vector3(0, 0, 4), distPara(W, H * 1.25) * 1.05, 0.82, 0.18); controles.autoRotate = false; nubesA(null); };
-  const enfocar = k => { dirty=true;
+  const enfocar = k => { invalidar();
     foco = k || null;
     if (!foco) return verTodo();
     const can = cantones[foco]; if (!can) return;
@@ -449,15 +449,17 @@ function crear(op) {
   });
 
   /* ---------- Bucle ---------- */
-  let reloj = 0, ultimo = performance.now(), vivo = true, dirty=true, ultimoDibujo=0;controles.addEventListener('change',()=>{dirty=true});
-  const tamano = () => { const p = caja.parentElement; if (!p) return; dirty=true;const w = p.clientWidth, h = p.clientHeight; if (!w || !h) return; renderer.setSize(w, h, false); camara.aspect = w / h; camara.updateProjectionMatrix(); };
+  let reloj = 0, ultimo = performance.now(), vivo = true, dirty=true, ultimoDibujo=0, frameId=0;
+  function invalidar(){dirty=true;if(vivo&&!frameId)frameId=requestAnimationFrame(frame)}
+  controles.addEventListener('change',invalidar);
+  const alVolver=()=>{if(!document.hidden)invalidar()};document.addEventListener('visibilitychange',alVolver);
+  const tamano = () => { const p = caja.parentElement; if (!p) return; invalidar();const w = p.clientWidth, h = p.clientHeight; if (!w || !h) return; renderer.setSize(w, h, false); camara.aspect = w / h; camara.updateProjectionMatrix(); };
   const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(tamano) : null;
   const frame = ahora => {
-    if (!vivo) return;
-    requestAnimationFrame(frame);
+    frameId=0;if (!vivo) return;
     if (document.hidden || op.visible?.()===false || (!document.body.contains(caja) && !op.foto)) { ultimo = ahora; return; }
     // Throttle decorative models; retain smooth 60 fps while manipulating the map.
-    const fps=op.mini?20:op.interactive?.()?60:30;if(ahora-ultimoDibujo<1000/fps)return;ultimoDibujo=ahora;
+    const fps=op.mini?20:op.interactive?.()?60:30;if(ahora-ultimoDibujo<1000/fps){invalidar();return;}ultimoDibujo=ahora;
     escena.background.set(op.dark?.()?'#161C26':COL.fondo);if(op.reduced?.()) { controles.autoRotate=false;controles.enableDamping=false;if(vuelo){controles.target.copy(vuelo.hacia.t);camara.position.copy(vuelo.hacia.p);vuelo=null;}tweens.forEach(tw=>tw.f(1));tweens.length=0; }
     if(op.reduced?.()&&!dirty)return;dirty=false;controles.enableDamping=controles.enabled&&!op.reduced?.();const dt = op.reduced?.()?0:Math.min(0.05, (ahora - ultimo) / 1000); ultimo = ahora; reloj += dt;
     if (vuelo) { const p = facil(Math.min(1, (reloj - vuelo.t0) / vuelo.dur)); controles.target.lerpVectors(vuelo.desde.t, vuelo.hacia.t, p); camara.position.lerpVectors(vuelo.desde.p, vuelo.hacia.p, p); if (p >= 1) vuelo = null; }
@@ -467,15 +469,16 @@ function crear(op) {
     nubes.forEach(n => { if (!n.visible) return; n.position.x += n.userData.v * dt * n.scale.x; if (n.position.x > n.userData.limite) n.position.x = n.userData.min ?? -220; });
     controles.update();
     renderer.render(escena, camara);
+    if(!op.reduced?.())invalidar();
   };
   camara.position.set(0, 300, 260); controles.target.set(0, 0, 8);
-  requestAnimationFrame(frame);
+  invalidar();
 
   return {
     elemento: caja,
     montar(div) { div.appendChild(caja); if (ro) { ro.disconnect(); ro.observe(div); } tamano(); },
     // animarK: el cantón que acaba de subir (sus piezas nuevas aparecen con animación y confeti)
-    estado(nuevo, animarK) { dirty=true;
+    estado(nuevo, animarK) { invalidar();
       est = { ...est, ...nuevo, niv: { ...(nuevo.niv || {}) } };
       Object.values(cantones).forEach(c => aplicar(c, nivelDe(c.k), c.k === animarK));
       if (animarK && cantones[animarK]) { const can = cantones[animarK], p = centroMundo(can); lanzarConfeti(p.x, p.y + 1, p.z, can.u); }
@@ -483,18 +486,19 @@ function crear(op) {
     enfocar,
     interaccion(enabled){controles.enabled=enabled;controles.autoRotate=false;controles.enableDamping=enabled&&!op.reduced?.();if(!enabled)controles.update();caja.style.touchAction=renderer.domElement.style.touchAction=enabled?'none':'pan-y';},
     subir(k) { const can = cantones[k]; if (!can) return; aplicar(can, nivelDe(k), true); const p = centroMundo(can); lanzarConfeti(p.x, p.y + 1, p.z, can.u); },
-    zoom(factor){vuelo=null;controles.autoRotate=false;camara.position.sub(controles.target).multiplyScalar(factor).add(controles.target);dirty=true;},
-    rotar(angle){vuelo=null;controles.autoRotate=false;camara.position.sub(controles.target).applyAxisAngle(new THREE.Vector3(0,1,0),angle).add(controles.target);dirty=true;},
+    zoom(factor){vuelo=null;controles.autoRotate=false;camara.position.sub(controles.target).multiplyScalar(factor).add(controles.target);invalidar();},
+    rotar(angle){vuelo=null;controles.autoRotate=false;camara.position.sub(controles.target).applyAxisAngle(new THREE.Vector3(0,1,0),angle).add(controles.target);invalidar();},
     foco: () => foco,
     info: k => ({ hito: C3[k].hito, nombreHito: C3[k].n, alpes: C3[k].alpes || 0 }),
-    saltar() { if (vuelo) { controles.target.copy(vuelo.hacia.t); camara.position.copy(vuelo.hacia.p); camara.lookAt(controles.target); vuelo = null; } tweens.forEach(tw => tw.f(1)); tweens.length = 0; },
+    reanudar:invalidar,
+    saltar() { invalidar();if (vuelo) { controles.target.copy(vuelo.hacia.t); camara.position.copy(vuelo.hacia.p); camara.lookAt(controles.target); vuelo = null; } tweens.forEach(tw => tw.f(1)); tweens.length = 0; },
     reposo() { return new Promise(resolve=>{const comprobar=()=>{if(!vivo||(!vuelo&&!tweens.length))resolve();else requestAnimationFrame(comprobar)};comprobar()}) },
     foto(tipo = 'image/webp', calidad = 0.82, escala) {
       const antes=renderer.getPixelRatio(),cambia=escala&&escala!==antes
       try{if(cambia){renderer.setPixelRatio(escala);tamano()}renderer.render(escena,camara);return renderer.domElement.toDataURL(tipo,calidad)}
       finally{if(cambia){renderer.setPixelRatio(antes);tamano();renderer.render(escena,camara)}}
     },
-    destruir() { vivo = false; if (ro) ro.disconnect(); controles.dispose();const geos=new Set(),materials=new Set();escena.traverse(o=>{if(o.geometry)geos.add(o.geometry);if(o.material)(Array.isArray(o.material)?o.material:[o.material]).forEach(m=>materials.add(m))});geos.forEach(g=>g.dispose());materials.forEach(m=>m.dispose());renderer.dispose();renderer.forceContextLoss(); },
+    destruir() { vivo = false;cancelAnimationFrame(frameId);document.removeEventListener('visibilitychange',alVolver); if (ro) ro.disconnect(); controles.dispose();const geos=new Set(),materials=new Set();escena.traverse(o=>{if(o.geometry)geos.add(o.geometry);if(o.material)(Array.isArray(o.material)?o.material:[o.material]).forEach(m=>materials.add(m))});geos.forEach(g=>g.dispose());materials.forEach(m=>m.dispose());renderer.dispose();renderer.forceContextLoss(); },
   };
 }
 

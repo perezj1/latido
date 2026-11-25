@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { ArrowRight } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 import { useEntry,rememberEntryDestination } from '../../entry'
+import {useGameNavigation} from '../../navigation'
 import { trackAnalyticsEvent } from '../lib/analytics'
 import { supabase } from '../lib/supabase'
 import { C, PP } from '../lib/theme'
@@ -578,8 +579,8 @@ function AuthFormScreen({ onBack, variant='', children }) {
 }
 export default function Auth() {
   const { signIn, signInWithGoogle, signInWithGoogleIdToken, signUp } = useAuth()
-  const {acceptAccount}=useEntry()
-  function enterGame(user,destination){rememberEntryDestination(destination);acceptAccount(user);navigate('/suizamente/perfil/nuevo',{replace:true})}
+  const {acceptAccount}=useEntry(),{enter}=useGameNavigation()
+  function enterGame(user,destination){rememberEntryDestination(destination);acceptAccount(user);enter(destination)}
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const nextPath = getSafeNextPath(searchParams.get('next'))

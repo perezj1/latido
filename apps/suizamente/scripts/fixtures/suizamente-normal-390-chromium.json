@@ -200,9 +200,19 @@
       "tag": "A",
       "class": "sv-chip sv-coins",
       "rect": [
-        246.3,
+        212.3,
         18,
-        71.7,
+        61.7,
+        44
+      ]
+    },
+    {
+      "tag": "BUTTON",
+      "class": "sv-icon-button sv-notification-bell",
+      "rect": [
+        280,
+        18,
+        44,
         44
       ]
     },

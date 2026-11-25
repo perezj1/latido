@@ -18,9 +18,9 @@ export function Raid(){
   const load=useCallback(async()=>{try{receive(await szApi('asaltos/'+id));setError('')}catch(e){if(mounted.current)setError(e.message)}},[id,receive])
   useEffect(()=>{
     mounted.current=true;load()
-    const poll=setInterval(()=>{if(!pending.current)load()},10000),clock=setInterval(()=>setNow(Date.now()),200)
-    const reconnect=()=>load();window.addEventListener('online',reconnect)
-    return()=>{mounted.current=false;clearInterval(poll);clearInterval(clock);window.removeEventListener('online',reconnect)}
+    const reconnect=()=>{if(!document.hidden&&!pending.current)load()},poll=setInterval(reconnect,10000)
+    window.addEventListener('online',reconnect);document.addEventListener('visibilitychange',reconnect)
+    return()=>{mounted.current=false;clearInterval(poll);window.removeEventListener('online',reconnect);document.removeEventListener('visibilitychange',reconnect)}
   },[load])
   async function act(operation,args={}){
     if(pending.current)return
@@ -30,6 +30,7 @@ export function Raid(){
     finally{pending.current=false;if(mounted.current)setBusy(false)}
   }
   const q=data?.pregunta,result=data?.resultado,remaining=q?Math.max(0,Math.ceil((Date.parse(q.venceEn)-now-offset.current)/1000)):0
+  useEffect(()=>{if(!q)return;const clock=setInterval(()=>{if(!document.hidden)setNow(Date.now())},1000);return()=>clearInterval(clock)},[!!q])
   useQuestionScreen(!!q)
   useEffect(()=>{if(q)heard.current=false;if(result&&!heard.current){heard.current=true;feedback(result.ok?'acierto':'fallo')}if(q||result){const heading=document.querySelector('.sv-game h1');heading?.setAttribute('tabindex','-1');heading?.focus()}},[q?.n,result?.n,result?.ok])
   useEffect(()=>{

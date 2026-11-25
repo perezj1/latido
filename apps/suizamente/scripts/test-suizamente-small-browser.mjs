@@ -4,14 +4,14 @@ import {createServer} from 'node:http'
 import {resolve,extname} from 'node:path'
 import {chromium,webkit,expect} from '@playwright/test'
 import {startSuizamentePreview,testToken,testUser} from './lib/suizamente-v2-preview.mjs'
-import {A,B,call,callOriginal} from './lib/suizamente-v2-test-db.mjs'
+import {A,B,C,call,callOriginal} from './lib/suizamente-v2-test-db.mjs'
 const engine=process.argv.includes('--webkit')?'webkit':'chromium',baseline=process.argv.includes('--baseline'),out='output/pantallas-bajas/'+engine,design=resolve(process.env.SUIZAMENTE_DESIGN_ROOT||'../../../latido/suizamente'),metrics={},failures=[]
 let preview,browser,page,reference
 try{
  await mkdir(out,{recursive:true});preview=await startSuizamentePreview(engine==='webkit'?5411:5410,{hmr:false});const db=preview.db,config=await call(db,A,'config')
  browser=await(engine==='webkit'?webkit:chromium).launch({headless:true,args:engine==='chromium'?['--enable-unsafe-swiftshader']:[]})
  const ctx=await browser.newContext({viewport:{width:390,height:844},reducedMotion:'reduce'})
- await ctx.addInitScript(()=>sessionStorage.setItem('suizamente:apertura','1'));page=await ctx.newPage()
+ await ctx.addInitScript(session=>{sessionStorage.setItem('suizamente:apertura','1');localStorage.setItem('sb-127-auth-token',JSON.stringify(session))},{access_token:testToken(C),refresh_token:'test',expires_at:Math.floor(Date.now()/1000)+86400,user:testUser(C,'Caro')});page=await ctx.newPage()
  async function capture(name,{scroll=false,referenceId=name+'Baja'}={}){
   for(const [width,height] of baseline?[[390,844]]:[[375,667],[390,844],[320,568]]){
    await page.setViewportSize({width,height});await page.evaluate(()=>document.fonts.ready);await page.waitForTimeout(150)
@@ -26,7 +26,7 @@ try{
   await page.setViewportSize({width:390,height:844});return referenceId
  }
  const pairs=[];const shot=async(name,options)=>pairs.push([await capture(name,options),name])
- await page.goto(preview.origin+'/suizamente');await expect(page.locator('.sv-onb-practice button')).toHaveCount(4);await shot('OnbHola')
+ await db.query("UPDATE suizamente_private.suizamente_jugadores SET ajustes=ajustes-'onboarding' WHERE jugador_id=$1",[C]);await page.goto(preview.origin+'/suizamente');await expect(page.locator('.sv-onb-practice button')).toHaveCount(4);await shot('OnbHola')
  await page.getByRole('button',{name:'Ahora no',exact:true}).click();await shot('OnbAprende');await page.getByRole('button',{name:'Siguiente',exact:true}).click();await expect(page.locator('.sv-onb-map-frame canvas')).toBeVisible();await page.waitForTimeout(300);await shot('OnbReta');await ctx.close()
  const auth=await browser.newContext({viewport:{width:390,height:844},reducedMotion:'reduce'})
  await auth.addInitScript(({A,session})=>{localStorage.setItem('sb-127-auth-token',JSON.stringify(session));sessionStorage.setItem('suizamente:cuenta-activa',A);sessionStorage.setItem('suizamente:apertura','1');Object.defineProperty(navigator,'standalone',{get:()=>true})},{A,session:{access_token:testToken(A),refresh_token:'test',expires_at:Math.floor(Date.now()/1000)+86400,user:testUser(A,'Alex')}})

@@ -51,10 +51,10 @@ export function Game(){
   },[mid,receive])
   useEffect(()=>{
     mounted.current=true;load()
-    const poll=setInterval(()=>{if(!pending.current)load()},10000),clock=setInterval(()=>setNow(Date.now()),200)
+    const poll=setInterval(()=>{if(!document.hidden&&!pending.current)load()},10000)
     const recover=()=>{if(!document.hidden&&!pending.current)load()},disconnected=()=>setOffline(true)
     window.addEventListener('online',recover);window.addEventListener('focus',recover);document.addEventListener('visibilitychange',recover);window.addEventListener('offline',disconnected)
-    return()=>{mounted.current=false;clearInterval(poll);clearInterval(clock);window.removeEventListener('online',recover);window.removeEventListener('focus',recover);document.removeEventListener('visibilitychange',recover);window.removeEventListener('offline',disconnected)}
+    return()=>{mounted.current=false;clearInterval(poll);window.removeEventListener('online',recover);window.removeEventListener('focus',recover);document.removeEventListener('visibilitychange',recover);window.removeEventListener('offline',disconnected)}
   },[load])
   async function act(action,args={},state=m){
     if(pending.current)return null
@@ -99,6 +99,7 @@ export function Game(){
     previousStamps.current=m.tusSellos
     if(fresh){pendingStamp.current=fresh;feedback('sello')}
   },[m?.tusSellos.join(',')])
+  useEffect(()=>{if(!q)return;const clock=setInterval(()=>{if(!document.hidden)setNow(Date.now())},1000);return()=>clearInterval(clock)},[!!q])
   const remaining=q?Math.max(0,Math.ceil((Date.parse(q.venceEn)-now-offset.current)/1000)):0
   useEffect(()=>{
     if(q||activeResult)document.querySelector('.sv-game .sv-question-content h1')?.focus()
