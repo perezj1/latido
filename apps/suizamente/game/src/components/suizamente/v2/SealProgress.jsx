@@ -1,3 +1,4 @@
+import {Icono,Sello} from './Icono'
 import {useLayoutEffect,useRef,useState} from 'react'
 import {useSv} from './Context'
 import {LatidoBackdrop,StampBar} from './Shared'
@@ -26,10 +27,10 @@ export function SealChoice({match,config,animate,onChoose,onDuel,busy,error,onRe
  const title=useRef(null)
  useLayoutEffect(()=>{title.current?.focus({preventScroll:true})},[])
  return <section className={'sv-screen sv-themed-screen sv-game-seal sv-seal-choice'+(animate?' seal-enter':'')}><LatidoBackdrop tint="#FEEDD1"/>
-  <header className="sv-seal-heading"><span className="sv-seal-hero" aria-hidden="true"><i/>🛂</span><h1 ref={title} tabIndex={-1} className="sv-wheel-status">¡Juega por un sello!</h1><p>Elige categoría. Si aciertas, el sello es tuyo.</p></header>
-  <div className="sv-stamp-choice">{config.categorias.map((c,i)=>{const owned=match.tusSellos.includes(c.id);return <button key={c.id} className={owned?'owned':''} disabled={busy||owned} style={{'--category':c.color,'--tint':c.tinte,'--seal-delay':(.55+i*.08)+'s'}} onClick={()=>onChoose(c.id)}><span className="sv-seal-badge" aria-hidden="true">{c.emoji}</span><b>{c.nombre}</b><small>{owned?'✓ Ya es tuyo':'Jugar ›'}</small></button>})}</div>
+  <header className="sv-seal-heading"><span className="sv-seal-hero" aria-hidden="true"><i/><Icono nombre="pasaporte"/></span><h1 ref={title} tabIndex={-1} className="sv-wheel-status">¡Juega por un sello!</h1><p>Elige categoría. Si aciertas, el sello es tuyo.</p></header>
+  <div className="sv-stamp-choice">{config.categorias.map((c,i)=>{const owned=match.tusSellos.includes(c.id);return <button key={c.id} className={owned?'owned':''} disabled={busy||owned} style={{'--category':c.color,'--tint':c.tinte,'--seal-delay':(.55+i*.08)+'s'}} onClick={()=>onChoose(c.id)}><span className="sv-seal-badge" aria-hidden="true"><Sello categoria={c.id} conseguido={!owned} size="100%"/></span><b>{c.nombre}</b><small>{owned?'✓ Ya es tuyo':'Jugar ›'}</small></button>})}</div>
   <div className="sv-seal-or"><i/>o bien<i/></div>
-  <button className="sv-duel-invite sv-seal-duel" disabled={busy||!match.dueloDisponible} onClick={onDuel}><span aria-hidden="true">⚔️</span><span><b>Duelo de sellos</b><small>{match.dueloDisponible?'Quítale un sello a '+match.rival?.apodo+': '+config.duelo.preguntas+' preguntas, gana quien acierte más':'Hace falta un sello que no tengas y uno tuyo que no tenga'}</small></span><span aria-hidden="true">›</span></button>
+  <button className="sv-duel-invite sv-seal-duel" disabled={busy||!match.dueloDisponible} onClick={onDuel}><span aria-hidden="true"><Icono nombre="duelo"/></span><span><b>Duelo de sellos</b><small>{match.dueloDisponible?'Quítale un sello a '+match.rival?.apodo+': '+config.duelo.preguntas+' preguntas, gana quien acierte más':'Hace falta un sello que no tengas y uno tuyo que no tenga'}</small></span><span aria-hidden="true">›</span></button>
   {error&&<p className="sv-error" role="alert">{error} <button className="sv-text-button" onClick={onRetry}>Reintentar</button></p>}
  </section>
 }

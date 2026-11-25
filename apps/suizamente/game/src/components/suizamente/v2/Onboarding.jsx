@@ -1,3 +1,4 @@
+import {iconizar,Sello,UiIcon} from './Icono'
 import {useEffect,useRef,useState} from 'react'
 import {useLocation,useNavigate} from 'react-router-dom'
 import {useSv} from './Context'
@@ -16,11 +17,11 @@ const copy=[
  ['Construye tu Suiza','Con las monedas que ganas, levanta los 26 cantones en 3D.'],
 ]
 const tints=['#DFE7FC','#FEEDD1','#D3F8F3']
-function Category({question}){const {config}=useSv(),c=config.categorias.find(c=>c.temas.includes(question.tema));return <span className="sv-onb-category" style={{background:c?.tinte}}>{c?.emoji} {c?.nombre}</span>}
+function Category({question}){const {config}=useSv(),c=config.categorias.find(c=>c.temas.includes(question.tema));return <span className="sv-onb-category" style={{background:c?.tinte}}><Sello categoria={c?.id} conseguido/> {c?.nombre}</span>}
 function Lucerne(){
  const {reduced}=useSv(),[level,setLevel]=useState(reduced?3:1),[cycle,setCycle]=useState(0)
  useEffect(()=>{if(reduced){setLevel(3);return}setLevel(1);let active=true,timer;const advance=n=>{if(!active)return;setLevel(n);setCycle(v=>v+1);timer=setTimeout(()=>advance(n===3?1:n+1),n===3?3000:1500)};timer=setTimeout(()=>advance(2),1500);return()=>{active=false;clearTimeout(timer)}},[reduced])
- return <div className="sv-onb-lucerne"><div className="sv-onb-map-frame" role="img" aria-label={'Maqueta 3D de Lucerna, nivel '+level+': '+['','naturaleza','pueblo','monumento'][level]}><WorldMap preview demo state={{vuelta:1,region:0,niveles:{LU:level}}} selected="LU" animated={{canton:'LU',cycle}}/></div><div className="sv-onb-levels" role="list" aria-label="Los 3 niveles de cada cantón">{[[1,'🌲','Naturaleza'],[2,'🏡','Pueblo'],[3,'🏰','Monumento']].map(([n,e,name])=><span key={n} role="listitem" aria-current={level===n?'step':undefined} className={level===n?'active':''}><span aria-hidden="true">{e}</span> {name}</span>)}</div></div>
+ return <div className="sv-onb-lucerne"><div className="sv-onb-map-frame" role="img" aria-label={'Maqueta 3D de Lucerna, nivel '+level+': '+['','naturaleza','pueblo','monumento'][level]}><WorldMap preview demo state={{vuelta:1,region:0,niveles:{LU:level}}} selected="LU" animated={{canton:'LU',cycle}}/></div><div className="sv-onb-levels" role="list" aria-label="Los 3 niveles de cada cantón">{[[1,'🌲','Naturaleza'],[2,'🏡','Pueblo'],[3,'🏰','Monumento']].map(([n,e,name])=><span key={n} role="listitem" aria-current={level===n?'step':undefined} className={level===n?'active':''}><span aria-hidden="true"><UiIcon value={e}/></span> {name}</span>)}</div></div>
 }
 export function Onboarding(){
  const {config,player,savePlayer,reduced}=useSv(),{show}=useMoment(),navigate=useNavigate(),location=useLocation()
@@ -53,12 +54,12 @@ export function Onboarding(){
   <LatidoBackdrop tint={tints[step]} deco scene={false}/>
   <header className="sv-onboarding-progress"><div role="img" aria-label={'Paso '+(step+1)+' de 3'}>{copy.map((_,i)=><i key={i} className={i<=step?'done':''}/>)}</div>{step<2&&<button type="button" disabled={busy} onClick={finish}>Saltar</button>}</header>
   <div className="sv-onb-body"><div className="sv-onboarding-art">
-   {step===0&&(data?<div className="sv-onb-practice"><div className="sv-onb-practice-category"><span aria-hidden="true">{data.pregunta.emoji}</span><Category question={data.pregunta}/></div><h2>{data.pregunta.pregunta}</h2><QuestionOptions question={data.pregunta} result={result} onAnswer={answer} busy={busy}/></div>:<div role="status" className="sv-skeleton" aria-label="Cargando pregunta"/>)}
+   {step===0&&(data?<div className="sv-onb-practice"><div className="sv-onb-practice-category"><span data-sz-content aria-hidden="true">{data.pregunta.emoji}</span><Category question={data.pregunta}/></div><h2 data-sz-content>{data.pregunta.pregunta}</h2><QuestionOptions question={data.pregunta} result={result} onAnswer={answer} busy={busy}/></div>:<div role="status" className="sv-skeleton" aria-label="Cargando pregunta"/>)}
    {step===1&&<div className="sv-onb-learn"><div className="sv-onb-wheel"><MatchWheel categories={config.categorias} max={config.partida.barraParaSello} value={2} target="comida" yourTurn={false}/></div><div className="sv-onb-passport" role="img" aria-label="Tu pasaporte: 4 de 6 sellos"><Stamps categories={config.categorias} owned={['idioma','cultura','comida','casa']}/><b>4/6</b></div></div>}
    {step===2&&!busy&&<Lucerne/>}
   </div>
-  <section className="sv-onboarding-copy"><h1 ref={title} tabIndex={-1}>{words[0]}</h1><p>{words[1]}</p></section>
+  <section className="sv-onboarding-copy"><h1 ref={title} tabIndex={-1}>{words[0]}</h1><p data-sz-content={step===0&&!!result||undefined}>{words[1]}</p></section>
   {error&&<div className="sv-content"><p role="alert" className="sv-error">{error}</p>{!data&&<Button tone="quiet" onClick={()=>{setError('');setRetry(n=>n+1)}}>Reintentar</Button>}</div>}</div>
-  <footer className="sv-footer"><Button tone={step===0&&!result?'quiet':''} disabled={busy} onClick={()=>step===2?finish():setStep(n=>n+1)}>{busy?'Preparando…':step===0&&!result?'Ahora no':step===2?(replay?'✓ Listo':'🎁 Abrir mi regalo'):'Siguiente'}</Button></footer>
+  <footer className="sv-footer"><Button tone={step===0&&!result?'quiet':''} disabled={busy} onClick={()=>step===2?finish():setStep(n=>n+1)}>{iconizar(busy?'Preparando…':step===0&&!result?'Ahora no':step===2?(replay?'✓ Listo':'🎁 Abrir mi regalo'):'Siguiente')}</Button></footer>
  </section>
 }

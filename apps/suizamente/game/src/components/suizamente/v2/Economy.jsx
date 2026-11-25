@@ -1,3 +1,4 @@
+import {Icono,Sello,UiIcon,powerIcon} from './Icono'
 import {ObjectArt} from './ObjectArt'
 import {useDailyGift} from './MomentArrival'
 import {useState} from 'react'
@@ -17,24 +18,24 @@ export function Profile(){
   const achievements=data?.logros.filter(l=>l.conseguido).sort((a,b)=>Date.parse(b.conseguidoEn)-Date.parse(a.conseguidoEn))||[]
   const categoryCard=(title,entry)=>{
     const cat=config.categorias.find(c=>c.id===entry.categoria)
-    return <div className="sv-category-stat" style={{'--tint':cat.tinte,'--category':cat.color}}><span>{cat.emoji}</span><div><small>{title}</small><b>{cat.nombre}</b><div className="sv-xp-bar"><i style={{width:entry.pct+'%'}}/></div></div><b>{entry.pct} %</b></div>
+    return <div className="sv-category-stat" style={{'--tint':cat.tinte,'--category':cat.color}}><span><Sello categoria={cat.id} conseguido/></span><div><small>{title}</small><b>{cat.nombre}</b><div className="sv-xp-bar"><i style={{width:entry.pct+'%'}}/></div></div><b>{entry.pct} %</b></div>
   }
   return <section className="sv-screen"><Header title="" right={<Link className="sv-icon-button" to="/suizamente/menu" aria-label="Menú">☰</Link>}/>
     <div className="sv-content"><div className="sv-profile-heading"><Avatar id={player.jugador_id} name={player.apodo} color={player.color}/><div><h1>{player.apodo}</h1><p>@{player.apodo} · {cantonNames[player.canton]}</p></div></div>
-      <p className="sv-muted">{data?.seguidores??0} seguidores · {data?.siguiendo??0} siguiendo</p><div className="sv-profile-actions"><Button tone="quiet" to="/suizamente/perfil/editar">✏️ Editar perfil</Button><Button tone="quiet" onClick={()=>setSharing(true)}>📤 Compartir</Button></div>
+      <p className="sv-muted">{data?.seguidores??0} seguidores · {data?.siguiendo??0} siguiendo</p><div className="sv-profile-actions"><Button tone="quiet" to="/suizamente/perfil/editar">✏️ Editar perfil</Button><Button tone="quiet" onClick={()=>setSharing(true)}><Icono nombre="compartir"/> Compartir</Button></div>
       <ProfileDuration/><div className="sv-profile-tabs"><b>Desempeño</b><Link to="/suizamente/proponer">Tus preguntas</Link></div>
-      <Card className="sv-level-card"><div className="sv-between"><h2>⭐ Nivel {player.nivel}</h2><span>{player.xpNivel} / {player.xpNecesaria} XP</span></div><div className="sv-xp-bar" role="progressbar" aria-label="Progreso de nivel" aria-valuenow={player.xpNivel} aria-valuemin={0} aria-valuemax={player.xpNecesaria}><i style={{width:100*player.xpNivel/player.xpNecesaria+'%'}}/></div><p>Has acertado <b>{data?.aciertos??0}</b> preguntas</p></Card>
+      <Card className="sv-level-card"><div className="sv-between"><h2><Icono nombre="xp"/> Nivel {player.nivel}</h2><span>{player.xpNivel} / {player.xpNecesaria} XP</span></div><div className="sv-xp-bar" role="progressbar" aria-label="Progreso de nivel" aria-valuenow={player.xpNivel} aria-valuemin={0} aria-valuemax={player.xpNecesaria}><i style={{width:100*player.xpNivel/player.xpNecesaria+'%'}}/></div><p>Has acertado <b>{data?.aciertos??0}</b> preguntas</p></Card>
       {data?.especialidad&&categoryCard('TU ESPECIALIDAD',data.especialidad)}
       {data?.cuesta&&categoryCard('LO QUE MÁS TE CUESTA',data.cuesta)}
       {data&&<Card className="sv-results-grid">{[['ganadas','ganadas'],['perdidas','perdidas'],['abandonadas','abandonadas']].map(([key,label])=><div key={key}><b>{data[key]}</b><span>{label}</span></div>)}</Card>}
-      <Link className="sv-achievement-preview" to="/suizamente/logros"><div className="sv-between"><h2>🏅 Logros · {achievements.length}</h2><span>›</span></div><div>{achievements.slice(0,6).map(l=><span key={l.id} title={l.nombre}>{l.emoji}</span>)}</div>{!achievements.length&&<p>Tu primera partida te espera.</p>}</Link>
+      <Link className="sv-achievement-preview" to="/suizamente/logros"><div className="sv-between"><h2>🏅 Logros · {achievements.length}</h2><span>›</span></div><div>{achievements.slice(0,6).map(l=><span key={l.id} title={l.nombre}><UiIcon value={l.emoji}/></span>)}</div>{!achievements.length&&<p>Tu primera partida te espera.</p>}</Link>
       {error&&<p role="alert" className="sv-error">{error}</p>}
     </div>{sharing&&<ShareSheet data={storyData('perfil',{nivel:player.nivel,especialidad:config.categorias.find(c=>c.id===data?.especialidad?.categoria)?.nombre})} onClose={()=>setSharing(false)}/>}
   </section>
 }
 export function Achievements(){
   const {data:result,error}=useData('logros'),data=result?.logros,[selected,setSelected]=useState(null)
-  return <section className="sv-screen"><Header title="🏅 Logros" back="/suizamente/perfil"/><div className="sv-content"><p>Tienes <b>{data?.filter(l=>l.conseguido).length||0}</b>. Toca uno para ver cómo se consigue.</p><div className="sv-achievements-grid">{data?.map(l=><button key={l.id} onClick={()=>setSelected(l)} aria-label={l.nombre+': '+(l.conseguido?'Conseguido':l.avance+'/'+l.meta)}><span className={l.conseguido?'achieved':''}>{l.emoji}</span><b>{l.nombre}</b><div className="sv-xp-bar"><i style={{width:Math.min(100,100*l.avance/l.meta)+'%'}}/></div><small>{l.conseguido?'✓ Conseguido':l.avance+'/'+l.meta}</small></button>)}</div>{selected&&<Card role="status"><b>{selected.emoji} {selected.nombre}</b><p>{selected.condicion}</p></Card>}{error&&<p role="alert" className="sv-error">{error}</p>}</div></section>
+  return <section className="sv-screen"><Header title="🏅 Logros" back="/suizamente/perfil"/><div className="sv-content"><p>Tienes <b>{data?.filter(l=>l.conseguido).length||0}</b>. Toca uno para ver cómo se consigue.</p><div className="sv-achievements-grid">{data?.map(l=><button key={l.id} onClick={()=>setSelected(l)} aria-label={l.nombre+': '+(l.conseguido?'Conseguido':l.avance+'/'+l.meta)}><span className={l.conseguido?'achieved':''}><UiIcon value={l.emoji}/></span><b>{l.nombre}</b><div className="sv-xp-bar"><i style={{width:Math.min(100,100*l.avance/l.meta)+'%'}}/></div><small>{l.conseguido?'✓ Conseguido':l.avance+'/'+l.meta}</small></button>)}</div>{selected&&<Card role="status"><b><UiIcon value={selected.emoji}/> {selected.nombre}</b><p>{selected.condicion}</p></Card>}{error&&<p role="alert" className="sv-error">{error}</p>}</div></section>
 }
 export function Shop(){
   const openGift=useDailyGift()
@@ -67,10 +68,10 @@ export function Shop(){
     }catch(e){setError(e.message);await load()}finally{setBusy(false)}
   }
   const owned=article=>player.inventario?.[article]||0
-  return <section className="sv-screen sv-shop"><header className="sv-shop-header"><h1>🛒 Tienda</h1><Wallet/></header><div className="sv-content">
+  return <section className="sv-screen sv-shop"><header className="sv-shop-header"><h1><Icono nombre="tienda"/> Tienda</h1><Wallet/></header><div className="sv-content">
     {data?<><button className={'sv-daily-gift '+(!data.regaloDisponible?'opened':'')} disabled={busy||!data.regaloDisponible} onClick={gift}><span className="sv-store-object"><ObjectArt/></span><div><b>Regalo diario</b><small>{data.regaloDisponible?'Monedas y un comodín, gratis':'Vuelve mañana a por otro'}</small></div><strong>{data.regaloDisponible?'Abrir':'✓'}</strong></button>
-      <h2>Comodines</h2><div className="sv-shop-grid">{data.comodines.map(c=><div className="sv-shop-card" key={c.id}><div className="sv-between"><span>{c.emoji}</span><small>Tienes {owned(c.id)}</small></div><b>{c.nombre}</b><p>{c.efecto}</p><button className={player.monedas>=c.precio?'affordable':''} disabled={busy} onClick={()=>buy(c.id)} aria-label={'Comprar '+c.nombre+' por '+c.precio+' monedas'}>🪙 {c.precio}</button></div>)}</div>
-      <h2>Más</h2>{[['escudo','🛡️','Escudo','Reduce lo que te roban · tienes '+owned('escudos')+'/'+data.maxEscudos],['sobre','🃏','Sobre de cartas','Para tu álbum · tienes '+owned('sobres')]].map(([id,emoji,name,description])=><button key={id} className="sv-shop-row" disabled={busy||(id==='escudo'&&owned('escudos')>=data.maxEscudos)} onClick={()=>buy(id)}><span className={id==='sobre'?'sv-store-object':undefined}>{id==='sobre'?<ObjectArt kind="pack"/>:emoji}</span><div><b>{name}</b><small>{description}</small></div><strong className={player.monedas>=data.precios[id]?'affordable':''}>🪙 {data.precios[id]}</strong></button>)}
+      <h2>Comodines</h2><div className="sv-shop-grid">{data.comodines.map(c=><div className="sv-shop-card" key={c.id}><div className="sv-between"><span><Icono nombre={powerIcon(c.id)}/></span><small>Tienes {owned(c.id)}</small></div><b>{c.nombre}</b><p>{c.efecto}</p><button className={player.monedas>=c.precio?'affordable':''} disabled={busy} onClick={()=>buy(c.id)} aria-label={'Comprar '+c.nombre+' por '+c.precio+' monedas'}><Icono nombre="moneda"/> {c.precio}</button></div>)}</div>
+      <h2>Más</h2>{[['escudo','🛡️','Escudo','Reduce lo que te roban · tienes '+owned('escudos')+'/'+data.maxEscudos],['sobre','🃏','Sobre de cartas','Para tu álbum · tienes '+owned('sobres')]].map(([id,emoji,name,description])=><button key={id} className="sv-shop-row" disabled={busy||(id==='escudo'&&owned('escudos')>=data.maxEscudos)} onClick={()=>buy(id)}><span className={id==='sobre'?'sv-store-object':undefined}>{id==='sobre'?<ObjectArt kind="pack"/>:<UiIcon value={emoji}/>}</span><div><b>{name}</b><small>{description}</small></div><strong className={player.monedas>=data.precios[id]?'affordable':''}><Icono nombre="moneda"/> {data.precios[id]}</strong></button>)}
     </>:!error&&<div className="sv-skeleton" role="status" aria-label="Cargando tienda"/>}
     {notice&&<p className="sv-shop-notice" role="status">{notice}</p>}{error&&<p role="alert" className="sv-error">{error}</p>}
   </div></section>

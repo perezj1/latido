@@ -363,7 +363,7 @@
       "class": "sv-wheel sv-light-wheel",
       "rect": [
         5,
-        179.3,
+        178.8,
         380,
         434
       ]
@@ -373,7 +373,7 @@
       "class": "sv-wheel-center",
       "rect": [
         147,
-        373.3,
+        372.8,
         96,
         96
       ]
@@ -435,7 +435,7 @@
       "class": "sv-wheel sv-light-wheel",
       "rect": [
         5,
-        179.3,
+        178.8,
         380,
         434
       ]
@@ -445,7 +445,7 @@
       "class": "sv-wheel-center",
       "rect": [
         147,
-        373.3,
+        372.8,
         96,
         96
       ]
@@ -455,7 +455,7 @@
       "class": "sv-first-hint",
       "rect": [
         5,
-        671,
+        670.5,
         380,
         107.4
       ]
@@ -465,7 +465,7 @@
       "class": "sv-footer",
       "rect": [
         0,
-        778.5,
+        778,
         390,
         72
       ]
@@ -978,9 +978,9 @@
       "tag": "A",
       "class": "sv-chip sv-coins",
       "rect": [
-        301,
+        306.5,
         16,
-        73,
+        67.5,
         44
       ]
     },
@@ -1264,9 +1264,9 @@
       "tag": "BUTTON",
       "class": "sv-moment-share",
       "rect": [
-        122.4,
+        121.2,
         708,
-        145.1,
+        147.7,
         46
       ]
     }

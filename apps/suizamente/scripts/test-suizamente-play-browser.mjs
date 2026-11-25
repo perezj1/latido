@@ -46,7 +46,7 @@ try{
    const content=page.locator('.sv-themed-screen>.sv-content,.sv-themed-screen>.sv-wheel-area').last()
    if(!pack&&await content.count())assert.ok((await footer.boundingBox()).y>=(await content.boundingBox()).y+(await content.boundingBox()).height-1,'Footer follows content')
   }
-  await page.screenshot({path:out+'/'+name+'-'+width+'.png',fullPage:true})
+  await page.screenshot({path:out+'/'+name+'-'+width+'.png',fullPage:true,style:name==='asalto-hecho'?'[data-moment-host]{visibility:hidden!important}':undefined})
  }
  for(const width of [320,390,1440]){
   await layout('partida',width)
@@ -73,7 +73,7 @@ try{
  const otherCtx=await context(B),other=await otherCtx.newPage();let opponentSpins=0
  other.on('request',r=>{if(r.url().endsWith('/girar'))opponentSpins++})
  await enter(other,'/suizamente/partida/'+mid);await expect(other.locator('.sv-wheel-center[role=img]')).toBeVisible();await expect(other.getByRole('button',{name:'Girar la ruleta',exact:true})).toHaveCount(0)
- await other.locator('.sv-light-wheel svg').click({position:{x:80,y:150}});assert.equal(opponentSpins,0);await otherCtx.close();await page.bringToFront()
+ await other.locator('.sv-light-wheel>svg').click({position:{x:80,y:150}});assert.equal(opponentSpins,0);await otherCtx.close();await page.bringToFront()
  checks.push('320/390/desktop geometry, 64px avatars, focus, arc, real 32px powerup pills, opponent read-only')
  // Pause the question request so the final lit slot can be inspected before navigation.
  let releaseQuestion,questionReached=false;const gate=new Promise(r=>{releaseQuestion=r})
@@ -128,7 +128,7 @@ try{
   await page.getByRole('button',{name:i<5?'Siguiente pregunta '+(i+1)+'/5':'Ver el asalto',exact:true}).click()
   if(i<5)await expect(page.locator('.sv-question-card')).toBeVisible()
  }
- await expect(page.locator('.sv-raid.finished')).toBeVisible();await expect(page.getByRole('dialog')).toBeVisible();await page.getByRole('button',{name:'Omitir',exact:true}).click();await navigate('/suizamente/asalto/'+raidId);await expect(page.locator('.sv-raid.finished')).toBeVisible();for(const width of [320,390,1440])await layout('asalto-hecho',width)
+ await expect(page.locator('.sv-raid.finished')).toBeVisible();await expect(page.getByRole('dialog')).toBeVisible();for(const width of [320,390,1440])await layout('asalto-hecho',width);await page.getByRole('button',{name:'Omitir',exact:true}).click();await expect(page).toHaveURL(/\/partida\//)
  checks.push('finish, chest, pack and five-question raid backgrounds; transparent non-covering footers')
  await preview.db.exec('DELETE FROM suizamente_private.suizamente_limites')
  const duelMatch=await call(preview.db,A,'crear_partida',{rival:B})
@@ -136,7 +136,7 @@ try{
  await navigate('/suizamente/partida/'+duelMatch.id);await expect(page.locator('.sv-stamp-choice')).toBeVisible()
  for(const width of [320,390,1440])await layout('elegir-sello',width)
  await page.locator('.sv-duel-invite').click();for(const width of [320,390,1440])await layout('duelo-preparar',width)
- await page.getByRole('button',{name:'⚔️ ¡Al duelo!',exact:true}).click();await expect(page.locator('.sv-question-card')).toBeVisible();await navigate('/suizamente')
+ await page.getByRole('button',{name:'¡Al duelo!',exact:true}).click();await expect(page.locator('.sv-question-card')).toBeVisible();await navigate('/suizamente')
  for(const actor of [A,B])for(let i=0;i<config.duelo.preguntas;i++){
   await preview.db.exec('DELETE FROM suizamente_private.suizamente_limites')
   let m=await call(preview.db,actor,'partida',{id:duelMatch.id})

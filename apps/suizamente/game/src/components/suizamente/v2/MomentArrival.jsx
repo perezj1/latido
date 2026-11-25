@@ -1,3 +1,4 @@
+import {Sello,Icono} from './Icono'
 import {useCallback,useEffect,useRef} from 'react'
 import {useLocation} from 'react-router-dom'
 import {useSv} from './Context'
@@ -58,7 +59,7 @@ export function MomentArrival({enabled}){
       const duels=details.filter(m=>m.duelo?.mostrarResultado&&!momentSeen(owner,'duelo:'+m.duelo.id))
       const events=[...notices.map(noticeEvent),...duels.map(m=>{
         const won=m.duelo.ganador===m.tuId,category=config.categorias.find(c=>c.id===m.duelo.sello)
-        return {id:'duelo:'+m.duelo.id,title:won?'Has ganado el duelo contra '+m.rival?.apodo:m.rival?.apodo+' ha ganado vuestro duelo',detail:(won?'Has conseguido':'Has perdido')+' el sello de '+category?.nombre,icon:category?.emoji||'🛂',loss:!won}
+        return {id:'duelo:'+m.duelo.id,title:won?'Has ganado el duelo contra '+m.rival?.apodo:m.rival?.apodo+' ha ganado vuestro duelo',detail:(won?'Has conseguido':'Has perdido')+' el sello de '+category?.nombre,icon:category?<Sello categoria={category.id} conseguido/>:<Icono nombre="pasaporte"/>,loss:!won}
       })]
       if(events.length)await show(absenceSteps(events),{key:'ausencia:'+events.map(e=>e.id).join(','),onFinish:()=>{
         queueMomentReads(owner,notices,duels)

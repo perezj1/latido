@@ -18,7 +18,7 @@ try{
  await expect(page.locator('.sv-album-grid')).toHaveCount(0);bootstrap.release();await expect(page.locator('.sv-album-grid')).toBeVisible();assert.equal(calls.filter(c=>c.path==='album').length,1,'boot and screen consume one album request')
  const nav=page.getByRole('navigation',{name:'Navegación principal'}),go=name=>nav.getByRole('link',{name,exact:true}).tap()
  await go('Tienda');await expect(page.locator('.sv-daily-gift')).toBeVisible();assert.equal(calls.filter(c=>c.path==='tienda').length,1,'intent and screen share the shop request')
- await go('Amigos');await expect(page.getByRole('heading',{name:'👥 Amigos',exact:true})).toBeVisible()
+ await go('Amigos');await expect(page.getByRole('heading',{name:'Amigos',exact:true})).toBeVisible()
  await page.waitForTimeout(1600);holdAlbum=true;await go('Álbum');await expect(page.locator('.sv-album-grid')).toBeVisible();await expect.poll(()=>calls.filter(c=>c.path==='album').length).toBe(2)
  await expect(page.getByRole('status',{name:'Cargando álbum'})).toHaveCount(0);album.release()
  await expect.poll(()=>page.evaluate(async A=>(await import('/game/src/lib/suizamenteV2.js')).peekSzData('album',A)?.colecciones.length,A)).toBeGreaterThan(0)

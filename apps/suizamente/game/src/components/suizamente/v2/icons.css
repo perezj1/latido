@@ -1,0 +1,12 @@
+.sv-icono{display:inline-block;flex:none;vertical-align:-.22em;overflow:visible;pointer-events:none}.sv-icono-sello{vertical-align:-.3em}
+.sv-nav-icon>.sv-icono{width:24px;height:24px}.sv-stamp-bar>span>.sv-icono{width:1.2em;height:1.2em}
+.sv-root .sv-stamps>span,.sv-root .sv-stamps>span.owned{border:0;background:transparent;box-shadow:none;filter:none;opacity:1}.sv-stamps>span>.sv-icono{width:100%;height:100%}
+.sv-root .sv-question-header>span>.sv-icono{width:100%;height:100%}
+.sv-root .sv-seal-choice .sv-seal-badge:has(.sv-icono){border:0;background:transparent}.sv-seal-badge>.sv-icono{width:100%;height:100%}
+.sv-moment-stamp>.sv-icono{width:100%;height:100%}.sv-moment-gift>.sv-icono{display:block;width:100%;height:100%}
+.sv-root .sv-home-access-icon>.sv-icono{width:80%;height:80%}.sv-home-region .sv-icono,.sv-home-seal>.sv-icono{width:18px;height:18px}.sv-home-new .sv-home-header>.sv-chip>.sv-icono{width:20px;height:20px}
+.sv-seal-hero>.sv-icono,.sv-finish-emoji>.sv-icono,.sv-reward-heading>span>.sv-icono:not(.sv-object-art){display:block;width:1em;height:1em}
+.sv-moment-envelope.sv-moment-envelope{background:transparent;border-color:transparent;box-shadow:none;overflow:visible}.sv-moment-envelope.sv-moment-envelope:before,.sv-moment-envelope.sv-moment-envelope:after{display:none}.sv-moment-envelope>.sv-icono{width:100%;height:180px}
+
+.sv-moment-hero>.sv-icono{display:block;width:1em;height:1em}
+.sv-powerups>button>span>.sv-icono{display:block}

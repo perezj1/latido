@@ -89,7 +89,7 @@ try{
   await navigate('/suizamente/sobre/'+pack.id);await expect(title()).toHaveText('¡Nuevo sobre!');await layout('sobre')
   const savedPack=await call(db,A,'sobre',{id:pack.id});assert.equal(savedPack.giradas,savedPack.total)
   await page.keyboard.press('Space');await expect(title()).toHaveText(/cartas? nuevas?|Todas repetidas/);await layout('cartas')
-  await expect(dialog().locator('.sv-moment-card')).toHaveCount(savedPack.total);await expect(dialog()).toContainText('🪙 +'+savedPack.cartas.find(c=>!c.nueva).monedas)
+  await expect(dialog().locator('.sv-moment-card')).toHaveCount(savedPack.total);await expect(dialog()).toContainText('+'+savedPack.cartas.find(c=>!c.nueva).monedas);await expect(dialog().locator('use[href$="#sz-moneda"]')).not.toHaveCount(0)
   const afterPack=await money(A);await skip();await page.reload();await choose(page);await expect(page.locator('.sv-pack')).toBeVisible();await expect(dialog()).toHaveCount(0);assert.equal(await money(A),afterPack)
   checks.push('pack saved in full before reveal; duplicate compensation from response; skip/reload do not award twice')
   // Every chest type shares one opening path, including capped shields.
