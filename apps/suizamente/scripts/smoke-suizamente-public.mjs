@@ -10,7 +10,10 @@ for(const [engine,type] of [['chromium',chromium],['webkit',webkit]]){
   const ctx=await browser.newContext({viewport:{width:390,height:844},reducedMotion:'reduce'});await ctx.addInitScript(()=>Object.defineProperty(navigator,'standalone',{get:()=>true}))
   const page=await ctx.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message))
   const initialHtml=await(await ctx.request.get(origin+'/suizamente')).text();assert.ok(initialHtml.includes('class="standalone-loading"')&&initialHtml.includes('sv-loading-preview'),'HTML shows loading before JavaScript')
+  assert.ok(initialHtml.includes('name="theme-color" content="#FBF9F6"')&&initialHtml.includes('name="apple-mobile-web-app-status-bar-style" content="default"'),'initial native chrome uses the light surface')
+  const manifest=await(await ctx.request.get(origin+'/suizamente.webmanifest')).json();assert.equal(manifest.theme_color,'#FBF9F6');assert.equal(manifest.background_color,'#FBF9F6')
   await page.goto(origin+'/suizamente');await expect(page.locator('.sv-login-screen')).toBeVisible();await expect(page.locator('.sv-onb-new')).toHaveCount(0)
+  await expect(page.locator('meta[name="theme-color"]')).toHaveAttribute('content',await page.locator('.sv-login-screen').evaluate(e=>window.getComputedStyle(e).backgroundColor))
   const logo=page.locator('.sv-login-button.latido img');await expect(logo).toBeVisible();await expect.poll(()=>logo.evaluate(e=>e.complete&&e.naturalWidth>0)).toBe(true)
   for(const width of [320,390,1440]){await page.setViewportSize({width,height:844});assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth+1));await page.screenshot({path:out+'/'+engine+'-acceso-'+width+'.png',fullPage:true})}
   await page.getByRole('button',{name:'Conectar con tu cuenta de Latido',exact:true}).click();await expect(page.getByRole('textbox',{name:/^Email/})).toBeVisible();assert.equal(new URL(page.url()).origin,origin);assert.equal(ctx.pages().length,1)

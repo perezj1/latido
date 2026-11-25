@@ -1,0 +1,12 @@
+/* Extend the current surface into the device inset without placing controls there. */
+html,body{background:var(--sv-system-color,#FBF9F6)}
+.sv-system-inset{position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);background:var(--sv-system-color,#FBF9F6);pointer-events:none;z-index:2147483647}
+.sv-root{--sv-top-inset:env(safe-area-inset-top,0px);padding-top:var(--sv-top-inset)}
+.sv-root>.sv-screen{min-height:calc(100dvh - var(--sv-top-inset))}
+.sv-root.sv-has-nav>.sv-screen{min-height:calc(100dvh - var(--sv-top-inset) - var(--sv-nav-height))}
+.sv-root .sv-onb-new{height:calc(100dvh - var(--sv-top-inset))}
+@media(max-height:760px){.sv-root .sv-game-board,.sv-root .sv-game:has(.sv-question-header){height:calc(100dvh - var(--sv-top-inset))}}
+/* Keep both pack actions together; 48 px touch targets, including at 320 px. */
+.sv-root .sv-pack>.sv-footer{position:sticky;bottom:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-items:stretch;gap:10px;padding-top:12px;background:#FBF9F6}
+.sv-root.sv-has-nav .sv-pack>.sv-footer{bottom:var(--sv-nav-height)}
+.sv-root .sv-pack>.sv-footer>.sv-button{min-width:0;min-height:48px;padding:10px 8px;border-radius:18px;font-size:14px;line-height:1.35}
