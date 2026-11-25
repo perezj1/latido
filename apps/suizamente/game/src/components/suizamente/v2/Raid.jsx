@@ -25,14 +25,14 @@ export function Raid(){
   async function act(operation,args={}){
     if(pending.current)return
     pending.current=true;setBusy(true);setError('')
-    try{receive(await szApi('asaltos/'+id+'/'+operation,{method:'POST',body:{turnoN:data.turnoN,n:data.pregunta?.n,...args}}))}
+    try{const next=await szApi('asaltos/'+id+'/'+operation,{method:'POST',body:{turnoN:data.turnoN,n:data.pregunta?.n,...args}});if(operation==='respuesta'&&(next.pregunta?.falladas?.length||0)>(data.pregunta?.falladas?.length||0))feedback('fallo',{key:'asalto:'+id+':'+(data.pregunta?.n??data.preguntaNumero)+':intento:'+next.pregunta.falladas.length});receive(next)}
     catch(e){setError(e.message);if(e.status===409)await load()}
     finally{pending.current=false;if(mounted.current)setBusy(false)}
   }
   const q=data?.pregunta,result=data?.resultado,remaining=q?Math.max(0,Math.ceil((Date.parse(q.venceEn)-now-offset.current)/1000)):0
   useEffect(()=>{if(!q)return;const clock=setInterval(()=>{if(!document.hidden)setNow(Date.now())},1000);return()=>clearInterval(clock)},[!!q])
-  useQuestionScreen(!!q)
-  useEffect(()=>{if(q)heard.current=false;if(result&&!heard.current){heard.current=true;feedback(result.ok?'acierto':'fallo')}if(q||result){const heading=document.querySelector('.sv-game h1');heading?.setAttribute('tabindex','-1');heading?.focus()}},[q?.n,result?.n,result?.ok])
+  useQuestionScreen(!!q,!!q||!!result&&!summary)
+  useEffect(()=>{if(q)heard.current=false;if(result&&!heard.current){heard.current=true;feedback(result.ok?'acierto':'fallo',{key:'asalto:'+id+':'+(result.n??data.preguntaNumero)+':final'})}if(q||result){const heading=document.querySelector('.sv-game h1');heading?.setAttribute('tabindex','-1');heading?.focus()}},[q?.n,result?.n,result?.ok])
   useEffect(()=>{
     if(!q)return
     const timer=setTimeout(()=>{if(!pending.current)act('respuesta',{agotada:true})},Math.max(0,Date.parse(q.venceEn)+config.partida.margenServidorSegundos*1000-Date.now()-offset.current+100))

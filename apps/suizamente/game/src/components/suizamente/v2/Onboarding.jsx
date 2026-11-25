@@ -7,6 +7,7 @@ import {QuestionOptions} from './QuestionOptions'
 import {useMoment} from './Moment'
 import {welcomeSteps} from './moments'
 import {szApi} from '../../../lib/suizamenteV2'
+import {feedback} from '../../../lib/suizamenteFeedback'
 import './onboarding.css'
 
 const copy=[
@@ -31,7 +32,7 @@ export function Onboarding(){
  const title=useRef(null),touch=useRef(null),pending=useRef(false)
  useEffect(()=>{let active=true;szApi('primera-vez',{fresh:true}).then(d=>{if(active)setData(d)}).catch(e=>{if(active)setError(e.message)});return()=>{active=false}},[retry])
  useEffect(()=>{title.current?.focus({preventScroll:true});title.current?.closest('.sv-onb-body')?.scrollTo(0,0);window.scrollTo(0,0)},[step,data?.resultado?.opcion])
- async function answer(opcion){if(pending.current)return;pending.current=true;setBusy(true);setError('');try{setData(await szApi('primera-vez/respuesta',{method:'POST',body:{opcion}}))}catch(e){setError(e.message)}finally{pending.current=false;setBusy(false)}}
+ async function answer(opcion){if(pending.current)return;pending.current=true;setBusy(true);setError('');try{const next=await szApi('primera-vez/respuesta',{method:'POST',body:{opcion}});if(next.resultado)feedback(next.resultado.ok?'acierto':'fallo',{key:'primera-vez:'+next.pregunta.id+':respuesta'});setData(next)}catch(e){setError(e.message)}finally{pending.current=false;setBusy(false)}}
  async function finish(){
   if(pending.current)return
   if(replay){navigate('/suizamente/ajustes');return}

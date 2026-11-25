@@ -23,6 +23,7 @@ import {MomentProvider} from './Moment'
 import {MomentArrival} from './MomentArrival'
 import {isAbsenceNotice} from './moments'
 import {LoadingScreen} from '../../../../Loading'
+import {backgroundMusicFor,feedback} from '../../../lib/suizamenteFeedback'
 
 // Only load a screen when its route is opened. Navigation remains mounted.
 const screen=(load,name)=>lazy(()=>load().then(module=>({default:module[name]})))
@@ -47,6 +48,7 @@ const AdminPanel=screen(()=>import('./Admin'),'AdminPanel')
 const VictoryAttack=screen(()=>import('./VictoryAttack'),'VictoryAttack')
 
 function Opening({onDone,reduced}){
+  useEffect(()=>{feedback('sintonia',{esperar:3000,key:'apertura',scope:'session'})},[])
   useEffect(()=>{
     const timer=setTimeout(onDone,reduced?700:3000)
     const skip=()=>onDone()
@@ -84,6 +86,7 @@ export default function SuizamenteApp(){
   const [map,setMap]=useState(null)
   const [capabilities,setCapabilities]=useState(null)
   const [questionVisible,setQuestionVisible]=useState(false)
+  const [audioQuestionVisible,setAudioQuestionVisible]=useState(false)
   const [systemReduced,setSystemReduced]=useState(()=>matchMedia('(prefers-reduced-motion: reduce)').matches)
   const [waiting,setWaiting]=useState(0)
   useEffect(()=>{
@@ -201,8 +204,8 @@ export default function SuizamenteApp(){
   const onboarding=entered&&(location.pathname==='/suizamente/primera-vez'||!bypassOnboarding&&ready&&(player?!player.ajustes?.onboarding:!localStorage.getItem('suizamente:bienvenida-pendiente')))
   const admin=location.pathname.startsWith('/suizamente/admin'),showNavigation=!resetting&&!onboarding&&entered&&!!player&&ready&&!questionVisible&&!playing
   const activeTab=['mapa','album','tienda','amigos'].find(tab=>location.pathname.startsWith('/suizamente/'+tab))||'inicio'
-  return <SuizamenteContext.Provider value={{player,map,config,user,avatarUrl,avatars,latidoName:profileName,capabilities,refreshConfig,settings,reduced,savePlayer,updateSettings,signOut,setQuestionVisible}}><MomentProvider reduced={reduced} owner={player?.jugador_id}><MomentArrival enabled={!resetting&&!onboarding&&entered&&ready&&!!config&&!opening}/><div className={'sv-root'+(admin?' sv-admin-root':'')+(showNavigation?' sv-has-nav':'')}>
-    <Feedback/><InstallMetadata/>
+  return <SuizamenteContext.Provider value={{player,map,config,user,avatarUrl,avatars,latidoName:profileName,capabilities,refreshConfig,settings,reduced,savePlayer,updateSettings,signOut,setQuestionVisible,setAudioQuestionVisible}}><MomentProvider reduced={reduced} owner={player?.jugador_id}><MomentArrival enabled={!resetting&&!onboarding&&entered&&ready&&!!config&&!opening}/><div className={'sv-root'+(admin?' sv-admin-root':'')+(showNavigation?' sv-has-nav':'')}>
+    <Feedback music={ready&&!!config&&!authLoading&&backgroundMusicFor({pathname:location.pathname,onboarding,opening:opening&&onboarding,question:audioQuestionVisible})}/><InstallMetadata/>
     <InstallBanner hidden={onboarding||playing||location.pathname==='/suizamente/perfil/nuevo'}/>
     {authLoading||resetting?<Loading/>:onboarding&&config?<Suspense fallback={<Loading/>}><Onboarding/></Suspense>:!entered?<Login/>:error?<section className="sv-screen"><div className="sv-welcome"><Logo size={90}/><h1>No se pudo abrir Suizamente</h1><p role="alert">{error}</p><Button onClick={()=>setRetry(n=>n+1)}>Reintentar</Button></div></section>:!config||!ready||!player&&!profileMetaLoaded?<Loading/>:
     <Suspense fallback={<Loading/>}><Routes>

@@ -3,6 +3,7 @@ import {createContext,useCallback,useContext,useEffect,useId,useRef,useState} fr
 import {createPortal} from 'react-dom'
 import './moment.css'
 import './share.css'
+import {feedback} from '../../../lib/suizamenteFeedback'
 
 const MomentContext=createContext(null)
 export const useMoment=()=>useContext(MomentContext)
@@ -34,13 +35,14 @@ export function MomentProvider({children,reduced,owner}){
   // Changing accounts must not show the previous person's rewards.
   useEffect(()=>{setQueue(old=>{old.filter(item=>item.owner!==owner).forEach(item=>{item.resolve(false);pending.current.delete(item.pendingKey)});return old.filter(item=>item.owner===owner)})},[owner])
   const current=queue.find(item=>item.owner===owner)
-  return <MomentContext.Provider value={{show,active:!!current}}>{children}{current&&<Moment key={current.id} steps={current.steps} reduced={reduced} onFinish={()=>finish(current)}/>}</MomentContext.Provider>
+  return <MomentContext.Provider value={{show,active:!!current}}>{children}{current&&<Moment key={current.id} audioKey={current.key||'cola:'+current.id} steps={current.steps} reduced={reduced} onFinish={()=>finish(current)}/>}</MomentContext.Provider>
 }
 
-export function Moment({steps,onFinish,reduced=false}){
+export function Moment({steps,onFinish,reduced=false,audioKey='momento'}){
   const [index,setIndex]=useState(0),[opening,setOpening]=useState(false),[closing,setClosing]=useState(false),[error,setError]=useState('')
   const dialog=useRef(null),timer=useRef(null),locked=useRef(false),closingRef=useRef(false),titleId=useId(),descriptionId=useId(),step=steps[index]
   const prepared=useRef(null),[shareReady,setShareReady]=useState(false),[sharing,setSharing]=useState(false)
+  useEffect(()=>{if(step.sound)feedback(step.sound,{key:'momento:'+audioKey+':'+index+':entrada'})},[audioKey,index,step.sound])
   useEffect(()=>{let active=true;prepared.current=null;setShareReady(false);if(step.image)import('./story').then(async engine=>({blob:await engine.png(step.image),share:engine.compartir})).then(result=>{if(active){prepared.current=result;setShareReady(!!result.blob)}}).catch(e=>{if(active)setError(e.message)});return()=>{active=false}},[step])
   async function share(){if(!shareReady||sharing)return;setSharing(true);try{await prepared.current.share(step.image,'suizamente.png',prepared.current.blob)}catch(e){setError(e.message)}finally{setSharing(false)}}
   useEffect(()=>{
@@ -61,6 +63,7 @@ export function Moment({steps,onFinish,reduced=false}){
     if(locked.current||closing)return
     if(index===steps.length-1)return close()
     locked.current=true
+    if(step.open)feedback('premio',{key:'momento:'+audioKey+':'+index+':abrir'})
     const next=()=>{setIndex(i=>i+1);setOpening(false);locked.current=false}
     if(step.open&&!reduced&&!matchMedia('(prefers-reduced-motion: reduce)').matches){setOpening(true);timer.current=setTimeout(next,360)}else next()
   }

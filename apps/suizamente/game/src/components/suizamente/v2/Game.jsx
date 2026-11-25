@@ -61,6 +61,7 @@ export function Game(){
     pending.current=true;setBusy(true);setError('')
     try{
       const next=await szApi('partidas/'+mid+'/'+action,{method:'POST',body:{turnoN:state.turnoN,...args}})
+      if(action==='respuesta'&&(next.pregunta?.falladas?.length||0)>(state.pregunta?.falladas?.length||0))feedback('fallo',{key:'partida:'+mid+':'+state.pregunta.n+':intento:'+next.pregunta.falladas.length})
       receive(next);return next
     }catch(e){
       setError(e.message);setOffline(!navigator.onLine)
@@ -83,21 +84,21 @@ export function Game(){
     if(next.fase==='elegida')await act('pregunta',{},next)
   }
   const q=m?.pregunta
-  useQuestionScreen(!!q)
   const stampReady=m?.teToca&&m.fase==='sello'&&m.tuBarra>=config.partida.barraParaSello&&!q
   const activeResult=m?.resultado&&m.resultado.n!==dismissed&&!q&&!stampReady?m.resultado:null
   const solved=activeResult||(stampReady?m?.resultado:null)
+  useQuestionScreen(!!q,!!q||!!activeResult)
   useEffect(()=>{
     if(!solved)return
     const key=mid+':'+solved.n
-    if(!heard.current.has(key)){heard.current.add(key);feedback(solved.ok?'acierto':'fallo')}
+    if(!heard.current.has(key)){heard.current.add(key);feedback(solved.ok?'acierto':'fallo',{key:'partida:'+key+':final'})}
   },[solved?.n,solved?.ok,mid])
   useEffect(()=>{if(m?.fase==='sello'&&m.teToca&&!spinning&&!q)document.querySelector('.sv-wheel-status')?.focus({preventScroll:true})},[m?.fase,m?.teToca,spinning,q?.n])
   useEffect(()=>{
     if(!m)return
     const fresh=previousStamps.current&&m.tusSellos.find(id=>!previousStamps.current.includes(id))
     previousStamps.current=m.tusSellos
-    if(fresh){pendingStamp.current=fresh;feedback('sello')}
+    if(fresh)pendingStamp.current=fresh
   },[m?.tusSellos.join(',')])
   useEffect(()=>{if(!q)return;const clock=setInterval(()=>{if(!document.hidden)setNow(Date.now())},1000);return()=>clearInterval(clock)},[!!q])
   const remaining=q?Math.max(0,Math.ceil((Date.parse(q.venceEn)-now-offset.current)/1000)):0

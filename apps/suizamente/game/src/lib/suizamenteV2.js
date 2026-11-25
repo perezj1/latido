@@ -82,7 +82,7 @@ function withoutFlags(value){
   return value
 }
 export function szSettings() {
-  const defaults={sonidos:true,vibracion:true,menosAnimaciones:false,apariencia:'clara'}
+  const defaults={musica:true,sonidos:true,vibracion:true,menosAnimaciones:false,apariencia:'clara'}
   try{return {...defaults,...JSON.parse(localStorage.getItem('suizamente:ajustes')||'{}'),apariencia:'clara'}}catch{return defaults}
 }
 export const cantonNames={

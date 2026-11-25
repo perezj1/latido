@@ -2,17 +2,20 @@ import {useEffect,useRef} from 'react'
 import {useSv} from './Context'
 import {createFeedback,SV_FEEDBACK} from '../../../lib/suizamenteFeedback'
 
-export function Feedback(){
-  const {settings}=useSv(),latest=useRef(settings),audio=useRef(null)
+export function Feedback({music=false}){
+  const {settings,player,user}=useSv(),latest=useRef(settings),owner=useRef(null),audio=useRef(null)
   latest.current=settings
+  owner.current=player?.jugador_id||user?.id
   useEffect(()=>{
-    const instance=createFeedback(()=>latest.current);audio.current=instance
-    const unlock=()=>instance.unlock(),play=e=>instance.play(e.detail),hide=()=>{if(document.hidden)instance.stop()}
+    const instance=createFeedback(()=>latest.current,globalThis,()=>owner.current);audio.current=instance
+    const unlock=()=>instance.unlock(),play=e=>{const d=typeof e.detail==='string'?{kind:e.detail}:e.detail;instance.play(d.kind,d)},hide=()=>document.hidden?instance.ocultar():instance.mostrar()
     document.addEventListener('pointerdown',unlock,true);document.addEventListener('keydown',unlock,true)
     window.addEventListener(SV_FEEDBACK,play);document.addEventListener('visibilitychange',hide)
+    hide()
     return()=>{document.removeEventListener('pointerdown',unlock,true);document.removeEventListener('keydown',unlock,true);window.removeEventListener(SV_FEEDBACK,play);document.removeEventListener('visibilitychange',hide);instance.dispose()}
   },[])
-  useEffect(()=>{if(settings.sonidos===false)audio.current?.stop()},[settings.sonidos])
+  useEffect(()=>audio.current?.musica(music),[music])
+  useEffect(()=>audio.current?.actualizar(),[settings.musica,settings.sonidos])
   useEffect(()=>{if(settings.vibracion===false)navigator.vibrate?.(0)},[settings.vibracion])
   return null
 }

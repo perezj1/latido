@@ -81,6 +81,7 @@ export function createSuizamenteHandler({ fetchImpl = fetch } = {}) {
         try { body = JSON.parse(body) } catch { return send(400, { error:'JSON no válido' }) }
       }
       if (body && (Array.isArray(body) || typeof body !== 'object')) return send(400, { error:'Solicitud no válida' })
+      if(action==='guardar_jugador'&&body?.ajustes&&Object.hasOwn(body.ajustes,'musica')&&typeof body.ajustes.musica!=='boolean')return send(400,{error:'Ajustes no válidos'})
       if(body&&Buffer.byteLength(JSON.stringify(body),'utf8')>(adminRoute?150000:20000))return send(413,{error:'Solicitud demasiado grande'})
       const args = { ...Object.fromEntries(url.searchParams), ...body }
       if (match) args.id = match[1]

@@ -15,5 +15,6 @@ assert.equal(await fetchEvent('/api/suizamente/jugador'),undefined,'Personal API
 assert.equal(await fetchEvent('/auth/callback'),undefined)
 await fetchEvent('/assets/Admin-example.js');const count=fetches;network=false;assert.equal((await fetchEvent('/assets/Admin-example.js')).status,200);assert.equal(fetches,count,'A previously opened route works from its runtime cache')
 const files=await readdir('dist/assets'),app=files.find(file=>/^SuizamenteApp-.*\.js$/.test(file)),bytes=(await stat('dist/assets/'+app)).size
-assert.ok(bytes<110000,'Main game payload stays below 110 kB after route splitting')
+// The synthesized soundtrack adds about 4.3 kB gzip; no audio downloads.
+assert.ok(bytes<115000,'Main game including synthesized music stays below 115 kB')
 console.log('Delivery: main game '+bytes+' bytes; minimal precache, on-demand route caching, no API/auth caching passed.')

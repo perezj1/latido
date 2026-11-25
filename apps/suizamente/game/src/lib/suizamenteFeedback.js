@@ -1,32 +1,33 @@
+import {crearSonido} from './suizamenteSonido.js'
 export const SV_FEEDBACK='suizamente:feedback'
-export const feedback=kind=>window.dispatchEvent(new CustomEvent(SV_FEEDBACK,{detail:kind}))
+export const feedback=(kind,options)=>window.dispatchEvent(new window.CustomEvent(SV_FEEDBACK,{detail:options?{kind,...options}:kind}))
 
-// Original short oscillator motifs. No downloaded recordings or third-party sounds.
-export function createFeedback(getSettings,host=globalThis){
-  let context,unlocked=false
-  const active=new Set()
-  const motifs={ruleta:[510,430,570,470,620],acierto:[523,659,784],fallo:[310,220],sello:[392,784],cofre:[392,494,587,784]}
-  function unlock(){
-    unlocked=true
-    if(getSettings().sonidos===false)return
-    const Audio=host.AudioContext||host.webkitAudioContext
-    if(Audio){context??=new Audio();context.resume()?.catch(()=>{})}
-  }
-  function stop(){for(const node of active){try{node.stop()}catch{/* Already ended. */}}active.clear()}
-  function play(kind){
-    const settings=getSettings()
-    if(!unlocked||host.document?.visibilityState==='hidden')return
-    if(settings.vibracion!==false&&['acierto','fallo'].includes(kind))host.navigator?.vibrate?.(kind==='acierto'?20:35)
-    if(settings.sonidos===false||!context||!motifs[kind])return
-    stop()
-    const start=context.currentTime
-    motifs[kind].forEach((frequency,i)=>{
-      const oscillator=context.createOscillator(),gain=context.createGain(),when=start+i*.075
-      oscillator.type=kind==='fallo'?'triangle':'sine';oscillator.frequency.value=frequency
-      gain.gain.setValueAtTime(0,when);gain.gain.linearRampToValueAtTime(.045,when+.008);gain.gain.exponentialRampToValueAtTime(.0001,when+.115)
-      oscillator.connect(gain);gain.connect(context.destination);oscillator.start(when);oscillator.stop(when+.12)
-      active.add(oscillator);oscillator.onended=()=>{active.delete(oscillator);oscillator.disconnect();gain.disconnect()}
-    })
-  }
-  return {unlock,play,stop,dispose(){stop();context?.close()?.catch(()=>{})}}
+// One policy beside the router. Questions and their answers share the same flag.
+export function backgroundMusicFor({pathname,onboarding=false,opening=false,question=false}){
+ return !onboarding&&!opening&&!question&&!/^\/suizamente\/(primera-vez|pregunta|pregunta-del-dia|admin)(\/|$)/.test(pathname)
+}
+
+export function createFeedback(getSettings,host=globalThis,getOwner=()=>null){
+ const engine=crearSonido({ajustes:getSettings,host}),memory=new Set()
+ let unlocked=false,disposed=false
+ const hidden=()=>host.document?.hidden||host.document?.visibilityState==='hidden'
+ function receipt(key,scope){
+  const owner=getOwner()||'invitado',id=scope+'|'+owner+'|'+key,storage=scope==='session'?host.sessionStorage:host.localStorage,store='suizamente:sonidos:'+owner
+  if(memory.has(id))return false
+  try{const saved=JSON.parse(storage?.getItem(store)||'[]');if(saved.includes(key)){memory.add(id);return false}storage?.setItem(store,JSON.stringify([...saved,key]))}catch{/* Presentation-only receipts; audio still works without storage. */}
+  memory.add(id);return true
+ }
+ function play(kind,options={}){
+  if(disposed||hidden())return 0
+  if(options.key&&!receipt(kind+':'+options.key,options.scope||'local'))return 0
+  if(unlocked&&getSettings().vibracion!==false&&['acierto','fallo'].includes(kind))host.navigator?.vibrate?.(kind==='acierto'?20:35)
+  return engine.tocar(kind==='sello'||kind==='cofre'?'premio':kind,options)
+ }
+ return {
+  unlock(){if(!disposed){unlocked=true;engine.desbloquear()}},play,
+  musica:engine.musica,actualizar:engine.actualizar,
+  ocultar(){engine.ocultar();host.navigator?.vibrate?.(0)},mostrar:engine.mostrar,
+  get sonando(){return engine.sonando},
+  dispose(){disposed=true;engine.destruir()},
+ }
 }

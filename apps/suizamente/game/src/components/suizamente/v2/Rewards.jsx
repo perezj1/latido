@@ -5,7 +5,6 @@ import {useEffect,useRef,useState} from 'react'
 import {useLocation,useNavigate,useParams} from 'react-router-dom'
 import {useSv} from './Context'
 import {Button,Card,Header,Logo,Sheet,Wallet,LatidoBackdrop} from './Shared'
-import {feedback} from '../../../lib/suizamenteFeedback'
 import {ChestLinks} from './Map'
 import {szApi,szKey} from '../../../lib/suizamenteV2'
 
@@ -59,7 +58,7 @@ export function Chest(){
     ;(async()=>{
       let d=await szApi('cofres/'+id)
       if(!d.abierto){
-        try{d=await szApi('cofres/'+id+'/abrir',{method:'POST'});if(active){feedback('cofre');show(chestSteps(d,config),{key:'cofre:'+id})}}catch(e){if(e.status===409)d=await szApi('cofres/'+id);else throw e}
+        try{d=await szApi('cofres/'+id+'/abrir',{method:'POST'});if(active){show(chestSteps(d,config),{key:'cofre:'+id})}}catch(e){if(e.status===409)d=await szApi('cofres/'+id);else throw e}
       }
       if(active)setData(d)
     })().catch(e=>{if(active)setError(e.message)})

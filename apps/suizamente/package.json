@@ -32,6 +32,7 @@
     "test:fluidity": "node scripts/test-suizamente-fluidity.mjs",
     "test:install-game": "node scripts/test-suizamente-install-browser.mjs && node scripts/test-suizamente-install-browser.mjs --webkit",
     "test:loading": "node scripts/test-suizamente-v23.mjs && node scripts/test-suizamente-loading-browser.mjs && node scripts/test-suizamente-loading-browser.mjs --webkit",
+    "test:audio": "node scripts/test-suizamente-sonido.mjs && node scripts/test-suizamente-audio-settings.mjs && node scripts/test-suizamente-audio-browser.mjs && node scripts/test-suizamente-audio-browser.mjs --webkit",
     "test:small": "node scripts/test-suizamente-small-browser.mjs && node scripts/test-suizamente-small-browser.mjs --webkit && node scripts/test-suizamente-moments-browser.mjs --small",
     "test:four-options": "node scripts/test-suizamente-v21.mjs && node scripts/test-suizamente-four-base.mjs && node scripts/test-suizamente-four-browser.mjs && node scripts/test-suizamente-four-browser.mjs --webkit",
     "test:ux": "node scripts/test-suizamente-ux-browser.mjs && node scripts/test-suizamente-ux-browser.mjs --webkit && node scripts/test-suizamente-delivery.mjs",

@@ -17,7 +17,7 @@ export function rewardTokens(reward={},config={}){
 }
 const league=(config,key)=>{const n=config.ligas?.puntos?.[key];return n>0?[['🏅','+'+n,n===1?'punto de liga':'puntos de liga']]:[]}
 export function welcomeSteps(config){const gift=config.bienvenida;return [
- {title:'¡Tu regalo de bienvenida!',subtitle:'Para empezar con buen pie',open:true,body:<MomentObject/>},
+ {title:'¡Tu regalo de bienvenida!',subtitle:'Para empezar con buen pie',sound:'sintonia',open:true,body:<MomentObject/>},
  {title:'¡Esto es para ti!',subtitle:'Para tu primera partida',confetti:true,footer:'Toca para jugar',body:<MomentTokens items={[
   ['🪙','+'+gift.monedas,'monedas'],['🃏',String(gift.sobres),gift.sobres===1?'sobre de cartas':'sobres de cartas'],
   ...Object.entries(gift.comodines).map(([id,n])=>{const c=config.comodines.find(c=>c.id===id);return [c.emoji,'+'+n,'comodín «'+c.nombre+'»']}),
@@ -44,24 +44,24 @@ export function packSteps(pack){
 }
 export function stampSteps(match,config){
   const result=match.resultado,category=config.categorias.find(c=>c.id===result.categoria)
-  return [{title:'¡Sello conseguido!',subtitle:category.nombre+' ya está en tu pasaporte',tint:category.tinte,confetti:true,body:<><MomentStamp category={category} size={112}/><MomentTokens items={[...rewardTokens(result.ganado),...league(config,'selloGanado')]}/></>}]
+  return [{title:'¡Sello conseguido!',subtitle:category.nombre+' ya está en tu pasaporte',sound:'premio',tint:category.tinte,confetti:true,body:<><MomentStamp category={category} size={112}/><MomentTokens items={[...rewardTokens(result.ganado),...league(config,'selloGanado')]}/></>}]
 }
 export function duelSteps(match,config){
   const duel=match.duelo,won=duel.ganador===match.tuId,category=config.categorias.find(c=>c.id===duel.sello),stamp=[<MomentStamp category={category}/>,'Sello',category?.nombre]
-  return [won?{title:'¡Duelo ganado!',subtitle:'Contra '+match.rival?.apodo,tint:'#D3F8F3',confetti:true,image:duelImage(duel.sello),body:<MomentSummary hero="🏆" gain={[stamp,...rewardTokens(duel.premio),...league(config,'selloGanado')]}/>}:
+  return [won?{title:'¡Duelo ganado!',subtitle:'Contra '+match.rival?.apodo,sound:'premio',tint:'#D3F8F3',confetti:true,image:duelImage(duel.sello),body:<MomentSummary hero="🏆" gain={[stamp,...rewardTokens(duel.premio),...league(config,'selloGanado')]}/>}:
     {title:'Duelo perdido',subtitle:match.rival?.apodo+' se queda tu sello',tint:'#FFE1E2',grey:true,body:<MomentSummary hero="💔" loss={[stamp]} note="Puedes recuperarlo en otro duelo"/>}]
 }
 export function finishSteps(match,config){
   const won=match.ganador===match.tuId
   const subtitle=won?(match.motivoFin==='sellos'?'Has llenado tu pasaporte antes que ':'Has ganado la partida contra ')+match.rival?.apodo:match.ganador?match.rival?.apodo+' terminó la partida':'La partida ha terminado'
-  return [{title:won?'¡Victoria!':match.ganador?'Esta vez no':'Partida terminada',subtitle,tint:won?'#FEEDD1':'#DFE7FC',grey:!won,confetti:won,image:won?victoryImage(match):undefined,body:<MomentSummary hero={won?'🏆':'🫶'} gain={[...rewardTokens(match.premio),...(match.cofre?[['🎁','1','cofre']]:[]),...(won?league(config,'partidaGanada'):[])]} note={!won?'No pierdes nada de tu mapa ni de tu álbum':undefined}/>}]
+  return [{sound:won?'victoria':undefined,title:won?'¡Victoria!':match.ganador?'Esta vez no':'Partida terminada',subtitle,tint:won?'#FEEDD1':'#DFE7FC',grey:!won,confetti:won,image:won?victoryImage(match):undefined,body:<MomentSummary hero={won?'🏆':'🫶'} gain={[...rewardTokens(match.premio),...(match.cofre?[['🎁','1','cofre']]:[]),...(won?league(config,'partidaGanada'):[])]} note={!won?'No pierdes nada de tu mapa ni de tu álbum':undefined}/>}]
 }
-export function cantonSteps(name,landmark,image){return [{title:'¡Cantón completo!',subtitle:name+' ya tiene su monumento',tint:'#D3F8F3',confetti:true,image,shareLabel:'Compartir mi Suiza',body:<><div className="sv-moment-canton-photo"><img src={image.foto} alt={'Maqueta de '+name+' con su monumento'} style={{objectFit:image.ajuste==='contener'?'contain':'cover'}}/></div><span className="sv-moment-landmark">🏰 {landmark||'Monumento'}</span></>} ]}
+export function cantonSteps(name,landmark,image){return [{sound:'premio',title:'¡Cantón completo!',subtitle:name+' ya tiene su monumento',tint:'#D3F8F3',confetti:true,image,shareLabel:'Compartir mi Suiza',body:<><div className="sv-moment-canton-photo"><img src={image.foto} alt={'Maqueta de '+name+' con su monumento'} style={{objectFit:image.ajuste==='contener'?'contain':'cover'}}/></div><span className="sv-moment-landmark">🏰 {landmark||'Monumento'}</span></>} ]}
 export function raidSteps(raid){
   const changed=raid.nivelFinal!=null&&raid.nivelFinal<raid.nivelInicial,won=raid.premio>0||changed,other=[]
   if(raid.escudo)other.push(['🛡️','−1','escudo'])
   if(changed)other.push([<MapDrawing only={raid.canton} levels={{[raid.canton]:raid.nivelFinal}} label={cantonNames[raid.canton]}/>,'Nivel '+raid.nivelFinal,cantonNames[raid.canton]+' baja un nivel'])
-  return [{title:raid.estado==='cancelado'?'Asalto cancelado':raid.escudo?'¡Lo paró un escudo!':won?'¡Asalto con éxito!':'Asalto fallido',subtitle:won?'Al mapa de '+raid.victima?.apodo:'Esta vez no hubo suerte',tint:raid.escudo?'#DFE7FC':won?'#FEEDD1':'#F4F7FB',grey:!won,confetti:won&&!raid.escudo,body:<MomentSummary hero={raid.escudo?'🛡️':'⚔️'} gain={rewardTokens({monedas:raid.premio})} other={other.length?[raid.victima?.apodo+' pierde',other]:undefined} nothing={!won?'No pierdes nada':undefined}/>}]
+  return [{sound:won&&raid.estado!=='cancelado'?'premio':undefined,title:raid.estado==='cancelado'?'Asalto cancelado':raid.escudo?'¡Lo paró un escudo!':won?'¡Asalto con éxito!':'Asalto fallido',subtitle:won?'Al mapa de '+raid.victima?.apodo:'Esta vez no hubo suerte',tint:raid.escudo?'#DFE7FC':won?'#FEEDD1':'#F4F7FB',grey:!won,confetti:won&&!raid.escudo,body:<MomentSummary hero={raid.escudo?'🛡️':'⚔️'} gain={rewardTokens({monedas:raid.premio})} other={other.length?[raid.victima?.apodo+' pierde',other]:undefined} nothing={!won?'No pierdes nada':undefined}/>}]
 }
 export const isAbsenceNotice=notice=>['asalto','escudo','duelo','duelo_terminado','duelo_ganado','duelo_perdido'].includes(notice.tipo)
 export function absenceSteps(events){return [{title:'Mientras no estabas',subtitle:'Esto ha pasado en tus partidas y en tu mapa',tint:'#FFE1E2',grey:true,body:<div className="sv-moment-events">{events.map((event,i)=><div key={event.id} className={'sv-moment-event'+(event.loss?' loss':'')} style={{'--delay':(.25+i*.25)+'s','--shake-delay':(.75+i*.25)+'s'}}><span aria-hidden="true">{event.icon}</span><span><b>{event.title}</b>{event.detail&&<small>{event.detail}</small>}</span></div>)}</div>} ]}
