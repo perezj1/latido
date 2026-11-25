@@ -27,7 +27,7 @@ try{
  // A new game player inherits the Latido identity only after choosing it.
  await preview.db.query('DELETE FROM suizamente_private.suizamente_jugadores WHERE jugador_id=$1',[A])
  await page.goto(preview.origin+'/suizamente');await page.getByRole('button',{name:'Entrar con cuenta de Latido',exact:true}).click()
- await page.getByRole('button',{name:'Saltar',exact:true}).click();await page.getByRole('button',{name:'🎁 Abrir mi regalo',exact:true}).click();await page.getByRole('button',{name:'Omitir',exact:true}).click()
+ await page.getByRole('button',{name:'Saltar',exact:true}).click();await page.getByRole('button',{name:'Omitir',exact:true}).click()
  await expect(page.getByRole('heading',{name:'Tu perfil',exact:true})).toBeVisible();await expect(page.getByRole('textbox',{name:'Tu apodo',exact:true})).toHaveValue('Alex de Latido')
  await expect(page.locator('.sv-profile-avatar img')).toHaveAttribute('src','https://photos.suizamente.test/latido.jpg')
  for(const width of [320,390,1440]){await page.setViewportSize({width,height:844});assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));await page.screenshot({path:out+'/perfil-'+width+'.png',fullPage:true})}

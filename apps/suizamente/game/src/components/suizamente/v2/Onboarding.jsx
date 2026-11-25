@@ -1,26 +1,21 @@
 import {useEffect,useRef,useState} from 'react'
 import {useLocation,useNavigate} from 'react-router-dom'
 import {useSv} from './Context'
-import {Button,Chip,Stamps,MatchWheel,LatidoBackdrop} from './Shared'
+import {Button,Stamps,MatchWheel,LatidoBackdrop} from './Shared'
 import {WorldMap} from './WorldMap'
 import {QuestionOptions} from './QuestionOptions'
-import {MomentObject,useMoment} from './Moment'
+import {useMoment} from './Moment'
 import {welcomeSteps} from './moments'
 import {szApi} from '../../../lib/suizamenteV2'
 import './onboarding.css'
 
 const copy=[
- ['👋 BIENVENIDA','¿Cuánto sabes de la vida en Suiza?','El juego de preguntas para hispanohablantes en Suiza: idioma, papeles, comida, trabajo… Con datos curiosos.'],
- ['✋ PRUÉBALO','Así es cada pregunta','Elige una respuesta. Después verás un dato curioso.'],
- ['🎡 LA PARTIDA','Gira, acierta y gana sellos','Partidas 1 contra 1, por turnos. La ruleta elige la categoría y, con 3 aciertos, juegas por un sello. Gana quien llene antes su pasaporte.'],
- ['🏗️ TU SUIZA','Construye tu Suiza en 3D','Con las monedas que ganas levantas cada cantón en 3 niveles, hasta su monumento. Región a región, hasta los 26. Y llenas tu álbum de cartas.'],
- ['🎁 REGALO DE BIENVENIDA','Todo listo para jugar','Dentro hay monedas, un sobre de cartas y comodines para tu primera partida. Y cada día, más: regalo, misiones y la pregunta del día.'],
+ ['¿Cuánto sabes de Suiza?','Elige una respuesta y aprende un dato curioso.'],
+ ['Gana los 6 sellos','Gira la ruleta y acierta. Con 3 aciertos seguidos, juegas por un sello.'],
+ ['Construye tu Suiza','Con las monedas que ganas, levanta los 26 cantones en 3D.'],
 ]
-const tints=['#DFE7FC','#D3F2F9','#FEEDD1','#D3F8F3','#FFE1E2']
+const tints=['#DFE7FC','#FEEDD1','#D3F8F3']
 function Category({question}){const {config}=useSv(),c=config.categorias.find(c=>c.temas.includes(question.tema));return <span className="sv-onb-category" style={{background:c?.tinte}}>{c?.emoji} {c?.nombre}</span>}
-function Fan({questions}){
- return <div className="sv-onb-fan" role="img" aria-label={'Ejemplos de preguntas: '+questions.map(q=>q.pregunta).join(' · ')}>{questions.map((q,i)=><div key={q.id} className={'sv-onb-example card-'+i} aria-hidden="true"><Category question={q}/><span className="sv-onb-question-heading"><span>{q.emoji}</span><b>{q.pregunta}</b></span>{i===2&&<div className="sv-onb-example-options">{q.opciones.map(o=><span key={o.indice}><b>{o.t}</b></span>)}</div>}</div>)}</div>
-}
 function Lucerne(){
  const {reduced}=useSv(),[level,setLevel]=useState(reduced?3:1),[cycle,setCycle]=useState(0)
  useEffect(()=>{if(reduced){setLevel(3);return}setLevel(1);let active=true,timer;const advance=n=>{if(!active)return;setLevel(n);setCycle(v=>v+1);timer=setTimeout(()=>advance(n===3?1:n+1),n===3?3000:1500)};timer=setTimeout(()=>advance(2),1500);return()=>{active=false;clearTimeout(timer)}},[reduced])
@@ -30,7 +25,7 @@ export function Onboarding(){
  const {config,player,savePlayer,reduced}=useSv(),{show}=useMoment(),navigate=useNavigate(),location=useLocation()
  const replay=new URLSearchParams(location.search).has('repetir')||!!player?.ajustes?.onboarding
  const pageNumber=Number(new URLSearchParams(location.search).get('paso'))
- const step=Number.isInteger(pageNumber)&&pageNumber>=1&&pageNumber<=5?pageNumber-1:0
+ const step=Number.isInteger(pageNumber)&&pageNumber>=1?Math.min(3,pageNumber)-1:0
  const [data,setData]=useState(null),[error,setError]=useState(''),[busy,setBusy]=useState(false),[retry,setRetry]=useState(0)
  function setStep(value){const next=typeof value==='function'?value(step):value,search=new URLSearchParams(location.search);search.set('paso',next+1);navigate({pathname:location.pathname,search:search.toString()})}
  const title=useRef(null),touch=useRef(null),pending=useRef(false)
@@ -52,19 +47,17 @@ export function Onboarding(){
    navigate(player?'/suizamente/nueva':'/suizamente/perfil/nuevo')
   }catch(e){setError(e.message)}finally{pending.current=false;setBusy(false)}
  }
- const result=data?.resultado,words=step===1&&result?[result.ok?'✅ ¡CORRECTO!':'💡 ¡CASI!',result.ok?'¡Bien visto!':'Ahora ya lo sabes',result.dato]:copy[step]
- return <section className={'sv-screen sv-onboarding sv-onb-new'+(reduced?' reduced':'')} data-onb-step={step+1} onTouchStart={e=>{touch.current=e.changedTouches[0].clientX}} onTouchEnd={e=>{const dx=(touch.current??e.changedTouches[0].clientX)-e.changedTouches[0].clientX;touch.current=null;if(busy||e.target.closest('button,a'))return;if(dx>60)setStep(n=>Math.min(4,n+1));else if(dx< -60)setStep(n=>Math.max(0,n-1))}}>
+ const result=data?.resultado,words=step===0&&result?[result.ok?'¡Correcto! 🎉':'¡Casi!',result.dato]:copy[step]
+ return <section className={'sv-screen sv-onboarding sv-onb-new'+(reduced?' reduced':'')} data-onb-step={step+1} onTouchStart={e=>{touch.current=e.changedTouches[0].clientX}} onTouchEnd={e=>{const dx=(touch.current??e.changedTouches[0].clientX)-e.changedTouches[0].clientX;touch.current=null;if(busy||e.target.closest('button,a'))return;if(dx>60)setStep(n=>Math.min(2,n+1));else if(dx< -60)setStep(n=>Math.max(0,n-1))}}>
   <LatidoBackdrop tint={tints[step]} deco scene={false}/>
-  <header className="sv-onboarding-progress"><div role="img" aria-label={'Paso '+(step+1)+' de 5'}>{copy.map((_,i)=><i key={i} className={i<=step?'done':''}/>)}</div>{step<4&&<button type="button" disabled={busy} onClick={()=>setStep(4)}>Saltar</button>}</header>
+  <header className="sv-onboarding-progress"><div role="img" aria-label={'Paso '+(step+1)+' de 3'}>{copy.map((_,i)=><i key={i} className={i<=step?'done':''}/>)}</div>{step<2&&<button type="button" disabled={busy} onClick={finish}>Saltar</button>}</header>
   <div className="sv-onb-body"><div className="sv-onboarding-art">
-   {step===0&&(data?<Fan questions={data.ejemplos}/>:<div role="status" className="sv-skeleton" aria-label="Cargando preguntas"/>)}
-   {step===1&&data&&<div className="sv-onb-practice"><Category question={data.pregunta}/><div className="sv-onb-question-heading"><span aria-hidden="true">{data.pregunta.emoji}</span><h2>{data.pregunta.pregunta}</h2></div><QuestionOptions question={data.pregunta} result={result} onAnswer={answer} busy={busy}/></div>}
-   {step===2&&<div className="sv-onb-learn"><div className="sv-onb-wheel"><MatchWheel categories={config.categorias} max={config.partida.barraParaSello} value={2} target="comida" yourTurn={false}/></div><div className="sv-onb-passport" role="img" aria-label="Tu pasaporte: 4 de 6 sellos"><Stamps categories={config.categorias} owned={['idioma','cultura','comida','casa']}/><b>4/6</b></div></div>}
-   {step===3&&<Lucerne/>}
-   {step===4&&<div className="sv-onb-gift"><MomentObject/><div className="sv-chips"><Chip>🎁 Regalo diario</Chip><Chip>🎯 Misiones</Chip><Chip>📊 Pregunta del día</Chip></div></div>}
+   {step===0&&(data?<div className="sv-onb-practice"><div className="sv-onb-practice-category"><span aria-hidden="true">{data.pregunta.emoji}</span><Category question={data.pregunta}/></div><h2>{data.pregunta.pregunta}</h2><QuestionOptions question={data.pregunta} result={result} onAnswer={answer} busy={busy}/></div>:<div role="status" className="sv-skeleton" aria-label="Cargando pregunta"/>)}
+   {step===1&&<div className="sv-onb-learn"><div className="sv-onb-wheel"><MatchWheel categories={config.categorias} max={config.partida.barraParaSello} value={2} target="comida" yourTurn={false}/></div><div className="sv-onb-passport" role="img" aria-label="Tu pasaporte: 4 de 6 sellos"><Stamps categories={config.categorias} owned={['idioma','cultura','comida','casa']}/><b>4/6</b></div></div>}
+   {step===2&&!busy&&<Lucerne/>}
   </div>
-  <section className="sv-onboarding-copy"><small>{words[0]}</small><h1 ref={title} tabIndex={-1}>{words[1]}</h1><p>{words[2]}</p></section>
+  <section className="sv-onboarding-copy"><h1 ref={title} tabIndex={-1}>{words[0]}</h1><p>{words[1]}</p></section>
   {error&&<div className="sv-content"><p role="alert" className="sv-error">{error}</p>{!data&&<Button tone="quiet" onClick={()=>{setError('');setRetry(n=>n+1)}}>Reintentar</Button>}</div>}</div>
-  <footer className="sv-footer"><Button tone={step===1&&!result?'quiet':''} disabled={busy||!data&&step===0} onClick={()=>step===4?finish():setStep(n=>n+1)}>{busy?'Preparando…':step===0?'Empezar':step===1&&!result?'Ahora no':step===4?(replay?'✓ Listo':'🎁 Abrir mi regalo'):'Siguiente'}</Button></footer>
+  <footer className="sv-footer"><Button tone={step===0&&!result?'quiet':''} disabled={busy} onClick={()=>step===2?finish():setStep(n=>n+1)}>{busy?'Preparando…':step===0&&!result?'Ahora no':step===2?(replay?'✓ Listo':'🎁 Abrir mi regalo'):'Siguiente'}</Button></footer>
  </section>
 }

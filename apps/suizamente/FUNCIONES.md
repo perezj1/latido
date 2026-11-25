@@ -259,12 +259,12 @@ La salida del contenedor instalado debe comprobarse también con el botón o ges
 - `QuestionOptions.jsx` comparte el aspecto de pregunta y resultado: sin emoji de opción, texto centrado, ✓/✕ en círculo a la izquierda y prefijos ocultos «Correcta: …» / «Tu respuesta, incorrecta: …». Los dilemas conservan sus emojis.
 - La antigua clave `soloConTresOpciones` conserva su nombre por compatibilidad: excluye preguntas con menos de tres opciones. Quita una elimina una incorrecta de las tres disponibles; Otra oportunidad mantiene el primer voto original y permite el segundo intento. No cambian sus precios ni efectos.
 - Las propuestas Con respuesta requieren cuatro textos y una correcta entre 0 y 3; sus opciones no muestran editor de emoji. La moderación y valoración usan el mismo componente. Los dilemas siguen admitiendo dos o tres opciones.
-- Se copian banco y esquema a `server/suizamente/data/` y `public/suizamente/data/`. `juego.json` incorpora la nueva pregunta de `primeraVez`; se conservan las reglas de asaltos y logros ya desplegadas, porque el archivo de referencia contenía cambios ajenos a esta entrega. Las tres tarjetas del onboarding existente conservan sus ejemplos, con el banco actualizado.
+- Se copian banco y esquema a `server/suizamente/data/` y `public/suizamente/data/`. `juego.json` incorpora la nueva pregunta de `primeraVez`; se conservan las reglas de asaltos y logros ya desplegadas, porque el archivo de referencia contenía cambios ajenos a esta entrega. v22 retira el abanico y sus ejemplos de la bienvenida.
 - El juego base de Latido también utiliza cuatro opciones, orden aleatorio salvo Verdad · Mito, color rojo para `.o4`, teclas 1–4 y textos de respuesta/compartir sin emoji de opción. Su catálogo de votos y sus propuestas sociales se amplían sin borrar votos.
 
 Migración: `supabase/suizamente_v21_cuatro_opciones.sql`, generada desde `suizamente_v21_cuatro_opciones.sql.in` y el banco revisado con `node scripts/sync-cuatro-opciones.mjs <carpeta de referencia>`. Comprueba prefijos de opciones y respuestas originales antes de actualizar y cancela toda la transacción si encuentra diferencias incompatibles. Puede repetirse. No altera reglas, premios ni tiempos.
 
-Archivos: `QuestionOptions.jsx`, `answers.css`, `Raid.jsx`, `Duels.jsx`, `Community.jsx`, `Admin.jsx`, `community.css`, `Onboarding.jsx`, `onboarding.css` (también los ejemplos van centrados y sin emoji de opción); banco/esquema/configuración; migración y generador; catálogo, validación y SQL del juego base; `public/suizamente/juego.js`, `juego.html`, `experiencia.js`; pruebas y ayudantes de la vista local.
+Archivos: `QuestionOptions.jsx`, `answers.css`, `Raid.jsx`, `Duels.jsx`, `Community.jsx`, `Admin.jsx`, `community.css`, `Onboarding.jsx`, `onboarding.css` (práctica centrada y sin emoji de opción); banco/esquema/configuración; migración y generador; catálogo, validación y SQL del juego base; `public/suizamente/juego.js`, `juego.html`, `experiencia.js`; pruebas y ayudantes de la vista local.
 
 Pruebas desde esta carpeta:
 
@@ -276,3 +276,21 @@ node scripts/test-suizamente-delivery.mjs
 ```
 
 La validación de la referencia se ejecuta con `node herramientas/validar-preguntas.js`; la copia del repositorio, con `node scripts/validar-suizamente.cjs` desde la raíz. Capturas de pregunta/acierto/fallo en 320, 390, escritorio y 375 × 667, con comparación frente a `pantallas.html`, en `output/cuatro-opciones/<navegador>/comparacion.html`. Se verifican lectura accesible, índices correctos e incorrectos, umbral de porcentajes, comodines, orden variable, Verdad · Mito fijo, propuestas y conservación de votos/instantáneas/recompensas. Queda la revisión manual con lector de pantalla y dispositivos físicos.
+
+## Primera vez: tres pasos (sección 22, 25 de noviembre de 2026)
+
+Se sustituye la bienvenida de cinco pasos por tres, conservando los componentes de partida y el cobro existente:
+
+1. Pregunta real de `primeraVez.pregunta` (`r_s5o1xw`), cuatro opciones barajadas por el servidor y sin tiempo. Título «¿Cuánto sabes de Suiza?» y «Ahora no». Respondida: «¡Correcto! 🎉» o «¡Casi!», dato y foco en el título. No produce votos, premios ni porcentajes y se excluye de las partidas.
+2. «Gana los 6 sellos»: el mismo `MatchWheel` de la partida al 75 %, barra 2/3 y pasaporte 4/6.
+3. «Construye tu Suiza»: Lucerna en un marco de 300 × 300, niveles 1 → 2 → 3 cada 1,5 s y pausa de 3 s en el monumento. «🎁 Abrir mi regalo» abre los dos pasos existentes de `Moment` y `welcomeSteps`. También los abre «Saltar» desde los pasos anteriores. La maqueta se desmonta al abrir el regalo o salir del paso. Se conserva su motor 3D, confeti y destrucción de recursos. Con menos animaciones permanece en el nivel 3; sin WebGL hay una silueta centrada.
+
+Fondo del juego, tres rayitas accesibles «Paso n de 3», contenido centrado horizontal y verticalmente, sin etiquetas ni abanico. En pantallas bajas se aplican las proporciones compactas de la referencia. La URL conserva el paso al recargar y Atrás vuelve al anterior; los enlaces antiguos a pasos 4/5 llegan al último paso disponible. Se conserva el avance por deslizamiento.
+
+El regalo utiliza `recompensas.bienvenida`, mediante su configuración pública. El servidor lo entrega una sola vez con `motivo=bienvenida`; sin perfil queda pendiente hasta guardarlo. Omitir o recargar no vuelve a cobrarlo. Desde Ajustes se muestra «✓ Listo» y no hay regalo. Las dos pistas existentes conservan sus textos, `role="note"`, temporizador activo y eliminación transaccional al girar/responder; cuando se consumen ambas desaparece `ajustes.guia`.
+
+Migración nueva: `supabase/suizamente_v22_onboarding_tres.sql`, después de v21. Retira `primeraVez.ejemplos` de la configuración y su consulta/campo de la API; conserva intentos anteriores, orden, votos, movimientos y marcas. No cambia reglas, premios ni precios. Las migraciones históricas conservan su secuencia; el generador de v21 ya no reincorpora ejemplos. El banco, el esquema y `juego.json` ya estaban actualizados en la entrega de cuatro opciones.
+
+Archivos: `Onboarding.jsx`, `onboarding.css`, migración v22, `sync-cuatro-opciones.mjs` y SQL regenerado de v21, ayudantes de base/vista de pruebas, `test-suizamente-v22.mjs`, pruebas de bienvenida/navegación/entrada y `package.json`. `MatchWheel`, `WorldMap`, `Moment`, `moments` y la partida se reutilizan.
+
+Pruebas: `npm run test:first-visit`, `npm run test:navigation`, `npm run test:entry`, `npm run test:four-options`, `npm run build` y `node scripts/test-suizamente-delivery.mjs`. SQL temporal comprueba ausencia de respuestas anticipadas, práctica sin premios/votos, adopción de sesión firmada, exclusión, regalo único y pistas. Chromium/WebKit comprueban los tres pasos sin scroll a 390 × 844, 320 × 700, 375 × 667 y escritorio; corrección, foco, salto, movimiento reducido, ciclo de Lucerna, desmontaje y alternativa sin WebGL. Capturas de pasos, respuesta, regalo y dos pistas, junto a sus referencias, en `output/primera-vez/<navegador>/comparacion.html` y `comparacion.png`. Queda la escucha manual con NVDA/VoiceOver y la revisión en dispositivos físicos.

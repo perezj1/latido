@@ -159,7 +159,7 @@ DO $$ BEGIN
  THEN RAISE EXCEPTION 'Bank differs beyond an appended option/question emoji. Update aborted to preserve vote indexes.';END IF;
 END $$;
 UPDATE suizamente_private.suizamente_preguntas p SET payload=jsonb_set(jsonb_set(p.payload,'{opciones}',n.payload->'opciones'),'{emoji}',n.payload->'emoji') FROM v21_bank n WHERE p.id=n.payload->>'id' AND p.payload IS DISTINCT FROM n.payload;
-UPDATE suizamente_private.suizamente_configuracion SET juego=jsonb_set(juego,'{primeraVez}','{"_nota":"Onboarding (FUNCIONES.md, sección 22). pregunta: la que se prueba en el paso 1 (del banco, con 4 opciones); no da premio y no sale después en partidas. El regalo es recompensas.bienvenida.","pregunta":"r_s5o1xw"}'::jsonb||jsonb_build_object('ejemplos',coalesce(juego#>'{primeraVez,ejemplos}','["voc_1s99qa8","v_j88frh","r_5vsvsx"]'::jsonb)));
+UPDATE suizamente_private.suizamente_configuracion SET juego=jsonb_set(juego,'{primeraVez}','{"_nota":"Onboarding (FUNCIONES.md, sección 22). pregunta: la que se prueba en el paso 1 (del banco, con 4 opciones); no da premio y no sale después en partidas. El regalo es recompensas.bienvenida.","pregunta":"r_s5o1xw"}'::jsonb);
 DO $$ BEGIN IF to_regclass('public.suizamente_catalogo_votos') IS NOT NULL THEN
  INSERT INTO public.suizamente_catalogo_votos(pregunta_id,opciones) SELECT payload->>'id',jsonb_array_length(payload->'opciones') FROM v21_bank
  ON CONFLICT(pregunta_id) DO UPDATE SET opciones=excluded.opciones WHERE suizamente_catalogo_votos.opciones<=excluded.opciones;
