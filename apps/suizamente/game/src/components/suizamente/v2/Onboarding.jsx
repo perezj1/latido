@@ -19,7 +19,7 @@ const copy=[
 const tints=['#DFE7FC','#D3F2F9','#FEEDD1','#D3F8F3','#FFE1E2']
 function Category({question}){const {config}=useSv(),c=config.categorias.find(c=>c.temas.includes(question.tema));return <span className="sv-onb-category" style={{background:c?.tinte}}>{c?.emoji} {c?.nombre}</span>}
 function Fan({questions}){
- return <div className="sv-onb-fan" role="img" aria-label={'Ejemplos de preguntas: '+questions.map(q=>q.pregunta).join(' · ')}>{questions.map((q,i)=><div key={q.id} className={'sv-onb-example card-'+i} aria-hidden="true"><Category question={q}/><span className="sv-onb-question-heading"><span>{q.emoji}</span><b>{q.pregunta}</b></span>{i===2&&<div className="sv-onb-example-options">{q.opciones.map(o=><span key={o.indice}>{o.e} <b>{o.t}</b></span>)}</div>}</div>)}</div>
+ return <div className="sv-onb-fan" role="img" aria-label={'Ejemplos de preguntas: '+questions.map(q=>q.pregunta).join(' · ')}>{questions.map((q,i)=><div key={q.id} className={'sv-onb-example card-'+i} aria-hidden="true"><Category question={q}/><span className="sv-onb-question-heading"><span>{q.emoji}</span><b>{q.pregunta}</b></span>{i===2&&<div className="sv-onb-example-options">{q.opciones.map(o=><span key={o.indice}><b>{o.t}</b></span>)}</div>}</div>)}</div>
 }
 function Lucerne(){
  const {reduced}=useSv(),[level,setLevel]=useState(reduced?3:1),[cycle,setCycle]=useState(0)

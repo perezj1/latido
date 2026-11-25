@@ -264,7 +264,7 @@ La salida del contenedor instalado debe comprobarse también con el botón o ges
 
 Migración: `supabase/suizamente_v21_cuatro_opciones.sql`, generada desde `suizamente_v21_cuatro_opciones.sql.in` y el banco revisado con `node scripts/sync-cuatro-opciones.mjs <carpeta de referencia>`. Comprueba prefijos de opciones y respuestas originales antes de actualizar y cancela toda la transacción si encuentra diferencias incompatibles. Puede repetirse. No altera reglas, premios ni tiempos.
 
-Archivos: `QuestionOptions.jsx`, `answers.css`, `Raid.jsx`, `Duels.jsx`, `Community.jsx`, `Admin.jsx`, `community.css`; banco/esquema/configuración; migración y generador; catálogo, validación y SQL del juego base; `public/suizamente/juego.js`, `juego.html`, `experiencia.js`; pruebas y ayudantes de la vista local.
+Archivos: `QuestionOptions.jsx`, `answers.css`, `Raid.jsx`, `Duels.jsx`, `Community.jsx`, `Admin.jsx`, `community.css`, `Onboarding.jsx`, `onboarding.css` (también los ejemplos van centrados y sin emoji de opción); banco/esquema/configuración; migración y generador; catálogo, validación y SQL del juego base; `public/suizamente/juego.js`, `juego.html`, `experiencia.js`; pruebas y ayudantes de la vista local.
 
 Pruebas desde esta carpeta:
 

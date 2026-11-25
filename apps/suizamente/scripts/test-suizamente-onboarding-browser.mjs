@@ -19,6 +19,7 @@ try{
  await page.goto(preview.origin+'/suizamente');await expect(page.getByRole('img',{name:'Paso 1 de 5'})).toBeVisible()
  const safe=await(await firstResponse).json();assert.ok(!/correcta|dato|resultado/.test(JSON.stringify(safe)))
  await expect(page.getByRole('img',{name:/Ejemplos de preguntas:/})).toBeVisible();await expect(page.getByText(/siempre real/)).toHaveCount(0)
+ assert.deepEqual(await page.locator('.sv-onb-example-options>span').allTextContents(),safe.ejemplos[2].opciones.map(o=>o.t));assert.equal(await page.locator('.sv-onb-example-options>span').first().evaluate(el=>window.getComputedStyle(el).textAlign),'center')
  async function capture(name){for(const width of [320,390,1440]){await page.setViewportSize({width,height:844});await page.evaluate(()=>document.fonts.ready);assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),name+' fits '+width);await page.screenshot({path:out+'/'+name+'-'+width+'.png',fullPage:true})}await page.setViewportSize({width:390,height:844})}
  await capture('paso-1');await page.getByRole('button',{name:'Empezar',exact:true}).click();await expect(page.getByRole('img',{name:'Paso 2 de 5'})).toBeVisible();await capture('paso-2')
  await page.locator('.sv-onb-practice .sv-options button').nth(safe.pregunta.opciones.findIndex(o=>o.t==='Te devuelven el dinero del billete')).click();await expect(page.locator('.sv-onb-practice .correct')).toHaveCount(1);await expect(page.locator('.sv-onb-practice .wrong')).toHaveCount(1);await expect(page.locator('.sv-onboarding-copy h1')).toBeFocused();await capture('paso-2-respondido')
@@ -38,7 +39,7 @@ try{
  await preview.db.query("UPDATE suizamente_private.suizamente_partidas SET reglas=jsonb_set(reglas,'{ruleta,casillas}','[\"casa\"]') WHERE id=$1",[match.id])
  const navigate=async path=>page.evaluate(path=>{history.pushState({},'',path);window.dispatchEvent(new window.PopStateEvent('popstate'))},path)
  await navigate('/suizamente/partida/'+match.id);await expect(page.getByRole('note')).toContainText('Tu primera partida');await capture('pista-ruleta');await page.getByRole('button',{name:'Girar la ruleta',exact:true}).click();await expect(page.getByRole('note')).toContainText('¿Dudas? Usa un comodín');await capture('pista-pregunta')
- const q=await call(preview.db,C,'partida',{id:match.id});assert.notEqual(q.pregunta.preguntaId,'vidrio_domingo');assert.ok(Date.parse(q.pregunta.venceEn)>Date.now())
+ const q=await call(preview.db,C,'partida',{id:match.id});assert.notEqual(q.pregunta.preguntaId,safe.pregunta.id);assert.ok(Date.parse(q.pregunta.venceEn)>Date.now())
  await page.locator('.sv-game .sv-options button').first().click();await expect(page.getByRole('note')).toHaveCount(0);assert.equal((await call(preview.db,C,'jugador')).jugador.ajustes.guia,undefined)
  await navigate('/suizamente/primera-vez?repetir=1');await page.getByRole('button',{name:'Saltar',exact:true}).click();await expect(page.getByRole('img',{name:'Paso 5 de 5'})).toBeVisible();await page.getByRole('button',{name:'✓ Listo',exact:true}).click();await expect(page.getByRole('heading',{name:'Ajustes',exact:true})).toBeVisible()
  await call(preview.db,C,'primera_vez_finalizar');assert.equal((await call(preview.db,C,'jugador')).jugador.ajustes.guia,undefined)
