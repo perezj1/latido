@@ -9,10 +9,13 @@ export function Feedback({music=false}){
   useEffect(()=>{
     const instance=createFeedback(()=>latest.current,globalThis,()=>owner.current);audio.current=instance
     const unlock=()=>instance.unlock(),play=e=>{const d=typeof e.detail==='string'?{kind:e.detail}:e.detail;instance.play(d.kind,d)},hide=()=>document.hidden?instance.ocultar():instance.mostrar()
-    document.addEventListener('pointerdown',unlock,true);document.addEventListener('keydown',unlock,true)
+    // Touch activation happens on release; keep retrying after interruptions, too.
+    const gestures=['pointerdown','pointerup','touchend','click','keydown'],pause=()=>instance.ocultar()
+    gestures.forEach(type=>document.addEventListener(type,unlock,true))
     window.addEventListener(SV_FEEDBACK,play);document.addEventListener('visibilitychange',hide)
+    window.addEventListener('pageshow',hide);window.addEventListener('pagehide',pause)
     hide()
-    return()=>{document.removeEventListener('pointerdown',unlock,true);document.removeEventListener('keydown',unlock,true);window.removeEventListener(SV_FEEDBACK,play);document.removeEventListener('visibilitychange',hide);instance.dispose()}
+    return()=>{gestures.forEach(type=>document.removeEventListener(type,unlock,true));window.removeEventListener(SV_FEEDBACK,play);document.removeEventListener('visibilitychange',hide);window.removeEventListener('pageshow',hide);window.removeEventListener('pagehide',pause);instance.dispose()}
   },[])
   useEffect(()=>audio.current?.musica(music),[music])
   useEffect(()=>audio.current?.actualizar(),[settings.musica,settings.sonidos])

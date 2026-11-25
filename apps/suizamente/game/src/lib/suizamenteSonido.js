@@ -13,7 +13,7 @@
  * Uso:
  *   const sonido = SZSonido.crear({ ajustes: () => ({ musica: true, sonidos: true }) });
  *   // El navegador no deja sonar nada hasta el primer toque o tecla:
- *   document.addEventListener('pointerdown', sonido.desbloquear, true);
+ *   ['pointerdown', 'pointerup', 'touchend', 'click'].forEach(tipo => document.addEventListener(tipo, sonido.desbloquear, true));
  *   document.addEventListener('keydown', sonido.desbloquear, true);
  *   document.addEventListener('visibilitychange', () => document.hidden ? sonido.ocultar() : sonido.mostrar());
  *   sonido.musica(true);               // en cada cambio de pantalla: true si la pantalla lleva música
@@ -61,6 +61,7 @@ const SZSonido = (() => {
 
   function crear(opciones) {
     opciones = opciones || {};
+    var host = opciones.host || (typeof window !== 'undefined' ? window : null);
     var ajustes = opciones.ajustes || function () { return {}; };
     var ctx = null, master = null, busEfectos = null, busMusica = null, ruido = null;
     var listo = false, oculto = false, quiereMusica = false, calladaHasta = 0, reloj = null;
@@ -72,10 +73,10 @@ const SZSonido = (() => {
     var hz = function (m) { return 440 * Math.pow(2, (m - 69) / 12); };
     var conMusica = function () { var a = ajustes() || {}; return a.musica !== false; };
     var conSonidos = function () { var a = ajustes() || {}; return a.sonidos !== false; };
+    var enSegundoPlano = function () { return host && host.document && (host.document.hidden || host.document.visibilityState === 'hidden'); };
 
     /* ---------- Arranque: solo tras un gesto ---------- */
     function montar() {
-      var host = opciones.host || (typeof window !== 'undefined' ? window : null);
       var AC = host && (host.AudioContext || host.webkitAudioContext);
       if (!AC) return false;
       try { ctx = new AC(); } catch { ctx = null; return false; }
@@ -92,7 +93,16 @@ const SZSonido = (() => {
       return true;
     }
     function alCambiar() {
-      if (!ctx || ctx.state !== 'running' || oculto) return;
+      if (!ctx) return;
+      if (ctx.state !== 'running') {
+        listo = false;
+        var anterior = bucle; pararMusica();
+        if (anterior) { try { anterior.out.disconnect(); } catch { /* ya estaba */ } }
+        cortarEfectos(); calladaHasta = 0; clearTimeout(reloj);
+        return;
+      }
+      if (oculto || enSegundoPlano() || destruido) return;
+      master.gain.value = 0.85;
       listo = true;
       if (pendiente) {
         var p = pendiente; pendiente = null;
@@ -101,9 +111,10 @@ const SZSonido = (() => {
       revisarMusica();
     }
     function desbloquear() {
-      if (destruido) return;
+      if (destruido || enSegundoPlano()) return;
       if (!ctx && !montar()) return;
-      if (oculto) return;
+      // A foreground gesture also recovers when a PWA missed its pageshow event.
+      oculto = false; master.gain.value = 0.85;
       if (ctx.state === 'running') return alCambiar();
       try { var r = ctx.resume(); if (r && r.then) r.then(alCambiar, function () {}); } catch { /* sin sonido */ }
     }
@@ -337,8 +348,9 @@ const SZSonido = (() => {
       try { var r = ctx.suspend(); if (r && r.catch) r.catch(function () {}); } catch { /* sin sonido */ }
     }
     function mostrar() {
+      if (destruido || enSegundoPlano()) return;
       oculto = false;
-      if (!ctx || !listo) return;
+      if (!ctx) return;
       master.gain.value = 0.85;
       try { var r = ctx.resume(); if (r && r.then) r.then(alCambiar, function () {}); } catch { /* sin sonido */ }
     }
