@@ -11,9 +11,9 @@ export function Button({children,onClick,to,tone='',disabled=false,...props}){
   return to?<Link className={'sv-button '+tone} to={to} {...props}>{children}</Link>:<button type="button" className={'sv-button '+tone} onClick={onClick} disabled={disabled} {...props}>{children}</button>
 }
 export function Avatar({id,name='',color='menta',level,marco,photo}){
-  const {player,avatarUrl,avatars={}}=useSv(),pid=id||null,own=!!pid&&pid===player?.jugador_id,frame=marco||(own?player.marco:null),image=photo||(own?player.ajustes?.foto_url:null)||avatars[pid]||(own?avatarUrl:null),[failed,setFailed]=useState(null)
+  const {player,avatarUrl,avatars={}}=useSv(),pid=id||null,own=!!pid&&pid===player?.jugador_id,frame=marco||(own?player.marco:null),image=photo||(own?player.ajustes?.foto_url:null)||avatars[pid]||(own?avatarUrl:null),[failed,setFailed]=useState(null),[loaded,setLoaded]=useState(null)
   const safe=typeof image==='string'&&/^(https:\/\/|data:image\/jpeg;base64,)/.test(image)
-  return <span className={'sv-avatar '+color} style={frame?{outline:'3px solid '+frame.colores.at(-1),outlineOffset:3}:undefined} aria-label={level?'Nivel '+level:undefined}>{safe&&failed!==image?<img src={image} alt="" referrerPolicy="no-referrer" onError={()=>setFailed(image)}/>:name==='🔍'?name:name.slice(0,1).toUpperCase()}{level&&<small>{level}</small>}</span>
+  return <span className={'sv-avatar '+color} style={frame?{outline:'3px solid '+frame.colores.at(-1),outlineOffset:3}:undefined} aria-label={level?'Nivel '+level:undefined}>{safe&&failed!==image?<>{loaded!==image&&<i className="sv-avatar-loading" aria-hidden="true"/>}<img className={loaded===image?'sv-image-ready':'sv-image-pending'} src={image} alt="" decoding="async" referrerPolicy="no-referrer" onLoad={()=>setLoaded(image)} onError={()=>setFailed(image)}/></>:name==='🔍'?name:name.slice(0,1).toUpperCase()}{level&&<small>{level}</small>}</span>
 }
 export function Header({title,subtitle,back='/suizamente',right,close=false}){
   const navigate=useNavigate()

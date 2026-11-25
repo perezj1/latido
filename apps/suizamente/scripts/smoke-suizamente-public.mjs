@@ -9,6 +9,7 @@ for(const [engine,type] of [['chromium',chromium],['webkit',webkit]]){
  try{
   const ctx=await browser.newContext({viewport:{width:390,height:844},reducedMotion:'reduce'});await ctx.addInitScript(()=>Object.defineProperty(navigator,'standalone',{get:()=>true}))
   const page=await ctx.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message))
+  const initialHtml=await(await ctx.request.get(origin+'/suizamente')).text();assert.ok(initialHtml.includes('class="standalone-loading"')&&initialHtml.includes('sv-loading-preview'),'HTML shows loading before JavaScript')
   await page.goto(origin+'/suizamente');await expect(page.locator('.sv-login-screen')).toBeVisible();await expect(page.locator('.sv-onb-new')).toHaveCount(0)
   const logo=page.locator('.sv-login-button.latido img');await expect(logo).toBeVisible();await expect.poll(()=>logo.evaluate(e=>e.complete&&e.naturalWidth>0)).toBe(true)
   for(const width of [320,390,1440]){await page.setViewportSize({width,height:844});assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth+1));await page.screenshot({path:out+'/'+engine+'-acceso-'+width+'.png',fullPage:true})}

@@ -22,6 +22,7 @@ import {InstallBanner} from './InstallBanner'
 import {MomentProvider} from './Moment'
 import {MomentArrival} from './MomentArrival'
 import {isAbsenceNotice} from './moments'
+import {LoadingScreen} from '../../../../Loading'
 
 // Only load a screen when its route is opened. Navigation remains mounted.
 const screen=(load,name)=>lazy(()=>load().then(module=>({default:module[name]})))
@@ -68,7 +69,7 @@ function ProfileGate({children,player,ready}){
   if(player.renombrar&&pathname!=='/suizamente/perfil/editar')return <Navigate to="/suizamente/perfil/editar" replace/>
   return children
 }
-function Loading(){return <section className="sv-screen"><div className="sv-content"><div className="sv-skeleton" role="status" aria-label="Cargando Suizamente"/><div className="sv-skeleton short"/></div></section>}
+function Loading(){return <LoadingScreen/>}
 function HomeEntry({children}){const {search}=useLocation(),id=new URLSearchParams(search).get('p');return id?<Navigate to={'/suizamente/pregunta/'+encodeURIComponent(id)} replace/>:children}
 export default function SuizamenteApp(){
   const {authUser:user,loading:authLoading,signOut,avatarUrl,profileName,profileMetaLoaded}=useAuth(),location=useLocation(),{account}=useEntry(),{resetting}=useGameNavigation()
@@ -119,7 +120,7 @@ export default function SuizamenteApp(){
       const data=e.detail
       if(!user||data.jugador.jugador_id!==user.id)return
       savePlayer(data)
-      if(data.configVersion!==undefined&&data.configVersion!==configRevision.current)refreshConfig().catch(()=>{})
+      if(configRevision.current>=0&&data.configVersion!==undefined&&data.configVersion!==configRevision.current)refreshConfig().catch(()=>{})
       const fresh=(data.novedades||[]).filter(n=>!isAbsenceNotice(n)&&!seen.current.has(data.jugador.jugador_id+':'+n.id))
       if(fresh.length){
         fresh.forEach(n=>seen.current.add(data.jugador.jugador_id+':'+n.id))
@@ -155,7 +156,7 @@ export default function SuizamenteApp(){
           localStorage.removeItem('suizamente:jugador')
         }catch(e){if(e.status!==401)throw e}
       }
-      const [data]=await Promise.all([szApi('jugador'),!config&&refreshConfig()])
+      const data=await szApi('jugador')
       if(active){savePlayer(data);setReady(true)}
     })().catch(e=>{if(active)setError(e.message)})
     return()=>{active=false}
@@ -203,7 +204,7 @@ export default function SuizamenteApp(){
   return <SuizamenteContext.Provider value={{player,map,config,user,avatarUrl,avatars,latidoName:profileName,capabilities,refreshConfig,settings,reduced,savePlayer,updateSettings,signOut,setQuestionVisible}}><MomentProvider reduced={reduced} owner={player?.jugador_id}><MomentArrival enabled={!resetting&&!onboarding&&entered&&ready&&!!config&&!opening}/><div className={'sv-root'+(admin?' sv-admin-root':'')+(showNavigation?' sv-has-nav':'')}>
     <Feedback/><InstallMetadata/>
     <InstallBanner hidden={onboarding||playing||location.pathname==='/suizamente/perfil/nuevo'}/>
-    {authLoading||resetting?<Loading/>:onboarding&&config?<Suspense fallback={<Loading/>}><Onboarding/></Suspense>:!entered?<Login/>:error?<section className="sv-screen"><div className="sv-welcome"><Logo size={90}/><h1>No se pudo abrir Suizamente</h1><p role="alert">{error}</p><Button onClick={()=>setRetry(n=>n+1)}>Reintentar</Button></div></section>:!config||!ready||!profileMetaLoaded?<Loading/>:
+    {authLoading||resetting?<Loading/>:onboarding&&config?<Suspense fallback={<Loading/>}><Onboarding/></Suspense>:!entered?<Login/>:error?<section className="sv-screen"><div className="sv-welcome"><Logo size={90}/><h1>No se pudo abrir Suizamente</h1><p role="alert">{error}</p><Button onClick={()=>setRetry(n=>n+1)}>Reintentar</Button></div></section>:!config||!ready||!player&&!profileMetaLoaded?<Loading/>:
     <Suspense fallback={<Loading/>}><Routes>
       <Route path="admin/*" element={<AdminPanel/>}/>
       <Route path="primera-vez" element={<Onboarding/>}/>

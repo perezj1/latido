@@ -1,11 +1,23 @@
+/* global structuredClone, AbortController, Event, CustomEvent */
 import {supabase,recoverSupabaseSession,invalidateSupabaseSession} from './supabase'
 import {notify} from './suizamenteNotices'
 const pendingReads=new Map()
-const recentReads=new Map(),readTtl={config:30000,jugador:1000,partidas:1000,mapa:1500,misiones:3000,liga:5000,dia:1000}
+const recentReads=new Map(),readTtl={config:30000,jugador:1000,partidas:1000,emparejamiento:1000,mapa:1500,misiones:3000,liga:5000,dia:1000}
 let revision=0,reader=null
+supabase.auth.onAuthStateChange((_event,session)=>{
+ const actor=session?.user?.id||'invitado'
+ if(reader!==actor){recentReads.clear();revision++;reader=actor}
+})
 let guestQueue=Promise.resolve()
 export const SV_STATE='suizamente:estado'
 export const SV_AVATARS='suizamente:avatares'
+// Display only the last server response for the current account while revalidating.
+// Memory-only, short-lived, and invalidated by every mutation/account change.
+export function peekSzData(path,owner){
+ if(!owner||reader!==owner)return null
+ const cached=recentReads.get(path+'|'+owner+'|'+revision)
+ return cached&&cached.displayUntil>Date.now()?structuredClone(cached.value):null
+}
 export function szKey(){
   const bytes=new Uint8Array(16);crypto.getRandomValues(bytes)
   bytes[6]=bytes[6]&15|64;bytes[8]=bytes[8]&63|128
@@ -20,7 +32,12 @@ export async function szApi(path, {method='GET',body,fresh=false}={}) {
   const actor=session?.user?.id||'invitado'
   if(reader!==actor||method!=='GET'){recentReads.clear();revision++;reader=actor}
   const key=path+'|'+actor+'|'+revision,ttl=readTtl[path]||0,startedRevision=revision,cached=recentReads.get(key)
-  if(method==='GET'&&!fresh&&cached&&cached.until>Date.now())return structuredClone(cached.value)
+  if(method==='GET'&&!fresh&&cached&&cached.until>Date.now()){
+    const data=structuredClone(cached.value)
+    // A preloaded response can arrive before the game's avatar listener mounts.
+    if(data.avatares)window.dispatchEvent(new CustomEvent(SV_AVATARS,{detail:{userId:session?.user?.id,photos:data.avatares}}))
+    return data
+  }
   if(method==='GET'&&pendingReads.has(key))return pendingReads.get(key)
   const execute=async()=>{
   const send=async token=>{const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),15000);try{return await fetch('/api/suizamente/'+path,{
@@ -47,7 +64,7 @@ export async function szApi(path, {method='GET',body,fresh=false}={}) {
   if(data.avatares)window.dispatchEvent(new CustomEvent(SV_AVATARS,{detail:{userId:session?.user?.id,photos:data.avatares}}))
   if(data.identidad?.startsWith('invitado-'))localStorage.setItem('suizamente:jugador',data.identidad.slice(9))
   if(data.jugador)window.dispatchEvent(new CustomEvent(SV_STATE,{detail:data}))
-  if(method==='GET'&&ttl&&revision===startedRevision)recentReads.set(key,{until:Date.now()+ttl,value:structuredClone(data)})
+  if(method==='GET'&&ttl&&revision===startedRevision)recentReads.set(key,{until:Date.now()+ttl,displayUntil:Date.now()+30000,value:structuredClone(data)})
   return data
   }
   // The first anonymous response establishes the HttpOnly credential. Serialize

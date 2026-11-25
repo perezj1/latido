@@ -1,5 +1,7 @@
 import React,{lazy,Suspense} from 'react'
 import './installation'
+import {LoadingScreen} from './Loading'
+import {szApi} from './src/lib/suizamenteV2'
 import {createRoot} from 'react-dom/client'
 import {BrowserRouter,Navigate,Route,Routes,useLocation,useSearchParams} from 'react-router-dom'
 import {Toaster} from 'react-hot-toast'
@@ -17,7 +19,20 @@ import './standalone.css'
 const Game=lazy(()=>import('./src/components/suizamente/v2/SuizamenteApp'))
 const Auth=lazy(()=>import('./src/pages/Auth'))
 const ResetPassword=lazy(()=>import('./src/pages/ResetPassword'))
-function Loading(){return <div className="standalone-loading" role="status">Cargando Suizamente…</div>}
+function Loading(){return <LoadingScreen/>}
+function WarmGameData(){
+ const {authUser,loading}=useAuth(),{pathname}=useLocation(),warmed=React.useRef(null)
+ React.useEffect(()=>{szApi('config').catch(()=>{})},[])
+ React.useEffect(()=>{
+  if(!authUser){warmed.current=null;return}
+  if(loading||!pathname.startsWith('/suizamente')||warmed.current===authUser.id||localStorage.getItem('suizamente:invitado-con-datos'))return
+  warmed.current=authUser.id
+  szApi('jugador').catch(()=>{})
+  if(/^\/suizamente\/?$/.test(pathname)||pathname==='/suizamente/nueva')szApi('partidas').catch(()=>{})
+  if(pathname==='/suizamente/nueva')szApi('emparejamiento').catch(()=>{})
+ },[authUser?.id,loading,pathname])
+ return null
+}
 function nextPath(search){const value=new URLSearchParams(search).get('next')||sessionStorage.getItem('suizamente:auth-destino');return /^\/suizamente(?:\/|\?|$)/.test(value||'')?value:'/suizamente'}
 function Account(){return <Auth/>}
 function Callback(){
@@ -29,7 +44,7 @@ function Callback(){
 function Return(){const [params]=useSearchParams();return <Navigate replace to={nextPath('?next='+encodeURIComponent(params.get('next')||'/suizamente'))}/>}
 function ExternalLegal({path}){React.useEffect(()=>location.replace('https://www.latido.ch'+path),[path]);return <Loading/>}
 function PushSync(){const {authUser}=useAuth();React.useEffect(()=>{if(authUser)import('./src/lib/pushNotifications').then(p=>p.syncExistingPushRegistration({user:authUser,settings:p.loadPushSettings(),userCanton:authUser.user_metadata?.canton})).catch(()=>{})},[authUser?.id]);return null}
-function App(){return <AuthProvider><EntryProvider><BrowserRouter><GameNavigationProvider><PushSync/><Suspense fallback={<Loading/>}><Routes>
+function App(){return <AuthProvider><EntryProvider><BrowserRouter><GameNavigationProvider><WarmGameData/><PushSync/><Suspense fallback={<Loading/>}><Routes>
  <Route path="/suizamente/*" element={<Game/>}/>
  <Route path="/auth" element={<Account/>}/><Route path="/cuenta" element={<Account/>}/>
  <Route path="/auth/callback" element={<Callback/>}/><Route path="/auth/onboarding" element={<Return/>}/>

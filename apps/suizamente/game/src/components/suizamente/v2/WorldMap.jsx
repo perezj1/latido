@@ -43,7 +43,7 @@ export const WorldMap=forwardRef(function WorldMap({state,selected,onSelect=()=>
   return()=>{active=false}
  },[animated,ready,failed,reduced])
  return <div className={'sv-world-map'+(selected?' selected':'')+(preview?' preview':'')+(mini?' mini':'')+(home?' home':'')} ref={box} role={mini?'img':'group'} aria-label={selected?'Maqueta del cantón '+selected+', nivel '+(state.niveles[selected]||0):'Maqueta de los cantones de Suiza'}>
-  {(failed||!ready)&&<MapDrawing levels={state.niveles} region={state.region} vuelta={state.vuelta} only={selected||undefined}/>}
+  {!failed&&!ready&&<span className="sv-map-loading sv-skeleton" role="status" aria-label="Cargando tu mapa"/>}{(failed||!ready)&&<MapDrawing levels={state.niveles} region={state.region} vuelta={state.vuelta} only={selected||undefined}/>}
   {!failed&&!preview&&!mini&&<><button className="sv-map-mode" aria-label={interactive?'Bloquear movimiento del mapa':'Activar movimiento del mapa'} aria-pressed={interactive} onClick={()=>setInteractive(value=>!value)}><span aria-hidden="true">{interactive?'🔓':'✋'}</span><span>{interactive?'Bloquear':'Mover'}</span></button></>}
  </div>
 })

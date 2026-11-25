@@ -1,0 +1,14 @@
+/* Latido's image-placeholder palette, with a composited shine and stable bounds. */
+html,body,#root{margin:0;min-height:100%;width:100%}
+.sv-skeleton,.sv-loading-bar,.sv-loading-avatar,.sv-avatar-loading{position:relative;overflow:hidden;background:#F0F4F8;border-radius:12px}
+.sv-skeleton::after,.sv-loading-bar::after,.sv-loading-avatar::after,.sv-avatar-loading::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,transparent,#E2E8F0,transparent);transform:translateX(-100%);animation:sv-loading-shine 1.5s ease-in-out infinite}
+@keyframes sv-loading-shine{to{transform:translateX(100%)}}
+.standalone-loading{box-sizing:border-box;display:flex!important;flex-direction:column;align-items:center;justify-content:center;gap:30px;min-height:100dvh;margin:0;padding:32px 24px;background:#FBF9F6;color:#5A6577;font-family:Poppins,system-ui,sans-serif;text-align:center;font-weight:600}
+.sv-loading-brand{display:flex;flex-direction:column;align-items:center;gap:18px}.sv-loading-brand>img{display:block;object-fit:contain;width:64px;height:64px}
+.sv-loading-preview{display:flex;flex-direction:column;gap:16px;width:min(100%,340px)}.sv-loading-preview>.sv-skeleton{height:160px;border-radius:26px}.sv-loading-bar{display:block;height:14px;min-height:14px;width:100%}.sv-loading-bar.short{width:65%}
+.sv-loading-cards{display:flex;flex-direction:column;gap:12px;width:100%}.sv-loading-card{display:flex;align-items:center;gap:14px;padding:18px 16px;border-radius:22px;background:#F4F7FB}.sv-loading-avatar{display:block;flex:none;width:48px;height:48px;border-radius:50%}.sv-loading-card>div{display:flex;flex-direction:column;gap:12px;flex:1;min-width:0}
+.sv-avatar-loading{position:absolute;inset:0;border-radius:inherit;pointer-events:none}.sv-avatar>img.sv-image-pending{opacity:0}.sv-avatar>img.sv-image-ready{opacity:1;transition:opacity .2s ease}
+.sv-world-map>.sv-map-loading{position:absolute;inset:0;width:100%;height:100%;border-radius:inherit;pointer-events:none}.sv-world-map>.sv-map-loading+svg{z-index:1}
+@media(prefers-reduced-motion:reduce){.sv-skeleton::after,.sv-loading-bar::after,.sv-loading-avatar::after,.sv-avatar-loading::after{animation:none;transform:none;opacity:.35}.sv-avatar>img.sv-image-ready{transition:none}}
+html[data-suizamente-reduced=true] .sv-skeleton::after,html[data-suizamente-reduced=true] .sv-loading-bar::after,html[data-suizamente-reduced=true] .sv-loading-avatar::after,html[data-suizamente-reduced=true] .sv-avatar-loading::after{animation:none;transform:none;opacity:.35}
+html[data-suizamente-reduced=true] .sv-avatar>img.sv-image-ready{transition:none}
