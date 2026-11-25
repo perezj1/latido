@@ -36,6 +36,8 @@
     "test:audio-touch": "node scripts/test-suizamente-audio-touch-browser.mjs && node scripts/test-suizamente-audio-touch-browser.mjs --webkit",
     "test:tabs": "node scripts/test-suizamente-tabs-browser.mjs && node scripts/test-suizamente-tabs-browser.mjs --webkit",
     "test:screen-chrome": "node scripts/test-suizamente-screen-chrome.mjs && node scripts/test-suizamente-screen-chrome.mjs --webkit",
+    "test:seals": "node scripts/test-suizamente-seal-browser.mjs && node scripts/test-suizamente-seal-browser.mjs --webkit",
+    "test:concurrency": "node scripts/test-suizamente-retry.mjs && node scripts/test-suizamente-concurrency.mjs",
     "test:small": "node scripts/test-suizamente-small-browser.mjs && node scripts/test-suizamente-small-browser.mjs --webkit && node scripts/test-suizamente-moments-browser.mjs --small",
     "test:four-options": "node scripts/test-suizamente-v21.mjs && node scripts/test-suizamente-four-base.mjs && node scripts/test-suizamente-four-browser.mjs && node scripts/test-suizamente-four-browser.mjs --webkit",
     "test:ux": "node scripts/test-suizamente-ux-browser.mjs && node scripts/test-suizamente-ux-browser.mjs --webkit && node scripts/test-suizamente-delivery.mjs",

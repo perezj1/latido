@@ -6,7 +6,7 @@ import {stampSteps,duelSteps,finishSteps} from './moments'
 import {useCallback,useEffect,useRef,useState} from 'react'
 import {Link,Navigate,useLocation,useNavigate,useParams} from 'react-router-dom'
 import {useSv,useQuestionScreen} from './Context'
-import {Avatar,Button,Card,Earnings,Header,Sheet,StampBar,Stamps,LatidoBackdrop,MatchWheel} from './Shared'
+import {Avatar,Button,Card,Earnings,Header,Sheet,Stamps,LatidoBackdrop,MatchWheel} from './Shared'
 import {szApi} from '../../../lib/suizamenteV2'
 import {loadPushSettings,subscribeToPushNotifications} from '../../../lib/pushNotifications'
 import {usePushActivation} from '../../../hooks/usePushActivation'
@@ -15,6 +15,9 @@ import {Breakdown,FactCard,ShareSheet,storyData} from './Sharing'
 import {feedback} from '../../../lib/suizamenteFeedback'
 import {Confetti} from './Finish'
 import {notify} from '../../../lib/suizamenteNotices'
+import {ResultStampBar,SealChoice,useSealMotion,sealMotionSeen} from './SealProgress'
+
+const sealTurn=m=>'elegir:'+m.id+':'+m.turnoN+':'+(m.resultado?.n||0)
 
 function Passport({name,avatarName,color,owned,active,categories,id,fresh}){
   const {player}=useSv()
@@ -26,6 +29,7 @@ export function Game(){
   const {config:globalConfig,player,user}=useSv(),navigate=useNavigate(),{show}=useMoment(),continuing=useRef(false)
   const [m,setM]=useState(null),[busy,setBusy]=useState(false),[error,setError]=useState(''),[spinning,setSpinning]=useState(false),[spinRun,setSpinRun]=useState(0)
   const spinFlight=useRef(null)
+  const liveBar=useRef(null),liveChoice=useRef(null)
   const config={...globalConfig,...m?.configPartida}
   const [dismissed,setDismissed]=useState(null),[resign,setResign]=useState(false),[pushPrompt,setPushPrompt]=useState(false),[now,setNow]=useState(Date.now()),[offline,setOffline]=useState(!navigator.onLine)
   const [preparingDuel,setPreparingDuel]=useState(false)
@@ -36,6 +40,7 @@ export function Game(){
   const {needsActivation,refresh:refreshPush}=usePushActivation(user?.id)
   const receive=useCallback(data=>{
     if(!mounted.current)return
+    if(data.fase==='sello'&&data.resultado&&sealMotionSeen(player.jugador_id,sealTurn(data)))setDismissed(data.resultado.n)
     if(resume.current){
       if(data.resultado&&!data.resultado.agotada)setDismissed(data.resultado.n)
       resume.current=false
@@ -62,7 +67,9 @@ export function Game(){
     try{
       const next=await szApi('partidas/'+mid+'/'+action,{method:'POST',body:{turnoN:state.turnoN,...args}})
       if(action==='respuesta'&&(next.pregunta?.falladas?.length||0)>(state.pregunta?.falladas?.length||0))feedback('fallo',{key:'partida:'+mid+':'+state.pregunta.n+':intento:'+next.pregunta.falladas.length})
-      receive(next);return next
+      if(action==='respuesta'&&next.resultado?.ok&&next.resultado.modo==='normal'&&next.resultado.n===state.pregunta?.n)liveBar.current='barra:'+mid+':'+next.resultado.n
+      if(action!=='girar')receive(next)
+      return next
     }catch(e){
       setError(e.message);setOffline(!navigator.onLine)
       if(e.partida)receive(e.partida)
@@ -76,17 +83,21 @@ export function Game(){
     if(!next)return
     setDismissed(m?.resultado?.n)
     spinFlight.current=next
-    feedback('ruleta');setSpinning(true);setSpinRun(value=>value+1)
+    feedback('ruleta');setSpinning(true);setSpinRun(value=>value+1);receive(next)
   }
   async function finishSpin(){
     const next=spinFlight.current;if(!next||!mounted.current)return
+    if(next.fase==='sello')liveChoice.current=sealTurn(next)
     spinFlight.current=null;setSpinning(false)
     if(next.fase==='elegida')await act('pregunta',{},next)
   }
   const q=m?.pregunta
   const stampReady=m?.teToca&&m.fase==='sello'&&m.tuBarra>=config.partida.barraParaSello&&!q
-  const activeResult=m?.resultado&&m.resultado.n!==dismissed&&!q&&!stampReady?m.resultado:null
+  const activeResult=m?.resultado&&m.resultado.n!==dismissed&&!q?m.resultado:null
   const solved=activeResult||(stampReady?m?.resultado:null)
+  const barKey='barra:'+mid+':'+activeResult?.n,barMotion=useSealMotion(barKey,!!activeResult?.ok&&activeResult.modo==='normal'&&liveBar.current===barKey)
+  const choosingSeal=m?.estado==='jugando'&&m.teToca&&m.fase==='sello'&&!spinning&&!q&&!activeResult&&!preparingDuel
+  const choiceKey=m?sealTurn(m):'',choiceMotion=useSealMotion(choiceKey,!!choosingSeal&&liveChoice.current===choiceKey)
   useQuestionScreen(!!q,!!q||!!activeResult)
   useEffect(()=>{
     if(!solved)return
@@ -132,6 +143,7 @@ export function Game(){
     if(continuing.current)return
     continuing.current=true
     try{
+      if(m.fase==='sello'&&m.teToca)liveChoice.current=sealTurn(m)
       if(m.resultado.ok&&m.resultado.modo==='sello')await show(stampSteps(m,config),{key:'sello:'+m.id+':'+m.resultado.n,persist:true})
       setDismissed(m.resultado.n)
       if(pendingStamp.current){setStampHit(pendingStamp.current);pendingStamp.current='';setTimeout(()=>{if(mounted.current)setStampHit('')},500)}
@@ -150,12 +162,14 @@ export function Game(){
   }
   if(!m)return <section className="sv-screen"><Header title="Partida"/><div className="sv-content">{error?<><p className="sv-error" role="alert">{error}</p><Button onClick={load}>Reintentar</Button></>:<div className="sv-skeleton" role="status" aria-label="Cargando la partida"/>}</div></section>
   const categories=config.categorias,result=activeResult
+  const playForSeal=result?.ok&&result.modo==='normal'&&m.teToca&&m.fase==='sello'
   const category=categories.find(c=>c.id===(q?.categoria||result?.categoria))||categories[0]
   const ended=!['jugando','buscando'].includes(m.estado)
   const choosing=m.fase==='sello'&&m.teToca&&!spinning,themed=!q&&!result
   const tint=ended?(m.ganador===m.tuId?'#FEEDD1':'#DFE7FC'):choosing?'#FEEDD1':m.fase==='duelo'?'#FFE1E2':'#D3F2F9'
   const passports=<div className="sv-passports sv-match-players"><Passport id={player.jugador_id} name={player.apodo} color={player.color} fresh={stampHit} owned={m.tusSellos} active={!!m.teToca&&!!m.rival} categories={categories}/><div className="sv-match-score" aria-label={m.tusSellos.length+' a '+m.susSellos.length+' sellos'}><strong>{m.tusSellos.length}</strong><small>VS</small><strong>{m.susSellos.length}</strong></div><Passport id={m.rival?.jugador_id||m.rival?.id} name={m.rival?.apodo||'Espera rival'} color={m.rival?.color} owned={m.susSellos} active={!m.teToca&&!!m.rival} categories={categories}/></div>
   if(preparingDuel)return <DuelPrepare match={m} act={act} onClose={()=>setPreparingDuel(false)}/>
+  if(choosingSeal)return <SealChoice match={m} config={config} animate={choiceMotion} busy={busy} error={error} onRetry={load} onChoose={categoria=>act('pregunta',{modo:'sello',categoria})} onDuel={()=>setPreparingDuel(true)}/>
   if(m.asalto?.estado==='pregunta')return <Navigate to={'/suizamente/asalto/'+m.asalto.id} replace/>
   if(!q&&!result&&m.duelo?.mostrarResultado)return <DuelResult match={m} act={act} busy={busy}/>
   return <section className={'sv-screen sv-game'+(themed?' sv-themed-screen '+(ended?'sv-game-finish':choosing?'sv-game-seal':'sv-game-board'):'')}>
@@ -175,14 +189,12 @@ export function Game(){
         {error&&<p className="sv-error" role="alert">{error} <button className="sv-text-button" onClick={load}>Reintentar</button></p>}
       </div>
       {q&&<Powerups match={m} act={act} busy={busy} remaining={remaining}/>}
-      {result&&<footer className="sv-footer"><Earnings value={result.ganado}/>{result.evento&&<p className="sv-center">{result.evento}</p>}{m.asalto&&<Button tone="danger" to={"/suizamente/asalto/"+m.asalto.id}>⚔️ ¡Asalto disponible!</Button>}<StampBar value={m.tuBarra} max={config.partida.barraParaSello}/><Button onClick={continueResult}>{m.duelo?.mostrarResultado?'Ver resultado del duelo':ended?'Ver resultado':m.teToca?(m.fase==='sello'?'🛂 ¡Juega por un sello!':m.fase==='duelo'?'▶ Siguiente pregunta':'Continuar'):'Le toca a '+(m.rival?.apodo||'tu rival')}</Button></footer>}
+      {result&&<footer className="sv-footer"><Earnings value={result.ganado}/>{result.evento&&<p className="sv-center">{result.evento}</p>}{m.asalto&&<Button tone="danger" to={"/suizamente/asalto/"+m.asalto.id}>⚔️ ¡Asalto disponible!</Button>}<ResultStampBar value={m.tuBarra} max={config.partida.barraParaSello} animate={barMotion}/><Button {...(playForSeal?{className:'sv-button sv-seal-play'+(barMotion?' motion':'')}:{})} onClick={continueResult}>{m.duelo?.mostrarResultado?'Ver resultado del duelo':ended?'Ver resultado':m.teToca?(m.fase==='sello'?'🛂 ¡Juega por un sello!':m.fase==='duelo'?'▶ Siguiente pregunta':'Continuar'):'Le toca a '+(m.rival?.apodo||'tu rival')}</Button></footer>}
     </>:ended?<><Header title={m.ganador===m.tuId?'¡Victoria!':m.ganador?'Esta vez no':'Partida terminada'}/><div className="sv-content sv-finish"><span className="sv-finish-emoji" aria-hidden="true">{m.ganador===m.tuId?'🏆':'🛂'}</span><h1>{m.tusSellos.length} – {m.susSellos.length}</h1>{passports}<Earnings value={m.premio}/><p>{m.motivoFin==='plazo'?'El plazo del turno ha terminado.':m.motivoFin==='rendicion'?'La partida ha terminado por abandono.':m.motivoFin==='rondas'?'Fin de las '+m.rondasMax+' rondas.':'Pasaporte completo.'}</p></div><footer className="sv-footer"><Button tone="quiet" onClick={()=>setSharing(true)}>📤 Compartir</Button>{m.cofre&&<Button to={"/suizamente/cofre/"+m.cofre.id+"?volver="+encodeURIComponent("/suizamente/partida/"+m.id+"?continuar=1")}>{m.cofre.abierto?"🎁 Ver el cofre":"🎁 Abrir el cofre"}</Button>}{globalConfig.apiVersion>=17&&m.rival&&m.ganador===m.tuId&&<><Button to={'/suizamente/ataque/'+m.id}>Atacar ahora</Button><Button tone="quiet" onClick={()=>{notify('Puedes atacar desde tus partidas terminadas.');navigate('/suizamente?terminadas=1')}}>Atacar después</Button></>}<Button tone="quiet" to="/suizamente">🏠 Inicio</Button>{error&&<p role="alert" className="sv-error">{error}</p>}</footer></>:
     <><Header title={'Ronda '+m.ronda} subtitle={'de '+m.rondasMax+' como máximo'} right={<button className="sv-icon-button" aria-label="Más opciones: rendirse" onClick={()=>setResign(true)}>⋯</button>}/>{passports}<div className="sv-wheel-area">
-      {choosing&&<b className="sv-wheel-status" tabIndex={-1} role="heading" aria-level={2}>{spinning?'…':!m.rival?'🔍 Buscando rival…':m.teToca?m.fase==='sello'?(stampReady?'¡'+config.partida.barraParaSello+' aciertos! Elige tu sello':'🛂 Elige tu sello'):'¡Te toca! Gira la ruleta':'⏳ Turno de '+m.rival.apodo}</b>}
-      {m.fase==='sello'&&m.teToca&&!spinning?<><div className="sv-stamp-choice">{categories.map(c=><button disabled={busy||m.tusSellos.includes(c.id)} key={c.id} style={{'--category':c.color,'--tint':c.tinte}} onClick={()=>act('pregunta',{modo:'sello',categoria:c.id})}><span>{c.emoji}</span><b>{c.nombre}</b>{m.tusSellos.includes(c.id)&&<small>✓ Lo tienes</small>}</button>)}</div>{m.dueloDisponible&&<button className="sv-duel-invite" disabled={busy} onClick={()=>setPreparingDuel(true)}>⚔️ Duelo de sellos<small>Quítale un sello a tu rival</small></button>}</>:m.fase==='duelo'?<Card className="sv-empty sv-duel-wait"><span>⚔️</span><h2>Duelo de sellos</h2><p>{m.duelo?.desempate?'Pregunta de desempate':(m.duelo?.tusAciertos.length||0)+' de '+config.duelo.preguntas+' preguntas respondidas'}</p><div className="sv-duel-progress">{categories.map((c,i)=><span key={c.id} title={c.nombre}>{m.duelo?.tusAciertos[i]===undefined?c.emoji:m.duelo.tusAciertos[i]?'✓':'✕'}</span>)}</div></Card>:<MatchWheel categories={categories} value={m.tuBarra} max={config.partida.barraParaSello} spinning={spinning} run={spinRun} target={spinFlight.current?.casilla||m.casilla} duration={config.ruleta.duracionGiroMs} onSpin={()=>m.fase==='elegida'?act('pregunta'):spin()} onComplete={finishSpin} yourTurn={!!m.teToca&&!!m.rival} rival={m.rival?.apodo} disabled={busy||spinning||!m.teToca||!m.rival||!['girar','elegida'].includes(m.fase)}/>}
+      {m.fase==='duelo'?<Card className="sv-empty sv-duel-wait"><span>⚔️</span><h2>Duelo de sellos</h2><p>{m.duelo?.desempate?'Pregunta de desempate':(m.duelo?.tusAciertos.length||0)+' de '+config.duelo.preguntas+' preguntas respondidas'}</p><div className="sv-duel-progress">{categories.map((c,i)=><span key={c.id} title={c.nombre}>{m.duelo?.tusAciertos[i]===undefined?c.emoji:m.duelo.tusAciertos[i]?'✓':'✕'}</span>)}</div></Card>:<MatchWheel categories={categories} value={m.tuBarra} max={config.partida.barraParaSello} spinning={spinning} run={spinRun} target={spinFlight.current?.casilla||m.casilla} duration={config.ruleta.duracionGiroMs} onSpin={()=>m.fase==='elegida'?act('pregunta'):spin()} onComplete={finishSpin} yourTurn={!!m.teToca&&!!m.rival} rival={m.rival?.apodo} disabled={busy||spinning||!m.teToca||!m.rival||!['girar','elegida'].includes(m.fase)}/>}
       {m.teToca&&m.rival&&m.fase==='girar'&&!spinning&&player.ajustes?.guia?.giro&&(!player.ajustes.guia.partida||player.ajustes.guia.partida===mid)&&<FirstGameHint kind="giro"/>}
       {!m.rival&&<p className="sv-muted">Esta partida aún no tiene rival. Vuelve a Nueva partida para elegir a alguien disponible.</p>}
-      {choosing&&<StampBar value={m.tuBarra} max={config.partida.barraParaSello}/>}
       {error&&<p className="sv-error" role="alert">{error}</p>}
     </div><footer className="sv-footer">{m.fase==='duelo'&&m.teToca&&<Button disabled={busy||spinning} onClick={()=>act('pregunta')}>Continuar</Button>}<div className="sv-game-inventory" role="group" aria-label="Tus comodines: se usan en la pregunta">{config.comodines.map(c=><span key={c.id} role="img" aria-label={c.nombre+': tienes '+(player.inventario?.[c.id]||0)}><span aria-hidden="true">{c.emoji}</span><b aria-hidden="true">{player.inventario?.[c.id]||0}</b></span>)}</div></footer></>}
 

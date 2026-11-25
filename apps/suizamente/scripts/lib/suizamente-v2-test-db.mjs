@@ -6,7 +6,8 @@ export const B='22222222-2222-4222-8222-222222222222'
 export const C='33333333-3333-4333-8333-333333333333'
 export const G='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'
 export const TOKEN='a'.repeat(64)
-export async function database({economia=false,tienda=false,mapa=false,album=false,comunidad=false,admin=false,operaciones=false,duracion=false,progreso=false,produccion=false,cuentas=false,independiente=false,ataques=false,avatares=false,compartir=false,onboarding=false,cuatro=false,tres=false,carga=false}={}) {
+export async function database({economia=false,tienda=false,mapa=false,album=false,comunidad=false,admin=false,operaciones=false,duracion=false,progreso=false,produccion=false,cuentas=false,independiente=false,ataques=false,avatares=false,compartir=false,onboarding=false,cuatro=false,tres=false,carga=false,concurrencia=false,engine}={}) {
+  if(concurrencia)carga=true
   if(carga)tres=true
   if(tres)cuatro=true
   if(cuatro)onboarding=true
@@ -20,7 +21,7 @@ export async function database({economia=false,tienda=false,mapa=false,album=fal
   if(progreso)duracion=true
   if(duracion)operaciones=true
   if(operaciones)admin=true
-  const db=new PGlite({extensions:admin?{pg_trgm}:{}})
+  const db=engine||new PGlite({extensions:admin?{pg_trgm}:{}})
   try{
   await db.exec("CREATE ROLE anon; CREATE ROLE authenticated; CREATE SCHEMA auth; CREATE TABLE auth.users(id uuid PRIMARY KEY); CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql STABLE AS $$ SELECT nullif(current_setting('test.uid',true),'')::uuid $$; GRANT USAGE ON SCHEMA public,auth TO anon,authenticated; GRANT EXECUTE ON FUNCTION auth.uid() TO anon,authenticated;")
   await db.query('INSERT INTO auth.users VALUES($1),($2),($3)',[A,B,C])
@@ -46,6 +47,7 @@ export async function database({economia=false,tienda=false,mapa=false,album=fal
   if(cuatro)await db.exec(await readFile('supabase/suizamente_v21_cuatro_opciones.sql','utf8'))
   if(tres)await db.exec(await readFile('supabase/suizamente_v22_onboarding_tres.sql','utf8'))
   if(carga)await db.exec(await readFile('supabase/suizamente_v23_carga.sql','utf8'))
+  if(concurrencia)await db.exec(await readFile('supabase/suizamente_v24_concurrencia.sql','utf8'))
   return db
   }catch(error){await db.close();throw error}
 }

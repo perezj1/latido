@@ -429,3 +429,41 @@ Archivos: `index.html`, `public/suizamente.webmanifest`, `game/src/lib/suizament
 Pruebas: `npm run test:screen-chrome`, `npm run test:small`, `npm run test:install-game`, build, entrega y comprobación pública posterior. La prueba usa React/SQL reales en Chromium y WebKit; comprueba tintes del sobre, tienda, pregunta, onboarding y regalo, restauración al cerrar, metadatos de arranque, enlaces de 48 px en 320×568, 375×667, 390×844 y escritorio, ausencia de solapamiento con la navegación y activación con Intro. En Chromium comprueba también el orden con Tab; WebKit en Windows conserva su configuración nativa de tabulación y comprueba foco, tabIndex y activación. Se simula expresamente un inset superior de 32 px para verificar la distribución, sin presentarlo como emulación de la barra nativa. Capturas y resultados: `output/barras-sistema/{chromium,webkit}/`.
 
 Para probar: recargar la versión publicada, entrar en un sobre, cambiar de pantalla y abrir/cerrar un premio. Los botones del sobre deben estar juntos y por encima de la barra de pestañas. Queda verificar visualmente la barra nativa en el iPhone y Samsung físicos, tanto desde el navegador como desde la PWA: la aplicación entrega los colores y metadatos; el aspecto final de los indicadores lo decide cada versión del sistema/navegador.
+
+
+## Barra de sello y bloqueos intermitentes (23.20, 25 de noviembre de 2026)
+
+`Game.jsx` mantiene la respuesta y el dato al alcanzar la barra completa: no presenta la selección hasta tocar «🛂 ¡Juega por un sello!». `ResultStampBar` muestra directamente `tuBarra` y el umbral de `configPartida` que devuelve el servidor; no suma aciertos en el navegador. Solo marca como nuevo un resultado correcto normal confirmado al responder. No anima fallos, preguntas de sello, duelos o asaltos.
+
+`SealProgress.jsx` y `sealProgress.css` aplican la secuencia de la referencia:
+
+| Parte | Duración | Inicio |
+| --- | --- | --- |
+| Relleno del tramo nuevo | 0,6 s | 0,35 s |
+| Golpe del tramo, icono y contador | 0,45 s | 0,95 s |
+| Brillo de los tres tramos | 0,7 s, dos veces | 1,4 s |
+| Salto del botón; después, latido | 0,45 s; 2,2 s en bucle | 1,15 s; 1,9 s |
+| Sello estampado y rayos | 0,6 s; 1,8 s | 0,1 s; 0,2 s |
+| Título y texto | 0,4 s | 0,4 s; 0,48 s |
+| Insignias | 0,5 s cada una | 0,55 s y 0,08 s entre ellas |
+| «o bien» y duelo | 0,4 s | 1,1 s; 1,15 s |
+
+El brillo usa un halo con sombra fija: solo se anima su opacidad y escala. Todas las animaciones usan exclusivamente `transform` y `opacity`, con espacio reservado desde el principio. Los botones funcionan durante la entrada; al recibir foco de teclado aparecen inmediatamente. La selección usa el sello, encabezado, insignias y textos de `ElegirSello`; las ya conseguidas terminan grises. Las medidas para pantallas bajas siguen centralizadas en `compact.css`, en su regla de 760 px.
+
+Los identificadores de presentación se construyen con cuenta, partida, turno y número de resultado devueltos por el servidor. Se recuerdan en `suizamente:sellos-vistos:<cuenta>`, con respaldo en memoria si el almacenamiento falla. Ni volver a pintar ni consultar de nuevo el servidor reinician la animación. Al recargar, volver atrás o regresar desde preparar el duelo se muestra el estado final. La selección ya abierta conserva su paso al recargar. Movimiento reducido del sistema y del juego muestran todo lleno y quieto; cambiar la preferencia tampoco vuelve a animarlo. No se añaden sonidos ni se altera la rueda o el tiempo de pregunta.
+
+### Error «No se pudo completar la acción»
+
+Los registros de PostgreSQL confirmaron errores `40P01` en las funciones de Suizamente. Se reprodujo la inversión de bloqueos entre la preparación de misiones, el jugador y su contador de peticiones. La migración `supabase/suizamente_v24_concurrencia.sql` coordina las transacciones de la misma cuenta antes de entrar en los motores existentes. Otras cuentas conservan su trabajo en paralelo. No crea tablas de juego ni modifica saldos, premios, votos, precios, reglas, plazos o respuestas. La firma, DTO y permisos de la API no cambian; el motor anterior queda privado como `v24_api_base`. Es repetible. Está aplicada en producción y se verificó que la API pública sigue disponible y la base privada no es ejecutable por authenticated.
+
+El adaptador HTTP recupera además `40P01` y `40001`, que indican transacción abortada, repitiendo la llamada completa con el mismo cuerpo y la misma clave. Tiene como máximo tres intentos dentro del límite total anterior de 15 s. No repite escrituras tras fallos de red, respuestas desconocidas o un resultado de confirmación incierto. Las comprobaciones y los cobros siguen siendo del servidor. Los registros de recuperación solo incluyen acción, código SQL y número de intento. Referencias: [bloqueos de PostgreSQL](https://www.postgresql.org/docs/17/explicit-locking.html) y [recuperación de transacciones abortadas](https://www.postgresql.org/docs/18/mvcc-serialization-failure-handling.html).
+
+### Archivos y verificación
+
+Producto: `v2/Game.jsx`, `v2/SealProgress.jsx`, `v2/sealProgress.css`, `v2/compact.css`, `server/suizamente/http.mjs` y migración v24. Pruebas: `test-suizamente-seal-browser.mjs`, `test-suizamente-retry.mjs`, `test-suizamente-concurrency.mjs`, ayudantes de SQL/vista previa, comprobaciones de juego y pantallas pequeñas, `package.json` y este documento. De las medidas normales de 390 px solo se actualiza la referencia de la selección de sello para su encabezado e insignias; preguntas, respuestas y datos largos conservan sus medidas.
+
+Desde esta carpeta: `npm run test:seals`, `npm run test:concurrency` (Docker en marcha), `npm run test:play`, `npm run test:audio`, `npm run test:small`, build y entrega. La prueba con PostgreSQL 17 real usa un contenedor temporal y una pausa dentro de la función de la prueba para exponer el cruce de bloqueos: falla con el motor anterior y pasa con v24. Comprueba 16 peticiones paralelas, independencia entre cuentas, una sola compra/cobro, permisos y repetición de la migración. La prueba de HTTP aborta transacciones después de ejecutar la compra y verifica que solo un intento acaba confirmado y cobrado. Todo usa datos temporales; no crea cuentas ni acciones de prueba en producción.
+
+Chromium y WebKit comprueban tres aciertos en 390×844 y 375×667, los tiempos y propiedades animadas, barra del servidor, dato visible hasta pulsar, casilla de sello de la ruleta, botón disponible desde el principio, insignias en orden y grises, conservación al consultar de nuevo, recarga/regreso del duelo, las dos preferencias de movimiento reducido y ausencia de sonidos nuevos. Si falla una petición al elegir categoría, conserva el error accesible y «Reintentar», sin repetir la entrada; también se comprueba. Capturas de la barra llenándose, 1/3, 2/3, 3/3, sello estampándose y selección final: `output/sellos/{chromium,webkit}/`. Las referencias están en `output/sellos/referencia-*.png`; el resultado de concurrencia real, en `output/sellos/concurrencia/resultado.json`.
+
+Para probar: acertar tres preguntas normales seguidas; leer el dato con la barra llena; pulsar «🛂 ¡Juega por un sello!»; entrar y volver de preparar el duelo; recargar; repetir con Menos animaciones. Queda la valoración de fluidez en iPhone/Samsung físicos y seguir observando los registros con el tráfico real.

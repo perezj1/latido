@@ -106,13 +106,22 @@ export function createSuizamenteHandler({ fetchImpl = fetch } = {}) {
       if (!endpoint || !anon) return action==='config'?send(200,publicSuizamenteConfig()):send(503, { error:'Falta configurar la conexión de Supabase' })
       const auth = req.headers.authorization
       if (auth && !/^Bearer [A-Za-z0-9._-]+$/.test(auth)) return send(401, { error:'Sesión de Latido no válida' })
-      const response = await fetchImpl(endpoint + '/rest/v1/rpc/suizamente_v2', {
-        method:'POST',
-        headers:{ apikey:anon, Authorization:auth || 'Bearer ' + anon, 'Content-Type':'application/json' },
-        body:JSON.stringify({ p_action:action, p_args:args, p_guest_id:session.id, p_guest_token:session.token }),
-        signal:AbortSignal.timeout(15000),
-      })
-      const data = await response.json()
+      const rpcBody=JSON.stringify({p_action:action,p_args:args,p_guest_id:session.id,p_guest_token:session.token}),deadline=Date.now()+15000
+      let response,data
+      for(let attempt=0;;attempt++){
+        response = await fetchImpl(endpoint + '/rest/v1/rpc/suizamente_v2', {
+          method:'POST',
+          headers:{ apikey:anon, Authorization:auth || 'Bearer ' + anon, 'Content-Type':'application/json' },
+          body:rpcBody,
+          signal:AbortSignal.timeout(Math.max(1,deadline-Date.now())),
+        })
+        data = await response.json()
+        // These SQLSTATEs explicitly abort the whole transaction. A fresh RPC is
+        // safe even for purchases. Never replay timeouts, fetch failures or unknown 5xx.
+        if(response.ok||!['40P01','40001'].includes(data?.code)||attempt>=2||deadline-Date.now()<1000)break
+        console.warn('suizamente_retry',action,data.code,attempt+1)
+        await new Promise(resolve=>setTimeout(resolve,40*(attempt+1)+Math.floor(Math.random()*40)))
+      }
       if (!response.ok) {
         if(action==='config')return send(200,publicSuizamenteConfig())
         const message = String(data.message || '')
@@ -121,7 +130,7 @@ export function createSuizamenteHandler({ fetchImpl = fetch } = {}) {
         if (response.status === 401) return send(401, { error:'Tu sesión ha caducado. Vuelve a entrar.',sesionCaducada:true })
         if (data.code === '22P02' || data.code === '23514') return send(400, { error:'Revisa los datos enviados' })
         if (data.code === 'PGRST202' || data.code === '42883') return send(503, { error:'Falta instalar la migración de Suizamente' })
-        console.error('suizamente_api', data.code || response.status)
+        console.error('suizamente_api',action,data.code || response.status)
         return send(503, { error:'No se pudo completar la acción. Inténtalo otra vez.' })
       }
       if (data?.conflicto) return send(409, { error:'El turno ha caducado', partida:data.partida })

@@ -40,10 +40,11 @@ try{
   assert.equal(await backdrop.evaluate(el=>getComputedStyle(el).zIndex),'-1')
   await expect(page.locator('.sv-notice')).toHaveCount(0)
   const footer=page.locator('.sv-themed-screen>footer');if(await footer.count()){
-   assert.equal(await footer.evaluate(el=>getComputedStyle(el).position),'static')
-   assert.equal(await footer.evaluate(el=>getComputedStyle(el).backgroundColor),'rgba(0, 0, 0, 0)')
+   const pack=!!await page.locator('.sv-pack').count()
+   assert.equal(await footer.evaluate(el=>getComputedStyle(el).position),pack?'sticky':'static')
+   assert.equal(await footer.evaluate(el=>getComputedStyle(el).backgroundColor),pack?'rgb(251, 249, 246)':'rgba(0, 0, 0, 0)')
    const content=page.locator('.sv-themed-screen>.sv-content,.sv-themed-screen>.sv-wheel-area').last()
-   if(await content.count())assert.ok((await footer.boundingBox()).y>=(await content.boundingBox()).y+(await content.boundingBox()).height-1,'Footer follows content')
+   if(!pack&&await content.count())assert.ok((await footer.boundingBox()).y>=(await content.boundingBox()).y+(await content.boundingBox()).height-1,'Footer follows content')
   }
   await page.screenshot({path:out+'/'+name+'-'+width+'.png',fullPage:true})
  }
