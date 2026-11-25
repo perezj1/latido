@@ -332,3 +332,15 @@ Pruebas: `npm run test:session`, `npm run test:entry`, `npm run test:navigation`
 Capturas: `output/sesion-fluidez/`, `output/primera-vez/`, `output/pantallas-bajas/` y `output/momentos/`. Queda la comprobación en un iPhone físico: cerrar/reabrir Safari y app instalada, aceptar push y tocar un aviso real desde la pantalla bloqueada; también la escucha manual con VoiceOver.
 
 Comprobación pública de producción, sin cuentas ni escrituras: `node scripts/smoke-suizamente-public.mjs`. Verifica acceso antes de la bienvenida, logo, formulario de Latido en el mismo origen, tres anchos, configuración pública, álbum privado protegido y service worker actualizado en Chromium/WebKit.
+
+## Instalación en Chrome de Android (25 de noviembre de 2026)
+
+`game/installation.js` escucha `beforeinstallprompt` desde la entrada principal, antes de cargar la interfaz del juego. Así conserva el aviso si llega mientras se carga la app o se está en el formulario de acceso, donde el banner no está montado. `InstallBanner` se suscribe al estado compartido y llama a `prompt()` directamente desde el clic, sin esperas que pierdan la activación del usuario.
+
+El evento es de un solo uso. Se consume antes de abrirlo, se bloquean intentos simultáneos y los avisos posteriores del navegador se conservan. Cancelar no muestra un error. Si el aviso se rechaza o todavía no está disponible, se ofrece la guía del navegador; en ese estado el botón indica «Cómo instalar». Aceptar oculta el banner, pero solo `appinstalled` confirma que terminó la instalación. No se fuerza ni se simula una instalación completada: Android muestra su confirmación nativa. Se conserva la guía y el vídeo de iPhone. Referencia de funcionamiento: [instalación desde la app, web.dev](https://web.dev/articles/customize-install).
+
+Archivos: `game/installation.js`, `game/main.jsx`, `game/src/components/suizamente/v2/InstallBanner.jsx`, `package.json`, `scripts/test-suizamente-install-browser.mjs`, `scripts/smoke-suizamente-install.mjs` y este documento. Sin migraciones ni cambios en el juego.
+
+Pruebas: `npm run test:install-game`, `npm run build`, `node scripts/test-suizamente-delivery.mjs`. Chromium/WebKit verifican aviso anterior al montaje, aviso durante el login, gesto de usuario, doble toque, cancelación, aviso consumido, aviso nuevo durante una operación pendiente, aceptación sin falsa marca de instalación, evento de instalación con el banner desmontado, tres anchos y guía de iPhone. La confirmación del sistema se simula en estas pruebas; no instalan aplicaciones en el ordenador.
+
+`node scripts/smoke-suizamente-install.mjs` comprueba en producción el código compilado, la captura temprana y el clic con activación; también el manifiesto, sus iconos y los errores de instalabilidad reales mediante el protocolo de Chrome. Solo lecturas y un aviso de prueba simulado, sin cuentas ni instalación real. Resultados y capturas en `output/instalacion-samsung/`. Queda confirmar el diálogo y la instalación final en el Samsung físico; un mensaje del sistema que persista debe diagnosticarse con su texto exacto.

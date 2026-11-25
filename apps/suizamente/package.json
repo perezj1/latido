@@ -30,6 +30,7 @@
     "test:navigation": "node scripts/test-suizamente-navigation-browser.mjs && node scripts/test-suizamente-navigation-browser.mjs --webkit",
     "test:session": "node scripts/test-session-transport.mjs && node scripts/test-suizamente-push-routing.mjs && node scripts/test-suizamente-session-browser.mjs && node scripts/test-suizamente-session-browser.mjs --webkit",
     "test:fluidity": "node scripts/test-suizamente-fluidity.mjs",
+    "test:install-game": "node scripts/test-suizamente-install-browser.mjs && node scripts/test-suizamente-install-browser.mjs --webkit",
     "test:small": "node scripts/test-suizamente-small-browser.mjs && node scripts/test-suizamente-small-browser.mjs --webkit && node scripts/test-suizamente-moments-browser.mjs --small",
     "test:four-options": "node scripts/test-suizamente-v21.mjs && node scripts/test-suizamente-four-base.mjs && node scripts/test-suizamente-four-browser.mjs && node scripts/test-suizamente-four-browser.mjs --webkit",
     "test:ux": "node scripts/test-suizamente-ux-browser.mjs && node scripts/test-suizamente-ux-browser.mjs --webkit && node scripts/test-suizamente-delivery.mjs",

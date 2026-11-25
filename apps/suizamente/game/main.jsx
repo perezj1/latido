@@ -1,4 +1,5 @@
 import React,{lazy,Suspense} from 'react'
+import './installation'
 import {createRoot} from 'react-dom/client'
 import {BrowserRouter,Navigate,Route,Routes,useLocation,useSearchParams} from 'react-router-dom'
 import {Toaster} from 'react-hot-toast'
