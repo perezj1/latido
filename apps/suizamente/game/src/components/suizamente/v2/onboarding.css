@@ -11,7 +11,6 @@
 .sv-first-hint{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border-radius:20px;background:#FFF;box-shadow:0 0 0 2px #4A76EF,0 8px 18px rgba(15,26,43,.10);color:#0F1A2B;font-size:13.5px;line-height:1.45;text-align:left;width:100%;max-width:380px;margin:12px auto 0}.sv-first-hint>span{font-size:22px;line-height:1.2}.sv-first-hint b{font-size:15px}.sv-first-hint p{margin:3px 0 0}.sv-question-content>.sv-first-hint{margin-top:0}
 .sv-onb-new.reduced *,.sv-onb-new.reduced *:before,.sv-onb-new.reduced *:after{animation:none!important;transition:none!important;scroll-behavior:auto!important}
 @media(prefers-reduced-motion:reduce){.sv-onb-new *,.sv-onb-new *:before,.sv-onb-new *:after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
-@media(max-height:760px){.sv-onb-new{--sv-onb-art:330px;--sv-onb-wheel:.6;--sv-onb-map:250px}.sv-onb-new[data-onb-step="1"] .sv-onboarding-art{height:auto}.sv-onb-practice h2{font-size:17px}.sv-root .sv-onb-practice .sv-answer-options>button,.sv-root .sv-onb-practice .sv-answer-options>div{min-height:44px}}
 @media(max-width:360px){.sv-onb-levels{gap:5px}.sv-onb-levels>span{padding:7px 8px;font-size:12px}}
 
 .sv-onb-map-frame .sv-world-map>.sv-map-drawing{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:190px;height:170px;max-height:none}

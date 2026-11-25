@@ -1,0 +1,1324 @@
+{
+  "OnbHola": [
+    {
+      "tag": "BUTTON",
+      "class": "",
+      "rect": [
+        326.6,
+        16,
+        47.4,
+        44
+      ]
+    },
+    {
+      "tag": "DIV",
+      "class": "sv-options sv-answer-options",
+      "rect": [
+        30,
+        274.8,
+        330,
+        229.5
+      ]
+    },
+    {
+      "tag": "BUTTON",
+      "class": "",
+      "rect": [
+        30,
+        274.8,
+        330,
+        50
+      ]
+    },
+    {
+      "tag": "BUTTON",
+      "class": "",
+      "rect": [
+        30,
+        332.8,
+        330,
+        55.5
+      ]
+    },
+    {
+      "tag": "BUTTON",
+      "class": "",
+      "rect": [
+        30,
+        396.3,
+        330,
+        50
+      ]
+    },
+    {
+      "tag": "BUTTON",
+      "class": "",
+      "rect": [
+        30,
+        454.3,
+        330,
+        50
+      ]
+    },
+    {
+      "tag": "SECTION",
+      "class": "sv-onboarding-copy",
+      "rect": [
+        24,
+        552.8,
+        342,
+        120.4
+      ]
+    },
+    {
+      "tag": "FOOTER",
+      "class": "sv-footer",
+      "rect": [
+        0,
+        750,
+        390,
+        94
+      ]
+    },
+    {
+      "tag": "BUTTON",
+      "class": "sv-button quiet",
+      "rect": [
+        16,
+        774,
+        358,
+        54
+      ]
+    }
+  ],
+  "OnbAprende": [
+    {
+      "tag": "BUTTON",
+      "class": "",
+      "rect": [
+        326.6,
+        16,
+        47.4,
+        44
+      ]
+    },
+    {
+      "tag": "DIV",
+      "class": "sv-wheel sv-light-wheel",
+      "rect": [
+        52.5,
+        158.6,
+        285,
+        325.5
+      ]
+    },
+    {
+      "tag": "SECTION",
+      "class": "sv-onboarding-copy",
+      "rect": [
+        24,
+        567.3,
+        342,
+        87.4
+      ]
+    },
+    {
+      "tag": "FOOTER",
+      "class": "sv-footer",
+      "rect": [
+        0,
+        746,
+        390,
+        98
+      ]
+    },
+    {
+      "tag": "BUTTON",
+      "class": "sv-button ",
+      "rect": [
+        16,
+        770,
+        358,
+        58
+      ]
+    }
+  ],
+  "OnbReta": [
+    {
+      "tag": "DIV",
+      "class": "sv-world-map selected preview",
+      "rect": [
+        45,
+        163.9,
+        300,
+        300
+      ]
+    },
+    {
+      "tag": "SECTION",
+      "class": "sv-onboarding-copy",
+      "rect": [
+        24,
+        554.3,
+        342,
+        87.4
+      ]
+    },
+    {
+      "tag": "FOOTER",
+      "class": "sv-footer",
+      "rect": [
+        0,
+        746,
+        390,
+        98
+      ]
+    },
+    {
+      "tag": "BUTTON",
+      "class": "sv-button ",
+      "rect": [
+        16,
+        770,
+        358,
+        58
+      ]
+    }
+  ],
+  "Inicio": [
+    {
+      "tag": "A",
+      "class": "",
+      "rect": [
+        16,
+        18,
+        44,
+        44
+      ]
+    },
+    {
+      "tag": "A",
+      "class": "sv-chip sv-coins",
+      "rect": [
+        246.3,
+        18,
+        71.7,
+        44
+      ]
+    },
+    {
+      "tag": "A",
+      "class": "sv-icon-button",
+      "rect": [
+        330,
+        18,
+        44,
+        44
+      ]
+    },
+    {
+      "tag": "A",
+      "class": "sv-home-map-heading",
+      "rect": [
+        28,
+        102,
+        334,
+        44
+      ]
+    },
+    {
+      "tag": "DIV",
+      "class": "sv-world-map home",
+      "rect": [
+        28,
+        154,
+        334,
+        240
+      ]
+    },
+    {
+      "tag": "BUTTON",
+      "class": "sv-map-mode",
+      "rect": [
+        272.5,
+        341.2,
+        83.5,
+        46.8
+      ]
+    },
+    {
+      "tag": "A",
+      "class": "sv-home-map-open",
+      "rect": [
+        28,
+        402,
+        334,
+        44
+      ]
+    },
+    {
+      "tag": "A",
+      "class": "sv-button ",
+      "rect": [
+        16,
+        472,
+        358,
+        58
+      ]
+    },
+    {
+      "tag": "A",
+      "class": "",
+      "rect": [
+        162,
+        727.5,
+        66.1,
+        44
+      ]
+    },
+    {
+      "tag": "BUTTON",
+      "class": "sv-text-button",
+      "rect": [
+        16,
+        803.5,
+        358,
+        47.2
+      ]
+    },
+    {
+      "tag": "A",
+      "class": "sv-missions-entry",
+      "rect": [
+        16,
+        864.7,
+        174,
+        68.1
+      ]
+    },
+    {
+      "tag": "A",
+      "class": "sv-daily-home",
+      "rect": [
+        200,
+        864.7,
+        174,
+        68.1
+      ]
+    },
+    {
+      "tag": "A",
+      "class": "sv-league-entry",
+      "rect": [
+        16,
+        946.8,
+        358,
+        64.6
+      ]
+    }
+  ],
+  "Partida": [
+    {
+      "tag": "BUTTON",
+      "class": "sv-icon-button",
+      "rect": [
+        14,
+        14,
+        44,
+        44
+      ]
+    },
+    {
+      "tag": "BUTTON",
+      "class": "sv-icon-button",
+      "rect": [
+        332,
+        14,
+        44,
+        44
+      ]
+    },
+    {
+      "tag": "A",
+      "class": "",
+      "rect": [
+        44.5,
+        68,
+        64,
+        64
+      ]
+    },
+    {
+      "tag": "A",
+      "class": "",
+      "rect": [
+        281.5,
+        68,
+        64,
+        64
+      ]
+    },
+    {
+      "tag": "DIV",
+      "class": "sv-wheel sv-light-wheel",
+      "rect": [
+        5,
+        179.3,
+        380,
+        434
+      ]
+    },
+    {
+      "tag": "BUTTON",
+      "class": "sv-wheel-center",
+      "rect": [
+        147,
+        373.3,
+        96,
+        96
+      ]
+    },
+    {
+      "tag": "FOOTER",
+      "class": "sv-footer",
+      "rect": [
+        0,
+        772,
+        390,
+        72
+      ]
+    }
+  ],
+  "PartidaPrimera": [
+    {
+      "tag": "BUTTON",
+      "class": "sv-icon-button",
+      "rect": [
+        14,
+        14,
+        44,
+        44
+      ]
+    },
+    {
+      "tag": "BUTTON",
+      "class": "sv-icon-button",
+      "rect": [
+        332,
+        14,
+        44,
+        44
+      ]
+    },
+    {
+      "tag": "A",
+      "class": "",
+      "rect": [
+        44.5,
+        68,
+        64,
+        64
+      ]
+    },
+    {
+      "tag": "A",
+      "class": "",
+      "rect": [
+        281.5,
+        68,
+        64,
+        64
+      ]
+    },
+    {
+      "tag": "DIV",
+      "class": "sv-wheel sv-light-wheel",
+      "rect": [
+        5,
+        179.3,
+        380,
+        434
+      ]
+    },
+    {
+      "tag": "BUTTON",
+      "class": "sv-wheel-center",
+      "rect": [
+        147,
+        373.3,
+        96,
+        96
+      ]
+    },
+    {
+      "tag": "ASIDE",
+      "class": "sv-first-hint",
+      "rect": [
+        5,
+        671,
+        380,
+        107.4
+      ]
+    },
+    {
+      "tag": "FOOTER",
+      "class": "sv-footer",
+      "rect": [
+        0,
+        778.5,
+        390,
+        72
+      ]
+    }
+  ],
+  "PreguntaPrimera": [
+    {
+      "tag": "HEADER",
+      "class": "sv-question-header",
+      "rect": [
+        0,
+        0,
+        390,
+        80
+      ]
+    },
+    {
+      "tag": "DIV",
+      "class": "sv-card sv-question-card",
+      "rect": [
+        16,
+        102,
+        358,
+        210
+      ]
+    },
+    {
+      "tag": "DIV",
+      "class": "sv-options sv-answer-options",
+      "rect": [
+        16,
+        326,
+        358,
+        278
+      ]
+    },
+    {
+      "tag": "BUTTON",
+      "class": "",
+      "rect": [
+        16,
+        326,
+        358,
+        62
+      ]
+    },
+    {
+      "tag": "BUTTON",
+      "class": "",
+      "rect": [
+        16,
+        398,
+        358,
+        62
+      ]
+    },
+    {
+      "tag": "BUTTON",
+      "class": "",
+      "rect": [
+        16,
+        470,
+        358,
+        62
+      ]
+    },
+    {
+      "tag": "BUTTON",
+      "class": "",
+      "rect": [
+        16,
+        542,
+        358,
+        62
+      ]
+    },
+    {
+      "tag": "ASIDE",
+      "class": "sv-first-hint",
+      "rect": [
+        16,
+        618,
+        358,
+        87.9
+      ]
+    },
+    {
+      "tag": "BUTTON",
+      "class": "",
+      "rect": [
+        16,
+        738.8,
+        85,
+        89.2
+      ]
+    },
+    {
+      "tag": "BUTTON",
+      "class": "",
+      "rect": [
+        107,
+        738.8,
+        85,
+        89.2
+      ]
+    },
+    {
+      "tag": "BUTTON",
+      "class": "",
+      "rect": [
+        198,
+        738.8,
+        85,
+        89.2
+      ]
+    },
+    {
+      "tag": "BUTTON",
+      "class": "",
+      "rect": [
+        289,
+        738.8,
+        85,
+        89.2
+      ]
+    }
+  ],
+  "PartidaPregunta": [
+    {
+      "tag": "HEADER",
+      "class": "sv-question-header",
+      "rect": [
+        0,
+        0,
+        390,
+        80
+      ]
+    },
+    {
+      "tag": "DIV",
+      "class": "sv-card sv-question-card",
+      "rect": [
+        16,
+        102,
+        358,
+        210
+      ]
+    },
+    {
+      "tag": "DIV",
+      "class": "sv-options sv-answer-options",
+      "rect": [
+        16,
+        326,
+        358,
+        278
+      ]
+    },
+    {
+      "tag": "BUTTON",
+      "class": "",
+      "rect": [
+        16,
+        326,
+        358,
+        62
+      ]
+    },
+    {
+      "tag": "BUTTON",
+      "class": "",
+      "rect": [
+        16,
+        398,
+        358,
+        62
+      ]
+    },
+    {
+      "tag": "BUTTON",
+      "class": "",
+      "rect": [
+        16,
+        470,
+        358,
+        62
+      ]
+    },
+    {
+      "tag": "BUTTON",
+      "class": "",
+      "rect": [
+        16,
+        542,
+        358,
+        62
+      ]
+    },
+    {
+      "tag": "BUTTON",
+      "class": "",
+      "rect": [
+        16,
+        738.8,
+        85,
+        89.2
+      ]
+    },
+    {
+      "tag": "BUTTON",
+      "class": "",
+      "rect": [
+        107,
+        738.8,
+        85,
+        89.2
+      ]
+    },
+    {
+      "tag": "BUTTON",
+      "class": "",
+      "rect": [
+        198,
+        738.8,
+        85,
+        89.2
+      ]
+    },
+    {
+      "tag": "BUTTON",
+      "class": "",
+      "rect": [
+        289,
+        738.8,
+        85,
+        89.2
+      ]
+    }
+  ],
+  "PartidaFallo": [
+    {
+      "tag": "HEADER",
+      "class": "sv-question-header",
+      "rect": [
+        0,
+        0,
+        390,
+        80
+      ]
+    },
+    {
+      "tag": "DIV",
+      "class": "sv-options sv-answer-options result",
+      "rect": [
+        16,
+        183.1,
+        358,
+        232
+      ]
+    },
+    {
+      "tag": "BUTTON",
+      "class": "sv-bookmark ",
+      "rect": [
+        314,
+        447.1,
+        44,
+        44
+      ]
+    },
+    {
+      "tag": "BUTTON",
+      "class": "",
+      "rect": [
+        32,
+        580.3,
+        65.7,
+        44
+      ]
+    },
+    {
+      "tag": "FOOTER",
+      "class": "sv-footer",
+      "rect": [
+        0,
+        710.3,
+        390,
+        133.7
+      ]
+    },
+    {
+      "tag": "BUTTON",
+      "class": "sv-button ",
+      "rect": [
+        16,
+        781.6,
+        358,
+        46.4
+      ]
+    }
+  ],
+  "DatoLargo": [
+    {
+      "tag": "HEADER",
+      "class": "sv-question-header",
+      "rect": [
+        0,
+        0,
+        390,
+        80
+      ]
+    },
+    {
+      "tag": "DIV",
+      "class": "sv-options sv-answer-options result",
+      "rect": [
+        16,
+        183.1,
+        358,
+        232
+      ]
+    },
+    {
+      "tag": "BUTTON",
+      "class": "sv-bookmark ",
+      "rect": [
+        314,
+        447.1,
+        44,
+        44
+      ]
+    },
+    {
+      "tag": "BUTTON",
+      "class": "",
+      "rect": [
+        32,
+        983.3,
+        65.7,
+        44
+      ]
+    },
+    {
+      "tag": "FOOTER",
+      "class": "sv-footer",
+      "rect": [
+        0,
+        710.3,
+        390,
+        133.7
+      ]
+    },
+    {
+      "tag": "BUTTON",
+      "class": "sv-button ",
+      "rect": [
+        16,
+        781.6,
+        358,
+        46.4
+      ]
+    }
+  ],
+  "ElegirSello": [
+    {
+      "tag": "BUTTON",
+      "class": "sv-icon-button",
+      "rect": [
+        16,
+        18,
+        44,
+        44
+      ]
+    },
+    {
+      "tag": "BUTTON",
+      "class": "sv-icon-button",
+      "rect": [
+        330,
+        18,
+        44,
+        44
+      ]
+    },
+    {
+      "tag": "A",
+      "class": "",
+      "rect": [
+        57.9,
+        88,
+        62,
+        62
+      ]
+    },
+    {
+      "tag": "A",
+      "class": "",
+      "rect": [
+        270.1,
+        88,
+        62,
+        62
+      ]
+    },
+    {
+      "tag": "BUTTON",
+      "class": "",
+      "rect": [
+        8,
+        321.6,
+        118,
+        122
+      ]
+    },
+    {
+      "tag": "BUTTON",
+      "class": "",
+      "rect": [
+        136,
+        321.6,
+        118,
+        122
+      ]
+    },
+    {
+      "tag": "BUTTON",
+      "class": "",
+      "rect": [
+        264,
+        321.6,
+        118,
+        122
+      ]
+    },
+    {
+      "tag": "BUTTON",
+      "class": "",
+      "rect": [
+        8,
+        453.6,
+        118,
+        122
+      ]
+    },
+    {
+      "tag": "BUTTON",
+      "class": "",
+      "rect": [
+        136,
+        453.6,
+        118,
+        122
+      ]
+    },
+    {
+      "tag": "BUTTON",
+      "class": "",
+      "rect": [
+        264,
+        453.6,
+        118,
+        122
+      ]
+    },
+    {
+      "tag": "BUTTON",
+      "class": "sv-duel-invite",
+      "rect": [
+        8,
+        589.6,
+        374,
+        82.6
+      ]
+    },
+    {
+      "tag": "FOOTER",
+      "class": "sv-footer",
+      "rect": [
+        0,
+        772,
+        390,
+        72
+      ]
+    }
+  ],
+  "DueloPreparar": [
+    {
+      "tag": "BUTTON",
+      "class": "sv-icon-button",
+      "rect": [
+        16,
+        18,
+        44,
+        44
+      ]
+    },
+    {
+      "tag": "BUTTON",
+      "class": "sv-icon-button",
+      "rect": [
+        330,
+        18,
+        44,
+        44
+      ]
+    },
+    {
+      "tag": "BUTTON",
+      "class": "",
+      "rect": [
+        16,
+        228.5,
+        358,
+        92.5
+      ]
+    },
+    {
+      "tag": "BUTTON",
+      "class": "",
+      "rect": [
+        16,
+        371.5,
+        358,
+        92.5
+      ]
+    },
+    {
+      "tag": "FOOTER",
+      "class": "sv-footer",
+      "rect": [
+        0,
+        726.3,
+        390,
+        144.8
+      ]
+    },
+    {
+      "tag": "BUTTON",
+      "class": "sv-button danger",
+      "rect": [
+        16,
+        742.3,
+        358,
+        46.4
+      ]
+    },
+    {
+      "tag": "BUTTON",
+      "class": "sv-button quiet",
+      "rect": [
+        16,
+        800.7,
+        358,
+        46.4
+      ]
+    }
+  ],
+  "Mapa": [
+    {
+      "tag": "A",
+      "class": "sv-chip sv-coins",
+      "rect": [
+        301,
+        16,
+        73,
+        44
+      ]
+    },
+    {
+      "tag": "DIV",
+      "class": "sv-world-map",
+      "rect": [
+        12,
+        113.9,
+        366,
+        380
+      ]
+    },
+    {
+      "tag": "BUTTON",
+      "class": "sv-map-mode",
+      "rect": [
+        272.1,
+        437.9,
+        93.9,
+        44
+      ]
+    },
+    {
+      "tag": "BUTTON",
+      "class": "",
+      "rect": [
+        274,
+        125.9,
+        44,
+        44
+      ]
+    },
+    {
+      "tag": "A",
+      "class": "",
+      "rect": [
+        326,
+        125.9,
+        40,
+        40
+      ]
+    },
+    {
+      "tag": "DIV",
+      "class": "sv-canton-strip",
+      "rect": [
+        0,
+        538.7,
+        390,
+        215
+      ]
+    },
+    {
+      "tag": "BUTTON",
+      "class": "",
+      "rect": [
+        16,
+        542.7,
+        124,
+        199
+      ]
+    },
+    {
+      "tag": "DIV",
+      "class": "sv-world-map selected mini",
+      "rect": [
+        24,
+        550.7,
+        108,
+        94
+      ]
+    },
+    {
+      "tag": "BUTTON",
+      "class": "",
+      "rect": [
+        150,
+        542.7,
+        124,
+        199
+      ]
+    },
+    {
+      "tag": "DIV",
+      "class": "sv-world-map selected mini",
+      "rect": [
+        158,
+        550.7,
+        108,
+        94
+      ]
+    },
+    {
+      "tag": "BUTTON",
+      "class": "",
+      "rect": [
+        284,
+        542.7,
+        124,
+        199
+      ]
+    },
+    {
+      "tag": "DIV",
+      "class": "sv-world-map selected mini",
+      "rect": [
+        292,
+        550.7,
+        108,
+        94
+      ]
+    },
+    {
+      "tag": "BUTTON",
+      "class": "",
+      "rect": [
+        418,
+        542.7,
+        124,
+        199
+      ]
+    },
+    {
+      "tag": "DIV",
+      "class": "sv-world-map selected mini",
+      "rect": [
+        426,
+        550.7,
+        108,
+        94
+      ]
+    },
+    {
+      "tag": "BUTTON",
+      "class": "",
+      "rect": [
+        552,
+        542.7,
+        124,
+        199
+      ]
+    },
+    {
+      "tag": "DIV",
+      "class": "sv-world-map selected mini",
+      "rect": [
+        560,
+        550.7,
+        108,
+        94
+      ]
+    },
+    {
+      "tag": "BUTTON",
+      "class": "",
+      "rect": [
+        686,
+        542.7,
+        124,
+        199
+      ]
+    },
+    {
+      "tag": "DIV",
+      "class": "sv-world-map selected mini",
+      "rect": [
+        694,
+        550.7,
+        108,
+        94
+      ]
+    }
+  ],
+  "CompartirImagen": [
+    {
+      "tag": "BUTTON",
+      "class": "",
+      "rect": [
+        16,
+        16,
+        40,
+        40
+      ]
+    },
+    {
+      "tag": "DIV",
+      "class": "sv-image-preview",
+      "rect": [
+        83,
+        74,
+        224,
+        398.2
+      ]
+    },
+    {
+      "tag": "BUTTON",
+      "class": "sv-image-name",
+      "rect": [
+        16,
+        488.2,
+        358,
+        67
+      ]
+    },
+    {
+      "tag": "BUTTON",
+      "class": "",
+      "rect": [
+        16,
+        700,
+        358,
+        54
+      ]
+    },
+    {
+      "tag": "BUTTON",
+      "class": "",
+      "rect": [
+        16,
+        766,
+        358,
+        54
+      ]
+    }
+  ],
+  "VueltaCompleta": [
+    {
+      "tag": "BUTTON",
+      "class": "sv-icon-button",
+      "rect": [
+        16,
+        18,
+        44,
+        44
+      ]
+    },
+    {
+      "tag": "FOOTER",
+      "class": "sv-footer",
+      "rect": [
+        0,
+        585.6,
+        390,
+        156.4
+      ]
+    },
+    {
+      "tag": "A",
+      "class": "sv-button ",
+      "rect": [
+        16,
+        601.6,
+        358,
+        58
+      ]
+    },
+    {
+      "tag": "BUTTON",
+      "class": "sv-button quiet",
+      "rect": [
+        16,
+        671.6,
+        358,
+        46.4
+      ]
+    }
+  ],
+  "MomentoVictoria": [
+    {
+      "tag": "BUTTON",
+      "class": "sv-moment-skip",
+      "rect": [
+        304.6,
+        14,
+        71.4,
+        36
+      ]
+    },
+    {
+      "tag": "BUTTON",
+      "class": "sv-moment-share",
+      "rect": [
+        122.4,
+        708,
+        145.1,
+        46
+      ]
+    }
+  ]
+}

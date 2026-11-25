@@ -1,0 +1,101 @@
+/* 23.18: all height-dependent sizes live here. Normal screens keep their styles. */
+:root{--sz-banda-pad:16px;--sz-banda-ico:46px;--sz-banda-fs:20px;--sz-banda-m:16px;--sz-preg-m:22px;--sz-preg-pad:18px 16px;--sz-preg-caja:210px;--sz-preg-emoji:52px;--sz-preg-fs:21px;--sz-op-alto:62px;--sz-op-gap:10px;--sz-op-m:16px;--sz-com:52px;--sz-resp-m:14px;--sz-resp-op:52px;--sz-resp-gap:8px;--sz-resp-rond:flex;--sz-resp-iconos:none;--sz-ruleta:380px;--sz-ruleta-guia:380px;--sz-av:64px;--sz-onb:400px;--sz-onb-op:50px;--sz-onb-fs:19px;--sz-onb-ruleta:.75;--sz-onb-3d:300px;--sz-mapa3d:380px;--sz-duelo-m:14px;--sz-cel-pad:30px;--sz-cel-emoji:50px;--sz-vuelta-mapa:340px;--sz-vuelta-m:14px;--sz-vista-w:224px;--sz-vista-h:398px;--sz-escena:block}
+.sv-fact-compact{display:none}
+.sv-root .sv-home-map .sv-map-drawing{width:100%;max-width:350px;height:auto}
+@media(max-height:760px){
+ :root{--sz-banda-pad:10px;--sz-banda-ico:38px;--sz-banda-fs:18px;--sz-banda-m:10px;--sz-preg-m:10px;--sz-preg-pad:12px 14px;--sz-preg-caja:0px;--sz-preg-emoji:36px;--sz-preg-fs:19px;--sz-op-alto:48px;--sz-op-gap:8px;--sz-op-m:12px;--sz-com:44px;--sz-resp-m:8px;--sz-resp-op:44px;--sz-resp-gap:6px;--sz-resp-rond:none;--sz-resp-iconos:flex;--sz-ruleta:296px;--sz-ruleta-guia:214px;--sz-av:50px;--sz-onb:330px;--sz-onb-op:44px;--sz-onb-fs:17px;--sz-onb-ruleta:.6;--sz-onb-3d:250px;--sz-mapa3d:205px;--sz-duelo-m:6px;--sz-cel-pad:10px;--sz-cel-emoji:38px;--sz-vuelta-mapa:205px;--sz-vuelta-m:8px;--sz-vista-w:164px;--sz-vista-h:292px;--sz-escena:none}
+ .sv-latido-backdrop .sv-backdrop-scene{display:var(--sz-escena)!important}
+ .sv-root .sv-game:has(.sv-question-header){height:100dvh;min-height:0}
+ .sv-root .sv-question-header{flex:none;min-height:0;padding:var(--sz-banda-pad) 16px;gap:10px}
+ .sv-root .sv-question-header>span:first-child{width:var(--sz-banda-ico);height:var(--sz-banda-ico)}
+ .sv-root .sv-question-header b{font-size:var(--sz-banda-fs)}
+ .sv-root .sv-question-header .sv-clock{width:44px;height:44px;font-size:18px}
+ .sv-root .sv-question-content{flex:1;min-height:0;overflow-y:auto;gap:var(--sz-resp-m);padding:var(--sz-preg-m) 16px}
+ .sv-root .sv-question-card{flex:none;min-height:var(--sz-preg-caja);gap:8px;padding:var(--sz-preg-pad)}
+ .sv-root .sv-question-card>span{font-size:var(--sz-preg-emoji);line-height:1}
+ .sv-root .sv-question-card h1{font-size:var(--sz-preg-fs);line-height:1.25}
+ .sv-root .sv-game .sv-answer-options{flex:none;gap:var(--sz-op-gap)}
+ .sv-root .sv-game .sv-answer-options>button{min-height:var(--sz-op-alto);font-size:15px}
+ .sv-root .sv-game .sv-answer-options.result{gap:var(--sz-resp-gap)}
+ .sv-root .sv-game .sv-answer-options.result>div{min-height:var(--sz-resp-op);font-size:15px}
+ .sv-root .sv-powerups{flex:none;padding:10px 16px;gap:6px}
+ .sv-root .sv-powerups>button{padding:4px 2px 6px;gap:4px;border:0;background:transparent}
+ .sv-root .sv-powerups>button>span{display:grid;place-items:center;width:var(--sz-com);height:var(--sz-com);border:2px solid var(--sv-line);border-radius:50%;background:var(--sv-card);font-size:24px}
+ .sv-root .sv-question-content>.sv-first-hint{padding:8px 10px;margin:0;font-size:12px;line-height:1.3}
+ .sv-root .sv-question-content:has(.sv-first-hint){padding-block:6px}
+ .sv-root .sv-first-hint b{font-size:13px}.sv-root .sv-first-hint p{margin-top:2px}
+ .sv-root .sv-game:has(.sv-question-header)>.sv-footer{flex:none;position:static;gap:8px;padding:8px 16px 12px}
+ .sv-root .sv-game:has(.sv-question-header)>.sv-footer .sv-button{min-height:48px;padding:8px 16px;font-size:16px}
+ .sv-root .sv-result-title{font-size:24px}.sv-root .sv-result-question{font-size:14px}
+ .sv-root .sv-question-content .sv-stat{padding:6px 10px;font-size:11px}
+ .sv-root .sv-question-content .sv-fact{padding:12px 14px;flex:none}
+ .sv-root .sv-question-content .sv-fact>p{font-size:13px;line-height:1.4}
+ .sv-root .sv-question-content .sv-fact .sv-between{gap:4px;flex-wrap:wrap}
+ .sv-root .sv-question-content .sv-fact .sv-between>b{font-size:12px}
+ .sv-root .sv-question-content .sv-fact-actions,.sv-root .sv-question-content .sv-fact .sv-bookmark{display:var(--sz-resp-rond)}
+ .sv-root .sv-question-content .sv-fact-compact{display:var(--sz-resp-iconos);gap:4px;margin-left:auto}
+ .sv-root .sv-fact-compact button{display:grid;place-items:center;width:32px;height:32px;min-width:32px;min-height:32px;border:0;border-radius:50%;padding:0;background:#FFF;color:#0F1A2B;font-size:15px}
+ .sv-root .sv-game-board{height:100dvh;min-height:0}
+ .sv-root .sv-game-board .sv-header{min-height:48px;padding:6px 14px 0}
+ .sv-root .sv-game-board .sv-match-players{margin-top:8px}
+ .sv-root .sv-game-board .sv-passport .sv-avatar{width:var(--sz-av);height:var(--sz-av);font-size:24px}
+ .sv-root .sv-game-board .sv-match-score strong{font-size:34px}.sv-root .sv-game-board .sv-match-score::after{top:46px}
+ .sv-root .sv-game-board .sv-match-wheel{width:var(--sz-ruleta);max-width:100%}
+ .sv-root .sv-game-board:has(.sv-first-hint) .sv-match-wheel{width:var(--sz-ruleta-guia)}
+ .sv-root .sv-game-board .sv-match-wheel>.sv-wheel-status{font-size:13px;padding:6px 12px;margin-top:4px}
+ .sv-root .sv-game-board .sv-wheel-area{flex:1;justify-content:center;min-height:0}
+ .sv-root .sv-game-board .sv-first-hint{max-width:calc(100% - 32px);margin-top:8px;padding:8px 10px;font-size:12px;line-height:1.3}
+ .sv-root .sv-themed-screen>.sv-footer{padding-top:8px;padding-bottom:12px;gap:8px}
+ .sv-root .sv-onb-new{--sv-onb-art:var(--sz-onb);--sv-onb-wheel:var(--sz-onb-ruleta);--sv-onb-map:var(--sz-onb-3d)}
+ .sv-root .sv-onb-new[data-onb-step="1"] .sv-onboarding-art{height:auto}
+ .sv-root .sv-onb-practice h2{font-size:var(--sz-onb-fs)}
+ .sv-root .sv-onb-practice .sv-answer-options>button,.sv-root .sv-onb-practice .sv-answer-options>div{min-height:var(--sz-onb-op)}
+ .sv-root .sv-map-page .sv-map-frame>.sv-world-map{height:var(--sz-mapa3d)}
+ .sv-root .sv-map-page .sv-map-hint{margin:8px 16px 4px!important}
+ .sv-root .sv-map-page>.sv-content{padding-top:8px;padding-bottom:8px;gap:8px}
+ .sv-root .sv-map-page>.sv-content:empty{display:none}
+ .sv-root .sv-map-page .sv-canton-strip{flex:none}
+ .sv-root .sv-map-page:has(.sv-world-focus-info) .sv-build{min-height:48px;padding:6px 12px}
+ .sv-root .sv-map-page:has(.sv-world-focus-info) .sv-build strong{padding:6px}.sv-root .sv-map-page:has(.sv-world-focus-info) .sv-build small{font-size:11px}
+ .sv-root .sv-map-page:has(.sv-world-focus-info)>.sv-text-button{min-height:32px;padding:0;font-size:13px}
+ .sv-root .sv-map-page:has(.sv-world-focus-info)>.sv-map-hint{margin:4px 16px 2px!important;font-size:11px;line-height:1.2}
+ .sv-root .sv-map-page:has(.sv-world-focus-info) .sv-canton-strip>button{padding:4px;gap:2px}
+ .sv-root .sv-map-page:has(.sv-world-focus-info) .sv-canton-strip .sv-world-map.mini{height:44px}
+ .sv-root .sv-map-page:has(.sv-world-focus-info) .sv-canton-strip b{min-height:20px}
+ .sv-root .sv-map-page:has(.sv-world-focus-info) .sv-canton-strip strong{height:22px;font-size:12px}
+ .sv-root .sv-duel-prepare>.sv-content,.sv-root .sv-duel-result{gap:var(--sz-duelo-m);padding-top:var(--sz-cel-pad);padding-bottom:var(--sz-duelo-m)}
+ .sv-root .sv-duel-prepare .sv-duel-vs{padding:var(--sz-duelo-m)}
+ .sv-root .sv-duel-prepare .sv-duel-select button{padding:6px 8px;gap:4px}
+ .sv-root .sv-duel-prepare .sv-duel-stakes .sv-card{padding:8px;gap:6px}
+ .sv-root .sv-duel-prepare h2{font-size:16px}.sv-root .sv-duel-prepare .sv-muted{font-size:12px}
+ .sv-root .sv-duel-result>.sv-finish-emoji{font-size:var(--sz-cel-emoji);line-height:1}
+ .sv-root .sv-duel-result .sv-card{padding:8px 12px}.sv-root .sv-duel-score{margin-bottom:6px}.sv-root .sv-duel-row{padding:4px}
+ .sv-root .sv-lap-complete{gap:var(--sz-vuelta-m);padding-top:var(--sz-cel-pad);padding-bottom:var(--sz-vuelta-m)}
+ .sv-root .sv-lap-complete>.sv-map-drawing{width:100%;max-width:340px;height:var(--sz-vuelta-mapa);max-height:var(--sz-vuelta-mapa);flex:none}
+ .sv-root .sv-lap-complete h1{font-size:24px}
+ .sv-image-share .sv-image-preview{width:var(--sz-vista-w);height:var(--sz-vista-h);margin-top:8px}
+ .sv-image-share .sv-image-name{margin-top:8px;padding:8px 12px}.sv-image-share .sv-image-panel footer{padding-top:12px;gap:8px}
+ .sv-image-share .sv-image-panel{padding-bottom:max(12px,env(safe-area-inset-bottom))}
+ .sv-root .sv-game-seal .sv-wheel-area{gap:8px;padding:8px 16px}
+ .sv-root .sv-game-seal .sv-match-players{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:6px;margin:8px 16px 0;padding:0}
+ .sv-root .sv-game-seal .sv-passport{flex-direction:column;padding:4px;gap:4px;text-align:center;min-width:0}
+ .sv-root .sv-game-seal .sv-passport .sv-avatar{width:var(--sz-av);height:var(--sz-av)}
+ .sv-root .sv-game-seal .sv-passport>div:nth-child(2){min-width:0}.sv-root .sv-game-seal .sv-passport small{display:none}
+ .sv-root .sv-game-seal .sv-stamps{flex-wrap:nowrap;gap:3px}.sv-root .sv-game-seal .sv-stamps>span{width:16px;height:16px;font-size:9px}
+ .sv-root .sv-game-seal .sv-stamp-choice button{min-height:90px;padding:8px;gap:6px}
+ .sv-root .sv-game-seal .sv-duel-invite{padding:10px;font-size:16px}
+ .sv-root .sv-game-finish .sv-finish{padding:10px 16px;gap:6px}.sv-root .sv-game-finish .sv-finish-emoji{font-size:var(--sz-cel-emoji)}
+ .sv-root .sv-game-finish .sv-match-players{margin:0;padding:8px}.sv-root .sv-game-finish .sv-finish h1{font-size:30px}
+ .sv-root .sv-game-finish>.sv-footer{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+ .sv-root .sv-game-finish>.sv-footer .sv-button{min-height:48px;font-size:13px;padding:8px}
+ .sv-root .sv-reward-heading{padding-top:var(--sz-cel-pad);gap:8px}.sv-root .sv-reward-heading>span{font-size:var(--sz-cel-emoji)}
+ .sv-root .sv-chest>.sv-content{gap:8px;padding:10px 16px}.sv-root .sv-chest .sv-reward-row{padding:10px 14px}
+ .sv-root .sv-pack .sv-pack-cards{margin:12px 12px 6px;gap:8px}
+ .sv-root .sv-pack .sv-pack-cards>button{height:112px;min-height:0;padding:6px;gap:4px}
+ .sv-root .sv-pack .sv-pack-cards .sv-album-card>span{font-size:34px}.sv-root .sv-pack .sv-pack-cards b{font-size:11px}
+ .sv-root .sv-pack>.sv-content{padding:8px 16px;gap:6px}.sv-root .sv-pack .sv-pack-progress{padding:8px 12px;font-size:12px;gap:4px}
+ .sv-moment.sv-moment{padding-top:48px;padding-bottom:84px}.sv-moment.sv-moment.has-share{padding-bottom:118px}
+ .sv-moment .sv-moment-body{padding:12px 0}.sv-moment .sv-moment-content{gap:12px}
+ .sv-moment .sv-moment-object{height:clamp(200px,calc(100dvh - 350px),250px)}
+ .sv-moment .sv-moment-object.pack{height:clamp(240px,calc(100dvh - 350px),290px)}
+}

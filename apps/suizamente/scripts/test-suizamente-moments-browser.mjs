@@ -36,14 +36,15 @@ try{
   const ctx=await context();page=await ctx.newPage();page.on('pageerror',e=>errors.push(e.message))
   const dialog=()=>page.getByRole('dialog'),title=()=>dialog().getByRole('heading',{level:1})
   async function layout(name){
-    for(const width of [320,390,1440]){
-      await page.setViewportSize({width,height:844});await expect(dialog()).toBeVisible()
+    for(const [width,height] of process.argv.includes('--small')?[[375,667],[320,568]]:[[320,844],[390,844],[1440,844]]){
+      await page.setViewportSize({width,height});await expect(dialog()).toBeVisible()
       assert.equal(await page.locator('[data-momento]').count(),1,'Only one moment')
       assert.ok(await dialog().evaluate(el=>el.clientWidth===innerWidth&&el.clientHeight===innerHeight&&el.scrollWidth<=el.clientWidth),'Fullscreen, no horizontal overflow '+JSON.stringify(await dialog().evaluate(el=>({w:el.clientWidth,h:el.clientHeight,sw:el.scrollWidth,iw:innerWidth,ih:innerHeight,dpr:devicePixelRatio,css:getComputedStyle(el).height}))))
       assert.ok(await page.locator('.sv-moment-page').evaluate(el=>el.scrollWidth<=el.clientWidth),'Content fits')
       assert.ok(await dialog().evaluate(el=>el===document.activeElement||el.contains(document.activeElement)),'Focus stays in dialog')
       assert.equal(await page.locator('#root').evaluate(el=>el.inert),true)
       assert.ok(await page.evaluate(()=>!!document.elementFromPoint(20,innerHeight-20)?.closest('[data-momento]')),'Layer covers bottom navigation')
+      if(process.argv.includes('--small')&&width===375)assert.ok(await page.locator('.sv-moment-page').evaluate(el=>el.scrollHeight<=el.clientHeight+1),'Moment fits 375x667: '+name)
       const snapshot=await dialog().ariaSnapshot();assert.ok(snapshot.includes(await title().innerText()))
       await page.screenshot({path:out+'/'+name+'-'+width+'.png'})
       if(name==='regalo-abierto'&&width===390){await page.setViewportSize({width:390,height:1008});await page.screenshot({path:out+'/regalo-abierto-referencia.png'})}

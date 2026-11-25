@@ -1,0 +1,71 @@
+import assert from 'node:assert/strict'
+import {mkdir,readFile,writeFile} from 'node:fs/promises'
+import {createServer} from 'node:http'
+import {resolve,extname} from 'node:path'
+import {chromium,webkit,expect} from '@playwright/test'
+import {startSuizamentePreview,testToken,testUser} from './lib/suizamente-v2-preview.mjs'
+import {A,B,call,callOriginal} from './lib/suizamente-v2-test-db.mjs'
+const engine=process.argv.includes('--webkit')?'webkit':'chromium',baseline=process.argv.includes('--baseline'),out='output/pantallas-bajas/'+engine,design=resolve(process.env.SUIZAMENTE_DESIGN_ROOT||'../../../latido/suizamente'),metrics={},failures=[]
+let preview,browser,page,reference
+try{
+ await mkdir(out,{recursive:true});preview=await startSuizamentePreview(engine==='webkit'?5411:5410,{hmr:false});const db=preview.db,config=await call(db,A,'config')
+ browser=await(engine==='webkit'?webkit:chromium).launch({headless:true,args:engine==='chromium'?['--enable-unsafe-swiftshader']:[]})
+ const ctx=await browser.newContext({viewport:{width:390,height:844},reducedMotion:'reduce'})
+ await ctx.addInitScript(()=>sessionStorage.setItem('suizamente:apertura','1'));page=await ctx.newPage()
+ async function capture(name,{scroll=false,referenceId=name+'Baja'}={}){
+  for(const [width,height] of baseline?[[390,844]]:[[375,667],[390,844],[320,568]]){
+   await page.setViewportSize({width,height});await page.evaluate(()=>document.fonts.ready);await page.waitForTimeout(150)
+   if(!await page.getByRole('dialog').count())for(const close of await page.locator('.sv-notice>button').all())if(await close.isVisible())await close.click()
+   if(width===375)for(const scene of await page.locator('.sv-backdrop-scene').all())assert.equal(await scene.evaluate(e=>window.getComputedStyle(e).display),'none')
+   const result=await page.evaluate(()=>{const root=document.querySelector('.sv-image-share')||document.querySelector('[data-momento]')||document.querySelector('.sv-screen'),items=[...root.querySelectorAll('button,a,.sv-question-header,.sv-question-card,.sv-answer-options,.sv-light-wheel,.sv-first-hint,.sv-world-map,.sv-canton-strip,.sv-image-preview,.sv-footer,.sv-onboarding-copy')].filter(e=>e.getBoundingClientRect().width&&window.getComputedStyle(e).display!=='none');return {horizontal:document.documentElement.scrollWidth>window.innerWidth+1,document:document.documentElement.scrollHeight,scrolls:[root,...root.querySelectorAll('.sv-content,.sv-onb-body,.sv-moment-page,.sv-image-panel')].filter(e=>e.scrollHeight>e.clientHeight+2&&window.getComputedStyle(e).overflowY!=='visible').map(e=>({class:e.className,h:e.clientHeight,scroll:e.scrollHeight})),bottom:Math.max(...items.map(e=>e.getBoundingClientRect().bottom)),metrics:items.map(e=>({tag:e.tagName,class:e.className,rect:[e.getBoundingClientRect().x,e.getBoundingClientRect().y,e.getBoundingClientRect().width,e.getBoundingClientRect().height].map(n=>Math.round(n*10)/10)}))}})
+   if(width===390){metrics[name]=result.metrics;if(!baseline){const old=JSON.parse(await readFile(new URL('./fixtures/suizamente-normal-390-'+engine+'.json',import.meta.url),'utf8'));const stable=xs=>xs.filter(x=>!(x.tag==='BUTTON'&&x.class===''&&name==='OnbHola'));if(old[name]&&JSON.stringify(stable(old[name]))!==JSON.stringify(stable(result.metrics)))failures.push(name+' changed at 390x844')}}
+   if(result.horizontal)failures.push(name+' horizontal '+width)
+   if(width===375&&!scroll&&(result.document>height+2||result.scrolls.length||result.bottom>height+2))failures.push({name,width,...result})
+   await page.screenshot({path:out+'/'+(baseline?'before-':'')+name+'-'+width+'.png',fullPage:true})
+  }
+  await page.setViewportSize({width:390,height:844});return referenceId
+ }
+ const pairs=[];const shot=async(name,options)=>pairs.push([await capture(name,options),name])
+ await page.goto(preview.origin+'/suizamente');await expect(page.locator('.sv-onb-practice button')).toHaveCount(4);await shot('OnbHola')
+ await page.getByRole('button',{name:'Ahora no',exact:true}).click();await shot('OnbAprende');await page.getByRole('button',{name:'Siguiente',exact:true}).click();await expect(page.locator('.sv-onb-map-frame canvas')).toBeVisible();await page.waitForTimeout(300);await shot('OnbReta');await ctx.close()
+ const auth=await browser.newContext({viewport:{width:390,height:844},reducedMotion:'reduce'})
+ await auth.addInitScript(({A,session})=>{localStorage.setItem('sb-127-auth-token',JSON.stringify(session));sessionStorage.setItem('suizamente:cuenta-activa',A);sessionStorage.setItem('suizamente:apertura','1');Object.defineProperty(navigator,'standalone',{get:()=>true})},{A,session:{access_token:testToken(A),refresh_token:'test',expires_at:Math.floor(Date.now()/1000)+86400,user:testUser(A,'Alex')}})
+ page=await auth.newPage();const go=async path=>{await page.goto(preview.origin+'/suizamente'+path);await page.locator('.sv-screen').waitFor();await page.waitForTimeout(150)}
+ await call(db,A,'regalo');await db.exec('UPDATE suizamente_private.suizamente_novedades SET leida=true');await go('');await expect(page.locator('.sv-home-screen')).toBeVisible();await shot('Inicio',{scroll:true})
+ const m=await call(db,A,'crear_partida',{rival:B});await db.exec('UPDATE suizamente_private.suizamente_novedades SET leida=true');await go('/partida/'+m.id);await expect(page.locator('.sv-light-wheel')).toBeVisible();await shot('Partida')
+ await db.query("UPDATE suizamente_private.suizamente_jugadores SET ajustes=ajustes||jsonb_build_object('guia',jsonb_build_object('giro',true,'comodin',true,'partida',$2::text)) WHERE jugador_id=$1",[A,m.id]);await go('/partida/'+m.id);await expect(page.getByRole('note')).toBeVisible();await capture('PartidaPrimera')
+ const bank=JSON.parse(await readFile('server/suizamente/data/preguntas.json','utf8')).preguntas,q=bank.find(q=>q.tipo==='real'&&q.opciones.length===4&&q.pregunta.includes('Grüezi'))
+ await db.query("SELECT suizamente_private.v4_preguntar($1,$2,'idioma','normal',$3)",[m.id,A,JSON.stringify(q)]);await go('/partida/'+m.id);await expect(page.locator('.sv-answer-options button')).toHaveCount(4);await capture('PreguntaPrimera')
+ await db.query("UPDATE suizamente_private.suizamente_jugadores SET ajustes=ajustes-'guia' WHERE jugador_id=$1",[A]);await go('/partida/'+m.id);await shot('PartidaPregunta')
+ await page.getByRole('button',{name:q.opciones[3].t,exact:true}).click();await expect(page.locator('.sv-result-title')).toBeVisible();await shot('PartidaFallo',{scroll:false})
+ if(!baseline){await page.setViewportSize({width:375,height:667});const icons=page.locator('.sv-fact-compact button');await expect(icons).toHaveCount(3);for(const icon of await icons.all()){assert.ok(await icon.getAttribute('aria-label'));assert.equal((await icon.boundingBox()).width,32)}await page.getByRole('button',{name:'Reportar',exact:true}).click();await expect(page.getByRole('dialog',{name:'¿Qué está mal?'})).toBeVisible();await page.getByRole('button',{name:'Cerrar',exact:true}).click()}
+ // A long fact may scroll, but its continue button must remain inside the viewport.
+ await page.locator('.sv-fact>p').evaluate(e=>e.textContent+=' '+e.textContent.repeat(8));await capture('DatoLargo',{scroll:true});await page.setViewportSize({width:375,height:667});assert.ok((await page.locator('.sv-footer').boundingBox()).y<667)
+ const duel=await call(db,A,'crear_partida',{rival:B});await db.query("UPDATE suizamente_private.suizamente_partidas SET fase='sello',barra_a=3,sellos_a=$2,sellos_b=$3 WHERE id=$1",[duel.id,[config.categorias[0].id],[config.categorias[1].id]]);await go('/partida/'+duel.id);await expect(page.locator('.sv-stamp-choice')).toBeVisible();await capture('ElegirSello');await page.locator('.sv-duel-invite').click();await shot('DueloPreparar')
+ await go('/mapa');await expect(page.locator('.sv-map-frame canvas')).toBeVisible();await page.waitForTimeout(300);await shot('Mapa');await page.getByRole('button',{name:'Compartir mi Suiza',exact:true}).click();await expect(page.locator('.sv-image-preview canvas')).toBeVisible();await expect(page.getByRole('button',{name:'📤 Compartir',exact:true})).toBeEnabled();await shot('CompartirImagen');await page.getByRole('button',{name:'Volver al mapa',exact:true}).click()
+ await db.query("SELECT suizamente_private.v3_anotar($1,'vuelta','1',$2)",[A,config.vueltasMapa.premioMonedasPorVuelta]);await db.query('INSERT INTO suizamente_private.suizamente_vueltas VALUES($1,2) ON CONFLICT(jugador_id) DO UPDATE SET vuelta=2',[A]);await go('/mapa/vuelta?vuelta=1');await expect(page.locator('.sv-lap-complete')).toBeVisible();await shot('VueltaCompleta')
+ const win=await call(db,A,'crear_partida',{rival:B});await db.query("SELECT suizamente_private.v2_cerrar($1,$2,'sellos')",[win.id,A]);await go('/partida/'+win.id);await expect(page.getByRole('dialog')).toBeVisible();await shot('MomentoVictoria')
+ if(!baseline){
+  await page.getByRole('button',{name:'Omitir',exact:true}).click();await expect(page.locator('.sv-game-finish')).toBeVisible();await capture('FinPartida')
+  const finished=await call(db,A,'partida',{id:win.id});if(finished.cofre){await go('/cofre/'+finished.cofre.id);if(await page.getByRole('dialog').count())await page.getByRole('button',{name:'Omitir',exact:true}).click();await expect(page.locator('.sv-chest .sv-reward-row')).not.toHaveCount(0);await capture('Cofre')}
+  const pack=await call(db,A,'abrir_sobre',{clave:crypto.randomUUID()});await go('/sobre/'+pack.id);await expect(page.getByRole('dialog')).toBeVisible();await page.getByRole('button',{name:'Omitir',exact:true}).click();await expect(page.getByRole('dialog')).toHaveCount(0);await expect(page.locator('.sv-pack-cards')).toBeVisible();await capture('Sobre')
+  await go('/mapa?canton=LU');await expect(page.locator('.sv-world-focus-info')).toBeVisible();await capture('MapaCanton')
+  await go('/partida/'+duel.id);await page.locator('.sv-duel-invite').click();await page.getByRole('button',{name:'⚔️ ¡Al duelo!',exact:true}).click();await expect(page.locator('.sv-question-card')).toBeVisible();await go('')
+  for(const actor of [A,B])for(let i=0;i<config.duelo.preguntas;i++){await db.exec('DELETE FROM suizamente_private.suizamente_limites');let d=await call(db,actor,'partida',{id:duel.id});if(!d.pregunta)d=await call(db,actor,'pregunta',{id:duel.id,turnoN:d.turnoN});const q=(await db.query('SELECT payload FROM suizamente_private.suizamente_partida_preguntas WHERE partida_id=$1 AND n=$2',[duel.id,d.pregunta.n])).rows[0].payload;await callOriginal(db,actor,'respuesta',{id:duel.id,turnoN:d.turnoN,n:d.pregunta.n,opcion:actor===A?q.correcta:(q.correcta+1)%q.opciones.length})}
+  await go('/partida/'+duel.id+'?continuar=1');await expect(page.locator('.sv-duel-result')).toBeVisible();await capture('DueloResultado')
+  const cost=q=>Math.ceil(q.pregunta.length/32)*24+q.opciones.reduce((n,o)=>n+Math.max(48,Math.ceil(o.t.length/32)*19+18),0)
+  for(const q of bank.filter(q=>q.tipo==='real'&&q.opciones.length===4).sort((a,b)=>cost(b)-cost(a)).slice(0,6)){await db.exec('DELETE FROM suizamente_private.suizamente_limites');const m=await call(db,A,'crear_partida',{rival:B});await db.query("SELECT suizamente_private.v4_preguntar($1,$2,$3,'normal',$4)",[m.id,A,config.categorias.find(c=>c.temas.includes(q.tema)).id,JSON.stringify(q)]);await db.query("UPDATE suizamente_private.suizamente_jugadores SET ajustes=ajustes||jsonb_build_object('guia',jsonb_build_object('comodin',true,'partida',$2::text)) WHERE jugador_id=$1",[A,m.id]);await go('/partida/'+m.id);await expect(page.getByRole('note')).toBeVisible();await capture('PreguntaLarga-'+q.id)}
+  await page.setViewportSize({width:375,height:667})
+  // Layout-only sweep of the reviewed bank in this disposable fixture. No votes.
+  const overflow=await page.evaluate(questions=>{const title=document.querySelector('.sv-question-card h1'),options=[...document.querySelectorAll('.sv-answer-options button>b')],box=document.querySelector('.sv-question-content'),bad=[];for(const q of questions){title.textContent=q.pregunta;q.opciones.forEach((o,i)=>options[i].textContent=o.t);if(box.scrollHeight>box.clientHeight+2)bad.push({id:q.id,overflow:box.scrollHeight-box.clientHeight})}return bad},bank.filter(q=>q.tipo==='real'&&q.opciones.length===4));if(overflow.length)failures.push({bankOverflow:overflow})
+ }
+ if(baseline)await writeFile(out+'/baseline.json',JSON.stringify(metrics,null,2))
+ else{
+  reference=createServer(async(req,res)=>{try{const p=resolve(design,'.'+decodeURIComponent(req.url.split('?')[0]));if(!p.startsWith(design))throw Error('path');res.setHeader('Content-Type',({'.html':'text/html; charset=utf-8','.js':'text/javascript','.json':'application/json','.svg':'image/svg+xml'})[extname(p)]||'application/octet-stream');res.end(await readFile(p))}catch{res.statusCode=404;res.end()}});await new Promise(r=>reference.listen(0,'127.0.0.1',r))
+  const ref=await browser.newPage({viewport:{width:1440,height:900},reducedMotion:'reduce'});await ref.goto('http://127.0.0.1:'+reference.address().port+'/disenos/pantallas.html');await ref.evaluate(()=>document.fonts.ready)
+  for(const [id] of pairs)await ref.locator('#p-'+id+' .marco').screenshot({path:out+'/ref-'+id+'.png'})
+  await writeFile(out+'/comparacion.html','<!doctype html><meta charset="utf-8"><style>body{font:16px system-ui;background:#eef1f5}section{display:flex;gap:16px;margin-bottom:30px}figure{margin:0}img{width:375px}</style>'+pairs.map(([id,name])=>'<h2>'+name+'</h2><section><figure><figcaption>Referencia</figcaption><img src="ref-'+id+'.png"></figure><figure><figcaption>App</figcaption><img src="'+name+'-375.png"></figure></section>').join(''))
+  const sheet=await browser.newPage({viewport:{width:810,height:900}});await sheet.goto('file:///'+resolve(out+'/comparacion.html').replaceAll('\\','/'));await sheet.screenshot({path:out+'/comparacion.png',fullPage:true})
+ }
+ await writeFile(out+'/resultado.json',JSON.stringify({engine,baseline,failures},null,2));console.log(JSON.stringify({engine,baseline,failures},null,2));if(failures.length&&!baseline)process.exitCode=1
+}catch(e){console.error(e.stack);await page?.screenshot({path:out+'/fallo.png',fullPage:true}).catch(()=>{});process.exitCode=1}finally{await browser?.close();await preview?.close();await new Promise(r=>reference?reference.close(r):r())}
