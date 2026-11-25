@@ -3,10 +3,9 @@
 Estas decisiones actualizan la especificación de Suizamente por petición expresa.
 No cambian las reglas, los precios ni los premios del juego.
 
-- **Acceso explícito:** cada arranque presenta Crear cuenta gratis, Ya tengo cuenta,
+- **Acceso explícito:** la primera entrada de la pestaña presenta Crear cuenta gratis, Ya tengo cuenta,
   Entrar con Google y Entrar con cuenta de Latido, aunque haya una sesión guardada.
-  No se puede jugar sin cuenta. La selección permanece durante la navegación de esa
-  visita. El perfil y su botón «¡A jugar!» aparecen después de identificarse.
+  No se puede jugar sin cuenta. La selección permanece en esa pestaña, también al recargar. El perfil y su botón «¡A jugar!» aparecen después de identificarse.
 - **Identidad:** Latido aporta el nombre y la foto inicial, mediante lectura del
   perfil y el puente SSO existente. Un apodo o foto ya elegidos en Suizamente se
   conservan. Los cambios se guardan solo en el juego; no editan el perfil de Latido.
@@ -224,3 +223,30 @@ No cambian las reglas, los precios ni los premios del juego.
   `output/compartir/<navegador>/comparacion.html`. La escucha manual en un lector
   de pantalla y la hoja nativa en dispositivos físicos siguen siendo comprobación
   manual; el árbol accesible y la llamada con archivo están cubiertos por pruebas.
+
+## Navegación, recarga y Atrás (25 de noviembre de 2026)
+
+- Recargar conserva la URL, sus parámetros y la cuenta elegida en la misma pestaña. No vuelve al acceso, al formulario de perfil ni a Inicio. Una partida vuelve a cargar su estado del servidor en su misma URL.
+- La elección explícita de cuenta se guarda en `sessionStorage`, sin tokens nuevos. Solo vale si coincide con la sesión que valida Supabase. Cerrar sesión, perderla o cambiar de identidad elimina la elección anterior. Una pestaña nueva sin elección sigue mostrando el acceso.
+- Las flechas «Volver» recorren el historial real. El destino declarado en la pantalla queda como alternativa si no hay historial interno.
+- Un enlace directo tiene Inicio debajo de él. Recargar no añade más entradas.
+- Los pasos de bienvenida se reflejan en el parámetro `paso` de la URL: recargar conserva el paso y Atrás vuelve al paso anterior.
+- Al terminar el acceso y guardar el perfil se retiran del recorrido de Atrás los pasos de acceso/perfil. El destino solicitado queda encima de Inicio.
+- Ese ajuste interno no monta Inicio cuando el destino es otra pantalla, por lo que no activa su regalo diario ni sus momentos de llegada.
+- Al tocar Inicio se vuelve a la raíz del historial interno. Atrás desde ahí permite salir mediante la navegación nativa; no recorre las pestañas anteriores ni vuelve al acceso. No se captura ese Atrás para mantener la app abierta.
+- El cierre de la ventana y el retorno al sistema dependen del navegador y del modo instalado. La web no intenta forzar el cierre de una pestaña normal: [restricciones de Window.close](https://developer.mozilla.org/en-US/docs/Web/API/Window/close).
+
+Implementación: `game/entry.jsx`, `game/navigation.jsx`, `game/main.jsx`, `Account.jsx`, `Shared.jsx`, `Onboarding.jsx` y la limpieza de URL de `game/src/pages/Auth.jsx`. No cambia API, datos de juego ni migraciones.
+
+Pruebas desde esta carpeta:
+
+```sh
+npm run test:navigation
+npm run test:entry
+npm run build
+node scripts/test-suizamente-delivery.mjs
+```
+
+La prueba de navegación usa Chromium/WebKit con PostgreSQL temporal: recarga repetida, URL/parámetros/historial intactos, partida activa, flecha y Atrás del navegador, salida a un documento externo desde Inicio, enlaces directos, cuenta distinta, pestaña nueva y cierre de sesión. No escribe en producción. Resultados en `output/navegacion/`.
+
+La salida del contenedor instalado debe comprobarse también con el botón o gesto de Atrás de Android en un dispositivo físico; una pestaña de escritorio no reproduce ese contenedor.

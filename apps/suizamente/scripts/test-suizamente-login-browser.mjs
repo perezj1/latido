@@ -38,7 +38,7 @@ try{
  page=await signed.newPage();page.on('pageerror',e=>errors.push(e.message))
  await call(preview.db,A,'guardar_jugador',{apodo:'Apodo de veinte abc',color:'menta',pais:'ES',canton:'ZH',anos_suiza:'1a3',ajustes:{}})
  for(const width of [320,390,1440]){
-  await page.setViewportSize({width,height:844});await page.goto(preview.origin+'/suizamente/nueva');await page.getByRole('button',{name:'Entrar con cuenta de Latido',exact:true}).click();await page.getByRole('button',{name:/A jugar/}).click();await page.waitForLoadState('networkidle')
+  await page.setViewportSize({width,height:844});await page.goto(preview.origin+'/suizamente/nueva');if(width===320){await page.getByRole('button',{name:'Entrar con cuenta de Latido',exact:true}).click();await page.getByRole('button',{name:/A jugar/}).click()}await page.waitForLoadState('networkidle')
   const filter=page.getByRole('combobox',{name:'Filtrar partidas'})
   for(const value of ['todas','turno','rival']){
    await filter.selectOption(value)

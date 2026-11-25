@@ -50,7 +50,7 @@ try{
  await navigate('/suizamente/partida/'+victory.id);await expect(page.getByRole('link',{name:'Atacar ahora',exact:true})).toBeVisible();await expect(page.getByRole('button',{name:'Atacar después',exact:true})).toBeVisible()
  await page.getByRole('button',{name:'Atacar después',exact:true}).click();await expect(page).toHaveURL(/terminadas=1/);await expect(page.locator('.sv-match-history')).toHaveCount(1)
  assert.equal((await preview.db.query('SELECT count(*)::integer n FROM suizamente_private.suizamente_asaltos WHERE partida_id=$1',[victory.id])).rows[0].n,0,'Deferring does not spend the attack')
- await page.screenshot({path:out+'/atacar-despues-390.png',fullPage:true});await page.reload();await page.getByRole('button',{name:'Entrar con cuenta de Latido',exact:true}).click();await page.getByRole('button',{name:/A jugar/}).click();await expect(page.locator('.sv-match-history')).toHaveCount(1)
+ await page.screenshot({path:out+'/atacar-despues-390.png',fullPage:true});await page.reload();await expect(page.locator('.sv-match-history')).toHaveCount(1)
  await page.locator('.sv-match-history').getByRole('link',{name:'Atacar',exact:true}).click();await expect(page.getByRole('button',{name:'Atacar Lucerna, nivel 1',exact:true})).toBeVisible()
  await page.getByRole('button',{name:'Atacar Lucerna, nivel 1',exact:true}).click();await expect(page.locator('.sv-question-card')).toBeVisible()
  assert.equal((await preview.db.query('SELECT count(*)::integer n FROM suizamente_private.suizamente_asaltos WHERE partida_id=$1',[victory.id])).rows[0].n,1)

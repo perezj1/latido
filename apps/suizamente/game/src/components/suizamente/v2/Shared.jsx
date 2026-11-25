@@ -1,6 +1,6 @@
 import {useEffect,useRef,useState} from 'react'
 import {createPortal} from 'react-dom'
-import {Link} from 'react-router-dom'
+import {Link,useNavigate} from 'react-router-dom'
 import {useSv} from './Context'
 export {LatidoBackdrop} from './LatidoBackdrop'
 export {MatchWheel} from './MatchWheel'
@@ -16,7 +16,8 @@ export function Avatar({id,name='',color='menta',level,marco,photo}){
   return <span className={'sv-avatar '+color} style={frame?{outline:'3px solid '+frame.colores.at(-1),outlineOffset:3}:undefined} aria-label={level?'Nivel '+level:undefined}>{safe&&failed!==image?<img src={image} alt="" referrerPolicy="no-referrer" onError={()=>setFailed(image)}/>:name==='🔍'?name:name.slice(0,1).toUpperCase()}{level&&<small>{level}</small>}</span>
 }
 export function Header({title,subtitle,back='/suizamente',right,close=false}){
-  return <header className="sv-header"><Link className="sv-icon-button" to={back} aria-label="Volver">{close?'×':'←'}</Link>{subtitle?<div className="sv-header-heading"><h1>{title}</h1><p>{subtitle}</p></div>:<h1>{title}</h1>}{right||<span className="sv-icon-space"/>}</header>
+  const navigate=useNavigate()
+  return <header className="sv-header"><button type="button" className="sv-icon-button" onClick={()=>window.history.state?.idx>0?navigate(-1):navigate(back,{replace:true})} aria-label="Volver">{close?'×':'←'}</button>{subtitle?<div className="sv-header-heading"><h1>{title}</h1><p>{subtitle}</p></div>:<h1>{title}</h1>}{right||<span className="sv-icon-space"/>}</header>
 }
 export function Card({children,className='',...props}){return <div className={'sv-card '+className} {...props}>{children}</div>}
 export function Chip({children}){return <span className="sv-chip">{children}</span>}

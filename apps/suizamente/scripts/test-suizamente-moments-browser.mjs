@@ -30,7 +30,7 @@ try{
     await ctx.addInitScript(session=>{localStorage.setItem('sb-127-auth-token',JSON.stringify(session));sessionStorage.setItem('suizamente:apertura','1');Object.defineProperty(navigator,'standalone',{get:()=>true})},{access_token:testToken(actor),refresh_token:'test',expires_at:Math.floor(Date.now()/1000)+86400,user:testUser(actor,actor===A?'Alex':actor===B?'Lu':'Caro')})
     return ctx
   }
-  async function choose(p){await p.getByRole('button',{name:'Entrar con cuenta de Latido',exact:true}).click();await p.getByRole('button',{name:/A jugar/}).click()}
+  async function choose(p){if(await p.evaluate(()=>!!sessionStorage.getItem('suizamente:cuenta-activa')))return;await p.getByRole('button',{name:'Entrar con cuenta de Latido',exact:true}).click();await p.getByRole('button',{name:/A jugar/}).click()}
   async function enter(p,path){await p.goto(preview.origin+path);await choose(p)}
   async function navigate(path){await page.evaluate(path=>{history.pushState({},'',path);window.dispatchEvent(new PopStateEvent('popstate'))},path)}
   const ctx=await context();page=await ctx.newPage();page.on('pageerror',e=>errors.push(e.message))

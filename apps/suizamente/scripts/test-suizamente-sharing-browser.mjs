@@ -22,7 +22,7 @@ try{
    if(mobile){window.shared=[];Object.defineProperty(navigator,'canShare',{configurable:true,value:()=>true});Object.defineProperty(navigator,'share',{configurable:true,value:async data=>{window.shared.push({text:data.text,files:data.files.map(f=>({name:f.name,type:f.type,size:f.size}))})}})}
   },{session:{access_token:testToken(A),refresh_token:'test',expires_at:Math.floor(Date.now()/1000)+86400,user:testUser(A,'Alex')},fallback,mobile});return ctx
  }
- async function choose(p){await p.getByRole('button',{name:'Entrar con cuenta de Latido',exact:true}).click();await p.getByRole('button',{name:/A jugar/}).click()}
+ async function choose(p){if(await p.evaluate(()=>!!sessionStorage.getItem('suizamente:cuenta-activa')))return;await p.getByRole('button',{name:'Entrar con cuenta de Latido',exact:true}).click();await p.getByRole('button',{name:/A jugar/}).click()}
  async function enter(p,path){await p.goto(preview.origin+path);await choose(p)}
  async function navigate(path){await page.evaluate(path=>{history.pushState({},'',path);window.dispatchEvent(new PopStateEvent('popstate'))},path)}
  const ctx=await context({mobile:true});page=await ctx.newPage();page.on('pageerror',e=>errors.push(e.message));const mutations=[]

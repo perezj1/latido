@@ -9,6 +9,7 @@ import '@fontsource/poppins/latin-700.css'
 import '@fontsource/poppins/latin-800.css'
 import {AuthProvider,useAuth} from './src/hooks/useAuth'
 import {EntryProvider,useEntry,rememberEntryDestination} from './entry'
+import {GameNavigationProvider,initializeGameHistory} from './navigation'
 import './src/styles/tokens.css'
 import './standalone.css'
 
@@ -27,13 +28,14 @@ function Callback(){
 function Return(){const [params]=useSearchParams();return <Navigate replace to={nextPath('?next='+encodeURIComponent(params.get('next')||'/suizamente'))}/>}
 function ExternalLegal({path}){React.useEffect(()=>location.replace('https://www.latido.ch'+path),[path]);return <Loading/>}
 function PushSync(){const {authUser}=useAuth();React.useEffect(()=>{if(authUser)import('./src/lib/pushNotifications').then(p=>p.syncExistingPushRegistration({user:authUser,settings:p.loadPushSettings(),userCanton:authUser.user_metadata?.canton})).catch(()=>{})},[authUser?.id]);return null}
-function App(){return <AuthProvider><EntryProvider><BrowserRouter><PushSync/><Suspense fallback={<Loading/>}><Routes>
+function App(){return <AuthProvider><EntryProvider><BrowserRouter><GameNavigationProvider><PushSync/><Suspense fallback={<Loading/>}><Routes>
  <Route path="/suizamente/*" element={<Game/>}/>
  <Route path="/auth" element={<Account/>}/><Route path="/cuenta" element={<Account/>}/>
  <Route path="/auth/callback" element={<Callback/>}/><Route path="/auth/onboarding" element={<Return/>}/>
  <Route path="/reset-password" element={<ResetPassword/>}/><Route path="/auth/restablecer" element={<ResetPassword/>}/>
  <Route path="/terminos" element={<ExternalLegal path="/terminos"/>}/><Route path="/privacidad" element={<ExternalLegal path="/privacidad"/>}/>
  <Route path="*" element={<Navigate replace to="/suizamente"/>}/>
- </Routes></Suspense><Toaster position="top-center" containerStyle={{top:'calc(12px + env(safe-area-inset-top, 0px))',zIndex:10000}}/></BrowserRouter></EntryProvider></AuthProvider>}
+ </Routes></Suspense><Toaster position="top-center" containerStyle={{top:'calc(12px + env(safe-area-inset-top, 0px))',zIndex:10000}}/></GameNavigationProvider></BrowserRouter></EntryProvider></AuthProvider>}
+initializeGameHistory()
 createRoot(document.getElementById('root')).render(<App/>)
 if('serviceWorker'in navigator&&import.meta.env.PROD)window.addEventListener('load',()=>navigator.serviceWorker.register('/sw.js').then(r=>r.update()).catch(()=>{}))

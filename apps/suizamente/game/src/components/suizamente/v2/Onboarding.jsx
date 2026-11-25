@@ -29,7 +29,10 @@ function Lucerne(){
 export function Onboarding(){
  const {config,player,savePlayer,reduced}=useSv(),{show}=useMoment(),navigate=useNavigate(),location=useLocation()
  const replay=new URLSearchParams(location.search).has('repetir')||!!player?.ajustes?.onboarding
- const [step,setStep]=useState(0),[data,setData]=useState(null),[error,setError]=useState(''),[busy,setBusy]=useState(false),[retry,setRetry]=useState(0)
+ const pageNumber=Number(new URLSearchParams(location.search).get('paso'))
+ const step=Number.isInteger(pageNumber)&&pageNumber>=1&&pageNumber<=5?pageNumber-1:0
+ const [data,setData]=useState(null),[error,setError]=useState(''),[busy,setBusy]=useState(false),[retry,setRetry]=useState(0)
+ function setStep(value){const next=typeof value==='function'?value(step):value,search=new URLSearchParams(location.search);search.set('paso',next+1);navigate({pathname:location.pathname,search:search.toString()})}
  const title=useRef(null),touch=useRef(null),pending=useRef(false)
  useEffect(()=>{let active=true;szApi('primera-vez',{fresh:true}).then(d=>{if(active)setData(d)}).catch(e=>{if(active)setError(e.message)});return()=>{active=false}},[retry])
  useEffect(()=>{title.current?.focus({preventScroll:true});title.current?.closest('.sv-onb-body')?.scrollTo(0,0);window.scrollTo(0,0)},[step,data?.resultado?.opcion])

@@ -3,6 +3,7 @@ import {Link,useLocation,useNavigate} from 'react-router-dom'
 import {useAuth} from '../../../hooks/useAuth'
 import {supabase} from '../../../lib/supabase'
 import {useEntry,rememberEntryDestination} from '../../../../entry'
+import {useGameNavigation} from '../../../../navigation'
 import {connectLatidoAccount} from '../../../../latidoSso'
 import {prepareProfilePhoto,uploadProfilePhoto} from '../../../lib/suizamentePhoto'
 import {useSv} from './Context'
@@ -40,7 +41,7 @@ export function HowTo(){
   return <section className="sv-screen"><Header title="Así se juega" back={player?'/suizamente/menu':'/suizamente/bienvenida'}/><div className="sv-content sv-steps">{steps.map(([emoji,title,text],i)=><div key={title}><span className="sv-step-icon">{emoji}<small>{i+1}</small></span><div><h2>{title}</h2><p>{text}</p></div></div>)}<Stamps categories={config.categorias}/></div><footer className="sv-footer"><Button to={player?'/suizamente/nueva':'/suizamente/entrar'}>▶ ¡A jugar!</Button></footer></section>
 }
 export function ProfileForm({editing=false}){
-  const {player,user,avatarUrl,latidoName,savePlayer,settings}=useSv(),navigate=useNavigate(),fileInput=useRef(null)
+  const {player,user,avatarUrl,latidoName,savePlayer,settings}=useSv(),navigate=useNavigate(),{enter}=useGameNavigation(),fileInput=useRef(null)
   const [form,setForm]=useState(()=>({apodo:player?.apodo||(latidoName||user?.user_metadata?.name||user?.user_metadata?.full_name||'').slice(0,20),color:player?.color||'menta',pais:player?.pais||'ES',canton:player?.canton||user?.user_metadata?.canton||'ZH',anos_suiza:player?.anos_suiza||'menos1',en_ranking:player?.en_ranking??true}))
   const [busy,setBusy]=useState(false),[error,setError]=useState('')
   const [photo,setPhoto]=useState(null),[photoBusy,setPhotoBusy]=useState(false)
@@ -59,7 +60,8 @@ export function ProfileForm({editing=false}){
       savePlayer(result)
       const destination=sessionStorage.getItem('suizamente:despues-perfil')||'/suizamente'
       sessionStorage.removeItem('suizamente:despues-perfil')
-      navigate(editing?'/suizamente/ajustes':destination,{replace:true})
+      if(editing)navigate('/suizamente/ajustes',{replace:true})
+      else enter(destination)
       if(!editing)requestAnimationFrame(()=>window.dispatchEvent(new Event('suizamente:instalar-tras-perfil')))
     }catch(e){setError(e.message)}finally{setBusy(false)}
   }

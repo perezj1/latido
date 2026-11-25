@@ -44,7 +44,7 @@ try{
  assert.equal(player.apodo,'Alex de Latido');assert.equal(player.ajustes.apariencia,'clara');assert.ok(player.ajustes.foto_url.includes('/suizamente-avatars/'+A+'/'))
  assert.ok(uploaded.url().includes('/suizamente-avatars/'+A+'/'));assert.ok(uploaded.postDataBuffer().includes(Buffer.from('Content-Type: image/jpeg')));assert.ok(uploaded.postDataBuffer().length<200000)
  assert.equal(latidoWrites,0,'Profile/photo editing never writes to Latido profiles')
- phase='settings';await page.goto(preview.origin+'/suizamente/ajustes');await expect(page.locator('.sv-login-screen')).toBeVisible();await page.getByRole('button',{name:'Entrar con cuenta de Latido',exact:true}).click();await page.getByRole('button',{name:/A jugar/}).click()
+ phase='settings';await page.goto(preview.origin+'/suizamente/ajustes');await expect(page.locator('.sv-login-screen')).toHaveCount(0)
  await expect(page.getByRole('heading',{name:'Ajustes',exact:true})).toBeVisible();await expect(page.getByRole('combobox',{name:'Apariencia'})).toHaveCount(0);assert.equal(await page.locator('html').getAttribute('data-suizamente-theme'),'clara')
  await page.waitForLoadState('networkidle');phase='closing first context';await ctx.close();phase='SSO'
  // No local session: a deliberate Latido click opens the trusted SSO bridge.
@@ -53,7 +53,7 @@ try{
  await sso.route('**/mock-supabase/functions/v1/suizamente-social/sso',r=>r.fulfill({json:{userId:A,tokenHash:'qa-otp'}}))
  await sso.route('**/mock-supabase/auth/v1/verify',r=>r.fulfill({json:{...session,expires_in:86400}}))
  page=await sso.newPage();page.on('pageerror',e=>{errors.push(e.message);console.error('Browser error during '+phase+': '+e.stack)});await page.goto(preview.origin+'/suizamente/entrar');await page.getByRole('button',{name:'Entrar con cuenta de Latido',exact:true}).click();await expect(page.getByRole('heading',{name:'Tu perfil',exact:true})).toBeVisible()
- assert.deepEqual(errors,[]);await writeFile(out+'/resultado.json',JSON.stringify({engine,checks:['four explicit choices with a cached session','forced light with stored/system dark','email/create remain selectable','Latido trusted popup and distinct OTP session','name/avatar from Latido','camera picker and invalid file','JPEG resize and own bucket persistence','A jugar enters game','fresh visit presents menu','no appearance selector'],errors},null,2))
+ assert.deepEqual(errors,[]);await writeFile(out+'/resultado.json',JSON.stringify({engine,checks:['four explicit choices with a cached session','forced light with stored/system dark','email/create remain selectable','Latido trusted popup and distinct OTP session','name/avatar from Latido','camera picker and invalid file','JPEG resize and own bucket persistence','A jugar enters game','same tab keeps its chosen account','no appearance selector'],errors},null,2))
  console.log('Entry/profile '+engine+': cached and SSO identities, four explicit choices, light-only, camera/upload/save and 320/390/1440 passed.')
 }catch(e){await page?.screenshot({path:out+'/fallo.png',fullPage:true}).catch(()=>{});console.error(e.stack);process.exitCode=1}
 finally{await browser?.close();await preview?.close()}

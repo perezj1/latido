@@ -2,6 +2,7 @@ import {lazy,Suspense,useCallback,useEffect,useRef,useState} from 'react'
 import {Link,Navigate,Route,Routes,useLocation} from 'react-router-dom'
 import {useAuth} from '../../../hooks/useAuth'
 import {useEntry} from '../../../../entry'
+import {useGameNavigation} from '../../../../navigation'
 import {szApi,szSettings,SV_STATE,SV_AVATARS} from '../../../lib/suizamenteV2'
 import {SuizamenteContext} from './Context'
 import {Brand,Button,Logo,Navigation} from './Shared'
@@ -69,7 +70,7 @@ function ProfileGate({children,player,ready}){
 function Loading(){return <section className="sv-screen"><div className="sv-content"><div className="sv-skeleton" role="status" aria-label="Cargando Suizamente"/><div className="sv-skeleton short"/></div></section>}
 function HomeEntry({children}){const {search}=useLocation(),id=new URLSearchParams(search).get('p');return id?<Navigate to={'/suizamente/pregunta/'+encodeURIComponent(id)} replace/>:children}
 export default function SuizamenteApp(){
-  const {authUser:user,loading:authLoading,signOut,avatarUrl,profileName,profileMetaLoaded}=useAuth(),location=useLocation(),{account}=useEntry()
+  const {authUser:user,loading:authLoading,signOut,avatarUrl,profileName,profileMetaLoaded}=useAuth(),location=useLocation(),{account}=useEntry(),{resetting}=useGameNavigation()
   const entered=!!user&&account===user.id
   const playing=/^\/suizamente\/(partida|asalto|ataque|pregunta|pregunta-del-dia)(\/|$)/.test(location.pathname)
   const [config,setConfig]=useState(null),[player,setPlayer]=useState(null),[ready,setReady]=useState(false),[error,setError]=useState('')
@@ -195,12 +196,12 @@ export default function SuizamenteApp(){
   const reduced=!!settings.menosAnimaciones||systemReduced
   const bypassOnboarding=/^\/suizamente\/(invitar|pregunta|pregunta-del-dia|entrar|bienvenida)(\/|$)/.test(location.pathname)||new URLSearchParams(location.search).has('p')
   const onboarding=location.pathname==='/suizamente/primera-vez'||!bypassOnboarding&&!player&&(entered?ready&&!localStorage.getItem('suizamente:bienvenida-pendiente'):!user&&!localStorage.getItem('suizamente:onboarding'))
-  const admin=location.pathname.startsWith('/suizamente/admin'),showNavigation=!onboarding&&entered&&!!player&&ready&&!questionVisible&&!playing
+  const admin=location.pathname.startsWith('/suizamente/admin'),showNavigation=!resetting&&!onboarding&&entered&&!!player&&ready&&!questionVisible&&!playing
   const activeTab=['mapa','album','tienda','amigos'].find(tab=>location.pathname.startsWith('/suizamente/'+tab))||'inicio'
-  return <SuizamenteContext.Provider value={{player,map,config,user,avatarUrl,avatars,latidoName:profileName,capabilities,refreshConfig,settings,reduced,savePlayer,updateSettings,signOut,setQuestionVisible}}><MomentProvider reduced={reduced} owner={player?.jugador_id}><MomentArrival enabled={!onboarding&&entered&&ready&&!!config&&!opening}/><div className={'sv-root'+(admin?' sv-admin-root':'')+(showNavigation?' sv-has-nav':'')}>
+  return <SuizamenteContext.Provider value={{player,map,config,user,avatarUrl,avatars,latidoName:profileName,capabilities,refreshConfig,settings,reduced,savePlayer,updateSettings,signOut,setQuestionVisible}}><MomentProvider reduced={reduced} owner={player?.jugador_id}><MomentArrival enabled={!resetting&&!onboarding&&entered&&ready&&!!config&&!opening}/><div className={'sv-root'+(admin?' sv-admin-root':'')+(showNavigation?' sv-has-nav':'')}>
     <Feedback/><InstallMetadata/>
     <InstallBanner hidden={onboarding||playing||location.pathname==='/suizamente/perfil/nuevo'}/>
-    {authLoading?<Loading/>:onboarding&&config?<Suspense fallback={<Loading/>}><Onboarding/></Suspense>:!entered?<Login/>:error?<section className="sv-screen"><div className="sv-welcome"><Logo size={90}/><h1>No se pudo abrir Suizamente</h1><p role="alert">{error}</p><Button onClick={()=>setRetry(n=>n+1)}>Reintentar</Button></div></section>:!config||!ready||!profileMetaLoaded?<Loading/>:
+    {authLoading||resetting?<Loading/>:onboarding&&config?<Suspense fallback={<Loading/>}><Onboarding/></Suspense>:!entered?<Login/>:error?<section className="sv-screen"><div className="sv-welcome"><Logo size={90}/><h1>No se pudo abrir Suizamente</h1><p role="alert">{error}</p><Button onClick={()=>setRetry(n=>n+1)}>Reintentar</Button></div></section>:!config||!ready||!profileMetaLoaded?<Loading/>:
     <Suspense fallback={<Loading/>}><Routes>
       <Route path="admin/*" element={<AdminPanel/>}/>
       <Route path="primera-vez" element={<Onboarding/>}/>

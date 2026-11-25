@@ -622,7 +622,7 @@ export default function Auth() {
     toast.success('Contraseña creada. Ya puedes entrar también desde la PWA.')
     const cleanUrl = new URL(window.location.href)
     cleanUrl.searchParams.delete('password')
-    window.history.replaceState({}, '', `${cleanUrl.pathname}${cleanUrl.search}`)
+    window.history.replaceState(window.history.state, '', `${cleanUrl.pathname}${cleanUrl.search}`)
   }, [searchParams])
 
   useEffect(() => {
@@ -641,7 +641,7 @@ export default function Auth() {
     const errorKeys = ['error', 'error_code', 'error_description']
     errorKeys.forEach(key => cleanUrl.searchParams.delete(key))
     cleanUrl.hash = ''
-    window.history.replaceState({}, '', `${cleanUrl.pathname}${cleanUrl.search}`)
+    window.history.replaceState(window.history.state, '', `${cleanUrl.pathname}${cleanUrl.search}`)
   }, [])
   const clearFieldError = key => setErrors(prev => {
     if (!prev[key]) return prev
