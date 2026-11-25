@@ -36,7 +36,7 @@ try{
  // Reload/direct links preserve their query string and add no entries repeatedly.
  await page.goto(preview.origin+'/suizamente/mapa?canton=LU');await expect(nav()).toBeVisible();await expect(page.locator('.sv-login-screen')).toHaveCount(0)
  const direct=await page.evaluate(()=>({url:location.href,index:history.state.idx,length:history.length}));await page.waitForLoadState('networkidle');await page.reload();await expect(nav()).toBeVisible();assert.deepEqual(await page.evaluate(()=>({url:location.href,index:history.state.idx,length:history.length})),direct)
- await page.goBack();await expect(page.locator('.sv-home-screen')).toBeVisible();checks.push('authenticated direct map URL/query survives refresh; Back returns to seeded Home')
+ await page.goBack();await expect(page.locator('.sv-home-screen')).toBeVisible();await expect(page.locator('.sv-home-access-chip').filter({hasText:'…'})).toHaveCount(0);checks.push('authenticated direct map URL/query survives refresh; Back returns to seeded Home')
  await preview.db.exec('DELETE FROM suizamente_private.suizamente_limites')
  const match=await call(preview.db,A,'crear_partida',{rival:B});await page.waitForLoadState('networkidle');await page.goto(preview.origin+'/suizamente/partida/'+match.id);await expect(page.locator('.sv-game-board')).toBeVisible();await page.waitForLoadState('networkidle');await page.reload();await expect(page.locator('.sv-game-board')).toBeVisible();assert.ok(page.url().endsWith('/partida/'+match.id));await expect(page.locator('.sv-login-screen,.sv-profile-screen')).toHaveCount(0);checks.push('reload stays in the same live match')
  // A marker for another identity cannot authorize access.

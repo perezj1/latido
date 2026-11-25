@@ -10,7 +10,7 @@ import {szApi,szKey} from '../../../lib/suizamenteV2'
 import {useData} from './useData'
 
 const backPath=search=>{const path=new URLSearchParams(search).get('volver');return /^\/suizamente(?:\/|$)/.test(path||'')?path:'/suizamente/album'}
-function useOpenPack(back){
+export function useOpenPack(back){
   const navigate=useNavigate(),pending=useRef(false),[busy,setBusy]=useState(false),[error,setError]=useState('')
   async function open(){
     if(pending.current)return

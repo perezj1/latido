@@ -7,7 +7,7 @@ import {szApi,szSettings,SV_STATE,SV_AVATARS} from '../../../lib/suizamenteV2'
 import {SuizamenteContext} from './Context'
 import {Brand,Button,Logo,Navigation} from './Shared'
 import {HowTo,Login,Menu,ProfileForm,Settings,Welcome} from './Account'
-import {Home,NewGame} from './Lobby'
+import {NewGame} from './Lobby'
 import {MapHelp} from './Map'
 import './suizamente.css'
 import './community.css'
@@ -30,6 +30,7 @@ import {loadScreen,warmNavigationCode} from './preload'
 // Only load a screen when its route is opened. Navigation remains mounted.
 const screen=(group,name)=>lazy(()=>loadScreen(group).then(module=>({default:module[name]})))
 const Onboarding=screen('Onboarding','Onboarding')
+const Home=screen('Home','Home')
 const Game=screen('Game','Game')
 const Profile=screen('Economy','Profile')
 const Achievements=screen('Economy','Achievements')

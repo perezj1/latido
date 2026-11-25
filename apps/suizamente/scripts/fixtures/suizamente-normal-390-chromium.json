@@ -191,18 +191,18 @@
       "class": "",
       "rect": [
         16,
-        18,
-        44,
-        44
+        14,
+        46,
+        46
       ]
     },
     {
       "tag": "A",
       "class": "sv-chip sv-coins",
       "rect": [
-        212.3,
-        18,
-        61.7,
+        208.5,
+        15,
+        65.5,
         44
       ]
     },
@@ -211,7 +211,7 @@
       "class": "sv-icon-button sv-notification-bell",
       "rect": [
         280,
-        18,
+        15,
         44,
         44
       ]
@@ -221,109 +221,99 @@
       "class": "sv-icon-button",
       "rect": [
         330,
-        18,
+        15,
         44,
         44
       ]
     },
     {
       "tag": "A",
-      "class": "sv-home-map-heading",
+      "class": "sv-home-map-target",
       "rect": [
-        28,
-        102,
-        334,
-        44
+        88,
+        212,
+        214,
+        312.1
       ]
     },
     {
-      "tag": "DIV",
-      "class": "sv-world-map home",
+      "tag": "A",
+      "class": "sv-home-region",
       "rect": [
-        28,
-        154,
-        334,
-        240
+        88.2,
+        111.1,
+        213.6,
+        34
+      ]
+    },
+    {
+      "tag": "A",
+      "class": "sv-home-access",
+      "rect": [
+        16,
+        88,
+        66,
+        80
+      ]
+    },
+    {
+      "tag": "A",
+      "class": "sv-home-access",
+      "rect": [
+        16,
+        176,
+        66,
+        80
+      ]
+    },
+    {
+      "tag": "A",
+      "class": "sv-home-access",
+      "rect": [
+        16,
+        263.9,
+        66,
+        80
+      ]
+    },
+    {
+      "tag": "A",
+      "class": "sv-home-access",
+      "rect": [
+        308,
+        88,
+        66,
+        80
       ]
     },
     {
       "tag": "BUTTON",
-      "class": "sv-map-mode",
+      "class": "sv-home-access",
       "rect": [
-        272.5,
-        341.2,
-        83.5,
-        46.8
+        308,
+        176,
+        66,
+        80
       ]
     },
     {
       "tag": "A",
-      "class": "sv-home-map-open",
+      "class": "sv-home-create",
       "rect": [
-        28,
-        402,
-        334,
-        44
+        95.3,
+        530.1,
+        199.5,
+        50
       ]
     },
     {
       "tag": "A",
-      "class": "sv-button ",
+      "class": "sv-home-wait",
       "rect": [
-        16,
-        472,
-        358,
-        58
-      ]
-    },
-    {
-      "tag": "A",
-      "class": "",
-      "rect": [
-        162,
-        727.5,
-        66.1,
-        44
-      ]
-    },
-    {
-      "tag": "BUTTON",
-      "class": "sv-text-button",
-      "rect": [
-        16,
-        803.5,
-        358,
-        47.2
-      ]
-    },
-    {
-      "tag": "A",
-      "class": "sv-missions-entry",
-      "rect": [
-        16,
-        864.7,
-        174,
-        68.1
-      ]
-    },
-    {
-      "tag": "A",
-      "class": "sv-daily-home",
-      "rect": [
-        200,
-        864.7,
-        174,
-        68.1
-      ]
-    },
-    {
-      "tag": "A",
-      "class": "sv-league-entry",
-      "rect": [
-        16,
-        946.8,
-        358,
-        64.6
+        12,
+        678,
+        366,
+        54
       ]
     }
   ],

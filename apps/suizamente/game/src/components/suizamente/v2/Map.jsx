@@ -2,7 +2,6 @@ import {useEffect,useLayoutEffect,useRef,useState} from 'react'
 import {Link} from 'react-router-dom'
 import {useSv} from './Context'
 import {Button,Card,Header} from './Shared'
-import {WorldMap} from './WorldMap'
 
 let mapPaths
 function paths(){
@@ -37,11 +36,6 @@ export function MapDrawing({levels={},region=0,only,label='Mapa de los cantones 
 }
 export function ChestLinks({chests=[],back='/suizamente/mapa'}){
   return chests.length>0&&<div className="sv-pending-chests">{chests.map(c=><Link key={c.id} to={'/suizamente/cofre/'+c.id+'?volver='+encodeURIComponent(back)}>🎁 <b>{c.titulo}</b><span>Abrir ›</span></Link>)}</div>
-}
-export function HomeMap(){
-  const {map,config}=useSv(),r=config.mapa.regiones[Math.min(map?.region||0,config.mapa.regiones.length-1)]
-  const progress=r.cantones.reduce((n,k)=>n+(map?.niveles[k.id]||0),0),total=r.cantones.length*config.mapa.nivelesPorCanton
-  return <div className="sv-home-map"><Link className="sv-home-map-heading" to="/suizamente/mapa" aria-label={'Tu mapa: '+r.nombre+', '+progress+' de '+total+' niveles'}><b>🗺️ {r.nombre}</b><span>{progress}/{total} <i className="sv-home-map-progress"><i style={{width:100*progress/total+'%'}}/></i> ›</span></Link><WorldMap home state={map||{vuelta:1,region:0,niveles:{}}}/><Link className="sv-home-map-open" to="/suizamente/mapa">Elige un cantón y construye →</Link></div>
 }
 export function MapHelp(){
   const {config}=useSv()

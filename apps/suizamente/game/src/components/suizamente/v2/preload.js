@@ -2,7 +2,7 @@ import {szApi} from '../../../lib/suizamenteV2'
 
 // Share imports with React.lazy. No administration, 3D engine or private questions
 // are downloaded speculatively; data warming is limited to read-only tab summaries.
-const loaders={Onboarding:()=>import('./Onboarding'),Game:()=>import('./Game'),Economy:()=>import('./Economy'),Rewards:()=>import('./Rewards'),MapPage3D:()=>import('./MapPage3D'),Raid:()=>import('./Raid'),Community:()=>import('./Community'),Admin:()=>import('./Admin'),VictoryAttack:()=>import('./VictoryAttack')},modules=new Map()
+const loaders={Home:()=>import('./Home'),Onboarding:()=>import('./Onboarding'),Game:()=>import('./Game'),Economy:()=>import('./Economy'),Rewards:()=>import('./Rewards'),MapPage3D:()=>import('./MapPage3D'),Raid:()=>import('./Raid'),Community:()=>import('./Community'),Admin:()=>import('./Admin'),VictoryAttack:()=>import('./VictoryAttack')},modules=new Map()
 export function loadScreen(group){
  if(!modules.has(group))modules.set(group,loaders[group]().catch(error=>{modules.delete(group);throw error}))
  return modules.get(group)

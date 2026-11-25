@@ -1,7 +1,6 @@
 import {lazy,Suspense,useCallback,useRef,useState} from 'react'
 import {Link,useLocation} from 'react-router-dom'
 import {useSv} from './Context'
-import {DailyHome} from './DailyPreview'
 import {useData} from './useData'
 import {Avatar,Button,Card,Header,Stamps,Wallet,LatidoBackdrop} from './Shared'
 import {MapDrawing} from './Map'
@@ -11,14 +10,6 @@ const ShareImage=lazy(()=>import('./ShareImage').then(module=>({default:module.S
 import {mapImage} from './shareData'
 import {scenePhoto} from './mapPhotos'
 
-export function DurationHome(){
-  const {data}=useData('misiones',{refreshMs:15000}),{data:league}=useData('liga',{refreshMs:30000})
-  const own=league?.filas.find(p=>p.tu),division=league?.reglas.divisiones.find(d=>d.id===league.division)
-  return <>
-    <div className="sv-home-daily-grid">{data&&<Link className="sv-missions-entry" to="/suizamente/misiones"><span>🎯</span><div><b>Misiones</b><span><i className="sv-home-map-progress"><i style={{width:100*data.misiones.filter(m=>m.cobrada).length/data.misiones.length+'%'}}/></i><strong>{data.misiones.filter(m=>m.cobrada).length}/{data.misiones.length}</strong></span></div></Link>}<DailyHome compact/></div>
-    {division&&<Link className="sv-league-entry" to="/suizamente/ranking?tab=liga"><span>{division.emoji}</span><div><b>{division.nombre}{own?' · '+own.puesto+'.º de '+league.filas.length:''}</b><small>{own&&own.destino!==league.division?(league.reglas.divisiones.findIndex(d=>d.id===own.destino)>league.reglas.divisiones.findIndex(d=>d.id===league.division)?'⬆️ En zona de ascenso':'⬇️ En zona de descenso'):'Termina el domingo'}</small></div>›</Link>}
-  </>
-}
 export function ProfileDuration(){
   const {player}=useSv(),{data}=useData('liga'),division=data?.reglas.divisiones.find(d=>d.id===data.division)
   return <>{division&&<Link className="sv-league-entry" to="/suizamente/ranking?tab=liga"><span>{division.emoji}</span><b>{division.nombre}</b>›</Link>}{player.marco&&<Card>{player.marco.emoji} Marco {player.marco.marco}</Card>}</>
