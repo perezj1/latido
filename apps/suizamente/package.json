@@ -20,7 +20,7 @@
     "test:retos": "node test/retos-browser.mjs",
     "test:conquista": "node test/conquista-browser.mjs",
     "test:accounts": "node scripts/test-suizamente-v14.mjs && node scripts/test-session-transport.mjs",
-    "test:entry": "node scripts/test-suizamente-login-browser.mjs && node scripts/test-suizamente-entry-profile.mjs",
+    "test:entry": "node scripts/test-suizamente-profile-settings.mjs && node scripts/test-suizamente-login-browser.mjs && node scripts/test-suizamente-entry-profile.mjs && node scripts/test-suizamente-entry-profile.mjs --webkit",
     "test:photos": "node scripts/test-suizamente-fotos.mjs",
     "test:avatars": "node scripts/test-suizamente-v18.mjs && node scripts/test-suizamente-v18-browser.mjs && node scripts/test-suizamente-v18-browser.mjs --webkit",
     "test:play": "node scripts/test-suizamente-play-browser.mjs && node scripts/test-suizamente-play-browser.mjs --webkit",

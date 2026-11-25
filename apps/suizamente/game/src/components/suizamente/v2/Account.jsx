@@ -9,6 +9,7 @@ import {prepareProfilePhoto,uploadProfilePhoto} from '../../../lib/suizamentePho
 import {useSv} from './Context'
 import {Avatar,Brand,Button,Card,Chip,Header,Logo,Sheet,Stamps} from './Shared'
 import {szApi,cantonNames,countryNames} from '../../../lib/suizamenteV2'
+import {normalizeSzSettings} from '../../../lib/suizamenteSettings'
 import {loadPushSettings,subscribeToPushNotifications} from '../../../lib/pushNotifications'
 
 const years={menos1:'Menos de 1 año','1a3':'1–3 años','3a10':'3–10 años',mas10:'Más de 10 años'}
@@ -38,17 +39,29 @@ export function HowTo(){
   return <section className="sv-screen"><Header title="Así se juega" back={player?'/suizamente/menu':'/suizamente/bienvenida'}/><div className="sv-content sv-steps">{steps.map(([emoji,title,text],i)=><div key={title}><span className="sv-step-icon"><UiIcon value={emoji}/><small>{i+1}</small></span><div><h2>{title}</h2><p>{text}</p></div></div>)}<Stamps categories={config.categorias}/></div><footer className="sv-footer"><Button to={player?'/suizamente/nueva':'/suizamente/entrar'}>▶ ¡A jugar!</Button></footer></section>
 }
 export function ProfileForm({editing=false}){
-  const {player,user,avatarUrl,latidoName,savePlayer,settings}=useSv(),navigate=useNavigate(),{enter}=useGameNavigation(),fileInput=useRef(null)
+  const {player,user,avatarUrl,latidoName,savePlayer,settings,signOut}=useSv(),navigate=useNavigate(),{enter}=useGameNavigation(),fileInput=useRef(null)
   const [form,setForm]=useState(()=>({apodo:player?.apodo||(latidoName||user?.user_metadata?.name||user?.user_metadata?.full_name||'').slice(0,20),color:player?.color||'menta',pais:player?.pais||'ES',canton:player?.canton||user?.user_metadata?.canton||'ZH',anos_suiza:player?.anos_suiza||'menos1',en_ranking:player?.en_ranking??true}))
   const [busy,setBusy]=useState(false),[error,setError]=useState('')
   const [photo,setPhoto]=useState(null),[photoBusy,setPhotoBusy]=useState(false)
   async function choosePhoto(e){const file=e.target.files?.[0];e.target.value='';if(!file)return;setPhotoBusy(true);setError('');try{setPhoto(await prepareProfilePhoto(file))}catch(e){setError(e.message)}finally{setPhotoBusy(false)}}
   function change(key,value){setForm(f=>({...f,[key]:value}))}
+  async function useAnotherProfile(){
+    if(busy||photoBusy)return
+    setBusy(true);setError('')
+    try{
+      await szApi('sesion/salir',{method:'POST'})
+      await signOut()
+      for(const key of ['suizamente:jugador','suizamente:invitado-con-datos','suizamente:onboarding','suizamente:bienvenida-pendiente'])localStorage.removeItem(key)
+      for(const key of ['suizamente:auth-destino','suizamente:despues-perfil'])sessionStorage.removeItem(key)
+      savePlayer({jugador:null})
+      enter('/suizamente/bienvenida')
+    }catch(e){setError(e.message)}finally{setBusy(false)}
+  }
   async function submit(e){
     e.preventDefault();setBusy(true);setError('')
     try{
       const ownPhoto=photo?await uploadProfilePhoto(photo,user.id):player?.ajustes?.foto_url
-      let result=await szApi('jugador',{method:'PUT',body:{...form,ajustes:{...settings,...player?.ajustes,...(ownPhoto?{foto_url:ownPhoto}:{}),apariencia:'clara'}}})
+      let result=await szApi('jugador',{method:'PUT',body:{...form,ajustes:{...normalizeSzSettings(player?.ajustes,settings),...(ownPhoto?{foto_url:ownPhoto}:{})}}})
       if(!editing){
         result=await szApi(localStorage.getItem('suizamente:bienvenida-pendiente')?'primera-vez/finalizar':'jugador/bienvenida',{method:'POST'})
         localStorage.removeItem('suizamente:bienvenida-pendiente')
@@ -62,11 +75,11 @@ export function ProfileForm({editing=false}){
       if(!editing)requestAnimationFrame(()=>window.dispatchEvent(new Event('suizamente:instalar-tras-perfil')))
     }catch(e){setError(e.message)}finally{setBusy(false)}
   }
-  return <form className="sv-screen sv-profile-screen" onSubmit={submit}><Header title={editing?'Editar perfil':'Tu perfil'}/><div className="sv-content sv-profile-form">{player?.renombrar&&<Card><b>📝 Elige otro apodo</b><p>Hemos revisado tu apodo. Cámbialo para seguir jugando.</p></Card>}<div className="sv-profile-avatar"><Avatar id={player?.jugador_id||user.id} name={form.apodo||'?'} color={form.color} photo={photo||player?.ajustes?.foto_url||avatarUrl}/><button className="sv-photo-button" type="button" disabled={busy||photoBusy} aria-label="Elegir o cambiar foto de perfil" onClick={()=>fileInput.current?.click()}><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="M4 7h4l2-3h4l2 3h4v13H4Z"/><circle cx="12" cy="13" r="4"/></svg></button><input ref={fileInput} type="file" accept="image/*" aria-label="Foto de perfil" hidden onChange={choosePhoto}/></div>{photoBusy&&<p role="status">Preparando tu foto...</p>}<label>Tu apodo<input required minLength={2} maxLength={20} value={form.apodo} onChange={e=>change('apodo',e.target.value)} autoComplete="nickname" pattern="[A-Za-zÀ-ÿ0-9 ._\-]{2,20}" placeholder="¿Cómo te llamamos?"/></label><fieldset><legend>Tu color</legend><div className="sv-color-options">{colors.map(color=><button type="button" key={color} className={'sv-color '+color} aria-label={color} aria-pressed={form.color===color} onClick={()=>change('color',color)}>{form.color===color?'✓':''}</button>)}</div></fieldset>
+  return <form className="sv-screen sv-profile-screen" onSubmit={submit}><Header title={editing?'Editar perfil':'Tu perfil'}/><div className="sv-content sv-profile-form">{player?.renombrar&&<Card><b>📝 Elige otro apodo</b><p>Hemos revisado tu apodo. Cámbialo para seguir jugando.</p></Card>}<div className="sv-profile-avatar"><Avatar id={player?.jugador_id||user.id} name={form.apodo||'?'} color={form.color} photo={photo||player?.ajustes?.foto_url||avatarUrl}/><button className="sv-photo-button" type="button" disabled={busy||photoBusy} aria-label="Elegir o cambiar foto de perfil" onClick={()=>fileInput.current?.click()}><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="M4 7h4l2-3h4l2 3h4v13H4Z"/><circle cx="12" cy="13" r="4"/></svg></button><input ref={fileInput} type="file" accept="image/*" aria-label="Foto de perfil" hidden onChange={choosePhoto}/></div>{!editing&&user&&<p className="sv-profile-recognized" role="status"><img src="/suizamente-assets/latido.svg" width="20" height="20" alt="" aria-hidden="true"/>Perfil reconocido de Latido</p>}{photoBusy&&<p role="status">Preparando tu foto...</p>}<label>Tu apodo<input required minLength={2} maxLength={20} value={form.apodo} onChange={e=>change('apodo',e.target.value)} autoComplete="nickname" pattern="[A-Za-zÀ-ÿ0-9 ._\-]{2,20}" placeholder="¿Cómo te llamamos?"/></label><fieldset><legend>Tu color</legend><div className="sv-color-options">{colors.map(color=><button type="button" key={color} className={'sv-color '+color} aria-label={color} aria-pressed={form.color===color} onClick={()=>change('color',color)}>{form.color===color?'✓':''}</button>)}</div></fieldset>
     <label>País de origen<select value={form.pais} onChange={e=>change('pais',e.target.value)}>{Object.entries(countryNames).map(([id,name])=><option key={id} value={id}>{name}</option>)}</select></label>
     <label>Tu cantón<select value={form.canton} onChange={e=>change('canton',e.target.value)}>{Object.entries(cantonNames).map(([id,name])=><option key={id} value={id}>{name}</option>)}</select></label>
     <fieldset><legend>¿Cuánto llevas en Suiza?</legend><div className="sv-choice-grid">{Object.entries(years).map(([id,label])=><button type="button" key={id} aria-pressed={form.anos_suiza===id} onClick={()=>change('anos_suiza',id)}>{label}</button>)}</div></fieldset>
-    {error&&<p className="sv-error" role="alert">{error}</p>}</div><footer className="sv-footer"><button className="sv-button" disabled={busy||photoBusy} type="submit">{busy?'Guardando…':editing?'Guardar cambios':'▶ ¡A jugar!'}</button></footer></form>
+    {error&&<p className="sv-error" role="alert">{error}</p>}</div><footer className="sv-footer"><button className="sv-button" disabled={busy||photoBusy} type="submit">{busy?'Guardando…':editing?'Guardar cambios':'▶ ¡A jugar!'}</button>{!editing&&<button className="sv-button quiet" disabled={busy||photoBusy} type="button" onClick={useAnotherProfile}>Usar otro perfil</button>}</footer></form>
 }
 export function Menu(){
   const {player,config,capabilities}=useSv()

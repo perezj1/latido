@@ -5,6 +5,7 @@ import {useAuth} from '../../../hooks/useAuth'
 import {useEntry} from '../../../../entry'
 import {useGameNavigation} from '../../../../navigation'
 import {szApi,szSettings,SV_STATE,SV_AVATARS} from '../../../lib/suizamenteV2'
+import {normalizeSzSettings} from '../../../lib/suizamenteSettings'
 import {SuizamenteContext} from './Context'
 import {Brand,Button,Logo,Navigation} from './Shared'
 import {HowTo,Login,Menu,ProfileForm,Settings,Welcome} from './Account'
@@ -121,7 +122,7 @@ export default function SuizamenteApp(){
     if(data.mapa)setMap(old=>JSON.stringify(old)===JSON.stringify(data.mapa)?old:data.mapa)
     if(!next)setMap(null)
     if(data.jugador?.ajustes){
-      setSettings(old=>{const next={...old,...data.jugador.ajustes,apariencia:'clara'};return JSON.stringify(old)===JSON.stringify(next)?old:next})
+      setSettings(old=>{const next=normalizeSzSettings(data.jugador.ajustes,old);return JSON.stringify(old)===JSON.stringify(next)?old:next})
       if(data.jugador.ajustes.onboarding)localStorage.setItem('suizamente:onboarding',data.jugador.ajustes.onboarding)
     }
   },[])
@@ -198,7 +199,7 @@ export default function SuizamenteApp(){
     if(ready&&config){const heading=document.querySelector('.sv-root h1');heading?.setAttribute('tabindex','-1');heading?.focus({preventScroll:true})}
   },[location.pathname,ready,!!config])
   async function updateSettings(value){
-    value={...value,apariencia:'clara'}
+    value=normalizeSzSettings(value,settings)
     setSettings(value)
     if(player){
       const data=await szApi('jugador',{method:'PUT',body:{...player,ajustes:value}})

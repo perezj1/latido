@@ -1,6 +1,7 @@
 /* global structuredClone, AbortController, Event, CustomEvent */
 import {supabase,recoverSupabaseSession,invalidateSupabaseSession} from './supabase'
 import {notify} from './suizamenteNotices'
+import {normalizeSzSettings} from './suizamenteSettings'
 const pendingReads=new Map()
 const recentReads=new Map(),readTtl={config:30000,jugador:1000,partidas:1000,emparejamiento:1000,mapa:1500,album:1500,tienda:1500,amigos:1500,perfil:3000,logros:5000,misiones:3000,liga:5000,dia:1000}
 let revision=0,reader=null
@@ -87,8 +88,7 @@ function withoutFlags(value){
   return value
 }
 export function szSettings() {
-  const defaults={musica:true,sonidos:true,vibracion:true,menosAnimaciones:false,apariencia:'clara'}
-  try{return {...defaults,...JSON.parse(localStorage.getItem('suizamente:ajustes')||'{}'),apariencia:'clara'}}catch{return defaults}
+  try{return normalizeSzSettings(JSON.parse(localStorage.getItem('suizamente:ajustes')||'{}'))}catch{return normalizeSzSettings()}
 }
 export const cantonNames={
   ZH:'Zúrich',BE:'Berna',LU:'Lucerna',UR:'Uri',SZ:'Schwyz',OW:'Obwalden',NW:'Nidwalden',GL:'Glaris',ZG:'Zug',FR:'Friburgo',SO:'Soleura',BS:'Basilea-Ciudad',BL:'Basilea-Campiña',SH:'Schaffhausen',AR:'Appenzell Rodas Exteriores',AI:'Appenzell Rodas Interiores',SG:'San Galo',GR:'Grisones',AG:'Argovia',TG:'Turgovia',TI:'Tesino',VD:'Vaud',VS:'Valais',NE:'Neuchâtel',GE:'Ginebra',JU:'Jura',
