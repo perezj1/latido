@@ -1,0 +1,240 @@
+# Cuarta opción de las preguntas con respuesta que se escribieron con 3 opciones (base.json y manual-*.txt).
+# Formato: id|opción (siempre incorrecta). El generador la añade AL FINAL, sin tocar el id ni el orden de las
+# opciones que ya existen (los votos guardan su índice). Al jugar, las opciones se muestran en orden aleatorio.
+# Las preguntas nuevas se escriben ya con 4 opciones en manual-*.txt y no necesitan línea aquí.
+# Las de vocabulario, cantones, ciudades, fechas, personas e inventos sacan la cuarta de sus propias listas.
+vidrio_domingo|Pasear al perro por el parque
+bolsa_negra|Pasa un camión especial y se la lleva gratis
+seguro_basico|La cuota del gimnasio
+registro_plazo|Un año
+pan_fondue|Tienes que pescarlo con la mano
+tarta_cumple|Que la empresa te dé el día libre
+besos|Cuatro
+cena_hora|A las 18:30, para ayudar a cocinar
+descanso_noche|A las 18:00
+agujeros|Tête de Moine
+capital|Lausana
+consejo_federal|Un monarca con poderes simbólicos
+idiomas|Cinco
+bunker|Una pista de bolos para el vecindario
+gotardo|35 kilómetros
+alpabzug|Una carrera de trineos en verano
+schwingen|Una manera de cortar el queso
+en_guete|Buenas noches
+natel|Una tarjeta del tren
+rostigraben|Un foso del castillo de Chillon
+iglesia|Te dan un descuento en la tienda del pueblo
+serafe|Solo si tienes coche
+carnet|Tres años
+senderos|Los restaurantes que están abiertos
+onu_ue|Del Consejo de Europa
+kafi|Un café con hielo y nata
+orden_pago|Pagar el doble para que se olviden de ti
+samichlaus|El ratoncito Pérez
+escalade|Zúrich
+boogg|Un barco de papel gigante
+salario_minimo|Solo para quien trabaja en un banco
+sin_billete|Nada: solo te piden que bajes
+lavar_coche|Sí, pero solo con agua de lluvia
+fianza_max|Seis meses de alquiler
+certificado_deudas|Una foto de carné sonriendo
+seguro_plazo|Una semana
+franquicia|Un descuento por pagar en efectivo
+cambio_seguro|Hasta el 30 de junio
+emergencias|061
+halbtax|Llevar a tu perro gratis
+vineta|Una tarjeta de crédito suiza
+pilas_tienda|En el contenedor del papel
+pet_super|En la basura normal, con la bolsa oficial
+sueldo_13|Un día libre por tu cumpleaños
+vacaciones_min|Seis semanas
+periodo_prueba|Un mes
+garrapatas|La de la fiebre amarilla
+setas|Venderlas en la plaza del pueblo
+perro_impuesto|Ponerle un nombre suizo
+nacionalidad_anios|5 años
+r_4q9cd8|Lavarla otra vez, por si acaso
+r_1xyhtme|El vecino de arriba
+r_m74p6s|Vuelves a la casa vieja a recogerlo cada semana
+r_azzg2q|A 23 grados, en manga corta
+r_gqio7a|Que el piso mide 3,5 metros de alto
+r_168yq5d|Llamar directamente a la policía
+r_1wg19su|Una multa por usar mucho la lavandería
+r_16juf0f|Solo los sábados por la noche
+r_1gpkrj7|Se acaba la jornada laboral
+r_fe9nhy|Una galleta de Basilea
+r_1vs207q|Te las quedas de recuerdo
+r_1n2ne4z|Ninguno: con pasaporte europeo no hace falta
+r_1u7tq6u|El permiso B, para siempre
+r_ftrvfw|Pagas solo cuando cambias de cantón
+r_1j096mv|Solo en las elecciones federales
+r_1x7wiz0|Sí, si nace en un hospital público
+r_38ewb0|C2 oral y escrito
+r_8dxugn|Solo tu jefe o tu jefa
+r_no9axg|Lo devuelven a la tienda sin avisarte
+r_j4l9sz|Un certificado de que sabes hacer fondue
+r_143fn1x|Pedir permiso al cantón para salir del país
+r_8gmj19|Dárselo a tu casero
+r_11mpjos|Un club de esquí del Valais
+r_1msumd2|Un curso de alemán obligatorio
+r_1upp2cr|Contestar con un dibujo
+r_5vsvsx|Un tren de montaña de dos pisos
+r_1xtlpno|Solo venden vino suizo
+r_pb6h89|15 %
+r_1eww8ze|Un bono para el gimnasio
+r_1cy7tqh|Una marmota
+r_1kdxhh5|Contestas con tus datos para confirmar
+r_iohd82|Un permiso para trabajar los domingos
+r_1xewxob|Retratos de deportistas suizos
+r_1i6sn91|Las que dicen «Hecho a mano por la abuela»
+r_sx7r10|Un sello de colección
+r_w16gxx|Entre 12 y 15 francos
+r_1sspdf2|Llamar a la policía
+r_pby0yb|Tiers payant
+r_qy6ok3|Una cuarta parte, sin límite
+r_16ezgdi|Solo puedes ir al médico con tu familia
+r_wah2io|La de las castañas
+r_1wae1v8|Porque en Suiza el sol es más grande
+r_28rx3i|Solo en los zoológicos
+r_1lagykj|La hormiga
+r_9s7bqk|Una tienda de herramientas
+r_1rxrnc9|Solo el parto, si es en casa
+r_kl3bxo|35, como en Francia
+r_1hpzqlp|Que la empresa tiene entre 80 y 100 personas
+r_xay5ka|Solo con tu foto y tu apodo
+r_db91ur|Cinco
+r_1l29h81|No hay pausa: se come trabajando
+r_tgi5v1|Un concurso de belenes
+r_1e21u07|Solo si llevas un abogado
+r_1q1331y|Un examen para conducir tractores
+r_658ucj|Solo si la baja es por un resfriado
+r_1cyyvgl|«Lunes gratis»
+r_1r922ld|Sí, si lo firmas a principio de año
+r_1pveh1x|Solo una semana
+r_r6eqnd|Un tablón en la estación de tren
+r_1qtfa1t|Te invitan a un café en el vagón restaurante
+r_y2boq7|Reservas un asiento con vistas al lago
+r_14z6ndx|Un descuento para el súper de la estación
+r_12pn0q5|Le haces señas para que se dé prisa
+r_1i2glaj|100 km/h
+r_16ssm6o|Un aviso por WhatsApp
+r_1mjqfg3|Solo si son más largos que tú
+r_ko1wn5|Sí, un billete entero de adulto
+r_3pnf3h|Dejarlas en el andén con una nota
+r_efqy03|El del Säntis
+r_1ccgdgs|Alemania
+r_1kzge4y|Fin del trayecto
+r_d2eopb|Un descuento en el vagón restaurante
+r_s5o1xw|Te devuelven el dinero del billete
+r_vll0t1|Un mapa de pistas de esquí
+r_bqe1pe|Que hay que llevar un regalo de más de 18 francos
+r_1h5mjmz|En inglés, por si acaso
+r_6z4u6a|Diciendo su número de teléfono en voz alta
+r_tos7ur|Una votación para elegir al vecino del año
+r_18yzmqd|Portugal
+r_174jr6a|Unos 15 millones
+r_17p8pql|En zigzag, de arriba abajo
+r_1do0zxg|Un vino dulce para el postre
+r_1gmmlff|Unos guantes de lana de pastor
+r_gjm4gn|Con salsa de curry
+r_m91ej6|Un postre de castañas
+r_kzz88u|Los polvorones
+r_lb4qnm|Zug
+r_xrsnvf|La tempranillo
+r_1renaj|Algodón de azúcar salado
+r_1n93hy|Unos gorros de lana de Engadina
+r_d3usdb|Una cerveza sin alcohol
+r_bqbcb5|Faros de coche
+r_1vvn1mq|El primer domingo de mayo
+r_11y3e3t|Una baguette de un metro
+r_q3304f|Un pan de pera de Grisones
+r_1irv7u4|Una carrera de cabras
+r_1ddva8d|Una medalla de chocolate
+r_156swwc|Un desfile de bandas de música
+r_no5fpc|El 1 de diciembre
+r_1ea3701|De centrales de carbón
+r_ooawg5|Un tipo de pan de centeno
+r_7sbv1a|Ginebra
+r_2c43a2|Un permiso de tu vecino
+r_16w8e6z|El león
+r_fukqt5|Los hicieron los romanos
+r_uyrwrn|El pingüino
+r_90kt7e|Un 30 %
+r_zylk82|10 000
+r_blfkcg|Unos 10 metros
+r_u1yxhd|En Zúrich
+r_ssmaal|Grisones
+r_15xb4si|Ascona
+r_356zdp|El Gurten Festival
+r_yhhwz8|Frank Sinatra
+r_1stznt6|La de la Universidad de Ginebra
+r_1xv3mer|Un pájaro de los Alpes
+r_12xjfan|Porque el rojo se ve mejor sobre la nieve
+r_1wpaljg|Berna
+r_6o4ecl|Ginebra
+r_xlns2m|Zug
+r_18k1t91|En el ayuntamiento de Zúrich
+r_1vf1er2|El castillo de Lenzburg
+r_1458hrp|Sion
+r_1r7mc6q|El Tower Bridge
+r_1beyonf|Unos 40 metros
+r_10iqsva|Un puente sobre el Aar
+r_1t2uvzt|Porque cambió la receta a chocolate blanco
+r_qreu2o|Alemán e italiano
+r_1d07dpk|Basilea
+r_dzwv4o|Uri
+r_s136ln|Unas 400 000
+r_1lkldvs|Que le prestes dinero
+r_1fnujju|«Wie heissisch du?»
+r_18olr8r|«Uf Widerluege»
+r_j5gdg8|«Nur Rechnungen»
+r_ipkw6h|Dos semanas
+r_1mbht4u|El 50 %
+r_m36muw|Solo si la baja es en verano
+r_1avgnb1|Un curso para aprender a esquiar
+r_s687jv|La paga tu cliente principal
+r_fpm25e|Una revisión médica a mediodía
+r_1gn3atr|Un impuesto sobre el vino
+r_1ebn6qt|El doble, para compensar
+r_5vjagk|Unos 15 francos por hora
+r_1evlyby|Unos 2000 francos
+r_2s0drv|Un permiso para cazar
+r_6hjelw|La de 10 céntimos
+r_160t7hz|Dos marcas de chocolate
+r_pon9m5|Un abono de tren para estudiantes
+r_1d2mxna|Tiendas de recuerdos para turistas
+r_1snxj8j|Un impuesto por tener coche
+r_gklsfl|1000 francos
+r_1pbh9bx|Llamar solo por la noche
+r_sw16vz|Al 117
+r_1rg84nc|Solo la del sarampión
+r_s5b0by|Una marca de ropa de esquí
+r_1ohexp9|Una nota de la escuela
+r_pl28db|Hasta que te contesten
+r_c3hc13|Venderlo antes de mudarte
+r_nojrhn|Un permiso para tener mascotas
+r_use3kd|Solo la mayoría del Parlamento
+r_1a1y2db|El número de tu carnet de conducir
+r_14wddya|Dos meses
+r_1xjhfhn|Un descuento para familias en el tren
+r_dtrued|Un abono para siete viajes en 25 días
+r_tpikwa|Líneas de barco
+r_1otz93m|100 francos
+r_1kgubiv|A los 16
+r_1xcpart|Un curso de mecánica
+r_1hx7wy3|El tique de la gasolina
+r_bjsw4y|Te bajas a hacerte un selfi con ellas
+r_1te3wgy|Que hay una gasolinera
+r_qiu5nn|Una matrícula
+r_h562cz|El seguro de tu coche
+r_1inewup|Una semana
+r_18z3gt4|Un permiso para hacer obras
+r_zo8fx|Al contenedor del vidrio
+r_y2yuix|Solo los domingos
+r_139c281|A los 25
+r_kg0rri|Una feria de ganado
+r_dgzpir|Un club de fútbol de Basilea
+r_xk5dny|Reparte los permisos de conducir
+r_1n9fh57|El 10 %
+r_o06mno|Pedir la cuenta
+r_1bf6ccg|100

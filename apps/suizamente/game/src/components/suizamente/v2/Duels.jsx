@@ -8,7 +8,7 @@ export function Powerups({match,act,busy,remaining}){
   return <div className="sv-powerups" aria-label="Comodines">{config.comodines.map(c=>{
     const count=player.inventario?.[c.id]||0
     const used=q.usados?.includes(c.id)
-    const blocked=busy||remaining===0||count===0||used||c.noEnModos.includes(q.modo)||(c.soloConTresOpciones&&q.opciones.length!==3)
+    const blocked=busy||remaining===0||count===0||used||c.noEnModos.includes(q.modo)||(c.soloConTresOpciones&&q.opciones.length<3)
     return <button key={c.id} aria-label={c.nombre+': tienes '+count} aria-pressed={!!used} disabled={blocked} onClick={()=>act('comodin',{n:q.n,tipo:c.id})}><span>{c.emoji}<small>{count}</small></span><b>{c.nombre}</b>{used&&<em>✓</em>}</button>
   })}</div>
 }

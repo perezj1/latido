@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 /* Valida data/preguntas.json. Uso: node herramientas/validar-preguntas.js
+   Opciones: 4 en las preguntas con respuesta, 2 en «¿Verdad o mito?» y 2 o 3 en los dilemas.
    Sale con código 1 si hay errores (sirve para CI). Sin dependencias. */
 const fs = require('fs');
 const path = require('path');
@@ -23,7 +24,9 @@ const largo = (s, max) => typeof s === 'string' && s.trim().length > 0 && s.leng
   if (!largo(q.emoji, 16)) errores.push(`${d}: falta el emoji`);
   if (!largo(q.pregunta, 140)) errores.push(`${d}: pregunta vacía o de más de 140 caracteres`);
   if (!largo(q.dato, 300)) errores.push(`${d}: dato vacío o de más de 300 caracteres`);
-  if (!Array.isArray(q.opciones) || q.opciones.length < 2 || q.opciones.length > 3) errores.push(`${d}: debe tener 2 o 3 opciones`);
+  const vm = q.tipo === 'real' && /^¿Verdad o mito\?/.test(q.pregunta || '');
+  const n = q.tipo === 'dilema' ? [2, 3] : vm ? [2] : [4];
+  if (!Array.isArray(q.opciones) || !n.includes(q.opciones.length)) errores.push(`${d}: debe tener ${n.join(' o ')} opciones${q.tipo === 'real' ? (vm ? ' (¿Verdad o mito?)' : ' (pregunta con respuesta)') : ' (dilema)'}`);
   else q.opciones.forEach((o, k) => {
     if (!largo(o.e, 16)) errores.push(`${d}: la opción ${k} no tiene emoji`);
     if (!largo(o.t, 90)) errores.push(`${d}: la opción ${k} está vacía o pasa de 90 caracteres`);

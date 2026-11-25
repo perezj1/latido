@@ -20,7 +20,7 @@ ON CONFLICT (codigo) DO NOTHING;
 CREATE TABLE IF NOT EXISTS suizamente_social.preguntas (
   id text PRIMARY KEY REFERENCES public.suizamente_catalogo_votos(pregunta_id),
   tipo text NOT NULL CHECK (tipo IN ('dilema','real')), tema text NOT NULL,
-  correcta smallint, opciones smallint NOT NULL CHECK (opciones BETWEEN 2 AND 3),
+  correcta smallint, opciones smallint NOT NULL CHECK (opciones BETWEEN 2 AND 4),
   CHECK ((tipo='dilema' AND correcta IS NULL) OR (tipo='real' AND correcta>=0 AND correcta<opciones))
 );
 CREATE TABLE IF NOT EXISTS suizamente_social.jugadores (

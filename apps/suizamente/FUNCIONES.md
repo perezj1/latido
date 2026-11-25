@@ -250,3 +250,29 @@ node scripts/test-suizamente-delivery.mjs
 La prueba de navegación usa Chromium/WebKit con PostgreSQL temporal: recarga repetida, URL/parámetros/historial intactos, partida activa, flecha y Atrás del navegador, salida a un documento externo desde Inicio, enlaces directos, cuenta distinta, pestaña nueva y cierre de sesión. No escribe en producción. Resultados en `output/navegacion/`.
 
 La salida del contenedor instalado debe comprobarse también con el botón o gesto de Atrás de Android en un dispositivo físico; una pestaña de escritorio no reproduce ese contenedor.
+
+## Cuatro opciones en preguntas con respuesta (25 de noviembre de 2026)
+
+- Se importa el banco revisado: 631 preguntas pasan de tres a cuatro opciones, añadiendo únicamente la última; las 369 de Verdad · Mito conservan dos. Los dilemas conservan dos o tres. Se actualizan los 419 emojis neutros de pregunta, sin reordenar opciones ni cambiar `correcta`.
+- El servidor guarda una permutación nueva al enviar cada pregunta normal, de sello, duelo, asalto o práctica. Verdad · Mito conserva `[0,1]`. Recargar devuelve el mismo orden. En preguntas nuevas, `indice` es la posición visible; el servidor la traduce al índice original antes de guardar votos e intentos y devuelve resultados y descartadas en posiciones visibles. No se expone el índice original ni el emoji de opción. Las preguntas ya enviadas conservan su contrato anterior mediante una marca interna; los votos y porcentajes mantienen siempre sus índices originales.
+- Una pregunta de partida ya enviada conserva su instantánea anterior, sus tres opciones si las tenía y su plazo. La migración no reescribe preguntas en curso, votos ni resultados.
+- `QuestionOptions.jsx` comparte el aspecto de pregunta y resultado: sin emoji de opción, texto centrado, ✓/✕ en círculo a la izquierda y prefijos ocultos «Correcta: …» / «Tu respuesta, incorrecta: …». Los dilemas conservan sus emojis.
+- La antigua clave `soloConTresOpciones` conserva su nombre por compatibilidad: excluye preguntas con menos de tres opciones. Quita una elimina una incorrecta de las tres disponibles; Otra oportunidad mantiene el primer voto original y permite el segundo intento. No cambian sus precios ni efectos.
+- Las propuestas Con respuesta requieren cuatro textos y una correcta entre 0 y 3; sus opciones no muestran editor de emoji. La moderación y valoración usan el mismo componente. Los dilemas siguen admitiendo dos o tres opciones.
+- Se copian banco y esquema a `server/suizamente/data/` y `public/suizamente/data/`. `juego.json` incorpora la nueva pregunta de `primeraVez`; se conservan las reglas de asaltos y logros ya desplegadas, porque el archivo de referencia contenía cambios ajenos a esta entrega. Las tres tarjetas del onboarding existente conservan sus ejemplos, con el banco actualizado.
+- El juego base de Latido también utiliza cuatro opciones, orden aleatorio salvo Verdad · Mito, color rojo para `.o4`, teclas 1–4 y textos de respuesta/compartir sin emoji de opción. Su catálogo de votos y sus propuestas sociales se amplían sin borrar votos.
+
+Migración: `supabase/suizamente_v21_cuatro_opciones.sql`, generada desde `suizamente_v21_cuatro_opciones.sql.in` y el banco revisado con `node scripts/sync-cuatro-opciones.mjs <carpeta de referencia>`. Comprueba prefijos de opciones y respuestas originales antes de actualizar y cancela toda la transacción si encuentra diferencias incompatibles. Puede repetirse. No altera reglas, premios ni tiempos.
+
+Archivos: `QuestionOptions.jsx`, `answers.css`, `Raid.jsx`, `Duels.jsx`, `Community.jsx`, `Admin.jsx`, `community.css`; banco/esquema/configuración; migración y generador; catálogo, validación y SQL del juego base; `public/suizamente/juego.js`, `juego.html`, `experiencia.js`; pruebas y ayudantes de la vista local.
+
+Pruebas desde esta carpeta:
+
+```sh
+npm run test:four-options
+node scripts/test-suizamente-onboarding-browser.mjs --functional-only
+npm run build
+node scripts/test-suizamente-delivery.mjs
+```
+
+La validación de la referencia se ejecuta con `node herramientas/validar-preguntas.js`; la copia del repositorio, con `node scripts/validar-suizamente.cjs` desde la raíz. Capturas de pregunta/acierto/fallo en 320, 390, escritorio y 375 × 667, con comparación frente a `pantallas.html`, en `output/cuatro-opciones/<navegador>/comparacion.html`. Se verifican lectura accesible, índices correctos e incorrectos, umbral de porcentajes, comodines, orden variable, Verdad · Mito fijo, propuestas y conservación de votos/instantáneas/recompensas. Queda la revisión manual con lector de pantalla y dispositivos físicos.

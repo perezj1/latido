@@ -5,7 +5,7 @@ import {createServer} from 'node:http'
 import {resolve,extname} from 'node:path'
 import {chromium,webkit,expect as rawExpect} from '@playwright/test'
 import {startSuizamentePreview,testToken,testUser} from './lib/suizamente-v2-preview.mjs'
-import {A,B,call} from './lib/suizamente-v2-test-db.mjs'
+import {A,B,call,callOriginal} from './lib/suizamente-v2-test-db.mjs'
 const expect=rawExpect.configure({timeout:20000}),engine=process.argv.includes('--webkit')?'webkit':'chromium',out='output/play/'+engine
 const design=resolve(process.env.SUIZAMENTE_DESIGN_ROOT||'../../../latido/suizamente')
 let preview,browser,page,referenceServer
@@ -98,13 +98,13 @@ try{
  checks.push('server slot, single spin, clockwise deceleration, two blinks, fixed geometry, transition to real question')
  // Solve the current question then use reduced motion for the next spin.
  const state=await call(preview.db,A,'partida',{id:mid}),payload=(await preview.db.query('SELECT payload FROM suizamente_private.suizamente_partida_preguntas WHERE partida_id=$1 AND n=$2',[mid,state.pregunta.n])).rows[0].payload
- await page.locator('.sv-options button').nth(state.pregunta.opciones.findIndex(o=>o.indice===payload.correcta)).click();await page.getByRole('button',{name:'Continuar',exact:true}).click()
+ await page.locator('.sv-options button').nth(state.pregunta.opciones.findIndex(o=>o.t===payload.opciones[payload.correcta].t)).click();await page.getByRole('button',{name:'Continuar',exact:true}).click()
  await page.emulateMedia({reducedMotion:'reduce'});await page.route('**/partidas/'+mid+'/pregunta',async route=>{await new Promise(r=>setTimeout(r,200));await route.continue()})
  await page.locator('.sv-light-wheel').evaluate(el=>{window.reducedSteps=[];new MutationObserver(()=>window.reducedSteps.push(el.dataset.light)).observe(el,{attributes:true,attributeFilter:['data-light']})})
  await page.getByRole('button',{name:'Girar la ruleta',exact:true}).click();await expect(page.locator('.sv-question-card')).toBeVisible();assert.ok((await page.evaluate(()=>window.reducedSteps)).every(s=>s==='1'))
  checks.push('prefers-reduced-motion lights only final server slot')
  const second=await call(preview.db,A,'partida',{id:mid}),secondPayload=(await preview.db.query('SELECT payload FROM suizamente_private.suizamente_partida_preguntas WHERE partida_id=$1 AND n=$2',[mid,second.pregunta.n])).rows[0].payload
- await page.locator('.sv-options button').nth(second.pregunta.opciones.findIndex(o=>o.indice===secondPayload.correcta)).click()
+ await page.locator('.sv-options button').nth(second.pregunta.opciones.findIndex(o=>o.t===secondPayload.opciones[secondPayload.correcta].t)).click()
  await expect(page.locator('.sv-result-title.correct')).toBeVisible()
  // Visual fixtures use the existing SQL functions and configuration. No API mocks.
  await preview.db.exec('DELETE FROM suizamente_private.suizamente_limites')
@@ -121,7 +121,7 @@ try{
  for(let i=1;i<=5;i++){
   await preview.db.exec('DELETE FROM suizamente_private.suizamente_limites')
   const raid=await call(preview.db,A,'asalto',{id:raidId}),q=(await preview.db.query('SELECT payload FROM suizamente_private.suizamente_asaltos WHERE id=$1',[raidId])).rows[0].payload
-  await page.locator('.sv-options button').nth(raid.pregunta.opciones.findIndex(o=>o.indice===q.correcta)).click()
+  await page.locator('.sv-options button').nth(raid.pregunta.opciones.findIndex(o=>o.t===q.opciones[q.correcta].t)).click()
   await page.getByRole('button',{name:i<5?'Siguiente pregunta '+(i+1)+'/5':'Ver el asalto',exact:true}).click()
   if(i<5)await expect(page.locator('.sv-question-card')).toBeVisible()
  }
@@ -139,7 +139,7 @@ try{
   let m=await call(preview.db,actor,'partida',{id:duelMatch.id})
   if(!m.pregunta)m=await call(preview.db,actor,'pregunta',{id:m.id,turnoN:m.turnoN})
   const q=(await preview.db.query('SELECT payload FROM suizamente_private.suizamente_partida_preguntas WHERE partida_id=$1 AND n=$2',[m.id,m.pregunta.n])).rows[0].payload
-  await call(preview.db,actor,'respuesta',{id:m.id,turnoN:m.turnoN,n:m.pregunta.n,opcion:actor===A?q.correcta:(q.correcta+1)%q.opciones.length})
+  await callOriginal(preview.db,actor,'respuesta',{id:m.id,turnoN:m.turnoN,n:m.pregunta.n,opcion:actor===A?q.correcta:(q.correcta+1)%q.opciones.length})
  }
  await navigate('/suizamente/partida/'+duelMatch.id+'?continuar=1');await expect(page.locator('.sv-duel-result')).toBeVisible();for(const width of [320,390,1440])await layout('duelo-resultado',width)
  await preview.db.query("SELECT suizamente_private.v3_anotar($1,'vuelta','1',$2)",[A,config.vueltasMapa.premioMonedasPorVuelta])

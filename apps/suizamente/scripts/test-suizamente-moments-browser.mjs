@@ -5,7 +5,7 @@ import {createServer} from 'node:http'
 import {resolve,extname} from 'node:path'
 import {chromium,webkit,expect as rawExpect} from '@playwright/test'
 import {startSuizamentePreview,testToken,testUser} from './lib/suizamente-v2-preview.mjs'
-import {A,B,C,call} from './lib/suizamente-v2-test-db.mjs'
+import {A,B,C,call,callOriginal} from './lib/suizamente-v2-test-db.mjs'
 const expect=rawExpect.configure({timeout:15000}),engine=process.argv.includes('--webkit')?'webkit':'chromium',out='output/momentos/'+engine
 let preview,browser,page,referenceServer
 const checks=[],errors=[]
@@ -18,7 +18,7 @@ try{
       let state=await call(db,actor,'partida',{id:mid})
       if(!state.pregunta)state=await call(db,actor,'pregunta',{id:state.id,turnoN:state.turnoN})
       const q=(await db.query('SELECT payload FROM suizamente_private.suizamente_partida_preguntas WHERE partida_id=$1 AND n=$2',[state.id,state.pregunta.n])).rows[0].payload
-      await call(db,actor,'respuesta',{id:state.id,turnoN:state.turnoN,n:state.pregunta.n,opcion:actor===winner?q.correcta:(q.correcta+1)%q.opciones.length})
+      await callOriginal(db,actor,'respuesta',{id:state.id,turnoN:state.turnoN,n:state.pregunta.n,opcion:actor===winner?q.correcta:(q.correcta+1)%q.opciones.length})
     }
   }
   for(const actor of [A,B,C])await db.query("SELECT suizamente_private.v3_anotar($1,'fixture','moments',5000,0,'{\"sobres\":6}')",[actor])
@@ -105,7 +105,7 @@ try{
   let m=await call(db,A,'partida',{id:mid});m=await call(db,A,'pregunta',{id:mid,turnoN:m.turnoN,modo:'sello',categoria:config.categorias[2].id})
   await navigate('/suizamente/partida/'+mid);await expect(page.locator('.sv-question-card')).toBeVisible()
   const payload=(await db.query('SELECT payload FROM suizamente_private.suizamente_partida_preguntas WHERE partida_id=$1 AND n=$2',[mid,m.pregunta.n])).rows[0].payload
-  await page.locator('.sv-options button').nth(m.pregunta.opciones.findIndex(o=>o.indice===payload.correcta)).click();await page.getByRole('button',{name:'Continuar',exact:true}).click()
+  await page.locator('.sv-options button').nth(m.pregunta.opciones.findIndex(o=>o.t===payload.opciones[payload.correcta].t)).click();await page.getByRole('button',{name:'Continuar',exact:true}).click()
   await expect(title()).toHaveText('¡Sello conseguido!');await layout('sello');await skip();await expect(dialog()).toHaveCount(0)
   // Duel won/lost, then a win after the final stolen seal: must queue rather than overlap.
   await db.exec('DELETE FROM suizamente_private.suizamente_limites')
@@ -133,7 +133,7 @@ try{
       await db.exec('DELETE FROM suizamente_private.suizamente_limites')
       const state=await call(db,A,'asalto',{id:raid.id}),payload=(await db.query('SELECT payload FROM suizamente_private.suizamente_asaltos WHERE id=$1',[raid.id])).rows[0].payload
       const option=variant==='fallo'?(payload.correcta+1)%payload.opciones.length:payload.correcta
-      await page.locator('.sv-options button').nth(state.pregunta.opciones.findIndex(o=>o.indice===option)).click()
+      await page.locator('.sv-options button').nth(state.pregunta.opciones.findIndex(o=>o.t===payload.opciones[option].t)).click()
       await page.getByRole('button',{name:i<total?'Siguiente pregunta '+(i+1)+'/'+config.asaltos.preguntasTrasVictoria:'Ver el asalto',exact:true}).click()
       if(i<total)await expect(page.locator('.sv-question-card')).toBeVisible()
     }

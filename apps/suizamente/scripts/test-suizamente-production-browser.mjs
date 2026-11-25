@@ -33,7 +33,7 @@ try{
  await expect(page.getByRole('navigation',{name:'Navegación principal'})).toHaveCount(0)
  await page.screenshot({path:out+'/produccion-pregunta-sin-barra.png',fullPage:true})
  const state=await call(preview.db,A,'partida',{id:mid}),payload=(await preview.db.query('SELECT payload FROM suizamente_private.suizamente_partida_preguntas WHERE partida_id=$1 AND n=$2',[mid,state.pregunta.n])).rows[0].payload
- await page.locator('.sv-options button').nth(state.pregunta.opciones.findIndex(o=>o.indice===payload.correcta)).click();await nav()
+ await page.locator('.sv-options button').nth(state.pregunta.opciones.findIndex(o=>o.t===payload.opciones[payload.correcta].t)).click();await nav()
  await go('mapa');await nav();await expect(page.locator('.sv-map-frame>.sv-world-map canvas')).toBeVisible()
  const card=page.getByRole('button',{name:/Ver Lucerna/});await expect(card.locator('canvas')).toBeVisible()
  await card.click();await expect(page.getByRole('button',{name:'← Toda Suiza',exact:true})).toBeVisible()

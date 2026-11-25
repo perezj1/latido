@@ -28,6 +28,7 @@
     "test:sharing": "node scripts/test-suizamente-sharing.mjs && node scripts/test-suizamente-sharing-browser.mjs && node scripts/test-suizamente-sharing-browser.mjs --webkit",
     "test:first-visit": "node scripts/test-suizamente-v20.mjs && node scripts/test-suizamente-onboarding-browser.mjs && node scripts/test-suizamente-onboarding-browser.mjs --webkit",
     "test:navigation": "node scripts/test-suizamente-navigation-browser.mjs && node scripts/test-suizamente-navigation-browser.mjs --webkit",
+    "test:four-options": "node scripts/test-suizamente-v21.mjs && node scripts/test-suizamente-four-base.mjs && node scripts/test-suizamente-four-browser.mjs && node scripts/test-suizamente-four-browser.mjs --webkit",
     "test:ux": "node scripts/test-suizamente-ux-browser.mjs && node scripts/test-suizamente-ux-browser.mjs --webkit && node scripts/test-suizamente-delivery.mjs",
     "dev:qa": "node scripts/preview-suizamente.mjs --lan",
     "test:rules": "node scripts/test-suizamente-v17.mjs && node scripts/test-suizamente-v17-browser.mjs && node scripts/test-suizamente-v17-browser.mjs --webkit",

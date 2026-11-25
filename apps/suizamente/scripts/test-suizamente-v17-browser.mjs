@@ -39,7 +39,7 @@ try{
  async function answerGame(){
   await preview.db.exec('DELETE FROM suizamente_private.suizamente_limites')
   const state=await call(preview.db,A,'partida',{id:mid}),payload=(await preview.db.query('SELECT payload FROM suizamente_private.suizamente_partida_preguntas WHERE partida_id=$1 AND n=$2',[mid,state.pregunta.n])).rows[0].payload
-  await page.locator('.sv-options button').nth(state.pregunta.opciones.findIndex(o=>o.indice===payload.correcta)).click();await expect(page.locator('.sv-nav')).toHaveCount(0)
+  await page.locator('.sv-options button').nth(state.pregunta.opciones.findIndex(o=>o.t===payload.opciones[payload.correcta].t)).click();await expect(page.locator('.sv-nav')).toHaveCount(0)
  }
  for(let n=1;n<=3;n++){
   await page.locator('.sv-wheel svg').click({position:{x:60,y:120}});await expect(page.locator('.sv-question-card')).toBeVisible();await answerGame()
@@ -56,7 +56,7 @@ try{
   await preview.db.exec('DELETE FROM suizamente_private.suizamente_limites')
   await expect(page.locator('.sv-question-card')).toBeVisible();await expect(page.locator('.sv-nav')).toHaveCount(0)
   const state=await call(preview.db,A,'asalto',{id:raidId}),payload=(await preview.db.query('SELECT payload FROM suizamente_private.suizamente_asaltos WHERE id=$1',[raidId])).rows[0].payload
-  await page.locator('.sv-options button').nth(state.pregunta.opciones.findIndex(o=>o.indice===payload.correcta)).click()
+  await page.locator('.sv-options button').nth(state.pregunta.opciones.findIndex(o=>o.t===payload.opciones[payload.correcta].t)).click()
   if(n<5){assert.equal((await call(preview.db,B,'mapa')).niveles.LU,1);await page.getByRole('button',{name:'Siguiente pregunta '+(n+1)+'/5',exact:true}).click()}else await page.getByRole('button',{name:'Ver el asalto',exact:true}).click()
  }
  await expect(page.getByRole('heading',{name:'¡Asalto conseguido!',exact:true})).toBeVisible();assert.equal((await call(preview.db,B,'mapa')).niveles.LU,0);await page.screenshot({path:out+'/ataque-conseguido-390.png',fullPage:true})

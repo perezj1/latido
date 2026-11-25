@@ -30,13 +30,26 @@
         "tema": { "enum": ["comida", "casa", "papeles", "trabajo", "dinero", "salud", "transporte", "idioma", "social", "fiestas", "naturaleza", "cultura"] },
         "emoji": { "type": "string", "minLength": 1, "maxLength": 16 },
         "pregunta": { "type": "string", "minLength": 5, "maxLength": 140 },
-        "opciones": { "type": "array", "minItems": 2, "maxItems": 3, "items": { "$ref": "#/$defs/opcion" } },
-        "correcta": { "type": "integer", "minimum": 0, "maximum": 2, "description": "Solo en tipo real" },
+        "opciones": { "type": "array", "minItems": 2, "maxItems": 4, "items": { "$ref": "#/$defs/opcion" }, "description": "Dilemas: 2 o 3. Con respuesta: 4. «¿Verdad o mito?»: 2 (Verdad · Mito)" },
+        "correcta": { "type": "integer", "minimum": 0, "maximum": 3, "description": "Solo en tipo real" },
         "dato": { "type": "string", "minLength": 20, "maxLength": 300 }
       },
-      "if": { "properties": { "tipo": { "const": "real" } } },
-      "then": { "required": ["correcta"] },
-      "else": { "not": { "required": ["correcta"] } }
+      "allOf": [
+        {
+          "if": { "properties": { "tipo": { "const": "real" } } },
+          "then": { "required": ["correcta"] },
+          "else": { "not": { "required": ["correcta"] } }
+        },
+        {
+          "if": { "properties": { "tipo": { "const": "dilema" } } },
+          "then": { "properties": { "opciones": { "maxItems": 3 } } }
+        },
+        {
+          "if": { "properties": { "tipo": { "const": "real" }, "pregunta": { "pattern": "^¿Verdad o mito\\?" } } },
+          "then": { "properties": { "opciones": { "minItems": 2, "maxItems": 2 } } },
+          "else": { "if": { "properties": { "tipo": { "const": "real" } } }, "then": { "properties": { "opciones": { "minItems": 4 } } } }
+        }
+      ]
     }
   }
 }

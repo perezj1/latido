@@ -23,17 +23,26 @@ nueva** y sus votos empiezan de cero. Cambiar solo el `dato` no cambia el `id`.
 ## base.json
 Las 100 primeras preguntas. No se tocan nunca: sus votos dependen de ellas.
 
+## cuarta-opcion.txt · la cuarta opción de las preguntas antiguas
+Las preguntas con respuesta tienen 4 opciones. Las que se escribieron con 3 (en `base.json` y en `manual-*.txt`)
+toman la cuarta de aquí, una por línea: `id|opción` (siempre incorrecta). El generador la añade **al final**, sin
+cambiar el `id` ni el orden de las que ya había, porque los votos guardan su índice. Las de vocabulario, cantones,
+ciudades, fechas, personas e inventos la sacan solas de sus listas. Si falta alguna, el generador lo dice.
+
 ## manual-*.txt · preguntas escritas a mano
-Tres tipos de línea. Las opciones empiezan con un emoji.
+Tres tipos de línea. Las opciones empiezan con un emoji (en el juego solo se enseña en los dilemas).
 
 ```
 D|tema|emoji|pregunta|opción 1|opción 2[|opción 3]|dato
-R|tema|emoji|pregunta|*opción correcta|opción|opción|dato
+R|tema|emoji|pregunta|*opción correcta|opción|opción|opción|dato
 V|tema|emoji|afirmación|V o M|dato
 ```
 
 - `D` = dilema de «¿Qué prefieres?» (sin respuesta correcta).
-- `R` = pregunta con respuesta: la correcta lleva `*` delante. El generador baraja las opciones una vez y fija ese orden.
+- El emoji de una pregunta con respuesta no puede ser el de ninguna de sus opciones: daría la respuesta, porque las
+  opciones se enseñan sin emoji. Si coincide, el generador lo cambia por uno neutro (el del tema).
+- `R` = pregunta con respuesta, con **4 opciones**: la correcta lleva `*` delante. El generador baraja las opciones una
+  vez y fija ese orden (en el juego se vuelven a barajar en cada pregunta).
 - `V` = «¿Verdad o mito?»: la pregunta queda «¿Verdad o mito? {afirmación}» con las opciones ✅ Verdad y ❌ Mito.
   `V` si la afirmación es verdadera, `M` si es falsa. En los mitos, el dato explica lo que es verdad.
   Procura mantener un reparto parecido de verdades y mitos (ahora 55 % / 45 %), o la gente aprende a contestar siempre lo mismo.
@@ -41,7 +50,7 @@ V|tema|emoji|afirmación|V o M|dato
 Ejemplos:
 ```
 D|casa|🧺|¿Qué prefieres?|🧺 Lavandería común con turno los martes a las 6:00|🛁 Lavar a mano en la bañera|En muchos edificios la lavandería se usa por turnos.
-R|dinero|📱|¿Qué es TWINT?|*📱 Una app suiza para pagar con el móvil|👯 Un baile de Appenzell|🍬 Unos caramelos|La usan millones de personas en Suiza.
+R|dinero|📱|¿Qué es TWINT?|*📱 Una app suiza para pagar con el móvil|👯 Un baile de Appenzell|🍬 Unos caramelos|🚞 Un tren de montaña|La usan millones de personas en Suiza.
 V|transporte|🚇|Zúrich tiene metro.|M|Se mueve con tranvía, autobús y cercanías. La única ciudad suiza con metro es Lausana.
 ```
 
@@ -80,3 +89,13 @@ hasta 1000. `TOPE_PAREJAS` limita cuántas salen de cada categoría para equilib
 
 Si añades preguntas manuales, el banco sigue en 1000 + 1000: salen primero las automáticas del final de la lista.
 Para tener más de 1000 de cada, sube `OBJETIVO` en el generador.
+
+## album.txt · cartas del álbum
+```
+= Nombre de la colección | archivo de fuentes
+nombre exacto | rareza (1, 2 o 3)
+```
+Cada colección tiene 9 cartas sacadas de otro archivo de `fuentes/` (`inventos.txt`, `vocabulario.txt`,
+`personas.txt`, `ciudades.txt`, `fechas.txt` o `cantones.txt`): el nombre tiene que coincidir exactamente, y el
+emoji y el dato salen de ese archivo. No cambies el orden de una colección publicada (el id de cada carta es
+«colección-número»); las nuevas, al final. Después: `node herramientas/generar-album.js --escribir`.

@@ -6,7 +6,8 @@ export const B='22222222-2222-4222-8222-222222222222'
 export const C='33333333-3333-4333-8333-333333333333'
 export const G='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'
 export const TOKEN='a'.repeat(64)
-export async function database({economia=false,tienda=false,mapa=false,album=false,comunidad=false,admin=false,operaciones=false,duracion=false,progreso=false,produccion=false,cuentas=false,independiente=false,ataques=false,avatares=false,compartir=false,onboarding=false}={}) {
+export async function database({economia=false,tienda=false,mapa=false,album=false,comunidad=false,admin=false,operaciones=false,duracion=false,progreso=false,produccion=false,cuentas=false,independiente=false,ataques=false,avatares=false,compartir=false,onboarding=false,cuatro=false}={}) {
+  if(cuatro)onboarding=true
   if(onboarding)compartir=true
   if(compartir)avatares=true
   if(avatares)ataques=true
@@ -40,6 +41,7 @@ export async function database({economia=false,tienda=false,mapa=false,album=fal
   if(avatares){await db.exec("ALTER TABLE public.profiles ADD COLUMN avatar_url text; ALTER TABLE auth.users ADD COLUMN raw_user_meta_data jsonb DEFAULT '{}';");await db.exec(await readFile('supabase/suizamente_v18_avatares.sql','utf8'))}
   if(compartir)await db.exec(await readFile('supabase/suizamente_v19_compartir.sql','utf8'))
   if(onboarding)await db.exec(await readFile('supabase/suizamente_v20_primera_vez.sql','utf8'))
+  if(cuatro)await db.exec(await readFile('supabase/suizamente_v21_cuatro_opciones.sql','utf8'))
   return db
   }catch(error){await db.close();throw error}
 }
@@ -53,9 +55,21 @@ export async function call(db,actor,action,args={},guest=G,token=TOKEN) {
 export function profile(name='Alex') {
   return {apodo:name,color:'menta',pais:'ES',canton:'ZH',anos_suiza:'1a3',ajustes:{}}
 }
+// Fixtures know the private bank's original answer. HTTP clients only see visual
+// positions on new questions; legacy migration tests retain the old contract.
+export async function callOriginal(db,actor,action,args={},guest=G,token=TOKEN){
+  if(Number.isInteger(args.opcion)&&['respuesta','asalto_respuesta'].includes(action)){
+    const raid=action==='asalto_respuesta',pid=actor||'invitado-'+guest
+    const row=(await db.query(raid?
+      "SELECT CASE WHEN coalesce((to_jsonb(q)->>'indices_visuales')::boolean,false) AND $3::smallint=ANY(q.orden) THEN array_position(q.orden,$3::smallint)-1 ELSE $3 END choice FROM suizamente_private.suizamente_asaltos q WHERE id=$1 AND jugador_id=$2":
+      "SELECT CASE WHEN coalesce((to_jsonb(q)->>'indices_visuales')::boolean,false) AND $3::smallint=ANY(q.orden) THEN array_position(q.orden,$3::smallint)-1 ELSE $3 END choice FROM suizamente_private.suizamente_partida_preguntas q WHERE partida_id=$1 AND jugador_id=$2 AND n=$4",raid?[args.id,pid,args.opcion]:[args.id,pid,args.opcion,args.n])).rows[0]
+    if(row)args={...args,opcion:row.choice}
+  }
+  return call(db,actor,action,args,guest,token)
+}
 export async function step(db,actor,m,correct=true,category) {
   if(m.fase==='girar')m=await call(db,actor,'girar',{id:m.id,turnoN:m.turnoN})
   m=await call(db,actor,'pregunta',{id:m.id,turnoN:m.turnoN,categoria:category||'idioma'})
   const q=(await db.query('SELECT payload FROM suizamente_private.suizamente_partida_preguntas WHERE partida_id=$1 AND n=$2',[m.id,m.pregunta.n])).rows[0].payload
-  return call(db,actor,'respuesta',{id:m.id,turnoN:m.turnoN,n:m.pregunta.n,opcion:correct?q.correcta:(q.correcta+1)%q.opciones.length})
+  return callOriginal(db,actor,'respuesta',{id:m.id,turnoN:m.turnoN,n:m.pregunta.n,opcion:correct?q.correcta:(q.correcta+1)%q.opciones.length})
 }

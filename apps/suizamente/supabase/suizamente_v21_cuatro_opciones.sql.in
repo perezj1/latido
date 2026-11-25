@@ -1,0 +1,150 @@
+-- Apply v21_cuatro_opciones.sql (generated from this template and the reviewed bank).
+BEGIN;
+ALTER TABLE suizamente_private.suizamente_votos DROP CONSTRAINT IF EXISTS suizamente_votos_opcion_check;
+ALTER TABLE suizamente_private.suizamente_votos ADD CONSTRAINT suizamente_votos_opcion_check CHECK(opcion BETWEEN 0 AND 3);
+CREATE OR REPLACE FUNCTION suizamente_private.v21_orden(item jsonb) RETURNS smallint[]
+LANGUAGE sql VOLATILE SET search_path='' AS $$
+ SELECT array_agg(i::smallint ORDER BY CASE WHEN jsonb_array_length(item->'opciones')=2 AND item#>>'{opciones,0,t}'='Verdad' AND item#>>'{opciones,1,t}'='Mito' THEN i::float8 ELSE random() END)
+ FROM generate_series(0,jsonb_array_length(item->'opciones')-1) i;
+$$;
+-- Centralize order creation; do not change payloads/orders of already sent questions.
+DO $$ DECLARE r record;definition text;BEGIN
+ FOR r IN SELECT p.oid FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='suizamente_private' AND p.proname IN('v2_api_base','v4_preguntar','v5_accion','v17_preguntar') LOOP
+  SELECT pg_get_functiondef(r.oid) INTO definition;
+  definition:=replace(definition,'(SELECT array_agg(i::smallint ORDER BY random()) FROM generate_series(0,jsonb_array_length(item->''opciones'')-1) i)','suizamente_private.v21_orden(item)');
+  definition:=replace(definition,'(SELECT array_agg(i::smallint ORDER BY random()) FROM generate_series(0,jsonb_array_length(payload->''opciones'')-1) i)','suizamente_private.v21_orden(payload)');
+  -- The old flag means not usable with two options, in old and saved match rules.
+  definition:=replace(definition,'jsonb_array_length(q.payload->''opciones'')<>3','jsonb_array_length(q.payload->''opciones'')<3');
+  definition:=replace(definition,'jsonb_array_length(a.payload->''opciones'')<>3','jsonb_array_length(a.payload->''opciones'')<3');
+  EXECUTE definition;
+ END LOOP;
+ -- Powerups live in a different wrapper; preserve all its reward/turn logic.
+ FOR r IN SELECT p.oid FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='suizamente_private' AND p.prosrc LIKE '%soloConTresOpciones%' LOOP
+  SELECT pg_get_functiondef(r.oid) INTO definition;
+  EXECUTE replace(replace(definition,'jsonb_array_length(q.payload->''opciones'')<>3','jsonb_array_length(q.payload->''opciones'')<3'),'jsonb_array_length(a.payload->''opciones'')<>3','jsonb_array_length(a.payload->''opciones'')<3');
+ END LOOP;
+END $$;
+-- Keep security/text validation and require exactly four options for new real proposals.
+DO $$ DECLARE definition text;BEGIN
+ SELECT pg_get_functiondef('suizamente_private.v7_validar_propuesta(jsonb)'::regprocedure) INTO definition;
+ IF position('v21 four options' IN definition)=0 THEN
+  definition:=replace(definition,'IF jsonb_array_length(q->''opciones'') NOT BETWEEN 2 AND 3',
+   '/* v21 four options */ IF (q->>''tipo''=''real'' AND jsonb_array_length(q->''opciones'')<>4) OR (q->>''tipo''<>''real'' AND jsonb_array_length(q->''opciones'') NOT BETWEEN 2 AND 3)');
+  EXECUTE definition;
+ END IF;
+END $$;
+ALTER TABLE suizamente_private.suizamente_primera_vez ADD COLUMN IF NOT EXISTS orden smallint[];
+ALTER TABLE suizamente_private.suizamente_primera_vez ADD COLUMN IF NOT EXISTS indices_visuales boolean NOT NULL DEFAULT false;
+ALTER TABLE suizamente_private.suizamente_partida_preguntas ADD COLUMN IF NOT EXISTS indices_visuales boolean NOT NULL DEFAULT false;
+ALTER TABLE suizamente_private.suizamente_asaltos ADD COLUMN IF NOT EXISTS indices_visuales boolean NOT NULL DEFAULT false;
+CREATE OR REPLACE FUNCTION suizamente_private.v21_nueva_pregunta() RETURNS trigger
+LANGUAGE plpgsql SET search_path='' AS $$ BEGIN NEW.indices_visuales:=true;RETURN NEW;END $$;
+DROP TRIGGER IF EXISTS v21_indices ON suizamente_private.suizamente_partida_preguntas;
+CREATE TRIGGER v21_indices BEFORE INSERT ON suizamente_private.suizamente_partida_preguntas FOR EACH ROW EXECUTE FUNCTION suizamente_private.v21_nueva_pregunta();
+DROP TRIGGER IF EXISTS v21_indices ON suizamente_private.suizamente_asaltos;
+CREATE TRIGGER v21_indices BEFORE UPDATE OF enviada_en ON suizamente_private.suizamente_asaltos FOR EACH ROW WHEN(NEW.enviada_en IS DISTINCT FROM OLD.enviada_en) EXECUTE FUNCTION suizamente_private.v21_nueva_pregunta();
+CREATE OR REPLACE FUNCTION suizamente_private.v21_visible(q jsonb) RETURNS jsonb
+LANGUAGE plpgsql IMMUTABLE SET search_path='' AS $$
+DECLARE ordering integer[];result jsonb:=q;k text;
+BEGIN
+ IF jsonb_typeof(q)<>'object' OR jsonb_typeof(q->'opciones')<>'array' THEN RETURN q;END IF;
+ SELECT array_agg((o->>'indice')::integer ORDER BY n) INTO ordering FROM jsonb_array_elements(q->'opciones') WITH ORDINALITY a(o,n);
+ result:=jsonb_set(result,'{opciones}',(SELECT jsonb_agg((o-'e')||jsonb_build_object('indice',n-1) ORDER BY n) FROM jsonb_array_elements(q->'opciones') WITH ORDINALITY a(o,n)));
+ FOREACH k IN ARRAY ARRAY['correcta','opcion'] LOOP
+  IF q ? k AND q->k<>'null'::jsonb THEN result:=jsonb_set(result,ARRAY[k],to_jsonb(array_position(ordering,(q->>k)::integer)-1));END IF;
+ END LOOP;
+ FOREACH k IN ARRAY ARRAY['quitadas','falladas'] LOOP
+  IF jsonb_typeof(q->k)='array' THEN result:=jsonb_set(result,ARRAY[k],(SELECT coalesce(jsonb_agg(array_position(ordering,v::integer)-1),'[]') FROM jsonb_array_elements_text(q->k) a(v)));END IF;
+ END LOOP;
+ RETURN result;
+END $$;
+-- v20 copies an anonymous practice after sign-in. Carry its display order too.
+DO $$ BEGIN
+ IF to_regprocedure('suizamente_private.v21_api_base(text,jsonb,uuid,text)') IS NULL THEN
+  ALTER FUNCTION public.suizamente_v2(text,jsonb,uuid,text) SET SCHEMA suizamente_private;
+  ALTER FUNCTION suizamente_private.suizamente_v2(text,jsonb,uuid,text) RENAME TO v21_api_base;
+ END IF;
+END $$;
+-- v20's legacy examples remain valid while the existing onboarding uses its fan.
+DO $$ DECLARE definition text;BEGIN
+ SELECT pg_get_functiondef('suizamente_private.v21_api_base(text,jsonb,uuid,text)'::regprocedure) INTO definition;
+ definition:=replace(definition,'SELECT actor,pregunta_id,opcion,terminada_en,guia FROM','SELECT actor,pregunta_id,opcion,terminada_en,guia,orden,indices_visuales FROM');
+ definition:=replace(definition,'SELECT actor,pregunta_id,opcion,terminada_en,guia,orden FROM','SELECT actor,pregunta_id,opcion,terminada_en,guia,orden,indices_visuales FROM');
+ -- The original implicit INSERT column list needs the new order column at the end.
+ EXECUTE definition;
+END $$;
+CREATE OR REPLACE FUNCTION public.suizamente_v2(p_action text,p_args jsonb DEFAULT '{}',p_guest_id uuid DEFAULT NULL,p_guest_token text DEFAULT NULL) RETURNS jsonb
+LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$
+DECLARE data jsonb;actor text:=coalesce(auth.uid()::text,'invitado-'||p_guest_id::text);stored smallint[];question jsonb;
+ body jsonb:=p_args;visual boolean:=false;choice integer;ordering smallint[];k text;
+BEGIN
+ -- Older in-flight questions keep their original-index contract. Only newly sent
+ -- questions use visual positions, so a deployment cannot change an old answer.
+ IF p_action='respuesta' THEN
+  SELECT q.indices_visuales,q.orden INTO visual,ordering FROM suizamente_private.suizamente_partida_preguntas q WHERE q.partida_id=(body->>'id')::uuid AND q.jugador_id=actor AND q.n=(body->>'n')::integer;
+ ELSIF p_action='asalto_respuesta' THEN
+  SELECT a.indices_visuales,a.orden INTO visual,ordering FROM suizamente_private.suizamente_asaltos a WHERE a.id=(body->>'id')::uuid AND a.jugador_id=actor;
+ ELSIF p_action='primera_vez_responder' THEN
+  SELECT v.indices_visuales,v.orden INTO visual,ordering FROM suizamente_private.suizamente_primera_vez v WHERE v.jugador_id=actor;
+ END IF;
+ IF visual AND body->>'opcion' IS NOT NULL THEN
+  choice:=(body->>'opcion')::integer;
+  IF choice<0 OR choice>=cardinality(ordering) THEN RAISE EXCEPTION 'SZV2:400:Elige una opción disponible';END IF;
+  body:=jsonb_set(body,'{opcion}',to_jsonb(ordering[choice+1]));
+ END IF;
+ data:=suizamente_private.v21_api_base(p_action,body,p_guest_id,p_guest_token);
+ IF p_action='config' THEN RETURN data||jsonb_build_object('apiVersion',21);END IF;
+ IF p_action IN('primera_vez','primera_vez_responder') THEN
+  SELECT p.payload INTO question FROM suizamente_private.suizamente_primera_vez v JOIN suizamente_private.suizamente_preguntas p ON p.id=v.pregunta_id WHERE v.jugador_id=actor;
+  UPDATE suizamente_private.suizamente_primera_vez SET indices_visuales=indices_visuales OR orden IS NULL,orden=coalesce(orden,suizamente_private.v21_orden(question)) WHERE jugador_id=actor RETURNING orden,indices_visuales INTO stored,visual;
+  data:=jsonb_set(data,'{pregunta,opciones}',(SELECT jsonb_agg(o ORDER BY ord) FROM unnest(stored) WITH ORDINALITY a(i,ord) JOIN jsonb_array_elements(data#>'{pregunta,opciones}') o ON (o->>'indice')::integer=i));
+  IF visual THEN
+   data:=jsonb_set(data,'{pregunta}',suizamente_private.v21_visible(data->'pregunta'));
+  FOREACH k IN ARRAY ARRAY['correcta','opcion'] LOOP
+   IF data->'resultado' ? k THEN data:=jsonb_set(data,ARRAY['resultado',k],to_jsonb(array_position(stored,(data#>>ARRAY['resultado',k])::smallint)-1));END IF;
+  END LOOP;
+  END IF;
+  RETURN data;
+ END IF;
+ IF p_action IN('partida','girar','pregunta','respuesta','comodin','duelo','rendirse','crear_partida') THEN
+  SELECT q.indices_visuales INTO visual FROM suizamente_private.suizamente_partida_preguntas q WHERE q.partida_id=(data->>'id')::uuid AND q.jugador_id=actor ORDER BY q.n DESC LIMIT 1;
+ ELSIF p_action IN('asalto','asalto_empezar','asalto_siguiente','asalto_respuesta','asalto_comodin','asalto_descartar') THEN
+  SELECT a.indices_visuales INTO visual FROM suizamente_private.suizamente_asaltos a WHERE a.id=(data->>'id')::uuid AND a.jugador_id=actor;
+ ELSE visual:=false;
+ END IF;
+ IF visual THEN
+  FOREACH k IN ARRAY ARRAY['pregunta','resultado'] LOOP
+   IF jsonb_typeof(data->k)='object' THEN data:=jsonb_set(data,ARRAY[k],suizamente_private.v21_visible(data->k));END IF;
+  END LOOP;
+ END IF;
+ RETURN data;
+END $$;
+REVOKE ALL ON FUNCTION suizamente_private.v21_orden(jsonb) FROM PUBLIC,anon,authenticated;
+REVOKE ALL ON FUNCTION suizamente_private.v21_api_base(text,jsonb,uuid,text) FROM PUBLIC,anon,authenticated;
+REVOKE ALL ON FUNCTION suizamente_private.v21_nueva_pregunta(),suizamente_private.v21_visible(jsonb) FROM PUBLIC,anon,authenticated;
+REVOKE ALL ON FUNCTION public.suizamente_v2(text,jsonb,uuid,text) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.suizamente_v2(text,jsonb,uuid,text) TO anon,authenticated;
+-- The base-game catalogue and votes also accept original index 3, if installed.
+DO $$ BEGIN
+ IF to_regclass('public.suizamente_catalogo_votos') IS NOT NULL THEN
+  ALTER TABLE public.suizamente_catalogo_votos DROP CONSTRAINT IF EXISTS suizamente_catalogo_votos_opciones_check;
+  ALTER TABLE public.suizamente_catalogo_votos ADD CONSTRAINT suizamente_catalogo_votos_opciones_check CHECK(opciones BETWEEN 2 AND 4);
+  ALTER TABLE public.suizamente_votos DROP CONSTRAINT IF EXISTS suizamente_votos_opcion_check;
+  ALTER TABLE public.suizamente_votos ADD CONSTRAINT suizamente_votos_opcion_check CHECK(opcion BETWEEN 0 AND 3);
+ END IF;
+END $$;
+DO $$ DECLARE r record;definition text;BEGIN
+ IF to_regclass('suizamente_social.preguntas') IS NOT NULL THEN
+  ALTER TABLE suizamente_social.preguntas DROP CONSTRAINT IF EXISTS preguntas_opciones_check;
+  ALTER TABLE suizamente_social.preguntas ADD CONSTRAINT preguntas_opciones_check CHECK(opciones BETWEEN 2 AND 4);
+ END IF;
+ FOR r IN SELECT p.oid FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname IN('public','suizamente_social') AND p.prosrc LIKE '%propuesta_crear%' LOOP
+  SELECT pg_get_functiondef(r.oid) INTO definition;
+  IF position('v21 legacy four' IN definition)>0 THEN CONTINUE;END IF;
+  definition:=replace(definition,'jsonb_array_length(detalle) NOT BETWEEN 2 AND 3','/* v21 legacy four */ (tipo=''real'' AND jsonb_array_length(detalle)<>4) OR (tipo<>''real'' AND jsonb_array_length(detalle) NOT BETWEEN 2 AND 3)');
+  definition:=replace(definition,'jsonb_array_length(detalle->''opciones'') NOT BETWEEN 2 AND 3','(item.tipo=''real'' AND jsonb_array_length(detalle->''opciones'')<>4) OR (item.tipo<>''real'' AND jsonb_array_length(detalle->''opciones'') NOT BETWEEN 2 AND 3)');
+  EXECUTE definition;
+ END LOOP;
+END $$;
+-- REVIEWED_BANK follows: generated data changes only append the fourth option and
+-- replace the question emoji. Existing answers, votes and question snapshots stay intact.

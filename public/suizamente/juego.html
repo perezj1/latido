@@ -112,7 +112,7 @@ button{font:inherit;color:inherit}
 .opt .oe{width:46px;height:46px;flex:none;border-radius:16px;display:grid;place-items:center;font-size:26px;background:color-mix(in srgb,var(--oc) 22%,var(--card))}
 .opts:not(.with-or) .oe{width:38px;height:38px;font-size:23px}
 .opt .ot{min-width:0;max-width:32ch}
-.opt.o1{--oc:var(--blue)} .opt.o2{--oc:var(--orange)} .opt.o3{--oc:var(--sky)}
+.opt.o1{--oc:var(--blue)} .opt.o2{--oc:var(--orange)} .opt.o3{--oc:var(--sky)} .opt.o4{--oc:var(--red)}
 .opt.picked{background:var(--oc);border-color:var(--oc);color:#fff}
 .opt.o2.picked,.opt.o3.picked{color:var(--on-light)}
 .opt.picked .oe{background:rgba(255,255,255,.35)}
@@ -136,7 +136,7 @@ button{font:inherit;color:inherit}
 .res-p{font-weight:900;font-size:26px;line-height:1;font-variant-numeric:tabular-nums;inline-size:4ch;text-align:right;white-space:nowrap}
 .res-bar{height:14px;border-radius:99px;background:var(--wash);overflow:hidden}
 .res-bar i{display:block;height:100%;width:0;border-radius:99px;background:var(--oc);transition:width 1.1s cubic-bezier(.2,.9,.25,1)}
-.res.o1{--oc:var(--blue)} .res.o2{--oc:var(--orange)} .res.o3{--oc:var(--sky)}
+.res.o1{--oc:var(--blue)} .res.o2{--oc:var(--orange)} .res.o3{--oc:var(--sky)} .res.o4{--oc:var(--red)}
 .tags{display:flex;gap:6px;flex-wrap:wrap}
 .tag{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:999px;font-weight:700;font-size:11.5px;letter-spacing:.04em;background:var(--wash);color:var(--ink)}
 .tag.true{background:color-mix(in srgb,var(--sea) 22%,var(--card));color:var(--ink)}
@@ -168,6 +168,8 @@ textarea.copybox{width:100%;min-height:90px;border-radius:14px;border:2px solid 
 .rise{animation:rise .5s cubic-bezier(.2,.8,.2,1) both}
 .in{animation:rise .45s cubic-bezier(.2,.8,.2,1) both}
 @media (prefers-reduced-motion: reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+
+.opt.answer{justify-content:center;text-align:center}.opt.answer .ot{max-width:none}.opt.o4.picked{color:#fff}
 </style>
 <link rel="stylesheet" href="/suizamente/conquista.css">
 </head>

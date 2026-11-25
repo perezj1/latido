@@ -95,7 +95,7 @@ function nuevaRonda(modo = modoActual, opciones = {}) {
   } else elegidas = priorizar(pool).slice(0, CONFIG.ronda);
   const ids = opciones.ids ? opciones.ids.filter(id=>pregunta(id)&&MODOS.mix.filtro(pregunta(id))) : elegidas.map(q => q.id);
   if(!ids.length){if(experiencia)experiencia.exit();return;}
-  const orden = {}; for (const id of ids) orden[id] = mezcla(pregunta(id).opciones.map((_, i) => i));
+  const orden = {}; for (const id of ids) orden[id] = pregunta(id).opciones.length===2&&pregunta(id).opciones[0].t==='Verdad'&&pregunta(id).opciones[1].t==='Mito'?[0,1]:mezcla(pregunta(id).opciones.map((_, i) => i));
   ronda = { modo, ids, i: 0, orden, marcas: [], res: [], contexto:opciones.contexto||null };
   experiencia?.resetRound();
   pintarPregunta();
@@ -144,7 +144,7 @@ function pintarPregunta() {
   app.classList.add('playing');
   const id = ronda.ids[ronda.i], q = pregunta(id), real = q.tipo === 'real';
   const prog = ronda.ids.map((_, i) => `<i class="${ronda.marcas[i] || (i === ronda.i ? 'now' : '')}"></i>`).join('');
-  const ops = ronda.orden[id].map((oi, k) => `<button class="opt o${k + 1}" type="button" data-o="${oi}"><span class="oe" aria-hidden="true">${q.opciones[oi].e}</span><span class="ot">${esc(q.opciones[oi].t)}</span></button>`);
+  const ops = ronda.orden[id].map((oi, k) => `<button class="opt o${k + 1}${real?' answer':''}" type="button" data-o="${oi}">${real?'':`<span class="oe" aria-hidden="true">${q.opciones[oi].e}</span>`}<span class="ot">${esc(q.opciones[oi].t)}</span></button>`);
   app.innerHTML = `<div class="bar">
       <button class="icon-btn" id="salir" type="button" aria-label="Volver al inicio">×</button>
       <div class="prog" aria-label="Pregunta ${ronda.i + 1} de ${ronda.ids.length}">${prog}</div>
@@ -232,7 +232,7 @@ function refrescarResultado() {
     const elegida = oi === o;
     const verdadera = real && oi === q.correcta ? '<div class="tags"><span class="tag true">✓ La verdadera</span></div>' : '';
     const dato = datos[oi] ? `<div class="answer-fact"><b><span aria-hidden="true">💡</span> ¿Sabías que…?</b><p>${esc(datos[oi])}</p></div>` : '';
-    return `<div class="res o${ordenOpciones.indexOf(oi) + 1}${elegida ? ' is-picked' : ''}">${elegida ? '<span class="tag mine">Tu elección</span>' : ''}<div class="res-top"><span class="res-t">${q.opciones[oi].e} ${esc(q.opciones[oi].t)}</span><span class="res-p" data-p="${hayDatos ? rep.pct[oi] : ''}">${hayDatos ? rep.pct[oi] + '%' : '—'}</span></div>
+    return `<div class="res o${ordenOpciones.indexOf(oi) + 1}${elegida ? ' is-picked' : ''}">${elegida ? '<span class="tag mine">Tu elección</span>' : ''}<div class="res-top"><span class="res-t">${real?'':q.opciones[oi].e+' '}${esc(q.opciones[oi].t)}</span><span class="res-p" data-p="${hayDatos ? rep.pct[oi] : ''}">${hayDatos ? rep.pct[oi] + '%' : '—'}</span></div>
       <div class="res-bar"><i style="width:${hayDatos ? rep.pct[oi] : 0}%" data-w="${hayDatos ? rep.pct[oi] : 0}"></i></div>${verdadera}${dato}</div>`;
   }).join('');
   $('#dato-comun').innerHTML=comun?`<div class="answer-fact s-common-fact"><b><span aria-hidden="true">💡</span> Sobre este dilema</b><p>${esc(comun)}</p></div>`:'';
@@ -280,7 +280,7 @@ async function compartirImagen(options,msg) {
   try{msg.textContent=await compartirHistoria(options)}catch{msg.textContent='No se ha podido preparar la imagen. Vuelve a intentarlo.'}
 }
 
-/* ---------- teclado: 1-3 elige, Esc o Enter pasa ---------- */
+/* ---------- teclado: 1-4 elige, Esc o Enter pasa ---------- */
 document.addEventListener('keydown', e => {
   if(experiencia?.sharing)return;
   if (resultadoAbierto && e.key === 'Tab') {
@@ -290,7 +290,7 @@ document.addEventListener('keydown', e => {
     return;
   }
   if (resultadoAbierto && e.key === 'Escape') { e.preventDefault(); siguiente(); return; }
-  if (!resultadoAbierto && ronda && /^[1-3]$/.test(e.key)) { const b = app.querySelectorAll('.opt')[+e.key - 1]; if (b) b.click(); }
+  if (!resultadoAbierto && ronda && /^[1-4]$/.test(e.key)) { const b = app.querySelectorAll('.opt')[+e.key - 1]; if (b) b.click(); }
 });
 
 /* ---------- arranque ---------- */

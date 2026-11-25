@@ -41,6 +41,10 @@ function real(id, tema, emoji, pregunta, opciones, dato, barajarOpciones = true)
   return { id, tipo: 'real', tema, emoji, pregunta, opciones: lista.map(o => ({ e: o.e, t: o.t })), correcta: lista.findIndex(o => o.ok), dato };
 }
 const dilema = (id, tema, emoji, pregunta, opciones, dato) => ({ id, tipo: 'dilema', tema, emoji, pregunta, opciones: opciones.map(op), dato });
+// Cuarta opción (siempre incorrecta): se añade al final, después de montar el banco, para no cambiar ni el id ni el
+// orden de las opciones que ya existían. q._cuarta = el texto; si no, la de fuentes/cuarta-opcion.txt
+const con4 = (q, texto) => Object.assign(q, { _cuarta: texto });
+const otraMas = (lista, usados, id, clave) => barajar(lista.filter(x => !usados.some(u => clave(u).toLowerCase() === clave(x).toLowerCase())), rng(id + '·4'))[0];
 const conEmojis = (textos, emojis) => textos.map((t, i) => `${t.startsWith('*') ? '*' : ''}${emojis[i]} ${t.replace(/^\*/, '')}`);
 
 /* ---------- 1. base (100 preguntas originales, intocables) ---------- */
@@ -74,10 +78,12 @@ for (const v of vocab) {
   if (!IDIOMAS[v.l]) { errores.push(`vocabulario: idioma «${v.l}» no válido`); continue; }
   const otros = vocab.filter(x => x.l === v.l && x !== v && x.significado.toLowerCase() !== v.significado.toLowerCase() && x.palabra.toLowerCase() !== v.palabra.toLowerCase());
   const id1 = 'voc_' + hash(v.l + v.palabra), d1 = tomar(otros, 2, rng(id1));
-  vocabIda.push(real(id1, 'idioma', v.emoji, IDIOMAS[v.l].ida.replace('%', v.palabra), [`*${v.emoji} ${v.significado}`, ...d1.map(x => `${x.emoji} ${x.significado}`)], v.dato));
+  const x1 = otraMas(otros, [v, ...d1], id1, x => x.significado);
+  vocabIda.push(con4(real(id1, 'idioma', v.emoji, IDIOMAS[v.l].ida.replace('%', v.palabra), [`*${v.emoji} ${v.significado}`, ...d1.map(x => `${x.emoji} ${x.significado}`)], v.dato), x1 && `${x1.emoji} ${x1.significado}`));
   if (v.significado.length <= 30) {
     const id2 = 'vocr_' + hash(v.l + v.palabra), d2 = tomar(otros, 2, rng(id2));
-    vocabVuelta.push(real(id2, 'idioma', v.emoji, IDIOMAS[v.l].vuelta.replace('%', v.significado), [`*${v.emoji} ${v.palabra}`, ...d2.map(x => `${x.emoji} ${x.palabra}`)], v.dato));
+    const x2 = otraMas(otros, [v, ...d2], id2, x => x.palabra);
+    vocabVuelta.push(con4(real(id2, 'idioma', v.emoji, IDIOMAS[v.l].vuelta.replace('%', v.significado), [`*${v.emoji} ${v.palabra}`, ...d2.map(x => `${x.emoji} ${x.palabra}`)], v.dato), x2 && `${x2.emoji} ${x2.palabra}`));
   }
 }
 
@@ -87,32 +93,37 @@ const capitales = [];
 for (const k of cantones.filter(k => k.capital.toLowerCase() !== k.nombre.toLowerCase())) {
   const otros = cantones.filter(x => x !== k);
   const id1 = 'cap_' + hash(k.code), d1 = tomar(otros, 2, rng(id1));
-  capitales.push(real(id1, 'cultura', k.emoji, `¿Cuál es la capital del cantón de ${k.nombre}?`, conEmojis([`*${k.capital}`, ...d1.map(x => x.capital)], ['🏛️', '🏙️', '🏘️']), k.dato));
+  const x1 = otraMas(otros, [k, ...d1], id1, x => x.capital);
+  capitales.push(con4(real(id1, 'cultura', k.emoji, `¿Cuál es la capital del cantón de ${k.nombre}?`, conEmojis([`*${k.capital}`, ...d1.map(x => x.capital)], ['🏛️', '🏙️', '🏘️']), k.dato), x1 && `🏢 ${x1.capital}`));
   const id2 = 'capr_' + hash(k.code), d2 = tomar(otros, 2, rng(id2));
-  capitales.push(real(id2, 'cultura', k.emoji, `¿De qué cantón es capital ${k.capital}?`, conEmojis([`*${k.nombre}`, ...d2.map(x => x.nombre)], ['🗺️', '📍', '🧭']), k.dato));
+  const x2 = otraMas(otros, [k, ...d2], id2, x => x.nombre);
+  capitales.push(con4(real(id2, 'cultura', k.emoji, `¿De qué cantón es capital ${k.capital}?`, conEmojis([`*${k.nombre}`, ...d2.map(x => x.nombre)], ['🗺️', '📍', '🧭']), k.dato), x2 && `🏔️ ${x2.nombre}`));
 }
 const ciudades = leer('ciudades.txt').map(([ciudad, code, emoji, dato]) => {
   const k = cantones.find(x => x.code === code); if (!k) { errores.push(`ciudades: cantón «${code}» desconocido (${ciudad})`); return null; }
   const id = 'ciu_' + hash(ciudad), d = tomar(cantones.filter(x => x !== k), 2, rng(id));
-  return real(id, 'cultura', emoji, `¿En qué cantón está ${ciudad}?`, conEmojis([`*${k.nombre}`, ...d.map(x => x.nombre)], ['📍', '🗺️', '🧭']), dato);
+  const x = otraMas(cantones, [k, ...d], id, c => c.nombre);
+  return con4(real(id, 'cultura', emoji, `¿En qué cantón está ${ciudad}?`, conEmojis([`*${k.nombre}`, ...d.map(x => x.nombre)], ['📍', '🗺️', '🧭']), dato), x && `🏔️ ${x.nombre}`);
 }).filter(Boolean);
 
 /* ---------- 5. fechas, personas, inventos ---------- */
 const fechas = leer('fechas.txt').map(([anio, emoji, evento, dato]) => {
   const y = +anio, id = 'fec_' + hash(evento), r = rng(id);
   const cand = barajar([-61, -43, -29, -17, -9, 8, 14, 23, 38, 52], r).map(o => y + o).filter(a => a > 1000 && a <= 2025);
-  return real(id, 'cultura', emoji, `¿En qué año ${evento}?`, conEmojis([`*${y}`, String(cand[0]), String(cand[1])], ['📅', '🗓️', '⏳']), dato);
+  return con4(real(id, 'cultura', emoji, `¿En qué año ${evento}?`, conEmojis([`*${y}`, String(cand[0]), String(cand[1])], ['📅', '🗓️', '⏳']), dato), cand[2] && `⌛ ${cand[2]}`);
 });
 const personas = leer('personas.txt').map(([tiempo, nombre, desc, emoji, dato]) => ({ tiempo, nombre, desc, emoji, dato }));
 const personasQ = personas.map(p => {
   const id = 'per_' + hash(p.nombre), d = tomar(personas.filter(x => x !== p), 2, rng(id));
-  return real(id, 'cultura', p.emoji, `¿Quién ${p.tiempo === 'es' ? 'es' : 'fue'} ${p.nombre}?`, [`*${p.emoji} ${p.desc}`, ...d.map(x => `${x.emoji} ${x.desc}`)], p.dato);
+  const x = otraMas(personas, [p, ...d], id, y => y.desc);
+  return con4(real(id, 'cultura', p.emoji, `¿Quién ${p.tiempo === 'es' ? 'es' : 'fue'} ${p.nombre}?`, [`*${p.emoji} ${p.desc}`, ...d.map(x => `${x.emoji} ${x.desc}`)], p.dato), x && `${x.emoji} ${x.desc}`);
 });
 const NO_SUIZOS = ['💡 La bombilla eléctrica', '📞 El teléfono', '📻 La radio', '🖨️ La imprenta', '✈️ El avión', '🖊️ El bolígrafo', '📺 La televisión', '🚗 El automóvil', '🤐 La cremallera', '📷 La fotografía', '🧲 La brújula', '🔭 El telescopio'];
 const ENUNCIADOS_INVENTO = ['¿Cuál de estos inventos nació en Suiza?', 'Solo uno de estos inventos es suizo. ¿Cuál?', '¿Qué se inventó en Suiza?'];
 const inventos = leer('inventos.txt').map(([invento, emoji, dato]) => {
   const id = 'inv_' + hash(invento), r = rng(id);
-  return real(id, 'cultura', emoji, ENUNCIADOS_INVENTO[Math.floor(r() * ENUNCIADOS_INVENTO.length)], [`*${emoji} ${invento}`, ...tomar(NO_SUIZOS, 2, r)], dato);
+  const enunciado = ENUNCIADOS_INVENTO[Math.floor(r() * ENUNCIADOS_INVENTO.length)], d = tomar(NO_SUIZOS, 2, r);
+  return con4(real(id, 'cultura', emoji, enunciado, [`*${emoji} ${invento}`, ...d], dato), otraMas(NO_SUIZOS, d, id, s => s));
 });
 
 /* ---------- 6. parejas para dilemas ---------- */
@@ -174,27 +185,39 @@ const muestraVuelta = barajar(vocabVuelta, rng('vocabulario-vuelta')).slice(0, T
 for (const grupo of [manualR, vocabIda, ciudades, capitales, fechas, personasQ, inventos, muestraVuelta])
   for (const q of grupo) { if (cuenta('real') >= OBJETIVO.real) break; anadir(q); }
 
-/* ---------- 8. comprobar y escribir ---------- */
-// La revisión editorial solo cambia explicaciones. Se aplica después de elegir
-// las preguntas y sus datos para conservar IDs, opciones y ambos datos de cada pareja.
-if (process.argv.includes('--json-original')) {
-  const metadata = JSON.parse(fs.readFileSync(path.join(F, 'base.json'), 'utf8'));
-  const preguntas = todas.slice().sort((a, b) => (a.tipo === 'dilema' ? 0 : 1) - (b.tipo === 'dilema' ? 0 : 1));
-  process.stdout.write(JSON.stringify({ ...metadata, version:metadata.version + 1, preguntas }));
-  process.exit(0);
-}
-const revisiones = new Map(JSON.parse(fs.readFileSync(path.join(RAIZ, 'data', 'suizamente', 'revision-redaccion.json'), 'utf8')).map(r => [r.original, r.revisado]));
+/* ---------- 7b. cuarta opción ---------- */
+// Las preguntas con respuesta tienen 4 opciones (las de «¿Verdad o mito?», 2). La cuarta va al final: así no
+// cambian ni el id ni el índice de las opciones que ya tenían votos. Al jugar se muestran en orden aleatorio.
+const CUARTA = Object.fromEntries(leer('cuarta-opcion.txt').map(([id, texto]) => [id, texto]));
+const usadasCuarta = new Set();
 for (const q of todas) {
-  const partes = q.opciones.map(o => {
-    const titulo = `${o.e} ${o.t}:`;
-    return { titulo, inicio:q.dato.indexOf(titulo) };
-  }).filter(p => p.inicio >= 0).sort((a, b) => a.inicio - b.inicio);
-  if (!partes.length || partes[0].inicio !== 0) q.dato = revisiones.get(q.dato) || q.dato;
-  else q.dato = partes.map((p, i) => {
-    const texto = q.dato.slice(p.inicio + p.titulo.length, partes[i + 1]?.inicio ?? q.dato.length).trim();
-    return `${p.titulo} ${revisiones.get(texto) || texto}`;
-  }).join(' ');
+  const texto = q._cuarta || CUARTA[q.id];
+  delete q._cuarta;
+  if (q.tipo !== 'real' || q.opciones.length !== 3) continue;
+  if (!texto) { errores.push(`${q.id}: le falta la cuarta opción (fuentes/cuarta-opcion.txt) «${q.pregunta}»`); continue; }
+  if (CUARTA[q.id]) usadasCuarta.add(q.id);
+  const o = op(texto);
+  if (q.opciones.some(x => x.t.toLowerCase() === o.t.toLowerCase())) errores.push(`${q.id}: la cuarta opción repite otra («${o.t}»)`);
+  q.opciones.push(o);
 }
+for (const id of Object.keys(CUARTA)) if (!usadasCuarta.has(id)) errores.push(`cuarta-opcion.txt: «${id}» no es una pregunta de 3 opciones del banco`);
+
+/* ---------- 7c. el emoji de la pregunta no puede dar la respuesta ---------- */
+// Las opciones se enseñan sin emoji. Si el emoji de una pregunta con respuesta es el de alguna de sus opciones (pasa
+// en el vocabulario, las personas, los inventos y en muchas escritas a mano), delataría la respuesta: se cambia por uno
+// neutro, el propio del tipo de pregunta o el del tema. Si ese también coincide con una opción, ❓.
+// No cambia el id ni las opciones. Las de «¿Verdad o mito?» (2 opciones) no se tocan.
+const EMOJI_TEMA = { comida: '🍽️', casa: '🏠', papeles: '📄', trabajo: '💼', dinero: '💰', salud: '🩺', transporte: '🚆', idioma: '🗣️', social: '🤝', fiestas: '🎉', naturaleza: '🌲', cultura: '🏛️' };
+const EMOJI_TIPO = [[/^vocr_/, '💬'], [/^voc_/, '🗣️'], [/^per_/, '👤'], [/^inv_/, '⚙️']];
+let neutros = 0;
+for (const q of todas) {
+  if (q.tipo !== 'real' || q.opciones.length < 3 || !q.opciones.some(o => o.e === q.emoji)) continue;
+  const propio = (EMOJI_TIPO.find(([re]) => re.test(q.id)) || [])[1];
+  q.emoji = [propio, EMOJI_TEMA[q.tema], '❓'].filter(Boolean).find(e => !q.opciones.some(o => o.e === e)) || '❓';
+  neutros++;
+}
+
+/* ---------- 8. comprobar y escribir ---------- */
 for (const q of todas) {
   if (q.pregunta.length > LIM.pregunta) errores.push(`${q.id}: pregunta de ${q.pregunta.length} caracteres`);
   if (q.dato.length > LIM.dato) errores.push(`${q.id}: dato de ${q.dato.length} caracteres`);
@@ -207,6 +230,7 @@ const txt = '{\n  "version": ' + (datos.version + 1) + ',\n  "nombre": "Suizamen
 
 const disponibles = { 'manual D': manualD.length, 'parejas posibles': colas.reduce((a, c) => a + c.length, 0), 'manual R+V': manualR.length, 'vocabulario ida': vocabIda.length, 'vocabulario vuelta': vocabVuelta.length, ciudades: ciudades.length, capitales: capitales.length, fechas: fechas.length, personas: personasQ.length, inventos: inventos.length };
 console.log('Disponibles:', Object.entries(disponibles).map(([k, v]) => `${k} ${v}`).join(' · '));
+console.log(`Emojis de pregunta cambiados porque daban la respuesta: ${neutros}`);
 console.log(`Banco: ${todas.length} (dilemas ${cuenta('dilema')}/${OBJETIVO.dilema}, preguntas y respuestas ${cuenta('real')}/${OBJETIVO.real})`);
 const porTema = {}; todas.forEach(q => porTema[q.tema] = (porTema[q.tema] || 0) + 1);
 console.log('Por tema:', Object.entries(porTema).map(([k, v]) => `${k} ${v}`).join(' · '));

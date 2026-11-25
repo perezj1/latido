@@ -486,7 +486,7 @@ BEGIN
       tipo:=p_datos->>'tipo'; detalle:=p_datos->'opciones';
       IF tipo NOT IN('dilema','real','mito','correccion') OR p_datos->>'tema' NOT IN('comida','casa','papeles','trabajo','dinero','salud','transporte','idioma','social','fiestas','naturaleza','cultura') THEN RAISE SQLSTATE 'PT400' USING MESSAGE='Tipo o tema no válido'; END IF;
       IF tipo IN('real','dilema') THEN
-        IF jsonb_typeof(detalle)<>'array' OR jsonb_array_length(detalle) NOT BETWEEN 2 AND 3 OR (tipo='dilema' AND jsonb_array_length(detalle)<>2)
+        IF jsonb_typeof(detalle)<>'array' OR (tipo='real' AND jsonb_array_length(detalle)<>4) OR (tipo<>'real' AND jsonb_array_length(detalle) NOT BETWEEN 2 AND 3) OR (tipo='dilema' AND jsonb_array_length(detalle)<>2)
           OR EXISTS(SELECT 1 FROM jsonb_array_elements_text(detalle) o WHERE length(trim(o)) NOT BETWEEN 1 AND 90) THEN RAISE SQLSTATE 'PT400' USING MESSAGE='Revisa las opciones'; END IF;
       END IF;
       IF tipo='real' AND ((p_datos->>'correcta')::int IS NULL OR (p_datos->>'correcta')::int NOT BETWEEN 0 AND jsonb_array_length(detalle)-1) THEN RAISE SQLSTATE 'PT400' USING MESSAGE='Marca la respuesta correcta'; END IF;
@@ -506,7 +506,7 @@ BEGIN
           IF jsonb_typeof(detalle)<>'object' THEN RAISE SQLSTATE 'PT400' USING MESSAGE='Contenido no válido'; END IF;
           IF item.tipo IN('dilema','real') AND detalle?'opciones' THEN
             IF jsonb_typeof(detalle->'opciones')<>'array' THEN RAISE SQLSTATE 'PT400' USING MESSAGE='Revisa las opciones'; END IF;
-            IF jsonb_array_length(detalle->'opciones') NOT BETWEEN 2 AND 3
+            IF (item.tipo='real' AND jsonb_array_length(detalle->'opciones')<>4) OR (item.tipo<>'real' AND jsonb_array_length(detalle->'opciones') NOT BETWEEN 2 AND 3)
               OR (item.tipo='dilema' AND jsonb_array_length(detalle->'opciones')<>2)
               OR EXISTS(SELECT 1 FROM jsonb_array_elements(detalle->'opciones') o
                 WHERE jsonb_typeof(o)<>'string' OR length(trim(o#>>'{}')) NOT BETWEEN 1 AND 90) THEN
