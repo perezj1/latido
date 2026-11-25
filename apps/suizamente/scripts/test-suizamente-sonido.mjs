@@ -61,8 +61,8 @@ try{
  blocked.unlock();await advance(.05);assert.equal(blockedCtx.state,'running');assert.equal(blocked.sonando.musica,true);assert.equal(maximum,1)
  blocked.ocultar();blocked.unlock();await advance(.05);assert.equal(blockedCtx.gains[0].gain.value,.85,'a visible gesture recovers even if pageshow was missed');blocked.dispose()
  const unsupported=createFeedback(()=>settings,{document:{}});unsupported.unlock();assert.equal(unsupported.play('victoria'),0);unsupported.dispose()
- for(const pathname of ['/suizamente','/suizamente/partida/a','/suizamente/mapa','/suizamente/album','/suizamente/tienda','/suizamente/amigos','/suizamente/perfil','/suizamente/ajustes'])assert.equal(backgroundMusicFor({pathname}),true)
- for(const pathname of ['/suizamente/primera-vez','/suizamente/pregunta/a','/suizamente/pregunta-del-dia','/suizamente/admin','/suizamente/admin/propuestas'])assert.equal(backgroundMusicFor({pathname}),false)
- for(const flag of ['onboarding','opening','question'])assert.equal(backgroundMusicFor({pathname:'/suizamente/partida/a',[flag]:true}),false)
+ for(const pathname of ['/suizamente','/suizamente/mapa','/suizamente/album','/suizamente/tienda','/suizamente/amigos','/suizamente/perfil','/suizamente/ajustes'])assert.equal(backgroundMusicFor({pathname}),true)
+ for(const pathname of ['/suizamente/primera-vez','/suizamente/partida/a','/suizamente/sobre/a','/suizamente/cofre/a','/suizamente/pregunta/a','/suizamente/pregunta-del-dia','/suizamente/admin','/suizamente/admin/propuestas'])assert.equal(backgroundMusicFor({pathname}),false)
+ for(const flag of ['onboarding','opening','question'])assert.equal(backgroundMusicFor({pathname:'/suizamente/nueva',[flag]:true}),false)
  assert.equal(live,0);console.log('Todo correcto: reference score/instruments/volumes; gesture and opening expiry; one AudioContext; wheel motif; fades/ducking; independent switches; vibration; hidden silence; persistent receipts; cleanup and central route policy.')
 }finally{Object.assign(globalThis,original)}

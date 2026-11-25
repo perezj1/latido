@@ -2,13 +2,14 @@ import {useEffect,useRef,useState} from 'react'
 import {createPortal} from 'react-dom'
 import {Link,useNavigate} from 'react-router-dom'
 import {useSv} from './Context'
+import {warmDestination} from './preload'
 export {LatidoBackdrop} from './LatidoBackdrop'
 export {MatchWheel} from './MatchWheel'
 
 export function Logo({size=38}){return <img className="sv-logo" src="/suizamente-assets/logo-suizamente.svg" width={size} alt="Suizamente"/>}
 export function Brand(){return <span className="sv-brand"><span>Suiza</span><span>mente</span></span>}
 export function Button({children,onClick,to,tone='',disabled=false,...props}){
-  return to?<Link className={'sv-button '+tone} to={to} {...props}>{children}</Link>:<button type="button" className={'sv-button '+tone} onClick={onClick} disabled={disabled} {...props}>{children}</button>
+  return to?<Link className={'sv-button '+tone} to={to} onPointerEnter={()=>warmDestination(to)} onFocus={()=>warmDestination(to)} onPointerDown={()=>warmDestination(to)} {...props}>{children}</Link>:<button type="button" className={'sv-button '+tone} onClick={onClick} disabled={disabled} {...props}>{children}</button>
 }
 export function Avatar({id,name='',color='menta',level,marco,photo}){
   const {player,avatarUrl,avatars={}}=useSv(),pid=id||null,own=!!pid&&pid===player?.jugador_id,frame=marco||(own?player.marco:null),image=photo||(own?player.ajustes?.foto_url:null)||avatars[pid]||(own?avatarUrl:null),[failed,setFailed]=useState(null),[loaded,setLoaded]=useState(null)
@@ -42,7 +43,8 @@ export function Wheel({categories,rotation=0,spinning=false,duration=2700,onSpin
 }
 export function Navigation({waiting=0,enabled=['mapa','album','inicio','tienda','amigos'],active='inicio'}){
   const tabs=[['mapa','🗺️','Mapa'],['album','🃏','Álbum'],['inicio','','Inicio'],['tienda','🛒','Tienda'],['amigos','👥','Amigos']]
-  return <nav className="sv-nav" aria-label="Navegación principal"><div className="sv-nav-pill">{tabs.map(([id,emoji,label],i)=><span key={id} style={{gridColumn:i+1}}>{enabled.includes(id)&&<Link to={'/suizamente'+(id==='inicio'?'':'/'+id)} aria-label={label} aria-current={id===active?'page':undefined}><span className={'sv-nav-icon '+(id==='inicio'?'home':'')}>{emoji||<span className="sv-nav-logo"><Logo size={30}/></span>} {!!waiting&&id==='inicio'&&<b aria-label={waiting+' partidas te esperan'}>{waiting}</b>}</span><span className="sv-nav-label">{label}</span></Link>}</span>)}</div></nav>
+  const warm=id=>{if(id!==active)warmDestination('/suizamente/'+id)}
+  return <nav className="sv-nav" aria-label="Navegación principal"><div className="sv-nav-pill">{tabs.map(([id,emoji,label],i)=><span key={id} style={{gridColumn:i+1}}>{enabled.includes(id)&&<Link to={'/suizamente'+(id==='inicio'?'':'/'+id)} onPointerEnter={()=>warm(id)} onPointerDown={()=>warm(id)} onFocus={()=>warm(id)} aria-label={label} aria-current={id===active?'page':undefined}><span className={'sv-nav-icon '+(id==='inicio'?'home':'')}>{emoji||<span className="sv-nav-logo"><Logo size={30}/></span>} {!!waiting&&id==='inicio'&&<b aria-label={waiting+' partidas te esperan'}>{waiting}</b>}</span><span className="sv-nav-label">{label}</span></Link>}</span>)}</div></nav>
 }
 export function Sheet({title,children,onClose}){
   const dialog=useRef(null),previous=useRef(document.activeElement),close=useRef(onClose)

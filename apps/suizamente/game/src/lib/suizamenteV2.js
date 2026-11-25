@@ -2,7 +2,7 @@
 import {supabase,recoverSupabaseSession,invalidateSupabaseSession} from './supabase'
 import {notify} from './suizamenteNotices'
 const pendingReads=new Map()
-const recentReads=new Map(),readTtl={config:30000,jugador:1000,partidas:1000,emparejamiento:1000,mapa:1500,misiones:3000,liga:5000,dia:1000}
+const recentReads=new Map(),readTtl={config:30000,jugador:1000,partidas:1000,emparejamiento:1000,mapa:1500,album:1500,tienda:1500,amigos:1500,perfil:3000,logros:5000,misiones:3000,liga:5000,dia:1000}
 let revision=0,reader=null
 supabase.auth.onAuthStateChange((_event,session)=>{
  const actor=session?.user?.id||'invitado'
@@ -72,7 +72,12 @@ export async function szApi(path, {method='GET',body,fresh=false}={}) {
   const request=session?execute():guestQueue.then(execute)
   if(!session)guestQueue=request.catch(()=>{})
   if(method==='GET')pendingReads.set(key,request)
-  try{return await request}finally{if(pendingReads.get(key)===request)pendingReads.delete(key)}
+  try{return await request}finally{
+    // A read may finish while a write is in flight. Discard that snapshot again
+    // at completion (also after an unknown network outcome), so it cannot win.
+    if(method!=='GET'&&reader===actor){recentReads.clear();revision++}
+    if(pendingReads.get(key)===request)pendingReads.delete(key)
+  }
 }
 // Preserve canonical ids and option indexes; flags are replaced only in the view.
 function withoutFlags(value){

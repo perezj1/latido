@@ -7,6 +7,7 @@ import {useSv} from './Context'
 import {Button,Card,Header,Logo,Sheet,Wallet,LatidoBackdrop} from './Shared'
 import {ChestLinks} from './Map'
 import {szApi,szKey} from '../../../lib/suizamenteV2'
+import {useData} from './useData'
 
 const backPath=search=>{const path=new URLSearchParams(search).get('volver');return /^\/suizamente(?:\/|$)/.test(path||'')?path:'/suizamente/album'}
 function useOpenPack(back){
@@ -38,8 +39,7 @@ function AlbumCard({card,onClick,pack=false,justRevealed=false}){
   </button>
 }
 export function Album(){
-  const {player}=useSv(),[data,setData]=useState(null),[index,setIndex]=useState(0),[selected,setSelected]=useState(null),[error,setError]=useState(''),pack=useOpenPack('/suizamente/album')
-  useEffect(()=>{let active=true;szApi('album').then(x=>{if(active)setData(x)}).catch(e=>{if(active)setError(e.message)});return()=>{active=false}},[])
+  const {player}=useSv(),{data,error}=useData('album'),[index,setIndex]=useState(0),[selected,setSelected]=useState(null),pack=useOpenPack('/suizamente/album')
   const monthlyIndex=data?.colecciones.findIndex(c=>c.mes===data.mes)??-1
   const col=data?.colecciones[index],sobres=player.inventario?.sobres||0
   return <section className="sv-screen sv-album"><header className="sv-shop-header"><h1>🃏 Álbum</h1><Wallet/></header>

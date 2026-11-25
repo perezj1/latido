@@ -1,6 +1,6 @@
 import {ObjectArt} from './ObjectArt'
 import {useDailyGift} from './MomentArrival'
-import {useEffect,useState} from 'react'
+import {useState} from 'react'
 import {Link} from 'react-router-dom'
 import {useSv} from './Context'
 import {Avatar,Button,Card,Header,Wallet} from './Shared'
@@ -8,12 +8,12 @@ import {cantonNames,szApi} from '../../../lib/suizamenteV2'
 import {ProfileDuration} from './Duration'
 import {ShareSheet,storyData} from './Sharing'
 import {notify} from '../../../lib/suizamenteNotices'
+import {useData} from './useData'
 
 export function Profile(){
   const openGift=useDailyGift()
-  const {player,config}=useSv(),[data,setData]=useState(null),[error,setError]=useState('')
+  const {player,config}=useSv(),{data,error}=useData('perfil')
   const [sharing,setSharing]=useState(false)
-  useEffect(()=>{let active=true;szApi('perfil').then(x=>{if(active)setData(x)}).catch(e=>{if(active)setError(e.message)});return()=>{active=false}},[player.jugador_id])
   const achievements=data?.logros.filter(l=>l.conseguido).sort((a,b)=>Date.parse(b.conseguidoEn)-Date.parse(a.conseguidoEn))||[]
   const categoryCard=(title,entry)=>{
     const cat=config.categorias.find(c=>c.id===entry.categoria)
@@ -33,20 +33,13 @@ export function Profile(){
   </section>
 }
 export function Achievements(){
-  const [data,setData]=useState(null),[error,setError]=useState(''),[selected,setSelected]=useState(null)
-  useEffect(()=>{let active=true;szApi('logros').then(x=>{if(active)setData(x.logros)}).catch(e=>{if(active)setError(e.message)});return()=>{active=false}},[])
+  const {data:result,error}=useData('logros'),data=result?.logros,[selected,setSelected]=useState(null)
   return <section className="sv-screen"><Header title="🏅 Logros" back="/suizamente/perfil"/><div className="sv-content"><p>Tienes <b>{data?.filter(l=>l.conseguido).length||0}</b>. Toca uno para ver cómo se consigue.</p><div className="sv-achievements-grid">{data?.map(l=><button key={l.id} onClick={()=>setSelected(l)} aria-label={l.nombre+': '+(l.conseguido?'Conseguido':l.avance+'/'+l.meta)}><span className={l.conseguido?'achieved':''}>{l.emoji}</span><b>{l.nombre}</b><div className="sv-xp-bar"><i style={{width:Math.min(100,100*l.avance/l.meta)+'%'}}/></div><small>{l.conseguido?'✓ Conseguido':l.avance+'/'+l.meta}</small></button>)}</div>{selected&&<Card role="status"><b>{selected.emoji} {selected.nombre}</b><p>{selected.condicion}</p></Card>}{error&&<p role="alert" className="sv-error">{error}</p>}</div></section>
 }
 export function Shop(){
   const openGift=useDailyGift()
-  const {player,config}=useSv(),[data,setData]=useState(null),[busy,setBusy]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState('')
-  async function load(){try{setData(await szApi('tienda'))}catch(e){setError(e.message)}}
-  useEffect(()=>{
-    const refresh=()=>{if(document.visibilityState==='visible')load()}
-    refresh();const timer=setInterval(refresh,60000)
-    window.addEventListener('focus',refresh)
-    return()=>{clearInterval(timer);window.removeEventListener('focus',refresh)}
-  },[config.version])
+  const {player}=useSv(),{data,setData,error,setError}=useData('tienda',{refreshMs:60000}),[busy,setBusy]=useState(false),[notice,setNotice]=useState('')
+  async function load(){try{setData(await szApi('tienda',{fresh:true}))}catch(e){setError(e.message)}}
   async function buy(article){
     if(busy)return
     setBusy(true);setError('');setNotice('')

@@ -2,6 +2,7 @@ import React,{lazy,Suspense} from 'react'
 import './installation'
 import {LoadingScreen} from './Loading'
 import {szApi} from './src/lib/suizamenteV2'
+import {warmDestination} from './src/components/suizamente/v2/preload'
 import {createRoot} from 'react-dom/client'
 import {BrowserRouter,Navigate,Route,Routes,useLocation,useSearchParams} from 'react-router-dom'
 import {Toaster} from 'react-hot-toast'
@@ -28,8 +29,8 @@ function WarmGameData(){
   if(loading||!pathname.startsWith('/suizamente')||warmed.current===authUser.id||localStorage.getItem('suizamente:invitado-con-datos'))return
   warmed.current=authUser.id
   szApi('jugador').catch(()=>{})
-  if(/^\/suizamente\/?$/.test(pathname)||pathname==='/suizamente/nueva')szApi('partidas').catch(()=>{})
-  if(pathname==='/suizamente/nueva')szApi('emparejamiento').catch(()=>{})
+  warmDestination(pathname)
+  if(/^\/suizamente\/?$/.test(pathname))szApi('partidas').catch(()=>{})
  },[authUser?.id,loading,pathname])
  return null
 }

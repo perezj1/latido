@@ -2,9 +2,9 @@ import {crearSonido} from './suizamenteSonido.js'
 export const SV_FEEDBACK='suizamente:feedback'
 export const feedback=(kind,options)=>window.dispatchEvent(new window.CustomEvent(SV_FEEDBACK,{detail:options?{kind,...options}:kind}))
 
-// One policy beside the router. Questions and their answers share the same flag.
+// One policy beside the router. Gameplay and reward screens keep effects only.
 export function backgroundMusicFor({pathname,onboarding=false,opening=false,question=false}){
- return !onboarding&&!opening&&!question&&!/^\/suizamente\/(primera-vez|pregunta|pregunta-del-dia|admin)(\/|$)/.test(pathname)
+ return !onboarding&&!opening&&!question&&!/^\/suizamente\/(primera-vez|partida|sobre|cofre|pregunta|pregunta-del-dia|admin)(\/|$)/.test(pathname)
 }
 
 export function createFeedback(getSettings,host=globalThis,getOwner=()=>null){

@@ -14,7 +14,17 @@ const fetchEvent=async path=>{pending=[];let response;listeners.fetch({request:{
 assert.equal(await fetchEvent('/api/suizamente/jugador'),undefined,'Personal API responses never enter service worker caches')
 assert.equal(await fetchEvent('/auth/callback'),undefined)
 await fetchEvent('/assets/Admin-example.js');const count=fetches;network=false;assert.equal((await fetchEvent('/assets/Admin-example.js')).status,200);assert.equal(fetches,count,'A previously opened route works from its runtime cache')
-const files=await readdir('dist/assets'),app=files.find(file=>/^SuizamenteApp-.*\.js$/.test(file)),bytes=(await stat('dist/assets/'+app)).size
-// The synthesized soundtrack adds about 4.3 kB gzip; no audio downloads.
+const files=await readdir('dist/assets'),app=files.find(file=>/^SuizamenteApp-.*\.js$/.test(file)),gameChunks=new Set()
+// Code warming extracts shared game chunks. Count the same game code across
+// those files rather than letting a smaller entry hide growth in its imports.
+// Platform entry/constants/push were separate from the original game budget.
+async function collectGame(name){
+ if(gameChunks.has(name)||/^(index|constants|pushNotifications)-/.test(name))return
+ gameChunks.add(name)
+ const text=await readFile('dist/assets/'+name,'utf8')
+ for(const match of text.matchAll(/(?:from|import)\s*["']\.\/([^"']+\.js)["']/g))await collectGame(match[1])
+}
+await collectGame(app)
+const bytes=(await Promise.all([...gameChunks].map(name=>stat('dist/assets/'+name)))).reduce((sum,file)=>sum+file.size,0)
 assert.ok(bytes<115000,'Main game including synthesized music stays below 115 kB')
 console.log('Delivery: main game '+bytes+' bytes; minimal precache, on-demand route caching, no API/auth caching passed.')

@@ -1,9 +1,11 @@
 import {useEffect,useRef} from 'react'
 import {useSv} from './Context'
 import {createFeedback,SV_FEEDBACK} from '../../../lib/suizamenteFeedback'
+import {useMoment} from './Moment'
 
 export function Feedback({music=false}){
   const {settings,player,user}=useSv(),latest=useRef(settings),owner=useRef(null),audio=useRef(null)
+  const moment=useMoment()
   latest.current=settings
   owner.current=player?.jugador_id||user?.id
   useEffect(()=>{
@@ -17,7 +19,7 @@ export function Feedback({music=false}){
     hide()
     return()=>{gestures.forEach(type=>document.removeEventListener(type,unlock,true));window.removeEventListener(SV_FEEDBACK,play);document.removeEventListener('visibilitychange',hide);window.removeEventListener('pageshow',hide);window.removeEventListener('pagehide',pause);instance.dispose()}
   },[])
-  useEffect(()=>audio.current?.musica(music),[music])
+  useEffect(()=>audio.current?.musica(music&&!moment?.active),[music,moment?.active])
   useEffect(()=>audio.current?.actualizar(),[settings.musica,settings.sonidos])
   useEffect(()=>{if(settings.vibracion===false)navigator.vibrate?.(0)},[settings.vibracion])
   return null

@@ -24,28 +24,29 @@ import {MomentArrival} from './MomentArrival'
 import {isAbsenceNotice} from './moments'
 import {LoadingScreen} from '../../../../Loading'
 import {backgroundMusicFor,feedback} from '../../../lib/suizamenteFeedback'
+import {loadScreen,warmNavigationCode} from './preload'
 
 // Only load a screen when its route is opened. Navigation remains mounted.
-const screen=(load,name)=>lazy(()=>load().then(module=>({default:module[name]})))
-const Onboarding=screen(()=>import('./Onboarding'),'Onboarding')
-const Game=screen(()=>import('./Game'),'Game')
-const Profile=screen(()=>import('./Economy'),'Profile')
-const Achievements=screen(()=>import('./Economy'),'Achievements')
-const Shop=screen(()=>import('./Economy'),'Shop')
-const MapPage=screen(()=>import('./MapPage3D'),'MapPage')
-const MapLevels=screen(()=>import('./MapPage3D'),'MapLevels')
-const Album=screen(()=>import('./Rewards'),'Album')
-const Chest=screen(()=>import('./Rewards'),'Chest')
-const Pack=screen(()=>import('./Rewards'),'Pack')
-const Raid=screen(()=>import('./Raid'),'Raid')
-const DayQuestion=screen(()=>import('./Community'),'DayQuestion')
-const Friends=screen(()=>import('./Community'),'Friends')
-const Notebook=screen(()=>import('./Community'),'Notebook')
-const OtherProfile=screen(()=>import('./Community'),'OtherProfile')
-const Proposals=screen(()=>import('./Community'),'Proposals')
-const Ranking=screen(()=>import('./Community'),'Ranking')
-const AdminPanel=screen(()=>import('./Admin'),'AdminPanel')
-const VictoryAttack=screen(()=>import('./VictoryAttack'),'VictoryAttack')
+const screen=(group,name)=>lazy(()=>loadScreen(group).then(module=>({default:module[name]})))
+const Onboarding=screen('Onboarding','Onboarding')
+const Game=screen('Game','Game')
+const Profile=screen('Economy','Profile')
+const Achievements=screen('Economy','Achievements')
+const Shop=screen('Economy','Shop')
+const MapPage=screen('MapPage3D','MapPage')
+const MapLevels=screen('MapPage3D','MapLevels')
+const Album=screen('Rewards','Album')
+const Chest=screen('Rewards','Chest')
+const Pack=screen('Rewards','Pack')
+const Raid=screen('Raid','Raid')
+const DayQuestion=screen('Community','DayQuestion')
+const Friends=screen('Community','Friends')
+const Notebook=screen('Community','Notebook')
+const OtherProfile=screen('Community','OtherProfile')
+const Proposals=screen('Community','Proposals')
+const Ranking=screen('Community','Ranking')
+const AdminPanel=screen('Admin','AdminPanel')
+const VictoryAttack=screen('VictoryAttack','VictoryAttack')
 
 function Opening({onDone,reduced}){
   useEffect(()=>{feedback('sintonia',{esperar:3000,key:'apertura',scope:'session'})},[])
@@ -72,6 +73,7 @@ function ProfileGate({children,player,ready}){
   return children
 }
 function Loading(){return <LoadingScreen/>}
+function mergeAvatars(old,photos){return Object.entries(photos).every(([id,url])=>old[id]===url)?old:{...old,...photos}}
 function HomeEntry({children}){const {search}=useLocation(),id=new URLSearchParams(search).get('p');return id?<Navigate to={'/suizamente/pregunta/'+encodeURIComponent(id)} replace/>:children}
 export default function SuizamenteApp(){
   const {authUser:user,loading:authLoading,signOut,avatarUrl,profileName,profileMetaLoaded}=useAuth(),location=useLocation(),{account}=useEntry(),{resetting}=useGameNavigation()
@@ -82,7 +84,7 @@ export default function SuizamenteApp(){
   const [opening,setOpening]=useState(()=>!sessionStorage.getItem('suizamente:apertura'))
   const [notices,setNotices]=useState([])
   const [avatars,setAvatars]=useState({})
-  useEffect(()=>{const update=e=>{if(e.detail.userId===user?.id)setAvatars(old=>({...old,...e.detail.photos}))};window.addEventListener(SV_AVATARS,update);return()=>window.removeEventListener(SV_AVATARS,update)},[user?.id])
+  useEffect(()=>{const update=e=>{if(e.detail.userId===user?.id)setAvatars(old=>mergeAvatars(old,e.detail.photos))};window.addEventListener(SV_AVATARS,update);return()=>window.removeEventListener(SV_AVATARS,update)},[user?.id])
   const [map,setMap]=useState(null)
   const [capabilities,setCapabilities]=useState(null)
   const [questionVisible,setQuestionVisible]=useState(false)
@@ -96,7 +98,8 @@ export default function SuizamenteApp(){
     const refresh=()=>{if(!document.hidden)szApi('partidas').then(d=>{if(alive)setWaiting(d.partidas.filter(m=>m.estado==='jugando'&&m.teToca&&m.rival).length)}).catch(()=>{})}
     refresh();const timer=setInterval(refresh,15000);window.addEventListener('focus',refresh)
     return()=>{alive=false;clearInterval(timer);window.removeEventListener('focus',refresh)}
-  },[entered,ready,player?.jugador_id,location.pathname,playing])
+  },[entered,ready,player?.jugador_id,playing])
+  useEffect(()=>{if(entered&&ready&&player?.ajustes?.onboarding)return warmNavigationCode()},[entered,ready,player?.jugador_id,player?.ajustes?.onboarding])
   useEffect(()=>{const media=matchMedia('(prefers-reduced-motion: reduce)'),change=()=>setSystemReduced(media.matches);media.addEventListener('change',change);return()=>media.removeEventListener('change',change)},[])
   const configRevision=useRef(-1)
   const refreshConfig=useCallback(async()=>{const d=await szApi('config',{fresh:true});configRevision.current=d.version??0;setConfig(d)},[])
@@ -105,7 +108,7 @@ export default function SuizamenteApp(){
   const finishOpening=useCallback(()=>{sessionStorage.setItem('suizamente:apertura','1');setOpening(false)},[])
   useEffect(()=>{if(entered&&ready&&player&&opening)finishOpening()},[entered,ready,!!player,opening,finishOpening])
   const savePlayer=useCallback(data=>{
-    if(data.avatares)setAvatars(old=>({...old,...data.avatares}))
+    if(data.avatares)setAvatars(old=>mergeAvatars(old,data.avatares))
     const old=currentPlayer.current,next=data.jugador
     if(old&&next&&old.jugador_id===next.jugador_id&&Date.parse(old.actualizado_en)>Date.parse(next.actualizado_en))return
     currentPlayer.current=next
