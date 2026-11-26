@@ -23,3 +23,5 @@
 .sv-daily-home{background:var(--sv-soft-orange)}.sv-root,.sv-sheet{--sv-soft-blue:#DFE7FC}html[data-suizamente-theme=oscura] .sv-root,html[data-suizamente-theme=oscura] .sv-sheet{--sv-soft-blue:#1B305A}.sv-rank-challenge{background:var(--sv-soft-blue)}.sv-sheet-handle{touch-action:none}
 
 .sv-proposal-option.real{grid-template-columns:24px minmax(0,1fr)}.sv-proposal-option.real>input[type=text],.sv-proposal-option.real>input:not([type]){text-align:center}
+
+.sv-friend-invite{position:relative}.sv-friend-invite>h2{padding-right:48px;min-height:44px;display:flex;align-items:center}.sv-sheet .sv-friend-invite-close{position:absolute;top:26px;right:16px;display:grid;place-items:center;width:44px;height:44px;padding:0;border:0;border-radius:50%;background:var(--sv-card);color:var(--sv-text);font-size:26px;line-height:1}
