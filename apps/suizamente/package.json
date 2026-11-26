@@ -42,6 +42,7 @@
     "test:friend-invites": "node scripts/test-suizamente-friend-invites.mjs && node scripts/test-suizamente-friend-invites-concurrency.mjs && node scripts/test-suizamente-friend-invites-browser.mjs && node scripts/test-suizamente-friend-invites-browser.mjs --webkit",
     "test:map-layout": "node scripts/test-suizamente-map-layout.mjs && node scripts/test-suizamente-map-layout.mjs --webkit",
     "test:home": "node scripts/test-suizamente-home-browser.mjs && node scripts/test-suizamente-home-browser.mjs --webkit",
+    "test:home-framing": "node scripts/test-suizamente-home-framing.mjs && node scripts/test-suizamente-home-framing.mjs --webkit",
     "test:seals": "node scripts/test-suizamente-seal-browser.mjs && node scripts/test-suizamente-seal-browser.mjs --webkit",
     "test:concurrency": "node scripts/test-suizamente-retry.mjs && node scripts/test-suizamente-concurrency.mjs",
     "test:small": "node scripts/test-suizamente-small-browser.mjs && node scripts/test-suizamente-small-browser.mjs --webkit && node scripts/test-suizamente-moments-browser.mjs --small",

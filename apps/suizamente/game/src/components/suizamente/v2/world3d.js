@@ -504,13 +504,21 @@ function crear(op) {
       Object.values(cantones).forEach(c => { c.grupo.visible = cs.includes(c.k); });
       nubes.forEach(n => { n.visible = false; });
       const caja = new THREE.Box3(); cs.forEach(k => { if (cantones[k]) caja.expandByObject(cantones[k].grupo); });
-      const centro = caja.getCenter(new THREE.Vector3()), tam = caja.getSize(new THREE.Vector3()), polar = 0.95, azim = 0.42;
-      const v = THREE.MathUtils.degToRad(camara.fov) / 2, hz = Math.atan(Math.tan(v) * camara.aspect);
-      const w = Math.max(tam.x, tam.z), h = tam.z * Math.cos(polar) + tam.y * Math.sin(polar);
-      const dist = Math.max((w / 2) / Math.tan(hz), (h / 2) / Math.tan(v)) / 0.9;
+      if(caja.isEmpty())return;
+      const centro = caja.getCenter(new THREE.Vector3()), polar = 0.95, azim = 0.42;
+      const direccion = new THREE.Vector3().setFromSphericalCoords(1, polar, azim);
+      camara.position.copy(centro).add(direccion);camara.lookAt(centro);
+      const inversa = camara.quaternion.clone().invert(), v = Math.tan(THREE.MathUtils.degToRad(camara.fov) / 2) * 0.9, h = v * camara.aspect;
+      // Fit all eight corners in camera space. The azimuth projects both ground
+      // axes vertically, and perspective makes the front canton appear larger.
+      let dist = 0;
+      for(const x of [caja.min.x,caja.max.x])for(const y of [caja.min.y,caja.max.y])for(const z of [caja.min.z,caja.max.z]){
+        const p = new THREE.Vector3(x,y,z).sub(centro).applyQuaternion(inversa);
+        dist = Math.max(dist,p.z + Math.abs(p.x) / h,p.z + Math.abs(p.y) / v,p.z + camara.near * 2);
+      }
       vuelo = null; controles.autoRotate = false;
       controles.target.copy(centro);
-      camara.position.copy(new THREE.Vector3().setFromSphericalCoords(dist, polar, azim).add(centro));
+      camara.position.copy(direccion.multiplyScalar(dist).add(centro));
       camara.lookAt(centro); controles.update();
     },
     saltar() { invalidar();if (vuelo) { controles.target.copy(vuelo.hacia.t); camara.position.copy(vuelo.hacia.p); camara.lookAt(controles.target); vuelo = null; } tweens.forEach(tw => tw.f(1)); tweens.length = 0; },
