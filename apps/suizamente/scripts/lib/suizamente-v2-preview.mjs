@@ -12,7 +12,7 @@ export function testToken(id){
   return b64({alg:'HS256',typ:'JWT'})+'.'+b64({sub:id,aud:'authenticated',role:'authenticated',exp:Math.floor(Date.now()/1000)+86400})+'.test-signature'
 }
 export async function startSuizamentePreview(port=5265,{demo=false,host='127.0.0.1',hmr=demo,pushPrompt=demo}={}){
-  const db=await database({invitaciones:true})
+  const db=await database({emparejamiento:true})
   for(const [id,name] of [[A,'Alex'],[B,'Lu'],[C,'Caro']]){
     await call(db,id,'guardar_jugador',profile(name))
     await call(db,id,'bienvenida')

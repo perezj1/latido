@@ -1,0 +1,30 @@
+// Real PostgreSQL in an isolated disposable container, never production.
+import assert from 'node:assert/strict'
+import {spawn} from 'node:child_process'
+import {mkdir,writeFile} from 'node:fs/promises'
+import {database,profile,A,B,C} from './lib/suizamente-v2-test-db.mjs'
+const container='suizamente-matchmaking-'+process.pid,password='local-fixture-only',D='44444444-4444-4444-8444-444444444444',out='output/emparejamiento/concurrencia'
+function docker(args,input){return new Promise((resolve,reject)=>{const p=spawn('docker',args,{windowsHide:true,stdio:['pipe','pipe','pipe']}),stdout=[],stderr=[];p.stdout.on('data',b=>stdout.push(b));p.stderr.on('data',b=>stderr.push(b));p.on('error',reject);p.on('close',code=>resolve({code,out:Buffer.concat(stdout).toString(),err:Buffer.concat(stderr).toString()}));p.stdin.on('error',()=>{});p.stdin.end(input)})}
+async function command(text){return docker(['exec','-i','-e','PGPASSWORD='+password,container,'psql','-X','-qAt','-v','ON_ERROR_STOP=1','-v','VERBOSITY=verbose','-U','supabase_admin','-d','suizamente_qa'],text)}
+async function sql(text){const r=await command(text);if(r.code)throw Error(r.err);return r.out}
+const literal=value=>value===null?'NULL':"'"+String(value).replaceAll("'","''")+"'"
+const engine={exec:async text=>{await sql(text.replace(/CREATE ROLE (anon|authenticated);|CREATE ROLE service_role BYPASSRLS;?/g,''))},query:async(text,values=[])=>{await sql(text.replace(/\$(\d+)\b/g,(_,n)=>literal(values[Number(n)-1])));return {rows:[]}},close:async()=>{}}
+async function rpc(actor,action,args={},pause=false){const r=await command(`BEGIN;SET LOCAL statement_timeout='10s';SELECT set_config('application_name','sz-match-race',true);SELECT set_config('test.uid',${literal(actor)},true);SELECT set_config('test.pause',${literal(pause?'on':'off')},true);SET LOCAL ROLE authenticated;SELECT 'SZ_RESULT:'||public.suizamente_v2(${literal(action)},${literal(JSON.stringify(args))}::jsonb,NULL,NULL)::text;COMMIT;`);if(r.code)return {error:r.err};return JSON.parse(r.out.split('\n').find(line=>line.startsWith('SZ_RESULT:')).slice(10))}
+async function pair(a,b){await sql(`INSERT INTO suizamente_private.suizamente_partidas(jugador_a,jugador_b,turno,estado,plazo,reglas) VALUES(${literal(a)},${literal(b)},${literal(a)},'jugando',clock_timestamp()+interval '1 day',suizamente_private.v2_config());`)}
+async function reset(){await sql("DELETE FROM suizamente_private.suizamente_partidas;DELETE FROM suizamente_private.suizamente_limites;UPDATE suizamente_private.suizamente_jugadores SET bloqueado=false,ultimo_visto_en=clock_timestamp()-interval '1 day';")}
+async function race(){const first=rpc(A,'crear_partida',{rival:'azar'},true);let paused=false;for(let i=0;i<40;i++){if(Number((await sql("SELECT count(*) FROM pg_stat_activity WHERE application_name='sz-match-race' AND wait_event='PgSleep'")).trim())){paused=true;break}await new Promise(r=>setTimeout(r,25))}assert.ok(paused,'Creation holds the matchmaking lock before another creator enters');return Promise.all([first,rpc(B,'crear_partida',{rival:'azar'})])}
+let started=false
+try{
+ const launched=await docker(['run','--rm','-d','--name',container,'--label','suizamente.qa=matchmaking','-e','POSTGRES_PASSWORD='+password,'-e','POSTGRES_DB=suizamente_qa','public.ecr.aws/supabase/postgres:17.4.1.048']);assert.equal(launched.code,0,launched.err);started=true
+ for(let i=0;;i++){if(!(await docker(['exec',container,'pg_isready','-h','127.0.0.1','-U','postgres','-d','suizamente_qa'])).code)break;if(i>80)throw Error('QA PostgreSQL not ready');await new Promise(r=>setTimeout(r,250))}
+ await sql("DO $$ BEGIN IF current_database()<>'suizamente_qa' THEN RAISE EXCEPTION 'Wrong test database';END IF;END $$;DROP SCHEMA IF EXISTS auth CASCADE;CREATE EXTENSION IF NOT EXISTS pg_trgm;")
+ await database({emparejamiento:true,engine});await sql(`INSERT INTO auth.users(id) VALUES('${D}');INSERT INTO public.profiles(id,banned) VALUES('${D}',false);`)
+ for(const [id,name] of [[A,'Alex'],[B,'Lu'],[C,'Caro'],[D,'Dee']])assert.ok(!(await rpc(id,'guardar_jugador',profile(name))).error)
+ const def=await sql("SELECT pg_get_functiondef('public.suizamente_v2(text,jsonb,uuid,text)'::regprocedure)"),needle="IF p_action='crear_partida' AND auth.uid() IS NOT NULL THEN PERFORM pg_advisory_xact_lock(72819423);END IF;";assert.ok(def.includes(needle));await sql(def.replace(needle,needle+"IF p_action='crear_partida' AND current_setting('test.pause',true)='on' THEN PERFORM pg_sleep(0.5);END IF;"))
+ await reset();await sql(`UPDATE suizamente_private.suizamente_jugadores SET bloqueado=true WHERE jugador_id IN('${C}','${D}');`)
+ let results=await race();assert.ok(!results[0].error);assert.match(results[1].error,/SZV2:409/);assert.equal(Number((await sql('SELECT count(*) FROM suizamente_private.suizamente_partidas')).trim()),1,'Opposite clicks cannot create two games for one pair')
+ await reset();await pair(A,B);results=await race();assert.ok(results.every(r=>!r.error),JSON.stringify(results));assert.notEqual(results[0].rival.id,results[1].rival.id,'The second creator sees the committed workload and selects the other least-busy account');assert.ok(results.every(r=>[C,D].includes(r.rival.id)))
+ await reset();await pair(A,B);await sql(`UPDATE suizamente_private.suizamente_jugadores SET bloqueado=true WHERE jugador_id='${D}';`);const config=await rpc(A,'config');for(let i=0;i<config.partida.partidasAbiertasMax-1;i++)await pair(C,D)
+ results=await race();assert.ok(!results[0].error);assert.match(results[1].error,/SZV2:409/);assert.equal(Number((await sql(`SELECT count(*) FROM suizamente_private.suizamente_partidas WHERE '${C}' IN(jugador_a,jugador_b) AND estado IN('buscando','jugando')`)).trim()),config.partida.partidasAbiertasMax,'Parallel creators cannot overfill the opponent')
+ await mkdir(out,{recursive:true});const result={realPostgres:true,reciprocalClicksOneMatch:true,leastBusyRecheckedUnderLock:true,opponentCapacityPreserved:true};await writeFile(out+'/resultado.json',JSON.stringify(result,null,2));console.log(JSON.stringify(result))
+}finally{if(started)await docker(['stop',container])}
