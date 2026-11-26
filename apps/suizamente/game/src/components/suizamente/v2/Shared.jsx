@@ -47,7 +47,7 @@ export function Navigation({waiting=0,enabled=['mapa','album','inicio','tienda',
   const warm=id=>{if(id!==active)warmDestination('/suizamente/'+id)}
   return <nav className="sv-nav" aria-label="Navegación principal"><div className="sv-nav-pill">{tabs.map(([id,emoji,label],i)=><span key={id} style={{gridColumn:i+1}}>{enabled.includes(id)&&<Link to={'/suizamente'+(id==='inicio'?'':'/'+id)} onPointerEnter={()=>warm(id)} onPointerDown={()=>warm(id)} onFocus={()=>warm(id)} aria-label={label} aria-current={id===active?'page':undefined}><span className={'sv-nav-icon '+(id==='inicio'?'home':'')}>{emoji?<UiIcon value={emoji}/>:<span className="sv-nav-logo"><Logo size={30}/></span>} {!!waiting&&id==='inicio'&&<b aria-label={waiting+' partidas te esperan'}>{waiting}</b>}</span><span className="sv-nav-label">{label}</span></Link>}</span>)}</div></nav>
 }
-export function Sheet({title,children,onClose,contentTitle=false}){
+export function Sheet({title,children,onClose,contentTitle=false,centered=false,footerClose=true,hero,className=''}){
   const dialog=useRef(null),previous=useRef(document.activeElement),close=useRef(onClose)
   const drag=useRef(null)
   close.current=onClose
@@ -69,5 +69,5 @@ export function Sheet({title,children,onClose,contentTitle=false}){
     const prior=previous.current
     return()=>{node?.removeEventListener('keydown',key);document.body.style.overflow=overflow;prior?.focus()}
   },[])
-  return createPortal(<div className="sv-sheet-backdrop" onClick={onClose}><section className="sv-sheet" role="dialog" aria-modal="true" aria-label={title} tabIndex={-1} ref={dialog} onClick={e=>e.stopPropagation()}><div className="sv-sheet-handle" onPointerDown={e=>{drag.current=e.clientY;e.currentTarget.setPointerCapture(e.pointerId)}} onPointerUp={e=>{if(drag.current!==null&&e.clientY-drag.current>60)onClose();drag.current=null}}/><h2 data-sz-content={contentTitle||undefined}>{contentTitle?title:<IconText>{title}</IconText>}</h2>{children}<Button tone="quiet" onClick={onClose}>Cerrar</Button></section></div>,document.body)
+  return createPortal(<div className={'sv-sheet-backdrop'+(centered?' sv-centered-backdrop':'')} onClick={onClose}><section className={'sv-sheet '+className} role="dialog" aria-modal="true" aria-label={title} tabIndex={-1} ref={dialog} onClick={e=>e.stopPropagation()}><div className="sv-sheet-handle" onPointerDown={e=>{drag.current=e.clientY;e.currentTarget.setPointerCapture(e.pointerId)}} onPointerUp={e=>{if(drag.current!==null&&e.clientY-drag.current>60)onClose();drag.current=null}}/>{hero&&<div className="sv-sheet-hero" aria-hidden="true">{hero}</div>}<h2 data-sz-content={contentTitle||undefined}>{contentTitle?title:<IconText>{title}</IconText>}</h2>{children}{footerClose&&<Button tone="quiet" onClick={onClose}>Cerrar</Button>}</section></div>,document.body)
 }

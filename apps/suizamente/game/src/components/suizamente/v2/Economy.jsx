@@ -1,10 +1,11 @@
+import {MusicButton} from './MusicButton'
 import {Icono,Sello,UiIcon,powerIcon} from './Icono'
 import {ObjectArt} from './ObjectArt'
 import {useDailyGift} from './MomentArrival'
 import {useState} from 'react'
 import {Link} from 'react-router-dom'
 import {useSv} from './Context'
-import {Avatar,Button,Card,Header,Wallet} from './Shared'
+import {Avatar,Button,Card,Header,Sheet,Wallet} from './Shared'
 import {cantonNames,szApi} from '../../../lib/suizamenteV2'
 import {ProfileDuration} from './Duration'
 import {ShareSheet,storyData} from './Sharing'
@@ -35,7 +36,8 @@ export function Profile(){
 }
 export function Achievements(){
   const {data:result,error}=useData('logros'),data=result?.logros,[selected,setSelected]=useState(null)
-  return <section className="sv-screen"><Header title="🏅 Logros" back="/suizamente/perfil"/><div className="sv-content"><p>Tienes <b>{data?.filter(l=>l.conseguido).length||0}</b>. Toca uno para ver cómo se consigue.</p><div className="sv-achievements-grid">{data?.map(l=><button key={l.id} onClick={()=>setSelected(l)} aria-label={l.nombre+': '+(l.conseguido?'Conseguido':l.avance+'/'+l.meta)}><span className={l.conseguido?'achieved':''}><UiIcon value={l.emoji}/></span><b>{l.nombre}</b><div className="sv-xp-bar"><i style={{width:Math.min(100,100*l.avance/l.meta)+'%'}}/></div><small>{l.conseguido?'✓ Conseguido':l.avance+'/'+l.meta}</small></button>)}</div>{selected&&<Card role="status"><b><UiIcon value={selected.emoji}/> {selected.nombre}</b><p>{selected.condicion}</p></Card>}{error&&<p role="alert" className="sv-error">{error}</p>}</div></section>
+  function explain(event,achievement){event.currentTarget.focus({preventScroll:true});setSelected(achievement)}
+  return <section className="sv-screen"><Header title="🏅 Logros" back="/suizamente/perfil"/><div className="sv-content"><p>Tienes <b>{data?.filter(l=>l.conseguido).length||0}</b>. Toca uno para ver cómo se consigue.</p><div className="sv-achievements-grid">{data?.map(l=><button key={l.id} onClick={event=>explain(event,l)} aria-label={l.nombre+': '+(l.conseguido?'Conseguido':l.avance+'/'+l.meta)}><span className={l.conseguido?'achieved':''}><UiIcon value={l.emoji}/></span><b>{l.nombre}</b><div className="sv-xp-bar"><i style={{width:Math.min(100,100*l.avance/l.meta)+'%'}}/></div><small>{l.conseguido?'✓ Conseguido':l.avance+'/'+l.meta}</small></button>)}</div>{selected&&<Sheet title={selected.nombre} className="sv-achievement-sheet" onClose={()=>setSelected(null)}><div className={"sv-card-detail"+(!selected.conseguido?" missing":"")}><span aria-hidden="true"><UiIcon value={selected.emoji}/></span></div><p>{selected.condicion}</p><div className="sv-xp-bar" role="progressbar" aria-label="Progreso del logro" aria-valuenow={Math.min(selected.avance,selected.meta)} aria-valuemin={0} aria-valuemax={selected.meta}><i style={{width:Math.min(100,100*selected.avance/selected.meta)+"%"}}/></div><p className="sv-muted">{selected.conseguido?"✓ Conseguido":selected.avance+"/"+selected.meta}</p></Sheet>}{error&&<p role="alert" className="sv-error">{error}</p>}</div></section>
 }
 export function Shop(){
   const openGift=useDailyGift()
@@ -68,7 +70,7 @@ export function Shop(){
     }catch(e){setError(e.message);await load()}finally{setBusy(false)}
   }
   const owned=article=>player.inventario?.[article]||0
-  return <section className="sv-screen sv-shop"><header className="sv-shop-header"><h1><Icono nombre="tienda"/> Tienda</h1><Wallet/></header><div className="sv-content">
+  return <section className="sv-screen sv-shop"><header className="sv-shop-header"><h1><Icono nombre="tienda"/> Tienda</h1><Wallet/><MusicButton/></header><div className="sv-content">
     {data?<><button className={'sv-daily-gift '+(!data.regaloDisponible?'opened':'')} disabled={busy||!data.regaloDisponible} onClick={gift}><span className="sv-store-object"><ObjectArt/></span><div><b>Regalo diario</b><small>{data.regaloDisponible?'Monedas y un comodín, gratis':'Vuelve mañana a por otro'}</small></div><strong>{data.regaloDisponible?'Abrir':'✓'}</strong></button>
       <h2>Comodines</h2><div className="sv-shop-grid">{data.comodines.map(c=><div className="sv-shop-card" key={c.id}><div className="sv-between"><span><Icono nombre={powerIcon(c.id)}/></span><small>Tienes {owned(c.id)}</small></div><b>{c.nombre}</b><p>{c.efecto}</p><button className={player.monedas>=c.precio?'affordable':''} disabled={busy} onClick={()=>buy(c.id)} aria-label={'Comprar '+c.nombre+' por '+c.precio+' monedas'}><Icono nombre="moneda"/> {c.precio}</button></div>)}</div>
       <h2>Más</h2>{[['escudo','🛡️','Escudo','Reduce lo que te roban · tienes '+owned('escudos')+'/'+data.maxEscudos],['sobre','🃏','Sobre de cartas','Para tu álbum · tienes '+owned('sobres')]].map(([id,emoji,name,description])=><button key={id} className="sv-shop-row" disabled={busy||(id==='escudo'&&owned('escudos')>=data.maxEscudos)} onClick={()=>buy(id)}><span className={id==='sobre'?'sv-store-object':undefined}>{id==='sobre'?<ObjectArt kind="pack"/>:<UiIcon value={emoji}/>}</span><div><b>{name}</b><small>{description}</small></div><strong className={player.monedas>=data.precios[id]?'affordable':''}><Icono nombre="moneda"/> {data.precios[id]}</strong></button>)}

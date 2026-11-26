@@ -6,7 +6,16 @@ html,body{background:var(--sv-system-color,#FBF9F6)}
 .sv-root.sv-has-nav>.sv-screen{min-height:calc(100dvh - var(--sv-top-inset) - var(--sv-nav-height))}
 .sv-root .sv-onb-new{height:calc(100dvh - var(--sv-top-inset))}
 @media(max-height:760px){.sv-root .sv-game-board,.sv-root .sv-game:has(.sv-question-header){height:calc(100dvh - var(--sv-top-inset))}}
-/* Keep both pack actions together; 48 px touch targets, including at 320 px. */
-.sv-root .sv-pack>.sv-footer{position:sticky;bottom:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-items:stretch;gap:10px;padding-top:12px;background:#FBF9F6}
-.sv-root.sv-has-nav .sv-pack>.sv-footer{bottom:var(--sv-nav-height)}
-.sv-root .sv-pack>.sv-footer>.sv-button{min-width:0;min-height:48px;padding:10px 8px;border-radius:18px;font-size:14px;line-height:1.35}
+/* Standalone rewards: quiet background and two stable 48 px action pills. */
+.sv-root .sv-pack>.sv-shop-header{gap:8px}.sv-root .sv-pack>.sv-shop-header>h1{flex:1;min-width:0;font-size:clamp(18px,5.1vw,22px);line-height:1.2}
+.sv-root .sv-pack>.sv-shop-header .sv-coins{flex:none;font-size:13px;padding:8px}
+.sv-root .sv-pack>.sv-footer{position:sticky;bottom:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-items:stretch;gap:10px;padding:12px 16px calc(16px + env(safe-area-inset-bottom,0px));border:0;background:#FBF9F6}
+.sv-root .sv-pack>.sv-footer>.sv-button{min-width:0;min-height:48px;padding:10px 8px;border:1px solid transparent;border-radius:999px;font-size:13px;font-weight:700;line-height:1.3;white-space:nowrap;box-shadow:none}
+.sv-root .sv-pack>.sv-footer>.sv-button.quiet{border-color:var(--sv-line);background:#FFF;box-shadow:none}
+/* Keep the region name readable instead of squeezing it between controls. */
+.sv-root .sv-map-page>.sv-map-header{display:grid;grid-template-columns:minmax(0,1fr) 44px;align-items:center;gap:4px 10px;padding:8px 16px;background:var(--sv-bg)}
+.sv-root .sv-map-page>.sv-map-header>h1{font-size:20px;line-height:1.2;min-width:0;overflow-wrap:anywhere}
+.sv-map-header-pills{grid-column:1/-1;display:flex;align-items:center;flex-wrap:wrap;gap:6px}
+.sv-map-header-pills .sv-map-stage{padding:7px 8px;border-radius:999px;background:var(--sv-card);font-size:10.5px;font-weight:700;line-height:1.2;white-space:nowrap}
+.sv-root .sv-map-header-pills .sv-shields{padding:7px 8px;gap:4px;font-size:12px;line-height:1.2;white-space:nowrap}
+.sv-root .sv-map-header-pills .sv-coins{gap:4px;min-height:44px;padding:8px;font-size:13px;line-height:1.2;white-space:nowrap}

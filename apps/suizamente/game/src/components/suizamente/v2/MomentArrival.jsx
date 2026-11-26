@@ -27,7 +27,7 @@ export function useDailyGift(){
   },[player?.jugador_id,show])
 }
 
-export function MomentArrival({enabled}){
+export function MomentArrival({enabled,onSettled}){
   const {pathname}=useLocation(),{player,config}=useSv(),{show}=useMoment(),gift=useDailyGift(),running=useRef(false)
   useEffect(()=>{
     if(!enabled||!player)return
@@ -67,8 +67,8 @@ export function MomentArrival({enabled}){
         flushMomentReads(owner)
       }})
       if(!cancelled)await gift()
-    })().catch(e=>{if(!cancelled)notify(e,{error:true})}).finally(()=>{running.current=false})
+    })().catch(e=>{if(!cancelled)notify(e,{error:true})}).finally(()=>{running.current=false;if(!cancelled)onSettled?.(player.jugador_id,pathname)})
     return()=>{cancelled=true;running.current=false}
-  },[enabled,pathname,player?.jugador_id,config,show,gift])
+  },[enabled,pathname,player?.jugador_id,config,show,gift,onSettled])
   return null
 }

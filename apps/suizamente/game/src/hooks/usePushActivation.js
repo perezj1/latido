@@ -1,21 +1,25 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { getPushStatus, PUSH_STATUS_EVENT } from '../lib/pushNotifications'
 
 const EMPTY_STATUS = { supported: false, permission: 'default', subscribed: false }
 
 export function usePushActivation(userId) {
-  const [status, setStatus] = useState(EMPTY_STATUS)
+  const [resolved, setResolved] = useState(null),owner=useRef(userId)
+  owner.current=userId
+  const ready=!!resolved&&resolved.owner===userId,status=ready?resolved.status:EMPTY_STATUS
 
   const refresh = useCallback(async () => {
     if (!userId) {
-      setStatus(EMPTY_STATUS)
+      setResolved({owner:userId,status:EMPTY_STATUS})
       return
     }
 
     try {
-      setStatus(await getPushStatus())
+      const next=await getPushStatus(userId)
+      if(owner.current===userId)setResolved({owner:userId,status:next})
+      return next
     } catch {
-      setStatus({ supported: false, permission: 'unsupported', subscribed: false })
+      if(owner.current===userId)setResolved({owner:userId,status:{ supported: false, permission: 'unsupported', subscribed: false }})
     }
   }, [userId])
 
@@ -39,6 +43,7 @@ export function usePushActivation(userId) {
 
   return {
     status,
+    ready,
     needsActivation: Boolean(userId && status.supported && !status.subscribed),
     refresh,
   }

@@ -1,3 +1,4 @@
+import {MusicButton} from './MusicButton'
 import {Icono,IconText} from './Icono'
 import {lazy,Suspense,useEffect,useLayoutEffect,useRef,useState} from 'react'
 import {Link,useLocation} from 'react-router-dom'
@@ -53,7 +54,7 @@ export function Home(){
  if(history)return <History data={data} error={error} reload={reload}/>
  const problems=error||missionError||leagueError||dayError||shopError||fault||pack.error
  return <section className="sv-screen sv-home-screen sv-home-new"><h1 className="sv-sr-only">Hola, {player.apodo}</h1>
-  <header className="sv-home-header"><Link to="/suizamente/perfil" aria-label={'Tu perfil. Nivel '+player.nivel}><Avatar id={player.jugador_id} name={player.apodo} color={player.color} level={player.nivel}/></Link><span className="sv-chip" aria-label={'Racha de '+(player.racha||0)+' días'}>{icon('racha')} {player.racha||0}</span><Link className="sv-chip sv-coins" to="/suizamente/tienda" aria-label={player.monedas+' monedas. Abrir Tienda'}>{icon('moneda')} {player.monedas}</Link><Suspense fallback={<span className="sv-icon-space"/>}><NotificationBell matches={data?.partidas||[]}/></Suspense><Link className="sv-icon-button" to="/suizamente/menu" aria-label="Menú">☰</Link></header>
+  <header className="sv-home-header"><Link to="/suizamente/perfil" aria-label={'Tu perfil. Nivel '+player.nivel}><Avatar id={player.jugador_id} name={player.apodo} color={player.color} level={player.nivel}/></Link><span className="sv-chip" aria-label={'Racha de '+(player.racha||0)+' días'}>{icon('racha')} {player.racha||0}</span><Link className="sv-chip sv-coins" to="/suizamente/tienda" aria-label={player.monedas+' monedas. Abrir Tienda'}>{icon('moneda')} {player.monedas}</Link><Suspense fallback={<span className="sv-icon-space"/>}><NotificationBell matches={data?.partidas||[]}/></Suspense><Link className="sv-icon-button" to="/suizamente/menu" aria-label="Menú">☰</Link><MusicButton/></header>
   <section className="sv-home-stage" aria-label="Tu Suiza"><svg className="sv-home-waves" viewBox="0 0 390 260" aria-hidden="true" focusable="false" dangerouslySetInnerHTML={{__html:waves}}/>
    <HomeMapPhoto/><Link className="sv-home-map-target" to="/suizamente/mapa" aria-label={'Tu Suiza en 3D: '+region.nombre+', '+(done??'cargando')+' de '+total+' niveles. Abrir el mapa'}/>
    <div className="sv-home-map-title"><b aria-hidden="true">Tu {style.nombre}</b><Link className="sv-home-region" to="/suizamente/mapa" aria-label={'Tu mapa: '+region.nombre+', '+(done??'cargando')+' de '+total+' niveles. Cofre al completarla'}><span>{region.nombre}</span><i aria-hidden="true"><i style={{width:100*(done||0)/total+'%',background:style.colores[3]}}/></i><b>{done??'…'}/{total}</b><span aria-hidden="true">{icon('regalo')}</span></Link></div>

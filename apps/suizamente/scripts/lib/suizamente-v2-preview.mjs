@@ -11,7 +11,7 @@ export function testToken(id){
   const b64=value=>Buffer.from(JSON.stringify(value)).toString('base64url')
   return b64({alg:'HS256',typ:'JWT'})+'.'+b64({sub:id,aud:'authenticated',role:'authenticated',exp:Math.floor(Date.now()/1000)+86400})+'.test-signature'
 }
-export async function startSuizamentePreview(port=5265,{demo=false,host='127.0.0.1',hmr=demo}={}){
+export async function startSuizamentePreview(port=5265,{demo=false,host='127.0.0.1',hmr=demo,pushPrompt=demo}={}){
   const db=await database({invitaciones:true})
   for(const [id,name] of [[A,'Alex'],[B,'Lu'],[C,'Caro']]){
     await call(db,id,'guardar_jugador',profile(name))
@@ -37,6 +37,9 @@ export async function startSuizamentePreview(port=5265,{demo=false,host='127.0.0
     css:{postcss:{plugins:[]}},configFile:false,envDir:'output/no-env-loaded',plugins:[react(),{
       name:'suizamente-isolated-sql-api',
       transformIndexHtml(html){
+        // Returning fixture accounts have already postponed the new push prompt.
+        // The interactive preview and dedicated prompt tests keep the first visit.
+        if(!pushPrompt)html=html.replace('<body>','<body><script>for(const id of '+JSON.stringify([A,B,C])+'){const key="suizamente:push-recordatorio:"+id;if(!localStorage.getItem(key))localStorage.setItem(key,String(Date.now()+30*86400000))}</script>')
         if(!demo)return html
         return html.replace('<body>','<body><aside style="display:flex;flex-wrap:wrap;justify-content:center;gap:8px;padding:8px 12px;background:#4A76EF;color:white;font:600 12px Poppins,sans-serif;text-align:center">Prueba local · Datos temporales · <a style="color:inherit" href="/__suizamente_qa?cuenta=alex">Alex</a> · <a style="color:inherit" href="/__suizamente_qa?cuenta=lu">Lu (usa otra ventana privada)</a> · <a style="color:inherit" href="/__suizamente_qa?cuenta=caro">Caro (administración)</a></aside>')
       },

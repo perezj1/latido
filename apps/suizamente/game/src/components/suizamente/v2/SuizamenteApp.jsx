@@ -5,6 +5,7 @@ import {useAuth} from '../../../hooks/useAuth'
 import {useEntry} from '../../../../entry'
 import {useGameNavigation} from '../../../../navigation'
 import {szApi,szSettings,SV_STATE,SV_AVATARS} from '../../../lib/suizamenteV2'
+import {supabase} from '../../../lib/supabase'
 import {normalizeSzSettings} from '../../../lib/suizamenteSettings'
 import {SuizamenteContext} from './Context'
 import {Brand,Button,Logo,Navigation} from './Shared'
@@ -24,6 +25,7 @@ import {Missions,LapComplete} from './Duration'
 import {InstallBanner} from './InstallBanner'
 import {MomentProvider} from './Moment'
 import {MomentArrival} from './MomentArrival'
+import {PushPrompt} from './PushPrompt'
 import {isAbsenceNotice} from './moments'
 import {LoadingScreen} from '../../../../Loading'
 import {backgroundMusicFor,feedback} from '../../../lib/suizamenteFeedback'
@@ -84,10 +86,15 @@ export default function SuizamenteApp(){
   const {authUser:user,loading:authLoading,signOut,avatarUrl,profileName,profileMetaLoaded}=useAuth(),location=useLocation(),{account}=useEntry(),{resetting}=useGameNavigation()
   const entered=!!user&&account===user.id
   const playing=/^\/suizamente\/(partida|asalto|ataque|pregunta|pregunta-del-dia)(\/|$)/.test(location.pathname)
+  const rewardScreen=/^\/suizamente\/(sobre|cofre)(\/|$)/.test(location.pathname)
   const [config,setConfig]=useState(null),[player,setPlayer]=useState(null),[ready,setReady]=useState(false),[error,setError]=useState('')
   const [settings,setSettings]=useState(szSettings),[retry,setRetry]=useState(0)
+  const latestSettings=useRef(settings)
+  latestSettings.current=settings
   const [opening,setOpening]=useState(()=>!sessionStorage.getItem('suizamente:apertura'))
   const [notices,setNotices]=useState([])
+  const [arrival,setArrival]=useState(null)
+  const arrivalSettled=useCallback(owner=>setArrival({owner,key:location.key}),[location.key])
   const [avatars,setAvatars]=useState({})
   useEffect(()=>{const update=e=>{if(e.detail.userId===user?.id)setAvatars(old=>mergeAvatars(old,e.detail.photos))};window.addEventListener(SV_AVATARS,update);return()=>window.removeEventListener(SV_AVATARS,update)},[user?.id])
   const [map,setMap]=useState(null)
@@ -200,10 +207,15 @@ export default function SuizamenteApp(){
     if(ready&&config){const heading=document.querySelector('.sv-root h1');heading?.setAttribute('tabindex','-1');heading?.focus({preventScroll:true})}
   },[location.pathname,ready,!!config])
   async function updateSettings(value){
-    value=normalizeSzSettings(value,settings)
+    const {data:{session}}=await supabase.auth.getSession(),owner=user?.id||null,target=currentPlayer.current
+    // A browser permission can finish after leaving Home or changing account.
+    // Never save through an old callback with another account's profile fields.
+    if((session?.user?.id||null)!==owner||target&&target.jugador_id!==owner)return
+    value=normalizeSzSettings(typeof value==='function'?value(latestSettings.current):value,latestSettings.current)
+    latestSettings.current=value
     setSettings(value)
-    if(player){
-      const data=await szApi('jugador',{method:'PUT',body:{...player,ajustes:value}})
+    if(target){
+      const data=await szApi('jugador',{method:'PUT',body:{...target,ajustes:value}})
       savePlayer(data)
     }
   }
@@ -211,11 +223,12 @@ export default function SuizamenteApp(){
   const reduced=!!settings.menosAnimaciones||systemReduced
   const bypassOnboarding=/^\/suizamente\/(amigo|invitar|pregunta|pregunta-del-dia|partida|asalto|ataque|entrar|bienvenida)(\/|$)/.test(location.pathname)||new URLSearchParams(location.search).has('p')
   const onboarding=entered&&(location.pathname==='/suizamente/primera-vez'||!bypassOnboarding&&ready&&(player?!player.ajustes?.onboarding:!localStorage.getItem('suizamente:bienvenida-pendiente')))
-  const admin=location.pathname.startsWith('/suizamente/admin'),showNavigation=!resetting&&!onboarding&&entered&&!!player&&ready&&!questionVisible&&!playing
+  const admin=location.pathname.startsWith('/suizamente/admin'),showNavigation=!resetting&&!onboarding&&entered&&!!player&&ready&&!questionVisible&&!playing&&!rewardScreen
   const activeTab=['mapa','album','tienda','amigos'].find(tab=>location.pathname.startsWith('/suizamente/'+tab))||'inicio'
-  return <SuizamenteContext.Provider value={{player,map,config,user,avatarUrl,avatars,latidoName:profileName,capabilities,refreshConfig,settings,reduced,savePlayer,updateSettings,signOut,setQuestionVisible,setAudioQuestionVisible}}><MomentProvider reduced={reduced} owner={player?.jugador_id}><MomentArrival enabled={!resetting&&!onboarding&&entered&&ready&&!!config&&!opening}/><div className={'sv-root'+(admin?' sv-admin-root':'')+(showNavigation?' sv-has-nav':'')} onPointerDownCapture={warmLink} onFocusCapture={warmLink}>
+  const homePushReady=entered&&ready&&!onboarding&&!opening&&arrival?.owner===user?.id&&arrival?.key===location.key&&/^\/suizamente\/?$/.test(location.pathname)&&!location.search
+  return <SuizamenteContext.Provider value={{player,map,config,user,avatarUrl,avatars,latidoName:profileName,capabilities,refreshConfig,settings,reduced,savePlayer,updateSettings,signOut,setQuestionVisible,setAudioQuestionVisible}}><MomentProvider reduced={reduced} owner={player?.jugador_id}><MomentArrival enabled={!resetting&&!onboarding&&entered&&ready&&!!config&&!opening} onSettled={arrivalSettled}/>{homePushReady&&<PushPrompt key={user.id} enabled/>}<div className={'sv-root'+(admin?' sv-admin-root':'')+(showNavigation?' sv-has-nav':'')} onPointerDownCapture={warmLink} onFocusCapture={warmLink}>
     <Feedback music={ready&&!!config&&!authLoading&&backgroundMusicFor({pathname:location.pathname,onboarding,opening:opening&&onboarding,question:audioQuestionVisible})}/><InstallMetadata/>
-    <InstallBanner hidden={onboarding||playing||location.pathname==='/suizamente/perfil/nuevo'}/>
+    <InstallBanner hidden={onboarding||playing||rewardScreen||location.pathname==='/suizamente/perfil/nuevo'}/>
     {authLoading||resetting?<Loading/>:onboarding&&config?<Suspense fallback={<Loading/>}><Onboarding/></Suspense>:!entered?<Login/>:error?<section className="sv-screen"><div className="sv-welcome"><Logo size={90}/><h1>No se pudo abrir Suizamente</h1><p role="alert">{error}</p><Button onClick={()=>setRetry(n=>n+1)}>Reintentar</Button></div></section>:!config||!ready||!player&&!profileMetaLoaded?<Loading/>:
     <Suspense fallback={<Loading/>}><Routes>
       <Route path="admin/*" element={<IconScope enabled={false}><AdminPanel/></IconScope>}/>

@@ -9,8 +9,6 @@ import {Link,Navigate,useLocation,useNavigate,useParams} from 'react-router-dom'
 import {useSv,useQuestionScreen} from './Context'
 import {Avatar,Button,Card,Earnings,Header,Sheet,Stamps,LatidoBackdrop,MatchWheel} from './Shared'
 import {szApi} from '../../../lib/suizamenteV2'
-import {loadPushSettings,subscribeToPushNotifications} from '../../../lib/pushNotifications'
-import {usePushActivation} from '../../../hooks/usePushActivation'
 import {DuelPrepare,DuelResult,Powerups} from './Duels'
 import {Breakdown,FactCard,ShareSheet,storyData} from './Sharing'
 import {feedback} from '../../../lib/suizamenteFeedback'
@@ -27,19 +25,18 @@ function Passport({name,avatarName,color,owned,active,categories,id,fresh}){
 export function Game(){
   const {id,sessionId}=useParams(),mid=id||sessionId
   const location=useLocation(),resume=useRef(new URLSearchParams(location.search).has('continuar'))
-  const {config:globalConfig,player,user}=useSv(),navigate=useNavigate(),{show}=useMoment(),continuing=useRef(false)
+  const {config:globalConfig,player}=useSv(),navigate=useNavigate(),{show}=useMoment(),continuing=useRef(false)
   const [m,setM]=useState(null),[busy,setBusy]=useState(false),[error,setError]=useState(''),[spinning,setSpinning]=useState(false),[spinRun,setSpinRun]=useState(0)
   const spinFlight=useRef(null)
   const [spinWaiting,setSpinWaiting]=useState(false)
   const liveBar=useRef(null),liveChoice=useRef(null)
   const config={...globalConfig,...m?.configPartida}
-  const [dismissed,setDismissed]=useState(null),[resign,setResign]=useState(false),[pushPrompt,setPushPrompt]=useState(false),[now,setNow]=useState(Date.now()),[offline,setOffline]=useState(!navigator.onLine)
+  const [dismissed,setDismissed]=useState(null),[resign,setResign]=useState(false),[now,setNow]=useState(Date.now()),[offline,setOffline]=useState(!navigator.onLine)
   const [preparingDuel,setPreparingDuel]=useState(false)
   const [sharing,setSharing]=useState(false)
   const [handoff,setHandoff]=useState(false)
   const previousStamps=useRef(null),heard=useRef(new Set()),pendingStamp=useRef(''),[stampHit,setStampHit]=useState('')
   const offset=useRef(0),pending=useRef(false),mounted=useRef(true)
-  const {needsActivation,refresh:refreshPush}=usePushActivation(user?.id)
   const receive=useCallback(data=>{
     if(!mounted.current)return
     if(data.fase==='sello'&&data.resultado&&sealMotionSeen(player.jugador_id,sealTurn(data)))setDismissed(data.resultado.n)
@@ -160,9 +157,7 @@ export function Game(){
   }
   function finishTurn(){
     setHandoff(false)
-    const last=Number(localStorage.getItem('suizamente:aviso-pedido')||0)
-    if(needsActivation&&Date.now()-last>7*86400000){localStorage.setItem('suizamente:aviso-pedido',String(Date.now()));setPushPrompt(true)}
-    else navigate('/suizamente')
+    navigate('/suizamente')
   }
   if(!m)return <section className="sv-screen"><Header title="Partida"/><div className="sv-content">{error?<><p className="sv-error" role="alert">{error}</p><Button onClick={load}>Reintentar</Button></>:<div className="sv-skeleton" role="status" aria-label="Cargando la partida"/>}</div></section>
   const categories=config.categorias,result=activeResult
@@ -204,8 +199,6 @@ export function Game(){
 
     {resign&&<Sheet title="¿Rendirte?" onClose={()=>setResign(false)}><p>La partida cuenta como abandonada.</p><Button onClick={()=>setResign(false)}>Seguir jugando</Button><Button tone="danger-text" disabled={busy} onClick={async()=>{await act('rendirse');setResign(false)}}>Rendirme</Button></Sheet>}
     {sharing&&<ShareSheet data={storyData('fin',{...m,categorias:categories})} onClose={()=>setSharing(false)}/>}
-    {pushPrompt&&<Sheet title="🔔 ¿Te avisamos cuando te toque?" onClose={()=>{setPushPrompt(false);navigate('/suizamente')}}><Button onClick={async()=>{
-      try{await subscribeToPushNotifications({user,settings:loadPushSettings(),userCanton:player.canton});await refreshPush();setPushPrompt(false);navigate('/suizamente')}catch(e){setError(e.message);setPushPrompt(false)}
-    }}>Sí, avisadme</Button><Button tone="quiet" onClick={()=>{setPushPrompt(false);navigate('/suizamente')}}>Ahora no</Button></Sheet>}
+
   </section>
 }

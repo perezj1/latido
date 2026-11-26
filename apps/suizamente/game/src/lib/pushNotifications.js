@@ -222,7 +222,7 @@ export async function syncPushPreferences({ user, settings, userCanton, messages
   if (error) throw error
 }
 
-export async function getPushStatus() {
+export async function getPushStatus(userId) {
   if (!isPushSupported()) {
     return { supported: false, permission: 'unsupported', subscribed: false }
   }
@@ -233,7 +233,7 @@ export async function getPushStatus() {
   return {
     supported: true,
     permission: Notification.permission,
-    subscribed: Boolean(subscription) && !isManuallyDisabled(),
+    subscribed: Notification.permission==='granted' && Boolean(subscription) && !isManuallyDisabled() && (!userId||!localStorage.getItem(PUSH_USER_STORAGE_KEY)||localStorage.getItem(PUSH_USER_STORAGE_KEY)===userId),
   }
 }
 
