@@ -3,11 +3,12 @@ import {supabase,recoverSupabaseSession,invalidateSupabaseSession} from './supab
 import {notify} from './suizamenteNotices'
 import {normalizeSzSettings} from './suizamenteSettings'
 const pendingReads=new Map()
+const handoffs=new Map()
 const recentReads=new Map(),readTtl={config:30000,jugador:1000,partidas:1000,emparejamiento:1000,mapa:1500,album:1500,tienda:1500,amigos:1500,perfil:3000,logros:5000,misiones:3000,liga:5000,dia:1000}
-let revision=0,reader=null
+let revision=0,handoffRevision=0,reader=null
 supabase.auth.onAuthStateChange((_event,session)=>{
  const actor=session?.user?.id||'invitado'
- if(reader!==actor){recentReads.clear();revision++;reader=actor}
+ if(reader!==actor){recentReads.clear();handoffs.clear();revision++;handoffRevision++;reader=actor}
 })
 let guestQueue=Promise.resolve()
 export const SV_STATE='suizamente:estado'
@@ -26,13 +27,16 @@ export function szKey(){
   return hex.slice(0,8)+'-'+hex.slice(8,12)+'-'+hex.slice(12,16)+'-'+hex.slice(16,20)+'-'+hex.slice(20)
 }
 
-export async function szApi(path, {method='GET',body,fresh=false}={}) {
+export async function szApi(path, {method='GET',body,fresh=false,priority='auto'}={}) {
   let guest=localStorage.getItem('suizamente:jugador')
   if(!guest&&crypto.randomUUID){guest=crypto.randomUUID();localStorage.setItem('suizamente:jugador',guest)}
   const {data:{session}}=await supabase.auth.getSession()
   const actor=session?.user?.id||'invitado'
+  if(reader!==actor){handoffs.clear();handoffRevision++}
+  const gameWrite=method!=='GET'&&path!=='novedades/leer'
+  if(gameWrite){handoffs.clear();handoffRevision++}
   if(reader!==actor||method!=='GET'){recentReads.clear();revision++;reader=actor}
-  const key=path+'|'+actor+'|'+revision,ttl=readTtl[path]||0,startedRevision=revision,cached=recentReads.get(key)
+  const key=path+'|'+actor+'|'+revision,ttl=readTtl[path]||0,startedRevision=revision,startedHandoff=handoffRevision,cached=recentReads.get(key)||handoffs.get(path+'|'+actor)
   if(method==='GET'&&!fresh&&cached&&cached.until>Date.now()){
     const data=structuredClone(cached.value)
     // A preloaded response can arrive before the game's avatar listener mounts.
@@ -42,7 +46,7 @@ export async function szApi(path, {method='GET',body,fresh=false}={}) {
   if(method==='GET'&&pendingReads.has(key))return pendingReads.get(key)
   const execute=async()=>{
   const send=async token=>{const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),15000);try{return await fetch('/api/suizamente/'+path,{
-    method,credentials:'same-origin',cache:'no-store',signal:controller.signal,
+    method,credentials:'same-origin',cache:'no-store',signal:controller.signal,priority,
     headers:{'Content-Type':'application/json',...(guest?{'X-Jugador-Id':guest}:{}),...(token?{Authorization:'Bearer '+token}:{})},
     ...(body?{body:JSON.stringify(body)}:{}),
   })}finally{clearTimeout(timeout)}}
@@ -60,11 +64,12 @@ export async function szApi(path, {method='GET',body,fresh=false}={}) {
   let data
   try{data=await response.json()}catch{const error=new Error('No se pudo conectar con Suizamente. Inténtalo otra vez.');if(method!=='GET')notify(error,{error:true});throw error}
   if(!response.ok){const error=new Error(data.error||'Algo ha fallado. Inténtalo otra vez.');error.status=response.status;error.partida=data.partida;if(method!=='GET')notify(error,{error:true});throw error}
-  window.dispatchEvent(new Event('suizamente:conexion-restablecida'))
+  const current=reader===actor&&(method!=='GET'||revision===startedRevision)
+  if(current)window.dispatchEvent(new Event('suizamente:conexion-restablecida'))
   data=withoutFlags(data)
-  if(data.avatares)window.dispatchEvent(new CustomEvent(SV_AVATARS,{detail:{userId:session?.user?.id,photos:data.avatares}}))
-  if(data.identidad?.startsWith('invitado-'))localStorage.setItem('suizamente:jugador',data.identidad.slice(9))
-  if(data.jugador)window.dispatchEvent(new CustomEvent(SV_STATE,{detail:data}))
+  if(current&&data.avatares)window.dispatchEvent(new CustomEvent(SV_AVATARS,{detail:{userId:session?.user?.id,photos:data.avatares}}))
+  if(current&&data.identidad?.startsWith('invitado-'))localStorage.setItem('suizamente:jugador',data.identidad.slice(9))
+  if(current&&data.jugador)window.dispatchEvent(new CustomEvent(SV_STATE,{detail:data}))
   if(method==='GET'&&ttl&&revision===startedRevision)recentReads.set(key,{until:Date.now()+ttl,displayUntil:Date.now()+30000,value:structuredClone(data)})
   return data
   }
@@ -73,10 +78,23 @@ export async function szApi(path, {method='GET',body,fresh=false}={}) {
   const request=session?execute():guestQueue.then(execute)
   if(!session)guestQueue=request.catch(()=>{})
   if(method==='GET')pendingReads.set(key,request)
-  try{return await request}finally{
+  let committed
+  try{committed=await request;return committed}finally{
     // A read may finish while a write is in flight. Discard that snapshot again
     // at completion (also after an unknown network outcome), so it cannot win.
-    if(method!=='GET'&&reader===actor){recentReads.clear();revision++}
+    if(method!=='GET'&&reader===actor){
+      recentReads.clear();revision++
+      const uncontested=gameWrite&&handoffRevision===startedHandoff
+      if(gameWrite){handoffs.clear();handoffRevision++}
+      // These creation responses already ARE the destination's saved snapshot.
+      // Reuse them briefly instead of a second mobile round trip after navigation.
+      const snapshot=uncontested&&method==='POST'&&committed?.id&&(
+        path==='partidas'&&typeof committed.fase==='string'?'partidas/'+committed.id:
+        path==='sobres'&&Number.isInteger(committed.giradas)&&Number.isInteger(committed.total)?'sobres/'+committed.id:null)
+      // A notice acknowledgement cannot change a match or a pack. Keep this
+      // handoff independent of cosmetic writes; every other write clears it.
+      if(snapshot)handoffs.set(snapshot+'|'+actor,{until:Date.now()+2000,value:structuredClone(committed)})
+    }
     if(pendingReads.get(key)===request)pendingReads.delete(key)
   }
 }

@@ -35,6 +35,7 @@
     "test:audio": "node scripts/test-suizamente-sonido.mjs && node scripts/test-suizamente-audio-settings.mjs && node scripts/test-suizamente-audio-browser.mjs && node scripts/test-suizamente-audio-browser.mjs --webkit",
     "test:audio-touch": "node scripts/test-suizamente-audio-touch-browser.mjs && node scripts/test-suizamente-audio-touch-browser.mjs --webkit",
     "test:tabs": "node scripts/test-suizamente-tabs-browser.mjs && node scripts/test-suizamente-tabs-browser.mjs --webkit",
+    "test:responsiveness": "node scripts/test-suizamente-pack-batch.mjs && node scripts/test-suizamente-responsiveness-browser.mjs && node scripts/test-suizamente-responsiveness-browser.mjs --webkit",
     "test:screen-chrome": "node scripts/test-suizamente-screen-chrome.mjs && node scripts/test-suizamente-screen-chrome.mjs --webkit",
     "test:icons": "node scripts/test-suizamente-icons-browser.mjs && node scripts/test-suizamente-icons-browser.mjs --webkit",
     "test:friend-invites": "node scripts/test-suizamente-friend-invites.mjs && node scripts/test-suizamente-friend-invites-concurrency.mjs && node scripts/test-suizamente-friend-invites-browser.mjs && node scripts/test-suizamente-friend-invites-browser.mjs --webkit",

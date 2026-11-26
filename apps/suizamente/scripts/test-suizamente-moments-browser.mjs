@@ -93,6 +93,8 @@ try{
   const afterPack=await money(A);await skip();await page.reload();await choose(page);await expect(page.locator('.sv-pack')).toBeVisible();await expect(dialog()).toHaveCount(0);assert.equal(await money(A),afterPack)
   checks.push('pack saved in full before reveal; duplicate compensation from response; skip/reload do not award twice')
   // Every chest type shares one opening path, including capped shields.
+  // This is a new test scenario, not a burst of the preceding API fixtures.
+  await db.exec('DELETE FROM suizamente_private.suizamente_limites')
   for(const [type,titleText,reward] of [['region','¡Región completada!',rules.cofres.region],['diario','Cofre diario',config.misiones.cofreDiario]]){
     const content=reward||rules.cofres.victoria
     const chest=(await db.query('SELECT suizamente_private.v5_cofre($1,$2,$3,$4,$5::jsonb) id',[A,type,crypto.randomUUID(),titleText,JSON.stringify(content)])).rows[0]

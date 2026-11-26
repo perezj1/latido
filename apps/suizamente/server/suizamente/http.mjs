@@ -83,6 +83,7 @@ export function createSuizamenteHandler({ fetchImpl = fetch } = {}) {
       }
       if (body && (Array.isArray(body) || typeof body !== 'object')) return send(400, { error:'Solicitud no válida' })
       if(action==='guardar_jugador'&&body?.ajustes&&Object.hasOwn(body.ajustes,'musica')&&typeof body.ajustes.musica!=='boolean')return send(400,{error:'Ajustes no válidos'})
+      if(action==='girar_carta'&&body&&Object.hasOwn(body,'todas')&&typeof body.todas!=='boolean')return send(400,{error:'Solicitud no válida'})
       if(body&&Buffer.byteLength(JSON.stringify(body),'utf8')>(adminRoute?150000:20000))return send(413,{error:'Solicitud demasiado grande'})
       const args = { ...Object.fromEntries(url.searchParams), ...body }
       if (match) args.id = match[1]
@@ -107,21 +108,33 @@ export function createSuizamenteHandler({ fetchImpl = fetch } = {}) {
       if (!endpoint || !anon) return action==='config'?send(200,publicSuizamenteConfig()):send(503, { error:'Falta configurar la conexión de Supabase' })
       const auth = req.headers.authorization
       if (auth && !/^Bearer [A-Za-z0-9._-]+$/.test(auth)) return send(401, { error:'Sesión de Latido no válida' })
-      const rpcBody=JSON.stringify({p_action:action,p_args:args,p_guest_id:session.id,p_guest_token:session.token}),deadline=Date.now()+15000
-      let response,data
-      for(let attempt=0;;attempt++){
-        response = await fetchImpl(endpoint + '/rest/v1/rpc/suizamente_v2', {
-          method:'POST',
-          headers:{ apikey:anon, Authorization:auth || 'Bearer ' + anon, 'Content-Type':'application/json' },
-          body:rpcBody,
-          signal:AbortSignal.timeout(Math.max(1,deadline-Date.now())),
-        })
-        data = await response.json()
-        // These SQLSTATEs explicitly abort the whole transaction. A fresh RPC is
-        // safe even for purchases. Never replay timeouts, fetch failures or unknown 5xx.
-        if(response.ok||!['40P01','40001'].includes(data?.code)||attempt>=2||deadline-Date.now()<1000)break
-        console.warn('suizamente_retry',action,data.code,attempt+1)
-        await new Promise(resolve=>setTimeout(resolve,40*(attempt+1)+Math.floor(Math.random()*40)))
+      const deadline=Date.now()+15000
+      const rpc=async(operation,parameters)=>{
+        const rpcBody=JSON.stringify({p_action:operation,p_args:parameters,p_guest_id:session.id,p_guest_token:session.token})
+        for(let attempt=0;;attempt++){
+          const response=await fetchImpl(endpoint + '/rest/v1/rpc/suizamente_v2', {
+            method:'POST',
+            headers:{ apikey:anon, Authorization:auth || 'Bearer ' + anon, 'Content-Type':'application/json' },
+            body:rpcBody,
+            signal:AbortSignal.timeout(Math.max(1,deadline-Date.now())),
+          }),data=await response.json()
+          // These SQLSTATEs explicitly abort the whole transaction. A fresh RPC
+          // is safe. Never replay timeouts, fetch failures or unknown 5xx.
+          if(response.ok||!['40P01','40001'].includes(data?.code)||attempt>=2||deadline-Date.now()<1000)return {response,data}
+          console.warn('suizamente_retry',operation,data.code,attempt+1)
+          await new Promise(resolve=>setTimeout(resolve,40*(attempt+1)+Math.floor(Math.random()*40)))
+        }
+      }
+      let {response,data}=await rpc(action==='girar_carta'&&body?.todas?'sobre':action,args)
+      // Cards were awarded when opening. Only reveal their persisted positions,
+      // in server order, over the server's short DB connection instead of making
+      // the phone wait for a separate network round trip for every card.
+      if(action==='girar_carta'&&body?.todas){
+        while(response.ok&&Number.isInteger(data?.giradas)&&Number.isInteger(data?.total)&&data.giradas<data.total){
+          const index=data.giradas,result=await rpc('girar_carta',{id:args.id,indice:index})
+          response=result.response;data=result.data
+          if(response.ok&&data.giradas<=index)throw new Error('Reveal did not advance')
+        }
       }
       if (!response.ok) {
         if(action==='config')return send(200,publicSuizamenteConfig())

@@ -11,18 +11,21 @@ import {szApi,szKey} from '../../../lib/suizamenteV2'
 import {useData} from './useData'
 
 const backPath=search=>{const path=new URLSearchParams(search).get('volver');return /^\/suizamente(?:\/|$)/.test(path||'')?path:'/suizamente/album'}
-export function useOpenPack(back){
+export function useOpenPack(back,knownAlbum){
   const navigate=useNavigate(),pending=useRef(false),[busy,setBusy]=useState(false),[error,setError]=useState('')
   async function open(){
     if(pending.current)return
     pending.current=true;setBusy(true);setError('')
     let key
     try{
-      const album=await szApi('album')
+      const album=knownAlbum||await szApi('album')
       let id=album.sobrePendiente
       if(!id){key=szKey();id=(await szApi('sobres',{method:'POST',body:{clave:key}})).id}
       navigate('/suizamente/sobre/'+id+'?volver='+encodeURIComponent(back))
     }catch(e){
+      if(e.status===409){
+        try{const current=await szApi('album',{fresh:true});if(current.sobrePendiente){navigate('/suizamente/sobre/'+current.sobrePendiente+'?volver='+encodeURIComponent(back));return}}catch{/* Use the original action error if recovery is unavailable. */}
+      }
       if(key){
         try{await szApi('sobres/'+key);navigate('/suizamente/sobre/'+key+'?volver='+encodeURIComponent(back));return}catch{/* Retry uses the pending pack from the server. */}
       }
@@ -40,7 +43,7 @@ function AlbumCard({card,onClick,pack=false,justRevealed=false}){
   </button>
 }
 export function Album(){
-  const {player}=useSv(),{data,error}=useData('album'),[index,setIndex]=useState(0),[selected,setSelected]=useState(null),pack=useOpenPack('/suizamente/album')
+  const {player}=useSv(),{data,error}=useData('album'),[index,setIndex]=useState(0),[selected,setSelected]=useState(null),pack=useOpenPack('/suizamente/album',data)
   const monthlyIndex=data?.colecciones.findIndex(c=>c.mes===data.mes)??-1
   const col=data?.colecciones[index],sobres=player.inventario?.sobres||0
   return <section className="sv-screen sv-album"><header className="sv-shop-header"><h1><Icono nombre="sobre"/> Álbum</h1><Wallet/></header>
@@ -82,7 +85,7 @@ export function Pack(){
       // reveal the whole pack before presenting it, including when resuming a pack.
       pending.current=true;setBusy(true)
       while(active&&next.giradas<next.total){
-        try{next=await szApi('sobres/'+id+'/girar',{method:'POST',body:{indice:next.giradas}})}
+        try{next=await szApi('sobres/'+id+'/girar',{method:'POST',body:{indice:next.giradas,todas:true}})}
         catch(e){if(e.status===409)next=await szApi('sobres/'+id);else throw e}
       }
       if(active){setData(next);if(unopened)show(packSteps(next),{key:'sobre:'+id})}
