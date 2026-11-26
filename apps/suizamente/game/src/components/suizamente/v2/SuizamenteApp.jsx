@@ -11,7 +11,6 @@ import {SuizamenteContext} from './Context'
 import {Brand,Button,Logo,Navigation} from './Shared'
 import {HowTo,Login,Menu,ProfileForm,Settings,Welcome} from './Account'
 import {NewGame} from './Lobby'
-import {MapHelp} from './Map'
 import './suizamente.css'
 import './community.css'
 import './world.css'
@@ -242,7 +241,6 @@ export default function SuizamenteApp(){
       <Route path="logros" element={gate(<Achievements/>)}/>
       <Route path="tienda" element={gate(<Shop/>)}/>
       <Route path="mapa" element={gate(<MapPage/>)}/>
-      <Route path="mapa/ayuda" element={gate(<MapHelp/>)}/>
       <Route path="mapa/niveles/:canton" element={gate(<MapLevels/>)}/>
       <Route path="mapa/vuelta" element={gate(<LapComplete/>)}/>
       <Route path="misiones" element={gate(<Missions/>)}/>

@@ -3,20 +3,23 @@ import {Icono,iconizar,IconText,Sello,UiIcon} from './Icono'
 import {QuestionOptions} from './QuestionOptions'
 import {League} from './Duration'
 import {useCallback,useEffect,useRef,useState} from 'react'
-import {Link,useNavigate,useParams} from 'react-router-dom'
+import {Link,useLocation,useNavigate,useParams} from 'react-router-dom'
 import {useSv,useQuestionScreen} from './Context'
 import {Avatar,Button,Card,Earnings,Header,Sheet,Wallet} from './Shared'
 import {cantonNames,szApi} from '../../../lib/suizamenteV2'
 import {Breakdown,FactCard,FriendInviteSheet,ShareSheet,storyData} from './Sharing'
 
 import {useData} from './useData'
+import {MatchHistory} from './MatchHistory'
 export function Friends(){
-  const {user}=useSv(),navigate=useNavigate(),{data,error,setError,reload}=useData('amigos',{refreshMs:15000}),[query,setQuery]=useState(''),[found,setFound]=useState([]),[busy,setBusy]=useState(false),[inviting,setInviting]=useState(false)
+  const {search}=useLocation(),history=new URLSearchParams(search).get('terminadas')==='1'
+  const {user}=useSv(),navigate=useNavigate(),{data,error,setError,reload}=useData('amigos',{refreshMs:15000,enabled:!history}),[query,setQuery]=useState(''),[found,setFound]=useState([]),[busy,setBusy]=useState(false),[inviting,setInviting]=useState(false)
   useEffect(()=>{if(!user||!query.trim()){setFound([]);return}let active=true;const timer=setTimeout(()=>szApi('amigos/buscar?q='+encodeURIComponent(query)).then(d=>{if(active)setFound(d.jugadores)}).catch(e=>{if(active)setError(e.message)}),300);return()=>{active=false;clearTimeout(timer)}},[query,user?.id])
   async function relation(id,operacion){setBusy(true);setError('');try{await szApi('amigos',{method:'POST',body:{jugadorId:id,operacion}});reload();if(query)setFound(old=>old.map(p=>p.id===id?{...p,relacion:'pendiente'}:p))}catch(e){setError(e.message)}finally{setBusy(false)}}
   function invite(){if(!user){navigate('/suizamente/entrar');return}setInviting(true)}
   async function play(id){if(!user){navigate('/suizamente/entrar');return}setBusy(true);try{const m=await szApi('partidas',{method:'POST',body:{rival:id}});navigate('/suizamente/partida/'+m.id)}catch(e){setError(e.message)}finally{setBusy(false)}}
   const person=p=><Link className="sv-person-main" to={'/suizamente/jugador/'+p.id}><Avatar id={p.id} name={p.apodo} color={p.color} marco={p.marco}/><span><b>{p.apodo}</b><small>Nivel {p.nivel}{p.online&&<em> · en línea</em>}</small></span></Link>
+  if(history)return <MatchHistory/>
   return <section className="sv-screen sv-friends"><header className="sv-shop-header"><h1><Icono nombre="amigos"/> Amigos</h1><button className="sv-mini-button" disabled={busy} onClick={invite}>Invitar a un amigo</button><MusicButton/></header><div className="sv-content">
     {user?<><label className="sv-search"><span>🔍</span><input type="search" aria-label="Buscar jugadores" placeholder="Busca jugadores de Suizamente" value={query} onChange={e=>setQuery(e.target.value)}/></label><Link className="sv-ranking-entry" to="/suizamente/ranking"><Icono nombre="trofeo"/> <span><b>Ranking de la semana</b><small>Tus amigos y toda Suiza</small></span>›</Link>
     {query?<div className="sv-people">{found.map(p=><div key={p.id}>{person(p)}<button className="sv-mini-button" disabled={busy||!!p.relacion} onClick={()=>relation(p.id,'solicitar')}>{p.relacion==='aceptado'?'Siguiendo':p.relacion?'Enviada':'＋ Añadir'}</button></div>)}{!found.length&&<Card>No hay jugadores que coincidan.</Card>}</div>:<>{data?.solicitudes.length>0&&<><h2>Solicitudes · {data.solicitudes.length}</h2><div className="sv-people requests">{data.solicitudes.map(p=><div key={p.id}>{person(p)}<button className="sv-icon-button" disabled={busy} aria-label={'Rechazar a '+p.apodo} onClick={()=>relation(p.id,'rechazar')}>✕</button><button className="sv-mini-button green" disabled={busy} onClick={()=>relation(p.id,'aceptar')}>Aceptar</button></div>)}</div></>}

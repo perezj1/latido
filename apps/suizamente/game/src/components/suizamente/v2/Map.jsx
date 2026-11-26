@@ -2,7 +2,6 @@ import {Icono} from './Icono'
 import {useEffect,useLayoutEffect,useRef,useState} from 'react'
 import {Link} from 'react-router-dom'
 import {useSv} from './Context'
-import {Button,Card,Header} from './Shared'
 
 let mapPaths
 function paths(){
@@ -13,7 +12,7 @@ function paths(){
   return mapPaths
 }
 // The geometry is read from the copied, attributed swisstopo SVG, never redrawn.
-export function MapDrawing({levels={},region=0,only,label='Mapa de los cantones de Suiza',vuelta:shownLap}){
+export function MapDrawing({levels={},region=0,only,label='Mapa de los cantones de Suiza',vuelta:shownLap,regionBadge=false}){
   const {config,map}=useSv(),[data,setData]=useState([]),[error,setError]=useState(false),[box,setBox]=useState('0 0 350 225'),svg=useRef(null)
   useEffect(()=>{let active=true;paths().then(p=>{if(active)setData(p)}).catch(()=>{if(active)setError(true)});return()=>{active=false}},[])
   useLayoutEffect(()=>{
@@ -29,7 +28,7 @@ export function MapDrawing({levels={},region=0,only,label='Mapa de los cantones 
     <title>{label} · Límites © swisstopo</title>
     {data.filter(p=>(!only||p.id===only)&&config.mapa.regiones.some(r=>r.cantones.some(k=>k.id===p.id))).map(p=>{
       const index=config.mapa.regiones.findIndex(r=>r.cantones.some(k=>k.id===p.id)),active=index===region
-      const fill=only?colors[levels[p.id]||0]:index<region?colors[config.mapa.nivelesPorCanton]:active?colors[levels[p.id]||0]:lap>1?previousColors[config.mapa.nivelesPorCanton]:'var(--sv-line)'
+      const fill=regionBadge?(index===region?colors[3]:index<region?colors[2]:'#DDE2EA'):only?colors[levels[p.id]||0]:index<region?colors[config.mapa.nivelesPorCanton]:active?colors[levels[p.id]||0]:lap>1?previousColors[config.mapa.nivelesPorCanton]:'var(--sv-line)'
       return <path key={p.id} data-canton={p.id} d={p.d} fill={fill} stroke={active&&!only?'#4A76EF':'#9AA6B8'} strokeWidth={active&&!only?1.5:.7} strokeLinejoin="round" vectorEffect="non-scaling-stroke"><title>{p.name||p.id} · Nivel {levels[p.id]||0}</title></path>
     })}
     {!only&&data.find(p=>p.id==='lagos')&&<path d={data.find(p=>p.id==='lagos').d} fill="#D3F2F9" stroke="#9AA6B8" strokeWidth=".4" aria-hidden="true"/>}
@@ -37,8 +36,4 @@ export function MapDrawing({levels={},region=0,only,label='Mapa de los cantones 
 }
 export function ChestLinks({chests=[],back='/suizamente/mapa'}){
   return chests.length>0&&<div className="sv-pending-chests">{chests.map(c=><Link key={c.id} to={'/suizamente/cofre/'+c.id+'?volver='+encodeURIComponent(back)}><Icono nombre="cofre"/> <b>{c.titulo}</b><span>Abrir ›</span></Link>)}</div>
-}
-export function MapHelp(){
-  const {config}=useSv()
-  return <section className="sv-screen"><Header title="🗺️ Tu Suiza, paso a paso" back="/suizamente/mapa"/><div className="sv-content sv-map-explained"><Card><h2>🏗️ Construye tu mapa</h2><p>Hay {config.mapa.regiones.length} regiones. Cada cantón tiene {config.mapa.nivelesPorCanton} niveles. Elige su tarjeta y usa el botón para construir con tus monedas.</p></Card><Card><h2><Icono nombre="cofre"/> Completa una región</h2><p>Se abre la siguiente y recibes un cofre con monedas, un sobre y un escudo.</p></Card><Card><h2><Icono nombre="duelo"/> Los asaltos</h2><p>Al ganar una partida puedes elegir un cantón del rival. Acierta las {config.asaltos.preguntasTrasVictoria} preguntas para robar hasta {config.asaltos.premio} monedas y bajarle un nivel. Con un fallo, no cambia nada.</p></Card><Card><h2><Icono nombre="escudo"/> Protege tus cantones</h2><p>Si tienes un escudo, se usa al completarse un ataque y limita el robo a {config.asaltos.premioConEscudo} monedas. El cantón baja igualmente. Puedes tener hasta {config.escudos.max}. Las regiones completas están protegidas.</p></Card><small className="sv-muted">Datos del mapa: Límites © swisstopo · swiss-maps (Interactive Things, BSD-3).</small><Button to="/suizamente/mapa">Entendido</Button></div></section>
 }

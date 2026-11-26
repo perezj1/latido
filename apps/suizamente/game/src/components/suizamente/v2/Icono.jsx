@@ -20,7 +20,7 @@ export function iconizar(value){
  for(const m of value.matchAll(tokens)){if(m.index>start)parts.push(value.slice(start,m.index));parts.push(<Icono key={m.index} nombre={EMOJI_ICONO[m[1]]}/>);start=m.index+m[0].length}
  if(!parts.length)return value
  if(start<value.length)parts.push(value.slice(start))
- return parts
+ return parts.length===1?parts[0]:<span className={"sv-icon-text"+(parts.length===2&&parts[0]?.type===Icono&&typeof parts[1]==="string"&&value.length<40?" sv-inline-value":"")}>{parts}</span>
 }
 export function IconText({children}){const enabled=useContext(enabledContext);return enabled?iconizar(children):children}
 export function UiIcon({value,...props}){const name=EMOJI_ICONO[value?.replace?.(/\uFE0F/g,'')];return name?<Icono nombre={name} {...props}/>:value}

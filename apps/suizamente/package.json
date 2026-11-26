@@ -40,6 +40,7 @@
     "test:screen-chrome": "node scripts/test-suizamente-screen-chrome.mjs && node scripts/test-suizamente-screen-chrome.mjs --webkit",
     "test:icons": "node scripts/test-suizamente-icons-browser.mjs && node scripts/test-suizamente-icons-browser.mjs --webkit",
     "test:friend-invites": "node scripts/test-suizamente-friend-invites.mjs && node scripts/test-suizamente-friend-invites-concurrency.mjs && node scripts/test-suizamente-friend-invites-browser.mjs && node scripts/test-suizamente-friend-invites-browser.mjs --webkit",
+    "test:map-layout": "node scripts/test-suizamente-map-layout.mjs && node scripts/test-suizamente-map-layout.mjs --webkit",
     "test:home": "node scripts/test-suizamente-home-browser.mjs && node scripts/test-suizamente-home-browser.mjs --webkit",
     "test:seals": "node scripts/test-suizamente-seal-browser.mjs && node scripts/test-suizamente-seal-browser.mjs --webkit",
     "test:concurrency": "node scripts/test-suizamente-retry.mjs && node scripts/test-suizamente-concurrency.mjs",

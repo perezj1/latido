@@ -1,5 +1,5 @@
 const BASE='#FBF9F6'
-const surfaces='.sv-root,.sv-screen,.sv-question-header,[data-latido-backdrop],.sv-opening,.sv-moment,.standalone-loading'
+const surfaces='.sv-root,.sv-screen,.sv-question-header,[data-latido-backdrop],[data-chrome-color],.sv-opening,.sv-moment,.standalone-loading'
 const opaque=color=>color&&color!=='transparent'&&!/^rgba\([^)]*,\s*0\)$/.test(color)
 
 // Read only screen boundaries, never individual answer options or animation frames.
@@ -9,7 +9,7 @@ export function syncScreenChrome(doc=document,host=window){
  const background=element=>element&&host.getComputedStyle(element).backgroundColor
  function update(){
   frame=null
-  const game=doc.querySelector('.sv-root'),screen=game?.querySelector(':scope>.sv-screen'),header=screen?.querySelector(':scope>.sv-question-header'),backdrop=screen?.querySelector(':scope>[data-latido-backdrop]'),opening=doc.querySelector('.sv-opening')
+  const game=doc.querySelector('.sv-root'),screen=game?.querySelector(':scope>.sv-screen'),header=screen?.querySelector(':scope>.sv-question-header'),backdrop=screen?.querySelector('[data-chrome-color]'),opening=doc.querySelector('.sv-opening')
   let color=doc.querySelector('.sv-moment')?BASE:opening?background(opening):header?background(header):backdrop?backdrop.dataset.chromeColor:background(screen)
   if(!opaque(color))color=background(game)
   if(!opaque(color))color=BASE

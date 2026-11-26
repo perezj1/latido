@@ -10,3 +10,8 @@
 
 .sv-moment-hero>.sv-icono{display:block;width:1em;height:1em}
 .sv-powerups>button>span>.sv-icono{display:block}
+
+/* A converted interface label remains one grid/flex item. Content is never converted. */
+.sv-inline-value{display:inline-flex;align-items:center;justify-content:center;gap:5px;white-space:nowrap}
+
+.sv-root .sv-chip{gap:5px}

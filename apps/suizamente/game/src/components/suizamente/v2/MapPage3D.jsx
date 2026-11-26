@@ -1,22 +1,23 @@
 import {MusicButton} from './MusicButton'
 import {Icono,iconizar,lapIcon} from './Icono'
-import {useCallback,useEffect,useRef,useState} from 'react'
+import {useEffect,useRef,useState} from 'react'
 import {Link,useNavigate,useParams,useSearchParams} from 'react-router-dom'
 import {useSv} from './Context'
 import {Button,Card,Header,Wallet} from './Shared'
 import {ChestLinks,MapDrawing} from './Map'
 import {WorldMap} from './WorldMap'
 import {szApi,szKey} from '../../../lib/suizamenteV2'
-import {ShareImage} from './ShareImage'
 import {mapImage} from './shareData'
 import {useMoment} from './Moment'
 import {cantonSteps} from './moments'
+import {notify} from '../../../lib/suizamenteNotices'
+import './mapCards.css'
 
 const stages=['Solo tierra','Naturaleza','Pueblo','Monumento']
 export function MapPage(){
  const [search]=useSearchParams(),{config,player,map}=useSv(),navigate=useNavigate(),[data,setData]=useState(map),[selected,setSelected]=useState(()=>{const id=search.get('canton');return config.mapa.regiones[map?.region||0]?.cantones.some(k=>k.id===id)?id:null}),[animated,setAnimated]=useState(null)
  const [error,setError]=useState(''),[busy,setBusy]=useState(false),[notice,setNotice]=useState('')
- const {show}=useMoment(),world=useRef(null),animationDone=useRef(null),[sharing,setSharing]=useState(null),[celebration,setCelebration]=useState(null)
+ const {show}=useMoment(),world=useRef(null),animationDone=useRef(null),[celebration,setCelebration]=useState(null)
  const [landmarks,setLandmarks]=useState({})
  async function load(){try{setData(await szApi('mapa'));setError('')}catch(e){setError(e.message)}}
  useEffect(()=>{let active=true;const refresh=()=>{if(!document.hidden)szApi('mapa').then(d=>{if(active)setData(d)}).catch(e=>{if(active)setError(e.message)})};refresh();window.addEventListener('focus',refresh);const timer=setInterval(refresh,30000);return()=>{active=false;window.removeEventListener('focus',refresh);clearInterval(timer)}},[])
@@ -28,6 +29,8 @@ export function MapPage(){
  }
  async function build(){
   if(busy||!selected)return
+  const price=data.costes?.[selected]?.[data.niveles[selected]||0]
+  if(Number.isFinite(price)&&player.monedas<price){notify('Te faltan 🪙 '+(price-player.monedas)+'. Juega una partida para ganarlas.',{error:true});return}
   setBusy(true);setError('')
   try{
    const next=await szApi('mapa/construir',{method:'POST',body:{canton:selected,nivel:data.niveles[selected]||0,vuelta:data.vuelta,clave:szKey()}})
@@ -41,21 +44,22 @@ export function MapPage(){
    else if(next.cofre){setSelected(null);navigate('/suizamente/cofre/'+next.cofre.id+'?volver=/suizamente/mapa')}
   }catch(e){setError(e.message);if(e.status===409)await load()}finally{setBusy(false)}
  }
- async function openShare(){try{const photo=await world.current.capture();setSharing({state:data,selected,photo,landmark:landmarks[selected]?.n})}catch(e){setError(e.message)}}
- const makeShare=useCallback(includeName=>mapImage(sharing.state,player,config,{...sharing.photo,selected:sharing.selected,landmark:sharing.landmark,includeName}),[sharing,player,config])
  if(!data)return <section className="sv-screen"><div className="sv-content">{error?<Card><p role="alert">{error}</p><Button onClick={load}>Reintentar</Button></Card>:<div className="sv-skeleton" role="status" aria-label="Cargando mapa"/>}</div></section>
  const view=celebration||data,region=config.mapa.regiones[Math.min(view.region,config.mapa.regiones.length-1)],maximum=config.mapa.nivelesPorCanton,k=region.cantones.find(k=>k.id===selected)
  const level=view.niveles[selected]||0,cost=data.costes?.[selected]?.[level]??k?.costes[level]
+ const style=view.estilo||config.vueltasMapa.vueltas[Math.min((view.vuelta||1)-1,config.vueltasMapa.vueltas.length-1)]
  const progress=region.cantones.reduce((n,k)=>n+(view.niveles[k.id]||0),0),total=region.cantones.length*maximum
- return <section className="sv-screen sv-map-page"><header className="sv-map-header"><h1>{region.nombre}</h1><MusicButton/><div className="sv-map-header-pills"><span className="sv-map-stage">Vuelta {view.vuelta}</span><span className="sv-map-stage">Región {view.region+1} de {config.mapa.regiones.length}</span><span className="sv-shields" aria-label={(player.inventario.escudos||0)+' escudos'}><Icono nombre="escudo"/> {player.inventario.escudos||0}/{config.escudos.max}</span><Wallet/></div></header>
+ return <section className="sv-screen sv-map-page"><header className="sv-map-header"><h1>{region.nombre}</h1><Wallet/><MusicButton/><div className="sv-map-header-pills"><span className="sv-map-stage">Vuelta {view.vuelta}</span><span className="sv-map-stage">Región {view.region+1} de {config.mapa.regiones.length}</span><span className="sv-shields" aria-label={(player.inventario.escudos||0)+' escudos'}><Icono nombre="escudo"/> {player.inventario.escudos||0}/{config.escudos.max}</span></div></header>
   <div className="sv-region-progress"><div className="sv-xp-bar" role="progressbar" aria-label="Niveles de la región" aria-valuemin={0} aria-valuemax={total} aria-valuenow={progress}><i style={{width:100*progress/total+'%'}}/></div><b>{progress}/{total}</b><span><Icono nombre="cofre"/></span></div>
-  <div className="sv-map-frame">{selected&&<button className="sv-map-all" onClick={()=>setSelected(null)}>← Toda Suiza</button>}<WorldMap ref={world} state={celebration||data} selected={selected} onSelect={choose} animated={animated} onAnimationDone={()=>{animationDone.current?.();animationDone.current=null}} onMetadata={setLandmarks}/><div className="sv-map-sharing"><button disabled={busy} aria-label={selected?'Compartir '+k?.nombre:'Compartir mi Suiza'} onClick={openShare}><Icono nombre="compartir"/></button><Link to="/suizamente/mapa/ayuda" aria-label="Cómo funciona el mapa">?</Link></div>{selected&&<div className="sv-world-focus-info"><b>{k?.nombre}</b><span>Nivel {level}/{maximum} · {level===maximum?landmarks[selected]?.n||stages[level]:stages[level]}</span></div>}</div>
-  {selected?<div className="sv-content" aria-live="polite">{level<maximum?<Button className={'sv-button sv-build '+(player.monedas>=cost?'affordable':'')} disabled={busy} onClick={build}><span>⬆️</span><span><b>Subir a nivel {level+1}</b><small>Llega: {level+1===maximum?landmarks[selected]?.n||stages[level+1]:stages[level+1]}</small></span><strong><Icono nombre="moneda"/> {cost}</strong></Button>:<Card>✅ Cantón completo</Card>}</div>:<p className="sv-map-hint">Elige un cantón para verlo de cerca</p>}
-  {view.vuelta>1&&<p className="sv-map-hint"><Icono nombre={lapIcon(view.estilo)}/> {view.estilo.nombre}: todo cuesta ×{view.multiplicador}</p>}
-  {selected&&<Link className="sv-text-button" to={'/suizamente/mapa/niveles/'+selected}>Así crece {k?.nombre} ›</Link>}
-  <div className="sv-canton-strip">{region.cantones.map(k=>{const n=view.niveles[k.id]||0,price=data.costes?.[k.id]?.[n]??k.costes[n];return <button key={k.id} aria-pressed={selected===k.id} onClick={()=>choose(k.id)} aria-label={'Ver '+k.nombre+', nivel '+n+' de '+maximum}><WorldMap mini state={view} selected={k.id}/><b>{k.nombre}</b><span className="sv-canton-levels">{Array.from({length:maximum},(_,i)=><i key={i} className={i<n?'filled':''}/>)}</span><strong className={player.monedas>=price?'affordable':''}>{iconizar(n===maximum?'✓ Completo':'🪙 '+price)}</strong></button>})}</div>
+  <div className={'sv-map-frame'+(selected?' has-canton':'')}>{selected&&<button className="sv-map-all" onClick={()=>setSelected(null)}>← Toda Suiza</button>}<WorldMap ref={world} state={celebration||data} selected={selected} onSelect={choose} animated={animated} onAnimationDone={()=>{animationDone.current?.();animationDone.current=null}} onMetadata={setLandmarks}/>
+   {selected&&<div className="sv-world-focus-info"><div className="sv-canton-info"><span className="sv-canton-info-title"><b>{k?.nombre}</b><span className="sv-canton-levels" aria-hidden="true">{Array.from({length:maximum},(_,i)=><i key={i} className={i<level?'filled':''}/>)}</span></span><span>Nivel {level}/{maximum} · {level===maximum?landmarks[selected]?.n||stages[level]:stages[level]}</span>{level<maximum&&<span className="sv-canton-arrival">Llega: {level+1===maximum?landmarks[selected]?.n||stages[level+1]:stages[level+1]}</span>}</div>
+    {level<maximum?<button className={'sv-canton-build '+(player.monedas>=cost?'affordable':'')} disabled={busy||cost===undefined} onClick={build} aria-label={'Subir '+k?.nombre+' a nivel '+(level+1)+' por '+cost+' monedas. Llega: '+(level+1===maximum?landmarks[selected]?.n||stages[level+1]:stages[level+1])+(player.monedas<cost?'. Te faltan monedas':'')}><span>⬆️ Subir a nivel {level+1}</span><span className="sv-inline-value"><Icono nombre="moneda" size={18}/>{cost}</span></button>:<span className="sv-canton-complete" style={{background:style.colores[1]}}>✓ Completo</span>}
+   </div>}
+  </div>
+  {!selected&&<div className="sv-map-hint-slot"><p className="sv-map-hint">{view.vuelta>1&&<><Icono nombre={lapIcon(view.estilo)}/> {view.estilo.nombre}: todo cuesta ×{view.multiplicador}. </>}👆 Elige un cantón para verlo de cerca y subirlo de nivel.</p></div>}
+  <div className="sv-canton-strip">{region.cantones.map(k=>{const n=view.niveles[k.id]||0,complete=n===maximum,price=data.costes?.[k.id]?.[n]??k.costes?.[n],affordable=player.monedas>=price;return <button key={k.id} className={'sv-canton-card'+(complete?' complete':'')} aria-pressed={selected===k.id} onClick={()=>choose(k.id)} aria-label={k.nombre+': nivel '+n+' de '+maximum+(complete?', completo':'. Subir a nivel '+(n+1)+': '+price+' monedas'+(affordable?'':', te faltan monedas'))} style={{'--lap-color':style.colores[3],'--lap-tint':style.colores[1]}}><span className="sv-canton-plate" aria-hidden="true"><MapDrawing levels={view.niveles} region={view.region} vuelta={view.vuelta} only={k.id}/></span><b className="sv-canton-name">{k.nombre}</b><span className="sv-canton-level-label" aria-hidden="true"><span className="sv-canton-levels">{Array.from({length:maximum},(_,i)=><i key={i} className={i<n?'filled':''}/>)}</span><small>Nivel {n}/{maximum}</small></span><span aria-hidden="true" className={'sv-canton-price'+(complete?' complete':affordable?' affordable':'')}>{complete?'✓ Completo':<><Icono nombre="moneda" size={18}/>{price}</>}</span></button>})}</div>
   <div className="sv-content"><ChestLinks chests={data.cofres}/>{notice&&<p role="status">{notice}</p>}{error&&<Card><p role="alert" className="sv-error">{error}</p><Button tone="quiet" onClick={load}>Reintentar</Button></Card>}</div>
- {sharing&&<ShareImage makeData={makeShare} apodo={player.apodo} title={sharing.selected?'Compartir '+k?.nombre:'Compartir mi Suiza'} onClose={()=>setSharing(null)}/>}</section>
+</section>
 }
 
 export function MapLevels(){

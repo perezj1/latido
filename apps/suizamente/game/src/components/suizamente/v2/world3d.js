@@ -84,6 +84,13 @@ function crear(op) {
   renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   caja.appendChild(renderer.domElement);
   renderer.domElement.style.cssText = 'display: block; width: 100%; height: 100%; border-radius: inherit';
+  // WebKit can drop its composited WebGL layer after resizing or scrolling.
+  // Retain the displayed map frame without another WebGL context; gestures
+  // still reach the live canvas, and copies follow the same 30/60 fps budget.
+  const quieto = !op.foto && (op.mode==='map'||op.reduced?.()) ? document.createElement('canvas') : null;
+  const quieto2d = quieto?.getContext('2d');
+  if(quieto){quieto.dataset.staticFrame='';quieto.setAttribute('aria-hidden','true');quieto.style.cssText='position:absolute;inset:0;width:100%;height:100%;pointer-events:none;border-radius:inherit';caja.appendChild(quieto);}
+
 
   const escena = new THREE.Scene();
   escena.background = op.transparente ? null : new THREE.Color(op.dark?.()?'#161C26':COL.fondo);
@@ -431,9 +438,11 @@ function crear(op) {
     const [x0, y0, x1, y1] = can.b, s = Math.max(x1 - x0, y1 - y0);
     volarA(new THREE.Vector3((x0 + x1) / 2 + OX, can.alto + s * 0.06, (y0 + y1) / 2 + OZ), distPara(s * 1.18, s * 1.05) + 4, 0.9, 0.42);
     nubesA(can);
-    controles.autoRotate = !!op.mini&&!op.foto; controles.autoRotateSpeed = 0.5;
+    controles.autoRotate = !op.foto&&!op.reduced?.(); controles.autoRotateSpeed = 0.5;
   };
-  controles.addEventListener('start', () => { controles.autoRotate = false; vuelo = null; });
+  let controlando=false;
+  controles.addEventListener('start', () => { controlando=true;controles.autoRotate = false; vuelo = null; });
+  controles.addEventListener('end',()=>{controlando=false});
 
   /* ---------- Toque: seleccionar cantón ---------- */
   const ray = new THREE.Raycaster(), ptr = new THREE.Vector2(); let abajo = null;
@@ -459,7 +468,7 @@ function crear(op) {
     frameId=0;if (!vivo) return;
     if (document.hidden || op.visible?.()===false || (!document.body.contains(caja) && !op.foto)) { ultimo = ahora; return; }
     // Throttle decorative models; retain smooth 60 fps while manipulating the map.
-    const fps=op.mini?20:op.interactive?.()?60:30;if(ahora-ultimoDibujo<1000/fps){invalidar();return;}ultimoDibujo=ahora;
+    const fps=op.mini?20:controlando?60:30;if(ahora-ultimoDibujo<1000/fps){invalidar();return;}ultimoDibujo=ahora;
     escena.background?.set(op.dark?.()?'#161C26':COL.fondo);if(op.reduced?.()) { controles.autoRotate=false;controles.enableDamping=false;if(vuelo){controles.target.copy(vuelo.hacia.t);camara.position.copy(vuelo.hacia.p);vuelo=null;}tweens.forEach(tw=>tw.f(1));tweens.length=0; }
     if(op.reduced?.()&&!dirty)return;dirty=false;controles.enableDamping=controles.enabled&&!op.reduced?.();const dt = op.reduced?.()?0:Math.min(0.05, (ahora - ultimo) / 1000); ultimo = ahora; reloj += dt;
     if (vuelo) { const p = facil(Math.min(1, (reloj - vuelo.t0) / vuelo.dur)); controles.target.lerpVectors(vuelo.desde.t, vuelo.hacia.t, p); camara.position.lerpVectors(vuelo.desde.p, vuelo.hacia.p, p); if (p >= 1) vuelo = null; }
@@ -468,7 +477,7 @@ function crear(op) {
     for (let i = confeti.length - 1; i >= 0; i--) { const m = confeti[i], d = m.userData; d.v.y -= 9 * dt; m.position.addScaledVector(d.v, dt); m.rotation.x += d.giro * dt; m.rotation.y += d.giro * dt; d.vida -= dt; m.material.opacity = Math.max(0, d.vida); if (d.vida <= 0) { escena.remove(m);m.geometry.dispose();m.material.dispose();confeti.splice(i, 1); } }
     nubes.forEach(n => { if (!n.visible) return; n.position.x += n.userData.v * dt * n.scale.x; if (n.position.x > n.userData.limite) n.position.x = n.userData.min ?? -220; });
     controles.update();
-    renderer.render(escena, camara);
+    try{renderer.render(escena,camara);if(quieto2d){if(quieto.width!==renderer.domElement.width)quieto.width=renderer.domElement.width;if(quieto.height!==renderer.domElement.height)quieto.height=renderer.domElement.height;quieto2d.clearRect(0,0,quieto.width,quieto.height);quieto2d.drawImage(renderer.domElement,0,0)}}catch(error){vivo=false;op.alFallo?.(error);return}
     if(!op.reduced?.())invalidar();
   };
   camara.position.set(0, 300, 260); controles.target.set(0, 0, 8);
@@ -491,16 +500,42 @@ function crear(op) {
     foco: () => foco,
     info: k => ({ hito: C3[k].hito, nombreHito: C3[k].n, alpes: C3[k].alpes || 0 }),
     reanudar:invalidar,
+    verRegion(cs) { invalidar();
+      Object.values(cantones).forEach(c => { c.grupo.visible = cs.includes(c.k); });
+      nubes.forEach(n => { n.visible = false; });
+      const caja = new THREE.Box3(); cs.forEach(k => { if (cantones[k]) caja.expandByObject(cantones[k].grupo); });
+      const centro = caja.getCenter(new THREE.Vector3()), tam = caja.getSize(new THREE.Vector3()), polar = 0.95, azim = 0.42;
+      const v = THREE.MathUtils.degToRad(camara.fov) / 2, hz = Math.atan(Math.tan(v) * camara.aspect);
+      const w = Math.max(tam.x, tam.z), h = tam.z * Math.cos(polar) + tam.y * Math.sin(polar);
+      const dist = Math.max((w / 2) / Math.tan(hz), (h / 2) / Math.tan(v)) / 0.9;
+      vuelo = null; controles.autoRotate = false;
+      controles.target.copy(centro);
+      camara.position.copy(new THREE.Vector3().setFromSphericalCoords(dist, polar, azim).add(centro));
+      camara.lookAt(centro); controles.update();
+    },
     saltar() { invalidar();if (vuelo) { controles.target.copy(vuelo.hacia.t); camara.position.copy(vuelo.hacia.p); camara.lookAt(controles.target); vuelo = null; } tweens.forEach(tw => tw.f(1)); tweens.length = 0; },
     reposo() { return new Promise(resolve=>{const comprobar=()=>{if(!vivo||(!vuelo&&!tweens.length))resolve();else requestAnimationFrame(comprobar)};comprobar()}) },
-    foto(tipo = 'image/webp', calidad = 0.82, escala) {
+    foto(tipo = 'image/webp', calidad = 0.82, escala, recorte) {
       const antes=renderer.getPixelRatio(),cambia=escala&&escala!==antes
-      try{if(cambia){renderer.setPixelRatio(escala);tamano()}renderer.render(escena,camara);return renderer.domElement.toDataURL(tipo,calidad)}
+      try{if(cambia){renderer.setPixelRatio(escala);tamano()}renderer.render(escena,camara);return recorte!==undefined?recortar(renderer.domElement,tipo,calidad,recorte):renderer.domElement.toDataURL(tipo,calidad)}
       finally{if(cambia){renderer.setPixelRatio(antes);tamano();renderer.render(escena,camara)}}
     },
-    destruir() { vivo = false;cancelAnimationFrame(frameId);document.removeEventListener('visibilitychange',alVolver); if (ro) ro.disconnect(); controles.dispose();const geos=new Set(),materials=new Set();escena.traverse(o=>{if(o.geometry)geos.add(o.geometry);if(o.material)(Array.isArray(o.material)?o.material:[o.material]).forEach(m=>materials.add(m))});geos.forEach(g=>g.dispose());materials.forEach(m=>m.dispose());renderer.dispose();renderer.forceContextLoss(); },
+    destruir() { vivo = false;cancelAnimationFrame(frameId);document.removeEventListener('visibilitychange',alVolver); if (ro) ro.disconnect(); controles.dispose();const geos=new Set(),materials=new Set();escena.traverse(o=>{if(o.geometry)geos.add(o.geometry);if(o.material)(Array.isArray(o.material)?o.material:[o.material]).forEach(m=>materials.add(m))});geos.forEach(g=>g.dispose());materials.forEach(m=>m.dispose());renderer.dispose();try{renderer.forceContextLoss()}catch{/* Some WebKit drivers already released the context. */} },
   };
 }
+
+function recortar(fuente, tipo, calidad, margen) {
+  const w = fuente.width, h = fuente.height, c = document.createElement('canvas'); c.width = w; c.height = h;
+  const x = c.getContext('2d'); x.drawImage(fuente, 0, 0);
+  const d = x.getImageData(0, 0, w, h).data; let x0 = w, y0 = h, x1 = -1, y1 = -1;
+  for (let y = 0; y < h; y++) for (let i = 0; i < w; i++) if (d[(y * w + i) * 4 + 3] > 8) { if (i < x0) x0 = i; if (i > x1) x1 = i; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+  if (x1 < 0) return fuente.toDataURL(tipo, calidad);
+  x0 = Math.max(0, x0 - margen); y0 = Math.max(0, y0 - margen); x1 = Math.min(w - 1, x1 + margen); y1 = Math.min(h - 1, y1 + margen);
+  const o = document.createElement('canvas'); o.width = x1 - x0 + 1; o.height = y1 - y0 + 1;
+  o.getContext('2d').drawImage(c, x0, y0, o.width, o.height, 0, 0, o.width, o.height);
+  return o.toDataURL(tipo, calidad);
+}
+
 
 function fotoEntera(op){
   const host=document.createElement('div');host.setAttribute('aria-hidden','true');host.style.cssText='position:fixed;left:-600px;top:0;width:400px;height:320px;pointer-events:none';document.body.append(host)
@@ -511,6 +546,7 @@ function fotoInicio(op){
   const host=document.createElement('div'),ancho=op.ancho||300,alto=op.alto||220
   host.setAttribute('aria-hidden','true');host.style.cssText=`position:fixed;left:-${ancho+100}px;top:0;width:${ancho}px;height:${alto}px;pointer-events:none`;document.body.append(host)
   let world
-  try{world=crear({datos:op.datos,regiones:op.regiones,foto:true,transparente:true,reduced:()=>true});world.montar(host);world.estado({v:op.v||1,r:op.r||0,niv:op.niv||{}});world.enfocar(null);world.saltar();return world.foto('image/png',1,op.escala||2)}finally{world?.destruir();host.remove()}
+  const current=op.regiones[op.r||0],datos=current?{...op.datos,cantones:Object.fromEntries(current.c.filter(k=>op.datos.cantones[k]).map(k=>[k,op.datos.cantones[k]]))}:op.datos
+  try{world=crear({datos,regiones:op.regiones,foto:true,transparente:true,reduced:()=>true});world.montar(host);world.estado({v:op.v||1,r:op.r||0,niv:op.niv||{}});const region=op.regiones[op.r||0],scale=op.escala||2;if(region){world.saltar();world.verRegion(region.c)}else{world.enfocar(null);world.saltar()}return world.foto('image/png',1,scale,6*scale)}finally{world?.destruir();host.remove()}
 }
 export const Mapa3D = { crear, fotoEntera, fotoInicio, C3, NIVELES, EMOJI_NIVEL };
