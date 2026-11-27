@@ -1,52 +1,74 @@
 import {Icono} from './Icono'
-import {useEffect,useState} from 'react'
+import {useEffect,useRef,useState} from 'react'
 import {Link,useNavigate} from 'react-router-dom'
 import {useSv} from './Context'
-import {Avatar,Button,Card,Header} from './Shared'
-import {szApi,timeLeft} from '../../../lib/suizamenteV2'
+import {Avatar,Button,Card,Header,Wallet} from './Shared'
+import {szApi} from '../../../lib/suizamenteV2'
+import {copyInvitationText} from '../../../lib/suizamenteInvitations'
+import {notify} from '../../../lib/suizamenteNotices'
 import {useData} from './useData'
 import {LoadingCards} from '../../../../Loading'
+import './newGame.css'
 
 export function NewGame({invitation}){
-  const {user}=useSv(),navigate=useNavigate()
-  const [query,setQuery]=useState(''),[players,setPlayers]=useState([]),[busy,setBusy]=useState(false),[error,setError]=useState(''),[invite,setInvite]=useState('')
-  const {data:lobby,error:lobbyError,reload:reloadLobby}=useData('emparejamiento',{refreshMs:15000,enabled:!invitation})
-  const {data:matchData,error:matchesError,reload:reloadMatches}=useData('partidas',{refreshMs:15000,enabled:!invitation}),matches=matchData?.partidas||[]
-  const [filter,setFilter]=useState('todas'),[searching,setSearching]=useState(false)
-  useEffect(()=>{
-    if(!user||invitation||!query.trim()){setPlayers([]);setSearching(false);return}
-    let active=true
-    setSearching(true)
-    const timer=setTimeout(()=>szApi('jugadores?q='+encodeURIComponent(query)).then(result=>{if(active)setPlayers(result)}).catch(e=>{if(active)setError(e.message)}).finally(()=>{if(active)setSearching(false)}),300)
-    return()=>{active=false;clearTimeout(timer)}
-  },[query,user,invitation])
-  async function start(rival){
-    if(busy)return
-    setBusy(true);setError('')
-    try{const m=await szApi('partidas',{method:'POST',body:{rival}});navigate('/suizamente/partida/'+m.id)}catch(e){setError(e.message);if(rival==='azar')reloadLobby()}finally{setBusy(false)}
-  }
-  async function makeInvite(){
-    if(!user){navigate('/auth?next='+encodeURIComponent('/suizamente/nueva'));return}
-    setBusy(true);setError('')
-    try{
-      const data=await szApi('invitaciones',{method:'POST'})
-      const link=location.origin+data.enlace
-      setInvite(link)
-      if(navigator.share)await navigator.share({title:'Una partida de Suizamente',text:'¿Jugamos una partida?',url:link})
-      else if(navigator.clipboard)await navigator.clipboard.writeText(link)
-    }catch(e){if(e.name!=='AbortError')setError(e.message)}finally{setBusy(false)}
-  }
-  return <section className="sv-screen sv-lobby"><Header title={invitation?'Te han invitado':'Nueva partida'}/><div className="sv-content">
-    {invitation?<Card className="sv-empty"><span aria-hidden="true">📨</span><h2>Tu partida te espera</h2><p>Acepta la invitación y juega tu primer turno.</p><Button disabled={busy} onClick={()=>start(invitation)}>▶ Aceptar invitación</Button></Card>:<>
-      <label className="sv-search"><span aria-hidden="true">🔍</span><input type="search" aria-label="Buscar jugadores por apodo" placeholder="Buscar un jugador por apodo" value={query} onChange={e=>setQuery(e.target.value)} disabled={!user}/></label>
-      {!user&&<Link className="sv-text-button" to={'/auth?next='+encodeURIComponent('/suizamente/nueva')}>Entra con Latido para buscar jugadores</Link>}
-      {query.trim()&&user&&<div className="sv-player-list" aria-live="polite">{searching?<LoadingCards label="Buscando jugadores"/>:players.length?players.map(p=><div key={p.id}><Avatar id={p.id} name={p.apodo} color={p.color}/><span><b>{p.apodo}</b><small>Nivel {p.nivel}</small></span><button disabled={busy} onClick={()=>start(p.id)}>▶ Jugar</button></div>):<p>No encontramos ese apodo. Prueba otro o comparte una invitación.</p>}</div>}
-      <div className="sv-lobby-invites"><button disabled={busy} onClick={makeInvite}><span aria-hidden="true">📨</span><b>Invitar amigos</b><small>Comparte una partida</small></button><Link to="/suizamente/amigos"><span aria-hidden="true"><Icono nombre="amigos"/></span><b>Tus amigos</b><small>Encuentra con quién jugar</small></Link></div>
-      {invite&&<Card><p>Enlace listo para compartir</p><input aria-label="Enlace de invitación" readOnly value={invite} onFocus={e=>e.target.select()}/><Button tone="quiet" onClick={async()=>{try{await navigator.clipboard.writeText(invite)}catch{setError('Selecciona y copia el enlace.')}}}>Copiar enlace</Button></Card>}
-      <div className="sv-between sv-section-heading sv-lobby-section"><h2>Seguir jugando</h2><label className="sv-lobby-filter"><span className="sv-sr-only">Filtrar partidas</span><select value={filter} onChange={e=>setFilter(e.target.value)}><option value="todas">Todas</option><option value="turno">Mi turno</option><option value="rival">Su turno</option></select></label></div>
-      {!matchData&&!matchesError?<LoadingCards label="Cargando tus partidas"/>:matchesError?<Card><p role="alert" className="sv-error">{matchesError}</p><Button tone="quiet" onClick={reloadMatches}>Reintentar</Button></Card>:matches.filter(m=>filter==='todas'||(filter==='turno'?m.teToca:!m.teToca)).length?<div className="sv-match-carousel">{matches.filter(m=>filter==='todas'||(filter==='turno'?m.teToca:!m.teToca)).map(m=><Link key={m.id} className={'sv-match '+(m.teToca&&m.rival?'your-turn':'')} to={'/suizamente/partida/'+m.id}><Avatar id={m.rival?.id} name={m.rival?.apodo||'?'} color={m.rival?.color}/><b>{m.rival?.apodo||'Espera rival'}</b><small>{m.tusSellos.length} – {m.susSellos.length} sellos</small><b>{!m.rival?'Pendiente':m.teToca?'¡Te toca!':'Su turno'}</b><small>{timeLeft(m.plazo)}</small></Link>)}</div>:<Card><p className="sv-muted">{matches.length?'No tienes partidas con este filtro.':'Todavía no tienes partidas abiertas.'}</p></Card>}
-      <h2 className="sv-section-heading">Iniciar una partida</h2>{!lobby&&!lobbyError?<LoadingCards label="Buscando rivales disponibles"/>:lobbyError?<Card><p role="alert" className="sv-error">{lobbyError}</p><Button tone="quiet" onClick={reloadLobby}>Reintentar</Button></Card>:<><div className="sv-start-players">{lobby?.jugadores.filter(p=>p.online).slice(0,1).map(p=><button className="sv-start-online" key={p.id} disabled={busy||!user} onClick={()=>start(p.id)} aria-label={'Jugar con '+p.apodo+', en línea, nivel '+p.nivel}><Avatar id={p.id} name={p.apodo} color={p.color}/><b>{p.apodo}</b><small>Nivel {p.nivel} · En línea</small></button>)}<button className="sv-start-random" disabled={busy||!lobby?.disponible} onClick={()=>start('azar')} aria-describedby="sv-random-availability"><span aria-hidden="true">🎲</span><b>Rival al azar</b><small>{lobby?.disponible?'Por turnos':'Sin rivales disponibles'}</small></button></div><p id="sv-random-availability" className="sv-muted">{lobby?.disponible?'Puedes empezar aunque tu rival no esté en línea.':lobby?'Ahora no hay rivales disponibles. Invita a un amigo o vuelve más tarde.':'Comprobando quién está disponible…'}</p></>}
-    </>}
-    {error&&<p role="alert" className="sv-error">{error}</p>}{busy&&<p role="status">Preparando la partida…</p>}
-  </div></section>
+ const {user,config}=useSv(),navigate=useNavigate()
+ const [query,setQuery]=useState(''),[players,setPlayers]=useState([]),[busy,setBusy]=useState(false),[error,setError]=useState(''),[invite,setInvite]=useState(''),[searching,setSearching]=useState(false)
+ const inviteRequest=useRef(null)
+ const [inviteLoading,setInviteLoading]=useState(!!user&&!invitation)
+ const {data:lobby,error:lobbyError,reload:reloadLobby}=useData('emparejamiento',{refreshMs:15000,enabled:!invitation})
+ const {data:matchData,error:matchesError,reload:reloadMatches}=useData('partidas',{refreshMs:15000,enabled:!invitation})
+ const {data:friendData,error:friendsError,reload:reloadFriends}=useData('amigos',{refreshMs:15000,enabled:!!user&&!invitation,reuseCached:true})
+ const friends=[...(friendData?.lista||[])].sort((a,b)=>Number(b.online)-Number(a.online)),online=friends.filter(p=>p.online).length
+ const term=query.trim().toLocaleLowerCase('es'),local=friends.filter(p=>p.apodo.toLocaleLowerCase('es').includes(term.replace(/^@/,'')))
+ const results=term?[...new Map([...local,...players].map(p=>[p.id,friends.find(f=>f.id===p.id)||p])).values()].sort((a,b)=>Number(!!b.online)-Number(!!a.online)):friends.slice(0,3)
+ const matchWith=p=>matchData?.partidas.find(m=>['jugando','buscando'].includes(m.estado)&&m.rival?.id===p.id)
+ const login=()=>navigate('/auth?next='+encodeURIComponent('/suizamente/nueva'))
+ function prepareInvite(){
+  if(!inviteRequest.current){setInviteLoading(true);inviteRequest.current=szApi('invitaciones',{method:'POST'}).then(data=>{const url=location.origin+data.enlace;setInvite(url);return url}).catch(e=>{inviteRequest.current=null;throw e}).finally(()=>setInviteLoading(false))}
+  return inviteRequest.current
+ }
+ // A prepared URL lets native sharing start within the actual button gesture.
+ useEffect(()=>{if(user&&!invitation)prepareInvite().catch(e=>setError(e.message))},[user?.id,invitation])
+ useEffect(()=>{
+  if(!user||invitation||!term){setPlayers([]);setSearching(false);return}
+  let active=true;setPlayers([]);setSearching(true)
+  const timer=setTimeout(()=>szApi('jugadores?q='+encodeURIComponent(query.trim().replace(/^@/,''))).then(result=>{if(active)setPlayers(result)}).catch(e=>{if(active)setError(e.message)}).finally(()=>{if(active)setSearching(false)}),300)
+  return()=>{active=false;clearTimeout(timer)}
+ },[query,user?.id,invitation])
+ async function start(rival){
+  if(busy)return;setBusy(true);setError('')
+  try{const m=await szApi('partidas',{method:'POST',body:{rival}});navigate('/suizamente/partida/'+m.id)}catch(e){setError(e.message);if(rival==='azar')reloadLobby()}finally{setBusy(false)}
+ }
+ async function sendInvite(mode){
+  if(!user){login();return}if(busy)return;setBusy(true);setError('')
+  try{const url=invite||await prepareInvite();if(mode==='share'&&navigator.share)await navigator.share({title:'Una partida de Suizamente',text:'¿Jugamos una partida?',url});else{await copyInvitationText(url);notify('Enlace de invitación copiado')}}catch(e){if(e.name!=='AbortError')setError(e.message)}finally{setBusy(false)}
+ }
+ function friend(p){
+  const match=matchWith(p),label=p.apodo+', nivel '+p.nivel+(p.online?', en línea':'')+'. '+(match?'Ya jugáis una partida: seguir':'Jugar una partida')
+  const content=<><span className="sv-np-avatar"><Avatar id={p.id} name={p.apodo} color={p.color}/>{p.online&&<i aria-hidden="true"/>}</span><span className="sv-np-person"><b>{p.apodo}</b><span>Nivel {p.nivel}{match?' · ya jugáis una partida':p.online?<> · <strong>en línea</strong></>:''}</span></span><span className={'sv-np-play'+(match?' continue':'')} aria-hidden="true">{match?'Seguir':'▶︎ Jugar'}</span></>
+  return <div role="listitem" key={p.id}>{match?<Link className="sv-np-friend" aria-label={label} to={'/suizamente/partida/'+match.id}>{content}</Link>:<button type="button" className="sv-np-friend" aria-label={label} disabled={busy||!matchData} onClick={()=>start(p.id)}>{content}</button>}</div>
+ }
+ const problem=error||matchesError||friendsError
+ return <section className={'sv-screen sv-lobby'+(!invitation?' sv-new-game':'')}><Header title={invitation?'Te han invitado':'Nueva partida'} right={!invitation?<Wallet/>:undefined}/>
+  {invitation?<div className="sv-content"><Card className="sv-empty"><span aria-hidden="true">📨</span><h2>Tu partida te espera</h2><p>Acepta la invitación y juega tu primer turno.</p><Button disabled={busy} onClick={()=>start(invitation)}>▶ Aceptar invitación</Button></Card></div>:<div className="sv-np-sections">
+   <section aria-labelledby="sv-np-amigos" className="sv-np-section">
+    <div className="sv-np-heading"><Icono nombre="amigos" size={26}/><h2 id="sv-np-amigos">Tus amigos</h2>{online>0&&<span className="sv-np-online"><i aria-hidden="true"/>{online} en línea</span>}</div>
+    <label className="sv-np-search"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="10.5" cy="10.5" r="5.5"/><path d="m15 15 5 5"/></svg><input type="search" aria-label="Buscar entre tus amigos y en Latido" placeholder="Busca por nombre o @usuario" value={query} onChange={e=>setQuery(e.target.value)} disabled={!user}/></label>
+    {!user?<Link className="sv-np-login" to={'/auth?next='+encodeURIComponent('/suizamente/nueva')}>Entra con Latido para buscar jugadores</Link>:!friendData&&!friendsError?<LoadingCards label="Cargando tus amigos"/>:<div role="list" aria-label={term?'Jugadores encontrados':'Tus amigos'} className="sv-np-friends" aria-busy={searching}>
+     {results.map(friend)}{!results.length&&!searching&&<p role="listitem" className="sv-np-empty">{term?'No encontramos ese apodo. Prueba otro o comparte una invitación.':'Invita a alguien de Latido para jugar.'}</p>}
+     {!term&&friends.length>3&&<div role="listitem"><Link className="sv-np-more" to="/suizamente/amigos">Ver tus {friends.length} amigos <span aria-hidden="true">›</span></Link></div>}
+    </div>}
+    {searching&&<span className="sv-sr-only" role="status">Buscando jugadores</span>}
+   </section>
+   <section aria-labelledby="sv-np-invitar" className="sv-np-section">
+    <div className="sv-np-heading"><Icono nombre="compartir" size={26}/><h2 id="sv-np-invitar">Invitar amigos</h2></div>
+    <div className="sv-np-invite"><p>Mándale tu enlace a quien aún no juega: cuando entre, empezáis una partida. El enlace dura {config.partida.invitacionDias} días.</p><div className="sv-np-invite-actions" aria-busy={inviteLoading}><button type="button" disabled={busy||inviteLoading} onClick={()=>sendInvite('copy')}>Copiar enlace</button><button type="button" className="share" disabled={busy||inviteLoading} onClick={()=>sendInvite('share')}><Icono nombre="compartir" size={20}/>Compartir</button></div></div>
+   </section>
+   <section aria-labelledby="sv-np-azar" className="sv-np-section">
+    <div className="sv-np-heading"><Icono nombre="dado" size={26}/><h2 id="sv-np-azar">Rival al azar</h2></div>
+    <div className="sv-np-random"><div><b>Alguien de Latido de tu nivel</b><p>Que esté conectado ahora. Empezáis al momento.</p></div><button type="button" className="sv-start-random" disabled={busy||!lobby?.disponible} onClick={()=>start('azar')} aria-describedby={!lobby?.disponible?'sv-random-availability':undefined}><Icono nombre="dado" size={30}/>Buscar rival</button>{!lobby?.disponible&&<p id="sv-random-availability" role="status">{lobby?'Ahora no hay nadie libre. Prueba en un rato.':lobbyError||'Comprobando quién está disponible…'}</p>}{lobbyError&&<button type="button" className="sv-np-retry" onClick={reloadLobby}>Reintentar</button>}</div>
+   </section>
+  </div>}
+  {problem&&<div className="sv-np-error"><p role="alert" className="sv-error">{problem}</p>{(matchesError||friendsError)&&<button className="sv-text-button" onClick={()=>{reloadMatches();reloadFriends()}}>Reintentar</button>}</div>}{busy&&<p className="sv-sr-only" role="status">Preparando la partida…</p>}
+ </section>
 }

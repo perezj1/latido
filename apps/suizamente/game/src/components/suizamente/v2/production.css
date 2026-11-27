@@ -9,17 +9,6 @@
 .sv-root .sv-nav a[aria-current=page] .sv-nav-icon{transform:translateY(-1px) scale(1.05)}
 .sv-root .sv-nav a[aria-current=page] .sv-nav-icon:not(.home){background:transparent}
 .sv-root .sv-nav a:active .sv-nav-icon.home{transform:scale(.94)}
-.sv-lobby-invites{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.sv-lobby-invites>a,.sv-lobby-invites>button{border:0;background:var(--sv-soft-green);color:var(--sv-text);border-radius:20px;display:flex;flex-direction:column;align-items:flex-start;gap:4px;padding:16px;text-align:left;min-height:120px}
-.sv-lobby-invites>a{background:var(--sv-card)}
-.sv-lobby-invites span{font-size:28px}.sv-lobby-invites small{font-size:12px}
-.sv-lobby-filter{flex:0 1 142px;min-width:110px;max-width:100%}.sv-root .sv-lobby-filter select{font-size:14px;padding:8px 24px 8px 10px;min-height:48px;width:100%;max-width:100%}
-.sv-lobby .sv-section-heading h2{font-size:17px}
-.sv-start-players{display:flex;overflow-x:auto;gap:12px;padding:4px 0 10px;scroll-snap-type:x proximity}
-.sv-start-players>button{flex:0 0 140px;border:2px solid var(--sv-line);border-radius:22px;background:var(--sv-bg);color:var(--sv-text);padding:18px 12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;scroll-snap-align:start;box-shadow:0 4px 0 var(--sv-line);overflow:hidden}
-.sv-start-players>button>b{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.sv-start-players small{font-size:12px}.sv-start-players .sv-start-random>span,.sv-start-players .sv-avatar{width:62px;height:62px;font-size:30px;display:grid;place-items:center;border-radius:50%;background:var(--sv-soft-green)}
-.sv-root .sv-start-random:disabled{opacity:1;background:var(--sv-card);color:var(--sv-muted)}.sv-start-random:disabled>span{filter:grayscale(1)}
 .sv-game-inventory{display:flex;gap:8px;justify-content:center;padding:8px 16px}
 .sv-game-inventory>button{min-width:58px;min-height:44px;border:1px solid var(--sv-line);border-radius:999px;background:var(--sv-card);color:var(--sv-text);display:flex;align-items:center;justify-content:center;gap:6px}
 .sv-match-players{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;padding:12px 16px;gap:8px}

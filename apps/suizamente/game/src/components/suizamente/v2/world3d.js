@@ -100,7 +100,7 @@ function crear(op) {
   escena.add(new THREE.HemisphereLight('#FFFFFF', '#B49A7A', 0.6));
   const sol = new THREE.DirectionalLight('#FFF4E0', 0.72);
   sol.position.set(-120, 220, 140); sol.castShadow = true;
-  const shadowSize=op.mini?256:matchMedia('(max-width: 600px)').matches||op.mode==='home'?1024:1536;sol.shadow.mapSize.set(shadowSize,shadowSize);
+  const shadowSize=op.mini?256:op.foto&&op.transparente?2048:matchMedia('(max-width: 600px)').matches||op.mode==='home'?1024:1536;sol.shadow.mapSize.set(shadowSize,shadowSize);
   Object.assign(sol.shadow.camera, { left: -220, right: 220, top: 180, bottom: -180, near: 10, far: 700 });
   escena.add(sol, sol.target);
   const suelo = new THREE.Mesh(new THREE.PlaneGeometry(2000, 2000), new THREE.ShadowMaterial({ opacity: 0.16 }));
@@ -555,6 +555,6 @@ function fotoInicio(op){
   host.setAttribute('aria-hidden','true');host.style.cssText=`position:fixed;left:-${ancho+100}px;top:0;width:${ancho}px;height:${alto}px;pointer-events:none`;document.body.append(host)
   let world
   const current=op.regiones[op.r||0],datos=current?{...op.datos,cantones:Object.fromEntries(current.c.filter(k=>op.datos.cantones[k]).map(k=>[k,op.datos.cantones[k]]))}:op.datos
-  try{world=crear({datos,regiones:op.regiones,foto:true,transparente:true,reduced:()=>true});world.montar(host);world.estado({v:op.v||1,r:op.r||0,niv:op.niv||{}});const region=op.regiones[op.r||0],scale=op.escala||2;if(region){world.saltar();world.verRegion(region.c)}else{world.enfocar(null);world.saltar()}return world.foto('image/png',1,scale,6*scale)}finally{world?.destruir();host.remove()}
+  try{world=crear({datos,regiones:op.regiones,foto:true,transparente:true,reduced:()=>true});world.montar(host);world.estado({v:op.v||1,r:op.r||0,niv:op.niv||{}});const region=op.regiones[op.r||0],scale=op.escala||3;if(region){world.saltar();world.verRegion(region.c)}else{world.enfocar(null);world.saltar()}return world.foto('image/png',1,scale,6*scale)}finally{world?.destruir();host.remove()}
 }
 export const Mapa3D = { crear, fotoEntera, fotoInicio, C3, NIVELES, EMOJI_NIVEL };

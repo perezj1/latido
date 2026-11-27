@@ -51,6 +51,7 @@ try{
    await page.evaluate(async()=>{window.scrollTo(0,300);await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))})
    const scroll=await page.evaluate(()=>({y:scrollY,max:document.scrollingElement.scrollHeight-innerHeight}));if(scroll.max>0)assert.ok(scroll.y>0,'The document actually scrolled');metrics.push({screen:path,width,height,scroll})
    await expect(header).toHaveCSS('background-color','rgb(255, 255, 255)');await expect(header).toHaveCSS('position','sticky')
+   const centres=await header.evaluate(e=>[...e.querySelectorAll(':scope>h1,:scope>.sv-coins,:scope>.sv-music-toggle')].map(n=>{const r=n.getBoundingClientRect();return r.y+r.height/2}));assert.ok(Math.max(...centres)-Math.min(...centres)<1,'Title, balance and music share a vertical centre')
    assert.ok((await header.boundingBox()).y>=-1,'Sticky header stays at the top')
    assert.ok(await header.evaluate(e=>{const r=e.getBoundingClientRect();return e.contains(document.elementFromPoint(r.x+r.width/2,r.y+r.height/2))}),'Header is above the scrolled content')
    await page.screenshot({path:out+'/barra-'+path.slice(1)+'-'+width+'.png'})
