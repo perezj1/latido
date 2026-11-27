@@ -48,6 +48,8 @@ orden no duplican el libro ni acortan el periodo pagado.
    primer cobro, mensual/anual, fallo y gracia, autenticación adicional, plan
    diferido, portal, baja y reenvío de eventos. Por petición del usuario se omite
    el plan asistido y se deja pendiente probar su cuenta sin reconexión/claves.
+   Esta entrega rechaza claves live: el lanzamiento de cobros reales requiere
+   aprobación de Latido y revisar ese bloqueo explícito, además de pasar el sandbox.
 
 ## TWINT
 

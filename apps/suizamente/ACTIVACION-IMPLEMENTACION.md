@@ -37,8 +37,10 @@ Desde `apps/suizamente`:
 node scripts/test-negocios-pagos.mjs
 node scripts/test-negocios-pagos-browser.mjs
 node scripts/test-activacion.mjs
+node scripts/test-activacion-navegacion.mjs
 node scripts/capturar-mejoras-final.mjs --activadas
 node scripts/test-negocios-browser.mjs --activadas
+node scripts/test-negocios-mapa-combinado.mjs
 node scripts/comparar-activacion.mjs
 npm run test:mejoras:servidor
 npm run test:negocios:servidor
@@ -80,3 +82,15 @@ Para apagar una mejora, cambiar su JSON y el mismo campo `activo` en
 `suizamente_private.mejoras_configuracion.mejoras`; para negocios, en
 `suizamente_private.negocios_configuracion.config`. No hay que borrar datos ni
 desinstalar migraciones. La barra antigua vuelve con `mapa.barraCanton=true`.
+
+## Publicación comprobada
+
+V37 y v38 aplicadas en producción. Los dos despliegues de Vercel terminaron
+correctamente. La API pública devuelve los cinco modos y negocios activos,
+barra de cantón y cobro automático apagados; el service worker tiene su versión
+de compilación y cabecera `no-cache, no-store, must-revalidate`.
+Las funciones y permisos anteriores conservan la huella
+`a5e6369e6b3292545f587158078f0d06`. No hay misterios ni negocios de prueba en la
+base real. Las cinco tablas nuevas de cobro tienen RLS y cero permisos de acceso
+directo para personas anónimas o autenticadas; la RPC de Stripe solo permite
+`service_role`.
