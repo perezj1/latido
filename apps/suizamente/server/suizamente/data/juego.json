@@ -999,4 +999,55 @@
    "meta": 30
   }
  ]
+,
+  "mejoras": {
+    "_leeme": "Propuesta pendiente de aprobar por Latido (MEJORAS.md). Con activo: false no se ve nada nuevo.",
+    "minuto": {
+      "activo": false,
+      "segundos": 60,
+      "puntosAcierto": 10,
+      "rachaDesde": 3,
+      "puntosRacha": 5,
+      "segundosFallo": 5,
+      "puntosPorMoneda": 10,
+      "xpPorPunto": 0.2,
+      "partidasConPremioAlDia": 5
+    },
+    "espejo": {
+      "activo": false,
+      "preguntas": 10,
+      "segundosPorPregunta": 30,
+      "horasParaJugar": 48,
+      "premioVictoria": {
+        "monedas": 30,
+        "xp": 40
+      },
+      "premioJugar": {
+        "xp": 10
+      },
+      "retosAbiertosMax": 10
+    },
+    "misterio": {
+      "activo": false,
+      "pistas": 3,
+      "monedasPorPistas": [
+        60,
+        40,
+        20
+      ],
+      "xp": 20,
+      "archivo": "data/misterios.json"
+    },
+    "decorar": {
+      "activo": false,
+      "archivo": "data/decoraciones.json"
+    },
+    "unToque": {
+      "activo": false,
+      "paraTiMax": 3,
+      "ideasAlDiaMax": 1,
+      "sinAvisosDe": "22:00",
+      "sinAvisosHasta": "08:00"
+    }
+  }
 }

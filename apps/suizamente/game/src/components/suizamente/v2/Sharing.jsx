@@ -66,13 +66,13 @@ export function Breakdown({id,initial,real=false}){
   return <Card className="sv-breakdown"><h2>{real?'¿Quién lo sabía?':'Eligieron lo mismo'}</h2><div className="sv-tab-pills" role="tablist">{countries.length>0&&<button role="tab" aria-selected={actual==='pais'} onClick={()=>setTab('pais')}>País</button>}{years.length>0&&<button role="tab" aria-selected={actual==='anos'} onClick={()=>setTab('anos')}>Años en Suiza</button>}</div>{(data[actual]||[]).map(g=><div key={g.grupo} className={g.tuyo?'yours':''}><div className="sv-between"><b>{actual==='pais'?(countryLabel(g.grupo)):labels[g.grupo]||g.grupo}</b><b>{g.pct} %</b></div><div className="sv-xp-bar"><i style={{width:g.pct+'%'}}/></div></div>)}</Card>
 }
 function countryLabel(code){try{return new Intl.DisplayNames(['es'],{type:'region'}).of(code)}catch{return code}}
-export function FactCard({id,dato,guardada=false,question,share,onChange}){
+export function FactCard({id,dato,guardada=false,question,share,onChange,savePath='libreta'}){
   const {player}=useSv(),navigate=useNavigate(),[saved,setSaved]=useState(guardada),[error,setError]=useState(''),[notice,setNotice]=useState(''),[report,setReport]=useState(false),[reason,setReason]=useState(''),[busy,setBusy]=useState(false),[sharing,setSharing]=useState(false)
   useEffect(()=>{setSaved(guardada)},[guardada,id])
   async function save(){
     if(!player){sessionStorage.setItem('suizamente:despues-perfil',location.pathname+location.search);navigate('/suizamente/perfil/nuevo');return}
     setBusy(true);setError('')
-    try{const d=await szApi('libreta',{method:'PUT',body:{preguntaId:id,guardar:!saved}});setSaved(d.guardada);setNotice(d.guardada?'Guardado en tu libreta':'Quitado de tu libreta');onChange?.(d.guardada)}catch(e){setError(e.message)}finally{setBusy(false)}
+    try{const d=await szApi(savePath,{method:'PUT',body:{preguntaId:id,guardar:!saved}});setSaved(d.guardada);setNotice(d.guardada?'Guardado en tu libreta':'Quitado de tu libreta');onChange?.(d.guardada)}catch(e){setError(e.message)}finally{setBusy(false)}
   }
   async function sendReport(){setBusy(true);try{await szApi('reportes',{method:'POST',body:{preguntaId:id,motivo:reason}});setReport(false);setNotice('Gracias por avisar')}catch(e){setError(e.message)}finally{setBusy(false)}}
   const compactShare=share||{enlace:SHARE_HOST,url:SHARE_URL+'?p='+encodeURIComponent(id),titular:[{t:'Suizamente'}],pregunta:question,opciones:[]}

@@ -4,6 +4,7 @@ import {realpathSync} from 'node:fs'
 import react from '@vitejs/plugin-react'
 import {createSuizamenteHandler} from '../../server/suizamente/http.mjs'
 import {database,call,profile,A,B,C} from './suizamente-v2-test-db.mjs'
+import {mejorasDatabase,mejoraCall} from './mejoras-test-db.mjs'
 export function testUser(id,name){
   return {id,aud:'authenticated',role:'authenticated',email:name.toLowerCase()+'@suizamente.test',app_metadata:{provider:'email',providers:['email']},user_metadata:{name,canton:'ZH',latido_onboarding_completed:true},created_at:'2026-01-01T00:00:00Z'}
 }
@@ -11,8 +12,8 @@ export function testToken(id){
   const b64=value=>Buffer.from(JSON.stringify(value)).toString('base64url')
   return b64({alg:'HS256',typ:'JWT'})+'.'+b64({sub:id,aud:'authenticated',role:'authenticated',exp:Math.floor(Date.now()/1000)+86400})+'.test-signature'
 }
-export async function startSuizamentePreview(port=5265,{demo=false,host='127.0.0.1',hmr=demo,pushPrompt=demo}={}){
-  const db=await database({emparejamiento:true})
+export async function startSuizamentePreview(port=5265,{demo=false,host='127.0.0.1',hmr=demo,pushPrompt=demo,mejoras=false}={}){
+  const extras=mejoras?await mejorasDatabase(mejoras):null,db=extras?.db||await database({emparejamiento:true})
   for(const [id,name] of [[A,'Alex'],[B,'Lu'],[C,'Caro']]){
     await call(db,id,'guardar_jugador',profile(name))
     await call(db,id,'bienvenida')
@@ -28,9 +29,9 @@ export async function startSuizamentePreview(port=5265,{demo=false,host='127.0.0
   const origin='http://'+(host==='0.0.0.0'?'127.0.0.1':host)+':'+port
   process.env.SUPABASE_URL=origin+'/mock-supabase'
   process.env.SUPABASE_ANON_KEY='test-anon'
-  const handler=createSuizamenteHandler({fetchImpl:async(_url,options)=>{
+  const handler=createSuizamenteHandler({...(extras?{mejorasConfig:()=>extras.config}:{}),fetchImpl:async(_url,options)=>{
     const b=JSON.parse(options.body),actor=actorFrom(options.headers.Authorization)
-    try{return Response.json(await call(db,actor,b.p_action,b.p_args,b.p_guest_id,b.p_guest_token))}
+    try{return Response.json(await(_url.endsWith('/suizamente_mejoras')?mejoraCall(db,actor,b.p_action,b.p_args):call(db,actor,b.p_action,b.p_args,b.p_guest_id,b.p_guest_token)))}
     catch(e){if(!e.message.startsWith('SZV2:'))console.error('QA SQL:',e.message,e.where||'');return Response.json({message:e.message,code:e.code},{status:400})}
   }})
   const server=await createServer({
@@ -54,7 +55,7 @@ export async function startSuizamentePreview(port=5265,{demo=false,host='127.0.0
             res.setHeader('Content-Type','text/html; charset=utf-8');res.setHeader('Cache-Control','no-store')
             return res.end('<!doctype html><meta charset="utf-8"><title>Suizamente · prueba local</title><script>localStorage.setItem("sb-"+location.hostname.split(".")[0]+"-auth-token",'+JSON.stringify(JSON.stringify(session))+');localStorage.setItem("suizamente:onboarding","2026-01-01");sessionStorage.setItem("suizamente:apertura","1");location.replace("/suizamente")</script>')
           }
-          if(/^\/(?:server\/|supabase\/|suizamente\/data\/)/.test(req.url||'')){res.statusCode=404;return res.end()}
+          if(/^\/(?:server\/|supabase\/|suizamente\/data\/|data\/misterios\.json|fuentes\/)/.test(req.url||'')){res.statusCode=404;return res.end()}
           if(req.url?.startsWith('/api/suizamente/'))return handler(req,res)
           if(req.url?.startsWith('/mock-supabase/')){
             const actor=actorFrom(req.headers.authorization),name=actor===A?'Alex':actor===B?'Lu':'Caro'
@@ -70,11 +71,11 @@ export async function startSuizamentePreview(port=5265,{demo=false,host='127.0.0
     }],define:{
       'import.meta.env.VITE_SUPABASE_URL':"(globalThis.location.origin + '/mock-supabase')",
       'import.meta.env.VITE_SUPABASE_ANON_KEY':JSON.stringify('test-anon'),
-    },server:{host,port,hmr,strictPort:true,fs:{allow:[process.cwd(),realpathSync('node_modules')],deny:['.env','.env.*','**/server/suizamente/data/**','**/supabase/**','**/suizamente/data/**']}},
+    },...(extras?{cacheDir:'output/vite-mejoras-'+port}:{}),server:{host,port,hmr,strictPort:true,fs:{allow:[process.cwd(),realpathSync('node_modules')],deny:['.env','.env.*','**/server/suizamente/data/**','**/supabase/**','**/suizamente/data/**','**/data/misterios.json','**/fuentes/**']}},
   })
   server.httpServer.prependListener('connection',socket=>socket.on('error',error=>{
     if(!['ECONNRESET','EPIPE','ECONNABORTED'].includes(error.code))throw error
   }))
   try{await server.listen()}catch(error){await server.close().catch(()=>{});await db.close();throw error}
-  return {db,server,origin,async close(){await server.close();await db.close()}}
+  return {db,server,origin,mejorasConfig:extras?.config,async close(){await server.close();await db.close()}}
 }

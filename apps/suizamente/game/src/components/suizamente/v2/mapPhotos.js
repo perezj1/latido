@@ -17,6 +17,13 @@ export async function flatMapPhoto(state,config,selected){
 export async function scenePhoto(state,config,{selected,whole=false}={}){
   try{
     const [{Mapa3D},datos]=await loadMapAssets(),regiones=config.mapa.regiones.map(r=>({c:r.cantones.map(k=>k.id)}))
+    if(config.mejoras?.decorar?.activo){
+      const [{szApi},{loadDecorations}]=await Promise.all([import('../../../lib/suizamenteV2'),import('../../../lib/suizamenteDecoraciones')]),data=await szApi('mejoras/decorar'),placed=data.puestas.filter(h=>h.vuelta===state.vuelta)
+      if(placed.length){
+        const engine=await loadDecorations(),host=document.createElement('div');host.style.cssText='position:fixed;left:-600px;top:0;width:400px;height:'+(whole?'320':'400')+'px';document.body.append(host);let world
+        try{world=Mapa3D.crear({datos,regiones,decoraciones:engine,foto:true,reduced:()=>true});world.montar(host);world.estado({v:state.vuelta,r:whole?regiones.length:state.region,niv:state.niveles});world.decorar(placed);world.enfocar(selected||null);world.saltar();return {foto:world.foto('image/jpeg',.9,3),ajuste:'cubrir'}}finally{world?.destruir();host.remove()}
+      }
+    }
     if(whole)return {foto:Mapa3D.fotoEntera({datos,regiones,v:state.vuelta}),ajuste:'cubrir'}
     const host=document.createElement('div');host.style.cssText='position:fixed;left:-600px;top:0;width:400px;height:400px';document.body.append(host)
     let world

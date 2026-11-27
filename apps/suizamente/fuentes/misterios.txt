@@ -1,0 +1,4 @@
+# Contenido pendiente de aprobación por Latido. No hay misterios publicados.
+# fecha | tipo | pregunta | imagen | pista 1 | pista 2 | pista 3 | *correcta | opción | opción | opción | dato
+# EJEMPLO COMENTADO DEL DISEÑO; sustituir FECHA y aprobar antes de publicarlo:
+# FECHA | monumento | ¿Qué monumento es? | - | Está en la ciudad de Lucerna. | [Pista 2 pendiente de Latido] | [Pista 3 pendiente de Latido] | *Monumento del León | Kapellbrücke | Jet d’Eau | Torre del Reloj | El Monumento del León de Lucerna recuerda a los guardias suizos muertos en 1792.

@@ -1,5 +1,6 @@
 import { randomBytes, randomUUID } from 'node:crypto'
-import { publicSuizamenteConfig } from './config.mjs'
+import { publicSuizamenteConfig,getSuizamenteConfig } from './config.mjs'
+import {mejoraRoute} from './mejoras-routes.mjs'
 
 const COOKIE = 'szm_invitado'
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
@@ -22,7 +23,7 @@ const methods = {
   'POST denuncias':'denunciar','POST reportes':'reportar',
   'GET misiones':'misiones','POST misiones/cambiar':'cambiar_mision','GET liga':'liga','GET mapa/vuelta':'vuelta',
 }
-export function createSuizamenteHandler({ fetchImpl = fetch } = {}) {
+export function createSuizamenteHandler({ fetchImpl = fetch,mejorasConfig=()=>getSuizamenteConfig().juego.mejoras } = {}) {
   return async function handler(req, res) {
     const send = (status, data) => {
       res.statusCode = status
@@ -44,6 +45,8 @@ export function createSuizamenteHandler({ fetchImpl = fetch } = {}) {
       if (!['GET','POST','PUT','DELETE'].includes(req.method)) return send(405, { error:'Método no disponible' })
       if (req.method !== 'GET' && req.headers.origin && new URL(req.headers.origin).host !== req.headers.host) return send(403, { error:'Origen no permitido' })
       let action = methods[req.method + ' ' + route]
+      const improvement=mejoraRoute(req.method,route)
+      if(improvement)action='mejoras'
       const adminRoute=route==='admin'||route.startsWith('admin/')
       if(adminRoute)action='admin'
       const communityRoute=route.match(/^(perfiles|resultados|preguntas)\/([^/]+)$/)
@@ -86,6 +89,7 @@ export function createSuizamenteHandler({ fetchImpl = fetch } = {}) {
       if(action==='girar_carta'&&body&&Object.hasOwn(body,'todas')&&typeof body.todas!=='boolean')return send(400,{error:'Solicitud no válida'})
       if(body&&Buffer.byteLength(JSON.stringify(body),'utf8')>(adminRoute?150000:20000))return send(413,{error:'Solicitud demasiado grande'})
       const args = { ...Object.fromEntries(url.searchParams), ...body }
+      if(improvement)Object.assign(args,improvement.args)
       if (match) args.id = match[1]
       if (attackRoute) args.id=attackRoute[1]
       if (rewardRoute) args.id = rewardRoute[2]
@@ -110,9 +114,9 @@ export function createSuizamenteHandler({ fetchImpl = fetch } = {}) {
       if (auth && !/^Bearer [A-Za-z0-9._-]+$/.test(auth)) return send(401, { error:'Sesión de Latido no válida' })
       const deadline=Date.now()+15000
       const rpc=async(operation,parameters)=>{
-        const rpcBody=JSON.stringify({p_action:operation,p_args:parameters,p_guest_id:session.id,p_guest_token:session.token})
+        const rpcBody=JSON.stringify({p_action:improvement?.action||operation,p_args:parameters,p_guest_id:session.id,p_guest_token:session.token})
         for(let attempt=0;;attempt++){
-          const response=await fetchImpl(endpoint + '/rest/v1/rpc/suizamente_v2', {
+          const response=await fetchImpl(endpoint + '/rest/v1/rpc/'+(improvement?'suizamente_mejoras':'suizamente_v2'), {
             method:'POST',
             headers:{ apikey:anon, Authorization:auth || 'Bearer ' + anon, 'Content-Type':'application/json' },
             body:rpcBody,
@@ -148,6 +152,7 @@ export function createSuizamenteHandler({ fetchImpl = fetch } = {}) {
         return send(503, { error:'No se pudo completar la acción. Inténtalo otra vez.' })
       }
       if (data?.conflicto) return send(409, { error:'El turno ha caducado', partida:data.partida })
+      if(action==='config')data={...data,mejoras:mejorasConfig()}
       return send(200, data)
     } catch (error) {
       console.error('suizamente_api', error.name)

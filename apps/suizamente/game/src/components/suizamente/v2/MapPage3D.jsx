@@ -12,9 +12,12 @@ import {useMoment} from './Moment'
 import {cantonSteps} from './moments'
 import {notify} from '../../../lib/suizamenteNotices'
 import './mapCards.css'
+import {useDecorations,DecorateBadge} from './MejorasDecorar'
+import {mejoraActiva} from './MejorasShared'
 
 const stages=['Solo tierra','Naturaleza','Pueblo','Monumento']
 export function MapPage(){
+ const {data:decorations}=useDecorations()
  const [search]=useSearchParams(),{config,player,map}=useSv(),navigate=useNavigate(),[data,setData]=useState(map),[selected,setSelected]=useState(()=>{const id=search.get('canton');return config.mapa.regiones[map?.region||0]?.cantones.some(k=>k.id===id)?id:null}),[animated,setAnimated]=useState(null)
  const [error,setError]=useState(''),[busy,setBusy]=useState(false),[notice,setNotice]=useState('')
  const {show}=useMoment(),world=useRef(null),animationDone=useRef(null),[celebration,setCelebration]=useState(null)
@@ -51,7 +54,7 @@ export function MapPage(){
  const progress=region.cantones.reduce((n,k)=>n+(view.niveles[k.id]||0),0),total=region.cantones.length*maximum
  return <section className="sv-screen sv-map-page"><header className="sv-map-header"><h1>{region.nombre}</h1><Wallet/><MusicButton/><div className="sv-map-header-pills"><span className="sv-map-stage">Vuelta {view.vuelta}</span><span className="sv-map-stage">Región {view.region+1} de {config.mapa.regiones.length}</span><span className="sv-shields" aria-label={(player.inventario.escudos||0)+' escudos'}><Icono nombre="escudo"/> {player.inventario.escudos||0}/{config.escudos.max}</span></div></header>
   <div className="sv-region-progress"><div className="sv-xp-bar" role="progressbar" aria-label="Niveles de la región" aria-valuemin={0} aria-valuemax={total} aria-valuenow={progress}><i style={{width:100*progress/total+'%'}}/></div><b>{progress}/{total}</b><span><Icono nombre="cofre"/></span></div>
-  <div className={'sv-map-frame'+(selected?' has-canton':'')}>{selected&&<button className="sv-map-all" onClick={()=>setSelected(null)}>← Toda Suiza</button>}<WorldMap ref={world} state={celebration||data} selected={selected} onSelect={choose} animated={animated} onAnimationDone={()=>{animationDone.current?.();animationDone.current=null}} onMetadata={setLandmarks}/>
+  <div className={'sv-map-frame'+(selected?' has-canton':'')}>{mejoraActiva(config,'decorar')&&<DecorateBadge data={decorations}/>}{selected&&<button className="sv-map-all" onClick={()=>setSelected(null)}>← Toda Suiza</button>}<WorldMap ref={world} decorations={mejoraActiva(config,'decorar')?decorations?.puestas||[]:undefined} state={celebration||data} selected={selected} onSelect={choose} animated={animated} onAnimationDone={()=>{animationDone.current?.();animationDone.current=null}} onMetadata={setLandmarks}/>
    {selected&&<div className="sv-world-focus-info"><div className="sv-canton-info"><span className="sv-canton-info-title"><b>{k?.nombre}</b><span className="sv-canton-levels" aria-hidden="true">{Array.from({length:maximum},(_,i)=><i key={i} className={i<level?'filled':''}/>)}</span></span><span>Nivel {level}/{maximum} · {level===maximum?landmarks[selected]?.n||stages[level]:stages[level]}</span>{level<maximum&&<span className="sv-canton-arrival">Llega: {level+1===maximum?landmarks[selected]?.n||stages[level+1]:stages[level+1]}</span>}</div>
     {level<maximum?<button className={'sv-canton-build '+(player.monedas>=cost?'affordable':'')} disabled={busy||cost===undefined} onClick={build} aria-label={'Subir '+k?.nombre+' a nivel '+(level+1)+' por '+cost+' monedas. Llega: '+(level+1===maximum?landmarks[selected]?.n||stages[level+1]:stages[level+1])+(player.monedas<cost?'. Te faltan monedas':'')}><span>⬆️ Subir a nivel {level+1}</span><span className="sv-inline-value"><Icono nombre="moneda" size={18}/>{cost}</span></button>:<span className="sv-canton-complete" style={{background:style.colores[1]}}>✓ Completo</span>}
    </div>}

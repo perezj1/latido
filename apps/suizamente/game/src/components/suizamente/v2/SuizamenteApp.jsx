@@ -54,6 +54,9 @@ const Proposals=screen('Community','Proposals')
 const Ranking=screen('Community','Ranking')
 const AdminPanel=screen('Admin','AdminPanel')
 const VictoryAttack=screen('VictoryAttack','VictoryAttack')
+const improvementScreen=(group,name)=>lazy(()=>import('./mejorasPreload').then(m=>m.loadImprovement(group)).then(m=>({default:m[name]})))
+const Minute=improvementScreen('MejorasMinuto','Minute'),Mirror=improvementScreen('MejorasEspejo','Mirror'),MirrorLink=improvementScreen('MejorasEspejo','MirrorLink'),Mystery=improvementScreen('MejorasMisterio','Mystery')
+const Decorate=improvementScreen('MejorasDecorar','Decorate'),Decorations=improvementScreen('MejorasDecorar','Decorations'),FriendSwitzerland=improvementScreen('MejorasDecorar','FriendSwitzerland'),DecorationArrival=improvementScreen('MejorasDecorar','DecorationArrival'),IdeaNotices=improvementScreen('MejorasAvisos','IdeaNotices')
 
 function Opening({onDone,reduced}){
   useEffect(()=>{feedback('sintonia',{esperar:3000,key:'apertura',scope:'session'})},[])
@@ -226,15 +229,16 @@ export default function SuizamenteApp(){
     }
   }
   const gate=element=><ProfileGate player={player} ready={ready}>{element}</ProfileGate>
+  const improvement=(key,element)=>config?.mejoras?.[key]?.activo===true?gate(element):<Navigate to="/suizamente" replace/>
   const reduced=!!settings.menosAnimaciones||systemReduced
-  const bypassOnboarding=/^\/suizamente\/(amigo|invitar|pregunta|pregunta-del-dia|partida|asalto|ataque|entrar|bienvenida)(\/|$)/.test(location.pathname)||new URLSearchParams(location.search).has('p')
+  const bypassOnboarding=/^\/suizamente\/(amigo|invitar|pregunta|pregunta-del-dia|partida|asalto|ataque|entrar|bienvenida)(\/|$)/.test(location.pathname)||config?.mejoras?.espejo?.activo&&/^\/suizamente\/reto\//.test(location.pathname)||new URLSearchParams(location.search).has('p')
   const onboarding=entered&&(location.pathname==='/suizamente/primera-vez'||!bypassOnboarding&&ready&&(player?!player.ajustes?.onboarding:!localStorage.getItem('suizamente:bienvenida-pendiente')))
   const admin=location.pathname.startsWith('/suizamente/admin'),showNavigation=!resetting&&!onboarding&&entered&&!!player&&ready&&!questionVisible&&!playing&&!rewardScreen
   const activeTab=['mapa','album','tienda','amigos'].find(tab=>location.pathname.startsWith('/suizamente/'+tab))||'inicio'
   const homePushReady=entered&&ready&&!onboarding&&!opening&&arrival?.owner===user?.id&&arrival?.key===location.key&&/^\/suizamente\/?$/.test(location.pathname)&&!location.search
   return <SuizamenteContext.Provider value={{player,map,config,user,avatarUrl,avatars,latidoName:profileName,capabilities,refreshConfig,settings,reduced,savePlayer,updateSettings,signOut,setQuestionVisible,setAudioQuestionVisible}}><MomentProvider reduced={reduced} owner={player?.jugador_id}><MomentArrival enabled={!resetting&&!onboarding&&entered&&ready&&!!config&&!opening} onSettled={arrivalSettled}/>{homePushReady&&<PushPrompt key={user.id} enabled/>}<div className={'sv-root'+(admin?' sv-admin-root':'')+(showNavigation?' sv-has-nav':'')} onPointerDownCapture={warmLink} onFocusCapture={warmLink}>
     <Feedback music={ready&&!!config&&!authLoading&&backgroundMusicFor({pathname:location.pathname,onboarding,opening:opening&&onboarding,question:audioQuestionVisible})}/><InstallMetadata/>
-    <InstallBanner hidden={onboarding||playing||rewardScreen||location.pathname==='/suizamente/perfil/nuevo'}/>
+    <InstallBanner hidden={onboarding||playing||rewardScreen||questionVisible&&/^\/suizamente\/(minuto|espejo)\//.test(location.pathname)||location.pathname==='/suizamente/perfil/nuevo'}/>
     {authLoading||resetting?<Loading/>:onboarding&&config?<Suspense fallback={<Loading/>}><Onboarding/></Suspense>:!entered?<Login/>:error?<section className="sv-screen"><div className="sv-welcome"><Logo size={90}/><h1>No se pudo abrir Suizamente</h1><p role="alert">{error}</p><Button onClick={()=>setRetry(n=>n+1)}>Reintentar</Button></div></section>:!config||!ready||!player&&!profileMetaLoaded?<Loading/>:
     <Suspense fallback={<Loading/>}><Routes>
       <Route path="admin/*" element={<IconScope enabled={false}><AdminPanel/></IconScope>}/>
@@ -270,10 +274,21 @@ export default function SuizamenteApp(){
       <Route path="nueva" element={gate(<NewGame/>)}/>
       <Route path="invitar/:codigo" element={gate(<Invitation/>)}/>
       <Route path="partida/:id" element={gate(<Game key={location.pathname}/>)}/>
+      <Route path="minuto" element={improvement('minuto',<Minute/>)}/>
+      <Route path="minuto/:id" element={improvement('minuto',<Minute/>)}/>
+      <Route path="espejo" element={improvement('espejo',<Mirror/>)}/>
+      <Route path="espejo/:id" element={improvement('espejo',<Mirror/>)}/>
+      <Route path="reto/:codigo" element={improvement('espejo',<MirrorLink/>)}/>
+      <Route path="misterio" element={improvement('misterio',<Mystery/>)}/>
+      <Route path="mapa/decorar" element={improvement('decorar',<Decorate/>)}/>
+      <Route path="decoraciones" element={improvement('decorar',<Decorations/>)}/>
+      <Route path="mapa/amigo/:id" element={improvement('decorar',<FriendSwitzerland key={location.pathname}/>)}/>
+      <Route path="avisos" element={improvement('unToque',<IdeaNotices/>)}/>
       <Route path="/" element={<HomeEntry>{gate(<Home/>)}</HomeEntry>}/>
       <Route path="*" element={<Navigate to="/suizamente" replace/>}/>
     </Routes></Suspense>}
     {showNavigation&&<Navigation active={activeTab} waiting={waiting}/>}
+    {config?.mejoras?.decorar?.activo&&entered&&ready&&player&&!onboarding&&!questionVisible&&<Suspense fallback={null}><DecorationArrival/></Suspense>}
     {opening&&onboarding&&config&&<Opening onDone={finishOpening} reduced={reduced}/>}
     {!!notices.length&&<div className={'sv-notice'+(notices[0].datos.href?' has-link':'')} role="status" aria-live="polite"><IconText>{notices[0].datos.texto}</IconText>{notices[0].datos.href&&<><Link to={notices[0].datos.href} onClick={()=>setNotices(old=>old.slice(1))}>{notices[0].tipo==='asalto'?'Ver mapa':'Ver'}</Link><button aria-label="Cerrar aviso" onClick={()=>setNotices(old=>old.slice(1))}>×</button></>}</div>}
   </div></MomentProvider></SuizamenteContext.Provider>

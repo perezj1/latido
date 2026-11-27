@@ -15,10 +15,12 @@ import {HomeBadge,HomeRow,HomeAction,HomeMatch} from './HomeSceneParts'
 import {FriendInviteSheet} from './Sharing'
 import {MatchHistory} from './MatchHistory'
 import './home.css'
+import {mejoraActiva,useMejoraSummary,MejoraModes,MejoraIdeas} from './MejorasShared'
 const icon=name=><Icono nombre={name}/>
 export function Home(){const {search}=useLocation();return new URLSearchParams(search).get('terminadas')==='1'?<MatchHistory/>:<HomeScene/>}
 function HomeScene(){
  const {player,config,map}=useSv()
+ const oneTouch=mejoraActiva(config,'unToque'),{data:improvements}=useMejoraSummary(oneTouch),hero=oneTouch?improvements?.boton:null
  const {data,error,reload}=useData('partidas',{refreshMs:15000})
  const {data:missions,error:missionError,reload:reloadMissions}=useData('misiones',{refreshMs:30000,reuseCached:true}),{data:league,error:leagueError,reload:reloadLeague}=useData('liga',{refreshMs:30000,reuseCached:true}),{data:day,error:dayError,reload:reloadDay}=useData('dia',{refreshMs:30000,reuseCached:true}),{data:shop,error:shopError,reload:reloadShop}=useData('tienda',{refreshMs:30000,reuseCached:true})
  const gift=useDailyGift(),pack=useOpenPack('/suizamente'),[busy,setBusy]=useState(false),[fault,setFault]=useState(''),lastChange=useRef(player.actualizado_en)
@@ -55,20 +57,22 @@ function HomeScene(){
    </div>
 
    <Link className="sv-home-map-target" to="/suizamente/mapa" aria-label={region.nombre+' en 3D: '+(done??'cargando')+' de '+total+' niveles. Abrir el mapa'}><HomeMapPhoto/></Link>
-   <Link className="sv-home-create" to="/suizamente/nueva"><span className="sv-home-create-ring" aria-hidden="true"><i/></span><span className="sv-home-create-plus" aria-hidden="true">＋</span>Nueva partida</Link>
+   <Link className={"sv-home-create"+(hero&&hero.id!=="nueva"?" sv-mj-best":"")} to={hero?.to||"/suizamente/nueva"} aria-label={hero?hero.titulo+(hero.linea?". "+hero.linea:""):undefined}><span className="sv-home-create-ring" aria-hidden="true"><i/></span><span className="sv-home-create-plus" aria-hidden="true">{hero&&hero.id!=="nueva"?"▶︎":"＋"}</span>{hero&&hero.id!=="nueva"?<span className="sv-mj-best-text"><b>{hero.titulo}</b><small>{hero.linea}</small></span>:"Nueva partida"}</Link>
   </section>
+  {oneTouch&&<MejoraModes modes={improvements?.modos}/>}
   <section className="sv-home-matches" aria-label="Tus partidas">
    <div className="sv-home-filters" role="tablist" aria-label="Tus partidas" onKeyDown={filterKeys}>
     {[['seguir','Seguir jugando',mine.length],['espera','En espera',theirs.length]].map(([key,label,count])=><button key={key} ref={el=>tabs.current[key]=el} type="button" role="tab" id={'sv-home-tab-'+key} aria-selected={filter===key} aria-controls={'sv-home-panel-'+key} tabIndex={filter===key?0:-1} aria-label={label+': '+count+' '+(count===1?'partida':'partidas')} onClick={()=>{selectFilter(key);tabs.current[key]?.focus({preventScroll:true})}}>{label}{count>0&&<span className={'sv-home-count '+key} aria-hidden="true">{count}</span>}</button>)}
    </div>
    <div role="tabpanel" id="sv-home-panel-seguir" aria-labelledby="sv-home-tab-seguir" hidden={filter!=='seguir'}>
-    <HomeRow label="Partidas en las que te toca"><HomeAction onClick={()=>setInviting(true)} icon="amigos" label="Invitar a alguien a jugar" subtitle="Comparte tu enlace para jugar">Invitar a alguien</HomeAction>{!data&&!error?<div role="listitem" className="sv-home-empty sv-skeleton" aria-label="Cargando partidas"/>:mine.length?mine.map(m=><HomeMatch key={m.id} match={m} mine sealText={sealText(m)}/>):data&&<div role="listitem" className="sv-home-empty"><span className="sv-home-empty-icon" aria-hidden="true">{matches.length?'🎉':'👋'}</span><span className="sv-home-row-text"><b>{matches.length?'Estás al día':'Aún no tienes partidas'}</b><span>{matches.length?'Ninguna partida espera tu turno':'Empieza una con «＋ Nueva partida»'}</span></span></div>}</HomeRow>
+    <HomeRow label="Partidas en las que te toca">{oneTouch?<HomeAction to="/suizamente/nueva" icon="mas" label="Nueva partida: con amigos, por enlace o al azar" subtitle="Con amigos, por enlace o al azar">Nueva partida</HomeAction>:<HomeAction onClick={()=>setInviting(true)} icon="amigos" label="Invitar a alguien a jugar" subtitle="Comparte tu enlace para jugar">Invitar a alguien</HomeAction>}{!data&&!error?<div role="listitem" className="sv-home-empty sv-skeleton" aria-label="Cargando partidas"/>:mine.length?mine.map(m=><HomeMatch key={m.id} match={m} mine sealText={sealText(m)}/>):data&&<div role="listitem" className="sv-home-empty"><span className="sv-home-empty-icon" aria-hidden="true">{matches.length?'🎉':'👋'}</span><span className="sv-home-row-text"><b>{matches.length?'Estás al día':'Aún no tienes partidas'}</b><span>{matches.length?'Ninguna partida espera tu turno':'Empieza una con «＋ Nueva partida»'}</span></span></div>}</HomeRow>
    </div>
    <div role="tabpanel" id="sv-home-panel-espera" aria-labelledby="sv-home-tab-espera" hidden={filter!=='espera'}>
     <HomeRow label="Partidas terminadas y las que esperan el turno de la otra persona"><HomeAction to="/suizamente/amigos?terminadas=1" icon="trofeo" label="Partidas terminadas: resultados y revancha" subtitle="Resultados y revancha">Partidas terminadas</HomeAction>{theirs.map(m=><HomeMatch key={m.id} match={m}/>)}</HomeRow>
    </div>
   </section>
   {problems&&<div className="sv-home-failure" role="alert">{problems} <button className="sv-text-button" onClick={()=>{setFault('');reload();reloadMissions();reloadLeague();reloadDay();reloadShop()}}>Reintentar</button></div>}
+  {oneTouch&&<MejoraIdeas ideas={improvements?.ideas}/>}
   {inviting&&<FriendInviteSheet onClose={()=>setInviting(false)}/>}
  </section>
 }

@@ -17,5 +17,5 @@ export default defineConfig({
    const id=createHash('sha256').update(files.join('\n')+'\n'+source).digest('hex').slice(0,12)
    await writeFile(new URL('./dist/sw.js',import.meta.url),source.replace('__BUILD_ID__',id).replace('/*PRECACHE*/[]',JSON.stringify([...new Set(files)])))
   }
- }],css:{postcss:{plugins:[]}},build:{outDir:'dist',emptyOutDir:true},server:{host:'127.0.0.1',port:5270,fs:{allow:[process.cwd(),realpathSync('node_modules')],deny:['.env','.env.*','**/server/suizamente/data/**','**/supabase/**']}}
+ }],css:{postcss:{plugins:[]}},build:{outDir:'dist',emptyOutDir:true},server:{host:'127.0.0.1',port:5270,fs:{allow:[process.cwd(),realpathSync('node_modules')],deny:['.env','.env.*','**/server/suizamente/data/**','**/supabase/**','**/data/misterios.json','**/fuentes/**']}}
 })

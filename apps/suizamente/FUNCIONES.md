@@ -1,5 +1,7 @@
 # Suizamente independiente: decisiones de presentación y acceso
 
+Las cinco mejoras opcionales de los prompts 32–36 se documentan en [MEJORAS-IMPLEMENTACION.md](MEJORAS-IMPLEMENTACION.md), con sus migraciones v27–v33, datos, pruebas y activación. Se añaden con todos los interruptores apagados; las decisiones anteriores siguen vigentes.
+
 Estas decisiones actualizan la especificación de Suizamente por petición expresa.
 No cambian las reglas, los precios ni los premios del juego.
 

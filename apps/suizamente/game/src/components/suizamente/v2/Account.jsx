@@ -83,7 +83,7 @@ export function ProfileForm({editing=false}){
 }
 export {Menu} from './Menu'
 export function Settings(){
-  const {player,user,settings,updateSettings,savePlayer,signOut}=useSv(),navigate=useNavigate()
+  const {player,user,config,settings,updateSettings,savePlayer,signOut}=useSv(),navigate=useNavigate()
   const [error,setError]=useState(''),[busy,setBusy]=useState(false),[deletion,setDeletion]=useState(0)
   async function change(key,value){
     setError('')
@@ -121,6 +121,7 @@ export function Settings(){
     {[['musica','Música','Fuera de las preguntas'],['sonidos','Sonidos','Aciertos, fallos y premios'],['vibracion','Vibración'],['menosAnimaciones','Menos animaciones']].map(([key,label,description])=><label className="sv-settings-row" key={key}><span>{label}{description&&<small id={'sv-setting-'+key}>{description}</small>}</span><input type="checkbox" role="switch" aria-label={label} aria-describedby={description?'sv-setting-'+key:undefined} checked={key==='musica'?settings.musica!==false:!!settings[key]} onChange={e=>change(key,e.target.checked)}/></label>)}
     <h2>Avisos</h2><label className="sv-settings-row"><span>Te toca en una partida</span><input type="checkbox" role="switch" checked={settings.avisos?.turnos!==false} onChange={e=>change('avisos',{...settings.avisos,turnos:e.target.checked})}/></label>
     {user&&<Button tone="quiet" disabled={busy} onClick={activatePush}><Icono nombre="aviso"/> Activar avisos en este dispositivo</Button>}
+    {config.mejoras?.unToque?.activo&&<Link className="sv-settings-row" to="/suizamente/avisos"><span>Ideas para seguir</span><span aria-hidden="true">›</span></Link>}
     <h2>Privacidad</h2><label className="sv-settings-row"><span>Aparecer en los rankings</span><input type="checkbox" role="switch" checked={player.en_ranking} onChange={e=>privacy(e.target.checked)}/></label><p>Tus votos son anónimos. Tu rival solo ve tus sellos y tu barra.</p>
     <h2>Ayuda</h2><nav className="sv-menu"><Link to="/suizamente/como-se-juega">Cómo se juega <span/>›</Link><Link to="/suizamente/primera-vez?repetir=1">Ver la bienvenida otra vez <span/>›</Link></nav>
     {user&&<Button tone="quiet" onClick={logout}>Cerrar sesión de Suizamente</Button>}

@@ -485,6 +485,51 @@ function crear(op) {
 
   return {
     elemento: caja,
+    // Additive extension. Every original model, camera and animation is unchanged.
+    decorar(lista = []) {
+      const engine = op.decoraciones;
+      const cache = this._decoraciones || (this._decoraciones = new Map());
+      const anclar = h => { const can = cantones[h.canton]; if (!can) return null; let p = centroMundo(can); if (h.tipo === 'agua') { if (!can.agua) return null; can.grupo.updateMatrixWorld(true); const b = new THREE.Box3().setFromObject(can.agua); p = b.getCenter(new THREE.Vector3()); p.y = b.max.y; } return p.add(new THREE.Vector3((h.dx || 0) * can.u, (h.dy || 0) * can.u, (h.dz || 0) * can.u)); };
+      if (lista.length && lista.every(h => h.soloProyectar)) {
+        camara.updateMatrixWorld();
+        return lista.map(h => { const p = anclar(h), can = cantones[h.canton]; if (!p || !can.grupo.visible || can.nivel < 1) return null; p.project(camara); return { id: h.id, x: (p.x + 1) / 2, y: (1 - p.y) / 2, visible: p.z > -1 && p.z < 1 }; }).filter(Boolean);
+      }
+      if (!this._decorarEventos && op.alDecoracion) {
+        this._decorarEventos = true; let down;
+        caja.addEventListener('pointerdown', e => { down = [e.clientX, e.clientY]; }, true);
+        caja.addEventListener('pointerup', e => {
+          if (!down || Math.hypot(e.clientX - down[0], e.clientY - down[1]) > 7) return;
+          const b = renderer.domElement.getBoundingClientRect(), r = new THREE.Raycaster();
+          r.setFromCamera(new THREE.Vector2((e.clientX - b.left) / b.width * 2 - 1, 1 - (e.clientY - b.top) / b.height * 2), camara);
+          const hit = r.intersectObjects([...cache.values()].filter(g => g.visible && g.parent.visible), true)[0];
+          if (hit) { let node = hit.object; while (node && !node.userData.decoracion) node = node.parent; if (node) { e.stopPropagation(); op.alDecoracion(node.userData.decoracion); } }
+        }, true);
+      }
+      cache.forEach(g => { g.visible = false; });
+      const sombras = (navigator.hardwareConcurrency || 8) > 4 && (navigator.deviceMemory || 8) > 4 && !op.mini;
+      if (engine) for (const h of lista) {
+        const can = cantones[h.canton];
+        if (!can || can.nivel < 1 || h.vuelta && h.vuelta !== est.v) continue;
+        let ancla = centroMundo(can);
+        if (h.tipo === 'agua') {
+          if (!can.agua) continue;
+          can.grupo.updateMatrixWorld(true);
+          const bounds = new THREE.Box3().setFromObject(can.agua);
+          ancla = bounds.getCenter(new THREE.Vector3()); ancla.y = bounds.max.y;
+        }
+        let g = cache.get(h.k);
+        if (!g) { g = engine.colocar(can.grupo, h, ancla, can.u); cache.set(h.k, g); }
+        else { can.grupo.add(g); g.position.set(ancla.x + (h.dx || 0) * can.u, ancla.y + .02 + (h.dy || 0) * can.u, ancla.z + (h.dz || 0) * can.u); g.scale.setScalar((h.escala || 1) * can.u); g.rotation.y = h.giro || 0; }
+        g.visible = true;
+        g.traverse(o => { if (o.isMesh) { o.castShadow = sombras; o.receiveShadow = sombras; } });
+      }
+      invalidar();
+      // Read-only layout metadata for checking the authored slots in local QA.
+      if (lista.length || cache.size) return [];
+      return Object.values(cantones).map(can => ({ canton: can.k, centro: centro(can), u: can.u, borde: can.b, ocupado: can.ocupado, sombras,
+        obstaculos: [can.deco[2], can.deco[3]].filter(Boolean).flatMap(d => d.g.children.map(o => { can.grupo.updateMatrixWorld(true); const b = new THREE.Box3().setFromObject(o); return [b.min.x - OX, b.min.z - OZ, b.max.x - OX, b.max.z - OZ]; })),
+        agua: can.agua ? (() => { can.grupo.updateMatrixWorld(true); const b = new THREE.Box3().setFromObject(can.agua); const c = b.getCenter(new THREE.Vector3()); return [c.x - OX, c.z - OZ]; })() : null }));
+    },
     montar(div) { div.appendChild(caja); if (ro) { ro.disconnect(); ro.observe(div); } tamano(); },
     // animarK: el cantón que acaba de subir (sus piezas nuevas aparecen con animación y confeti)
     estado(nuevo, animarK) { invalidar();
