@@ -3,7 +3,7 @@ import {readFile} from 'node:fs/promises'
 import {negociosDatabase,negocioCall} from './lib/negocios-test-db.mjs'
 import {call,profile,A} from './lib/suizamente-v2-test-db.mjs'
 const read=async n=>JSON.parse(await readFile('server/suizamente/data/'+n+'.json','utf8')),game=await read('juego'),slots=await read('huecos'),catalog=await read('decoraciones'),geometry=JSON.parse(await readFile('public/suizamente-assets/mapa3d.json','utf8')),ids=new Set()
-assert.equal(game.mapa.barraCanton,false);assert.equal(game.negocios.activo,false);assert.equal(game.negocios.cobroAutomatico,false)
+assert.equal(game.mapa.barraCanton,false);assert.equal(typeof game.negocios.activo,'boolean');assert.equal(game.negocios.cobroAutomatico,false)
 for(const [canton,list]of Object.entries(slots)){
  for(const h of list){assert.ok(!ids.has(h.id));ids.add(h.id);assert.equal(h.id.split('-')[0],canton);assert.ok(Number.isFinite(h.dx)&&Number.isFinite(h.dz));assert.ok(['plaza','tierra','agua','aire'].includes(h.tipo))}
  assert.equal(list.filter(h=>h.tipo==='plaza').length,game.negocios.plazasPorCanton[canton]??game.negocios.plazasPorCanton.porDefecto);assert.equal(list.filter(h=>h.tipo==='tierra').length,6);assert.equal(list.filter(h=>h.tipo==='aire').length,1);assert.equal(list.filter(h=>h.tipo==='agua').length,geometry.cantones[canton].agua.length?1:0)

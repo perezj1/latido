@@ -2,6 +2,7 @@ import { randomBytes, randomUUID } from 'node:crypto'
 import { publicSuizamenteConfig,getSuizamenteConfig } from './config.mjs'
 import {mejoraRoute} from './mejoras-routes.mjs'
 import {negocioRoute} from './negocios-routes.mjs'
+import {createBusinessPayments,isBusinessPaymentRoute} from './negocios-pagos.mjs'
 
 const COOKIE = 'szm_invitado'
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
@@ -24,7 +25,7 @@ const methods = {
   'POST denuncias':'denunciar','POST reportes':'reportar',
   'GET misiones':'misiones','POST misiones/cambiar':'cambiar_mision','GET liga':'liga','GET mapa/vuelta':'vuelta',
 }
-export function createSuizamenteHandler({ fetchImpl = fetch,mejorasConfig=()=>getSuizamenteConfig().juego.mejoras,negociosConfig=()=>getSuizamenteConfig().juego.negocios,barraCanton=()=>getSuizamenteConfig().juego.mapa.barraCanton } = {}) {
+export function createSuizamenteHandler({ fetchImpl = fetch,mejorasConfig=()=>getSuizamenteConfig().juego.mejoras,negociosConfig=()=>getSuizamenteConfig().juego.negocios,barraCanton=()=>getSuizamenteConfig().juego.mapa.barraCanton,payments=createBusinessPayments({fetchImpl}) } = {}) {
   return async function handler(req, res) {
     const send = (status, data) => {
       res.statusCode = status
@@ -38,6 +39,8 @@ export function createSuizamenteHandler({ fetchImpl = fetch,mejorasConfig=()=>ge
       // Vercel's Node runtime uses one concrete function and an explicit rewrite.
       const rewritten = url.pathname.replace(/\/$/,'')==='/api/suizamente'?url.searchParams.get('_ruta'):null
       const route = (rewritten??url.pathname.replace(/^\/api\/suizamente\/?/, '')).replace(/\/$/, '')
+      const paymentRoute=isBusinessPaymentRoute(route,negociosConfig()?.cobroAutomatico)
+      if(paymentRoute&&['negocios/pagos/webhook','negocios/pagos/procesar'].includes(route))return send(200,await payments.handle({req,route,config:negociosConfig()}))
       if (req.method === 'POST' && route === 'sesion/salir') {
         if (req.headers.origin && new URL(req.headers.origin).host !== req.headers.host) return send(403, {error:'Origen no permitido'})
         res.setHeader('Set-Cookie', COOKIE + '=; HttpOnly; SameSite=Lax; Path=/api/suizamente; Max-Age=0')
@@ -70,7 +73,7 @@ export function createSuizamenteHandler({ fetchImpl = fetch,mejorasConfig=()=>ge
         if(req.method==='GET'&&!operation)action={cofres:'cofre',asaltos:'asalto',sobres:'sobre'}[kind]
         if(req.method==='POST')action={cofres:{abrir:'abrir_cofre'},asaltos:{empezar:'asalto_empezar',siguiente:'asalto_siguiente',respuesta:'asalto_respuesta',comodin:'asalto_comodin',descartar:'asalto_descartar'},sobres:{girar:'girar_carta'}}[kind]?.[operation]
       }
-      if (!action) return send(404, { error:'Ruta no disponible' })
+      if (!action&&!paymentRoute) return send(404, { error:'Ruta no disponible' })
       if(!req.headers.authorization&&!['config','capacidades','primera_vez','primera_vez_responder','primera_vez_finalizar'].includes(action))return send(adminRoute?403:401,{error:adminRoute?'Solo administración de Latido':'Entra con tu cuenta de Latido para jugar'})
       let body = req.body
       if (req.method !== 'GET' && !body) {
@@ -91,6 +94,7 @@ export function createSuizamenteHandler({ fetchImpl = fetch,mejorasConfig=()=>ge
       if(action==='guardar_jugador'&&body?.ajustes&&Object.hasOwn(body.ajustes,'musica')&&typeof body.ajustes.musica!=='boolean')return send(400,{error:'Ajustes no válidos'})
       if(action==='girar_carta'&&body&&Object.hasOwn(body,'todas')&&typeof body.todas!=='boolean')return send(400,{error:'Solicitud no válida'})
       if(body&&Buffer.byteLength(JSON.stringify(body),'utf8')>(adminRoute?150000:20000))return send(413,{error:'Solicitud demasiado grande'})
+      if(paymentRoute)return send(200,await payments.handle({req,route,body,config:negociosConfig()}))
       const args = { ...Object.fromEntries(url.searchParams), ...body }
       if(improvement)Object.assign(args,improvement.args)
       if(business)Object.assign(args,business.args)
@@ -159,6 +163,7 @@ export function createSuizamenteHandler({ fetchImpl = fetch,mejorasConfig=()=>ge
       if(action==='config')data={...data,mejoras:mejorasConfig(),mapa:{...data.mapa,barraCanton:barraCanton()},negocios:negociosConfig()}
       return send(200, data)
     } catch (error) {
+      if(error.status)return send(error.status,{error:error.message})
       console.error('suizamente_api', error.name)
       return send(503, { error:'No se pudo conectar. Inténtalo otra vez.' })
     }

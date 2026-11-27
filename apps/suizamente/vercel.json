@@ -4,7 +4,7 @@
  "installCommand":"npm ci",
  "buildCommand":"npm run build",
  "outputDirectory":"dist",
- "functions":{"api/suizamente.js":{"includeFiles":"server/suizamente/data/**"}},
+ "functions":{"api/suizamente.js":{"includeFiles":"server/suizamente/data/**","maxDuration":60}},
  "headers":[
   {"source":"/(.*)","headers":[{"key":"X-Content-Type-Options","value":"nosniff"},{"key":"Referrer-Policy","value":"strict-origin-when-cross-origin"}]},
   {"source":"/sw.js","headers":[{"key":"Cache-Control","value":"no-cache, no-store, must-revalidate"}]},

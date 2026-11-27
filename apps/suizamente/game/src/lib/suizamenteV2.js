@@ -4,7 +4,7 @@ import {notify} from './suizamenteNotices'
 import {normalizeSzSettings} from './suizamenteSettings'
 const pendingReads=new Map()
 const handoffs=new Map()
-const recentReads=new Map(),readTtl={config:30000,jugador:1000,partidas:1000,emparejamiento:1000,mapa:1500,album:1500,tienda:1500,amigos:1500,perfil:3000,logros:5000,misiones:3000,liga:5000,dia:1000}
+const recentReads=new Map(),readTtl={'mejoras/resumen':1500,'mejoras/decorar':1500,negocios:1500,config:30000,jugador:1000,partidas:1000,emparejamiento:1000,mapa:1500,album:1500,tienda:1500,amigos:1500,perfil:3000,logros:5000,misiones:3000,liga:5000,dia:1000}
 let revision=0,handoffRevision=0,reader=null
 supabase.auth.onAuthStateChange((_event,session)=>{
  const actor=session?.user?.id||'invitado'

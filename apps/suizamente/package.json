@@ -72,7 +72,8 @@
     "test:negocios:browser": "node scripts/test-negocios-browser.mjs && node scripts/test-negocios-browser.mjs --webkit",
     "test:negocios:huecos": "node scripts/generar-huecos.mjs",
     "capturas:negocios": "node scripts/capturar-negocios-referencia.mjs && node scripts/comparar-negocios-pantallas.mjs",
-    "test:negocios:apagados": "node scripts/test-negocios-apagados.mjs && node scripts/comparar-negocios-apagados.mjs"
+    "test:negocios:apagados": "node scripts/test-negocios-apagados.mjs && node scripts/comparar-negocios-apagados.mjs",
+    "test:negocios:pagos": "node scripts/test-negocios-pagos.mjs && node scripts/test-negocios-pagos-browser.mjs"
   },
   "dependencies": {
     "@fontsource/poppins": "^5.2.7",
@@ -88,6 +89,7 @@
     "react-hot-toast": "^2.4.1",
     "react-router-dom": "^7.18.2",
     "run": "^1.5.0",
+    "stripe": "23.2.0",
     "three": "0.128.0"
   },
   "devDependencies": {

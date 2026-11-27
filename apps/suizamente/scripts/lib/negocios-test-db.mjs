@@ -1,12 +1,16 @@
 import {readFile} from 'node:fs/promises'
 import {mejorasDatabase} from './mejoras-test-db.mjs'
-export async function negociosDatabase(active=true){
- const extra=await mejorasDatabase(false),db=extra.db
+export async function negociosDatabase(active=true,flags=false,{payments=false}={}){
+ const extra=await mejorasDatabase(flags),db=extra.db
  try{
   for(const n of ['34_huecos','35_negocios','36_negocios_datos'])await db.exec(await readFile('supabase/suizamente_v'+n+'.sql','utf8'))
   await db.query("UPDATE suizamente_private.negocios_configuracion SET config=jsonb_set(config,'{activo}',$1::jsonb),condiciones_url='https://suizamente.test/condiciones-negocios'",[JSON.stringify(active)])
+  if(payments){await db.exec(await readFile('supabase/suizamente_v37_negocios_cobros.sql','utf8'));await db.exec("UPDATE suizamente_private.negocios_configuracion SET config=jsonb_set(config,'{cobroAutomatico}','true')")}
   return extra
  }catch(e){await db.close();throw e}
+}
+export async function cobroCall(db,actor,action,args={}){
+ return db.transaction(async tx=>{await tx.query("SELECT set_config('test.uid',$1,true)",[actor]);await tx.exec('SET LOCAL ROLE authenticated');return(await tx.query('SELECT public.suizamente_negocios_cobros($1,$2::jsonb) result',[action,JSON.stringify(args)])).rows[0].result})
 }
 export async function negocioCall(db,actor,action,args={}){
  return db.transaction(async tx=>{await tx.query("SELECT set_config('test.uid',$1,true)",[actor||'']);await tx.exec('SET LOCAL ROLE '+(actor?'authenticated':'anon'));return(await tx.query('SELECT public.suizamente_negocios($1,$2::jsonb) result',[action,JSON.stringify(args)])).rows[0].result})

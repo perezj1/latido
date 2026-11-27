@@ -1,0 +1,22 @@
+import assert from 'node:assert/strict'
+import {mkdir} from 'node:fs/promises'
+import {chromium,expect as rawExpect} from '@playwright/test'
+import {startSuizamentePreview,testToken,testUser} from './lib/suizamente-v2-preview.mjs'
+import {A,B,C,call} from './lib/suizamente-v2-test-db.mjs'
+import {negocioCall,fixtureBusiness,fixtureQuestion} from './lib/negocios-test-db.mjs'
+import {mejoraCall} from './lib/mejoras-test-db.mjs'
+const out='output/activacion/negocios/chromium',expect=rawExpect.configure({timeout:45000});let preview,browser,page
+try{
+ await mkdir(out,{recursive:true});preview=await startSuizamentePreview(5700,{hmr:false,mejoras:true,negocios:true});const {db}=preview
+ for(const actor of [A,B,C])await call(db,actor,'regalo')
+ const {id}=await negocioCall(db,A,'alta',{datos:fixtureBusiness,canton:'ZH',plaza:'ZH-p1',plan:'plus',periodo:'mes',condiciones:true});await negocioCall(db,C,'aprobar',{id});await negocioCall(db,C,'pagada',{id,referencia:'QA-COMBINADA'})
+ await db.query("INSERT INTO suizamente_private.suizamente_mapa(jugador_id,vuelta,canton,nivel) SELECT $1,1,c->>'id',3 FROM suizamente_private.suizamente_configuracion,LATERAL jsonb_array_elements(juego#>'{mapa,regiones,0,cantones}') c ON CONFLICT(jugador_id,vuelta,canton) DO UPDATE SET nivel=3",[B]);await mejoraCall(db,B,'decorar/inicio');await db.exec('UPDATE suizamente_private.persona_decoraciones SET vista=true;UPDATE suizamente_private.suizamente_novedades SET leida=true')
+ const month=(await db.query("SELECT date_trunc('month',suizamente_private.neg_dia())::date::text m")).rows[0].m
+ await negocioCall(db,A,'pregunta_guardar',{id,mes:month,pregunta:fixtureQuestion});const q=(await negocioCall(db,A,'panel',{id})).preguntas[0];await negocioCall(db,C,'pregunta_revisar',{id,pregunta:q.id,decision:'aprobar'})
+ browser=await chromium.launch({headless:true,args:['--enable-unsafe-swiftshader']});const context=await browser.newContext({viewport:{width:390,height:844},reducedMotion:'reduce'});await context.addInitScript(s=>{localStorage.setItem('sb-127-auth-token',JSON.stringify(s));sessionStorage.setItem('suizamente:apertura','1');Object.defineProperty(navigator,'standalone',{get:()=>true})},{access_token:testToken(B),refresh_token:'test',expires_at:Math.floor(Date.now()/1000)+86400,user:testUser(B,'Lu')});page=await context.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(m.type()==='error'||m.text().includes('suizamente_map'))console.error('MAP QA',m.text())})
+ async function shot(name){for(const [width,height]of [[390,844],[375,667]]){await page.setViewportSize({width,height});await page.evaluate(()=>document.fonts.ready);assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));await page.screenshot({path:out+'/'+name+'-'+width+'.png'})}await page.setViewportSize({width:390,height:844})}
+ await page.goto(preview.origin+'/suizamente/mapa?canton=ZH');await expect(page.locator('.sv-world-map canvas').first()).toBeVisible();await expect(page.getByRole('button',{name:/Café Cumbia.*Patrocinado/})).toBeVisible();await shot('MapaNegocio');await page.getByRole('button',{name:/Café Cumbia.*Patrocinado/}).click();await expect(page.getByRole('heading',{name:fixtureBusiness.nombre,exact:true})).toBeVisible();await shot('FichaNegocio')
+ const match=await call(db,B,'crear_partida',{rival:C}),response=page.waitForResponse(r=>r.url().endsWith('/negocios/pregunta')&&r.status()===200)
+ await page.goto(preview.origin+'/suizamente/partida/'+match.id);const issued=await(await response).json();assert.ok(!('correcta' in issued.pregunta));assert.ok(!('dato' in issued.pregunta));await expect(page.getByRole('heading',{name:fixtureQuestion.pregunta,exact:true})).toBeVisible();await shot('PreguntaNegocio');await page.getByRole('button',{name:fixtureQuestion.opciones[2],exact:true}).click();await expect(page.getByText(fixtureQuestion.dato,{exact:true})).toBeVisible();await shot('RespuestaNegocio');await page.getByRole('button',{name:'Seguir jugando',exact:true}).click();await expect(page.getByRole('button',{name:'Girar la ruleta',exact:true})).toBeVisible();assert.deepEqual(errors,[])
+ console.log('PASS combined map: approved paid fixture visible to other account, decoration + business engines, pin/profile/offer, protected sponsor question and original roulette; both widths')
+}catch(e){console.error(e.stack);await page?.screenshot({path:out+'/fallo-mapa.png'}).catch(()=>{});process.exitCode=1}finally{await browser?.close();await preview?.close()}

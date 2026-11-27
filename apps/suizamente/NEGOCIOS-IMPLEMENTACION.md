@@ -14,9 +14,7 @@ Precios aprobados por Latido el 27 de noviembre de 2026: En el mapa CHF 19/mes o
 
 ## Estado de los pagos
 
-**Latido pidió aplazar la integración automática.** El paso de pago y el panel muestran «Pago automático · Próximamente disponible». Sigue la factura manual. No se han creado clientes, productos, suscripciones ni cobros en Stripe, ni añadido claves o el SDK. `negocios.cobroAutomatico` continúa en `false`.
-
-Para retomarlo: conectar un sandbox de Stripe, configurar dos productos y sus cuatro precios aprobados, guardar tarjeta sin cobrar mediante Checkout/SetupIntent, activar la suscripción tras aprobar, verificar webhooks con firma e idempotencia de factura y evento, y añadir el portal con cambios de plan al siguiente periodo. Probar aprobación, primer cobro, fallo, gracia, duplicados y baja antes de habilitarlo. Usar claves restringidas de prueba y secretos solo del servidor. Latido debe decidir IVA, condiciones e información de factura; no se ha activado Stripe Tax.
+El código del cobro automático está implementado con pruebas locales. Por indicación del usuario se omite el plan asistido y queda pendiente probar la cuenta de Stripe. `negocios.cobroAutomatico` sigue en `false`: se conserva la factura manual y «Próximamente disponible». Ver [PAGOS-IMPLEMENTACION.md](PAGOS-IMPLEMENTACION.md) para la migración v37, variables, webhooks, portal y scheduler. No se han creado cobros ni productos reales.
 
 La documentación actual de [TWINT en Stripe](https://docs.stripe.com/payments/twint) ya indica recurrencia compatible, pero excluye B2B. El producto vende a negocios: hay que confirmar con Stripe su admisibilidad. Si se admite, se mantiene la decisión de Latido de ofrecerlo solo como pago anual. La factura QR depende del proceso de facturación de Latido; no se inventa un IBAN ni una factura.
 
@@ -32,7 +30,7 @@ No se sustituyen funciones ni tablas de las partidas. Los ejemplos de Café Cumb
 
 Los datos postales proceden del [directorio oficial de localidades de swisstopo](https://www.swisstopo.admin.ch/de/amtliches-ortschaftenverzeichnis), descargado el 27 de noviembre de 2026. La elección de ciudad y cantón es explícita cuando un código postal cruza límites cantonales. No se usa una deducción aproximada por prefijos.
 
-`negocios.activo` continúa en `false` en el JSON y en la base. Antes de abrir altas, Latido debe publicar sus condiciones y guardar su enlace en `negocios_configuracion.condiciones_url`; mientras falte, el alta lo explica y el servidor no acepta solicitudes. Revisar IVA y el envío manual de las facturas. No hacen falta nuevas variables de entorno para esta entrega.
+`negocios.activo` se enciende por petición de Latido mediante v38; ver [ACTIVACION-IMPLEMENTACION.md](ACTIVACION-IMPLEMENTACION.md). Antes de abrir altas, Latido debe publicar sus condiciones y guardar su enlace en `negocios_configuracion.condiciones_url`; mientras falte, el alta lo explica y el servidor no acepta solicitudes. Revisar IVA y el envío manual de las facturas. No hacen falta nuevas variables de entorno para esta entrega.
 
 ## Archivos principales
 

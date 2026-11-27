@@ -5,7 +5,8 @@ import react from '@vitejs/plugin-react'
 import {createSuizamenteHandler} from '../../server/suizamente/http.mjs'
 import {database,call,profile,A,B,C} from './suizamente-v2-test-db.mjs'
 import {mejorasDatabase,mejoraCall} from './mejoras-test-db.mjs'
-import {negociosDatabase,negocioCall} from './negocios-test-db.mjs'
+import {negociosDatabase,negocioCall,cobroCall} from './negocios-test-db.mjs'
+import {createBusinessPayments} from '../../server/suizamente/negocios-pagos.mjs'
 import {getSuizamenteConfig} from '../../server/suizamente/config.mjs'
 export function testUser(id,name){
   return {id,aud:'authenticated',role:'authenticated',email:name.toLowerCase()+'@suizamente.test',app_metadata:{provider:'email',providers:['email']},user_metadata:{name,canton:'ZH',latido_onboarding_completed:true},created_at:'2026-01-01T00:00:00Z'}
@@ -14,8 +15,8 @@ export function testToken(id){
   const b64=value=>Buffer.from(JSON.stringify(value)).toString('base64url')
   return b64({alg:'HS256',typ:'JWT'})+'.'+b64({sub:id,aud:'authenticated',role:'authenticated',exp:Math.floor(Date.now()/1000)+86400})+'.test-signature'
 }
-export async function startSuizamentePreview(port=5265,{demo=false,host='127.0.0.1',hmr=demo,pushPrompt=demo,mejoras=false,negocios=false,barraCanton=false}={}){
-  const extras=negocios?await negociosDatabase(negocios===true):mejoras?await mejorasDatabase(mejoras):null,db=extras?.db||await database({emparejamiento:true})
+export async function startSuizamentePreview(port=5265,{demo=false,host='127.0.0.1',hmr=demo,pushPrompt=demo,mejoras=false,negocios=false,barraCanton=false,cobroAutomatico=false}={}){
+  const extras=negocios?await negociosDatabase(negocios===true,mejoras,{payments:cobroAutomatico}):mejoras?await mejorasDatabase(mejoras):null,db=extras?.db||await database({emparejamiento:true})
   for(const [id,name] of [[A,'Alex'],[B,'Lu'],[C,'Caro']]){
     await call(db,id,'guardar_jugador',profile(name))
     await call(db,id,'bienvenida')
@@ -31,11 +32,14 @@ export async function startSuizamentePreview(port=5265,{demo=false,host='127.0.0
   const origin='http://'+(host==='0.0.0.0'?'127.0.0.1':host)+':'+port
   process.env.SUPABASE_URL=origin+'/mock-supabase'
   process.env.SUPABASE_ANON_KEY='test-anon'
-  const handler=createSuizamenteHandler({barraCanton:()=>barraCanton,...(negocios?{negociosConfig:()=>({...getSuizamenteConfig().juego.negocios,activo:negocios===true})}:{}),...(extras?{mejorasConfig:()=>extras.config}:{}),fetchImpl:async(_url,options)=>{
+  const sqlFetch=async(_url,options)=>{
     const b=JSON.parse(options.body),actor=actorFrom(options.headers.Authorization)
-    try{return Response.json(await(_url.endsWith('/suizamente_negocios')?negocioCall(db,actor,b.p_action,b.p_args):_url.endsWith('/suizamente_mejoras')?mejoraCall(db,actor,b.p_action,b.p_args):call(db,actor,b.p_action,b.p_args,b.p_guest_id,b.p_guest_token)))}
+    try{return Response.json(await(_url.endsWith('/suizamente_negocios_cobros')?cobroCall(db,actor,b.p_action,b.p_args):_url.endsWith('/suizamente_negocios')?negocioCall(db,actor,b.p_action,b.p_args):_url.endsWith('/suizamente_mejoras')?mejoraCall(db,actor,b.p_action,b.p_args):call(db,actor,b.p_action,b.p_args,b.p_guest_id,b.p_guest_token)))}
     catch(e){if(!e.message.startsWith('SZV2:'))console.error('QA SQL:',e.message,e.where||'');return Response.json({message:e.message,code:e.code},{status:400})}
-  }})
+  }
+  const previewMejoras=structuredClone(getSuizamenteConfig().juego.mejoras)
+  for(const key of ['minuto','espejo','misterio','decorar','unToque'])previewMejoras[key].activo=mejoras===true||!!mejoras?.[key]
+  const handler=createSuizamenteHandler({fetchImpl:sqlFetch,payments:createBusinessPayments({fetchImpl:sqlFetch}),barraCanton:()=>barraCanton,negociosConfig:()=>({...getSuizamenteConfig().juego.negocios,activo:negocios===true,cobroAutomatico}),mejorasConfig:()=>extras?.config||previewMejoras})
   const server=await createServer({
     css:{postcss:{plugins:[]}},configFile:false,envDir:'output/no-env-loaded',plugins:[react(),{
       name:'suizamente-isolated-sql-api',

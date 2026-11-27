@@ -1,6 +1,6 @@
 # Cinco mejoras opcionales
 
-Implementación de los prompts 32–36 de `suizamente/MEJORAS.md`. Las cifras y condiciones son las de la propuesta, pendientes de aprobar por Latido. Los cinco `activo` permanecen en `false`. No hay misterios publicados. Las migraciones v27–v33 se aplicaron en producción el 27 de noviembre de 2026, con publicación del cliente en `suizamente` y `suizamente-social` autorizada por el usuario.
+Implementación de los prompts 32–36 de `suizamente/MEJORAS.md`. Las cifras y condiciones son las de la propuesta, pendientes de aprobar por Latido. Los cinco `activo` se encienden en la entrega de activación; ver [ACTIVACION-IMPLEMENTACION.md](ACTIVACION-IMPLEMENTACION.md). Las comprobaciones con todo apagado se conservan. No hay misterios publicados. Las migraciones v27–v33 se aplicaron en producción el 27 de noviembre de 2026, con publicación del cliente en `suizamente` y `suizamente-social` autorizada por el usuario.
 
 ## Archivos y aislamiento
 
@@ -77,4 +77,4 @@ Verificación en producción: las 384 funciones anteriores y sus permisos conser
 
 Las ocho regresiones anteriores de Inicio, Menú, Nueva partida, iconos, mapa, compartir, partida e invitaciones pasan. `npm test` conserva 25/27, igual que el commit anterior: fallan `datos-demo.test.mjs` (contexto de respuesta indefinido) y `service-worker-update.test.mjs` (nombre antiguo de caché). El presupuesto de entrega también fallaba antes: 116.589 bytes frente al límite de 115.000; la ampliación queda alrededor de 120 kB. No se han cambiado esos tests ni los sistemas anteriores para ocultar sus fallos. El build pasa y las pantallas nuevas se cargan de forma diferida.
 
-Pendiente de producto: aprobación de valores/condiciones y contenido por Latido, antes de activar las mejoras. Pendiente de dispositivo: compartir nativo, recepción push, VoiceOver/TalkBack y rendimiento en teléfonos físicos. Quedan asimismo los tres fallos anteriores citados. Las pruebas locales no se presentan como comprobaciones realizadas en teléfonos reales.
+Pendiente de producto: contenido de misterios y condiciones por Latido. La activación solicitada se documenta en ACTIVACION-IMPLEMENTACION.md. Pendiente de dispositivo: compartir nativo, recepción push, VoiceOver/TalkBack y rendimiento en teléfonos físicos. Quedan asimismo los tres fallos anteriores citados. Las pruebas locales no se presentan como comprobaciones realizadas en teléfonos reales.
