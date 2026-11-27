@@ -4,7 +4,7 @@ import {Link,useNavigate} from 'react-router-dom'
 import {useSv} from './Context'
 import {Avatar,Button,Card,Header,Wallet} from './Shared'
 import {szApi} from '../../../lib/suizamenteV2'
-import {copyInvitationText} from '../../../lib/suizamenteInvitations'
+import {copyInvitationText,peekInvitation,prepareInvitation,discardInvitation} from '../../../lib/suizamenteInvitations'
 import {notify} from '../../../lib/suizamenteNotices'
 import {useData} from './useData'
 import {LoadingCards} from '../../../../Loading'
@@ -12,9 +12,9 @@ import './newGame.css'
 
 export function NewGame({invitation}){
  const {user,config}=useSv(),navigate=useNavigate()
- const [query,setQuery]=useState(''),[players,setPlayers]=useState([]),[busy,setBusy]=useState(false),[error,setError]=useState(''),[invite,setInvite]=useState(''),[searching,setSearching]=useState(false)
- const inviteRequest=useRef(null)
- const [inviteLoading,setInviteLoading]=useState(!!user&&!invitation)
+ const [query,setQuery]=useState(''),[players,setPlayers]=useState([]),[busy,setBusy]=useState(false),[error,setError]=useState(''),[invite,setInvite]=useState(()=>{const ready=peekInvitation(user?.id);return ready?location.origin+ready.enlace:''}),[searching,setSearching]=useState(false)
+ const inviteRequest=useRef(null),usedInvitation=useRef(null)
+ const [inviteLoading,setInviteLoading]=useState(!!user&&!invitation&&!peekInvitation(user?.id))
  const {data:lobby,error:lobbyError,reload:reloadLobby}=useData('emparejamiento',{refreshMs:15000,enabled:!invitation})
  const {data:matchData,error:matchesError,reload:reloadMatches}=useData('partidas',{refreshMs:15000,enabled:!invitation})
  const {data:friendData,error:friendsError,reload:reloadFriends}=useData('amigos',{refreshMs:15000,enabled:!!user&&!invitation,reuseCached:true})
@@ -24,11 +24,12 @@ export function NewGame({invitation}){
  const matchWith=p=>matchData?.partidas.find(m=>['jugando','buscando'].includes(m.estado)&&m.rival?.id===p.id)
  const login=()=>navigate('/auth?next='+encodeURIComponent('/suizamente/nueva'))
  function prepareInvite(){
-  if(!inviteRequest.current){setInviteLoading(true);inviteRequest.current=szApi('invitaciones',{method:'POST'}).then(data=>{const url=location.origin+data.enlace;setInvite(url);return url}).catch(e=>{inviteRequest.current=null;throw e}).finally(()=>setInviteLoading(false))}
+  if(!inviteRequest.current){setInviteLoading(!peekInvitation(user.id));inviteRequest.current=prepareInvitation(user.id,'game',config.partida.invitacionDias).then(data=>{const url=location.origin+data.enlace;setInvite(url);return url}).catch(e=>{inviteRequest.current=null;throw e}).finally(()=>setInviteLoading(false))}
   return inviteRequest.current
  }
  // A prepared URL lets native sharing start within the actual button gesture.
  useEffect(()=>{if(user&&!invitation)prepareInvite().catch(e=>setError(e.message))},[user?.id,invitation])
+ useEffect(()=>()=>{if(usedInvitation.current)discardInvitation(user?.id,'game',usedInvitation.current)},[user?.id])
  useEffect(()=>{
   if(!user||invitation||!term){setPlayers([]);setSearching(false);return}
   let active=true;setPlayers([]);setSearching(true)
@@ -41,7 +42,7 @@ export function NewGame({invitation}){
  }
  async function sendInvite(mode){
   if(!user){login();return}if(busy)return;setBusy(true);setError('')
-  try{const url=invite||await prepareInvite();if(mode==='share'&&navigator.share)await navigator.share({title:'Una partida de Suizamente',text:'¿Jugamos una partida?',url});else{await copyInvitationText(url);notify('Enlace de invitación copiado')}}catch(e){if(e.name!=='AbortError')setError(e.message)}finally{setBusy(false)}
+  try{const url=invite||await prepareInvite();if(mode==='share'&&navigator.share)await navigator.share({title:'Una partida de Suizamente',text:'¿Jugamos una partida?',url});else{await copyInvitationText(url);notify('Enlace de invitación copiado')}usedInvitation.current=new URL(url).pathname}catch(e){if(e.name!=='AbortError')setError(e.message)}finally{setBusy(false)}
  }
  function friend(p){
   const match=matchWith(p),label=p.apodo+', nivel '+p.nivel+(p.online?', en línea':'')+'. '+(match?'Ya jugáis una partida: seguir':'Jugar una partida')

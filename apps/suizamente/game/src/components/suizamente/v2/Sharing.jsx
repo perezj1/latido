@@ -4,6 +4,7 @@ import {useNavigate} from 'react-router-dom'
 import {useSv} from './Context'
 import {Button,Card,Sheet} from './Shared'
 import {szApi} from '../../../lib/suizamenteV2'
+import {peekInvitation,prepareInvitation,discardInvitation} from '../../../lib/suizamenteInvitations'
 import {dibujarHistoria,compartirHistoria} from './story'
 import {SHARE_URL,SHARE_HOST,shareText,victoryImage,cleanShareText} from './shareData'
 
@@ -12,32 +13,36 @@ async function copyText(text){
   const area=document.createElement('textarea');area.value=text;area.style.cssText='position:fixed;left:-10000px;top:0';document.body.append(area);area.select()
   try{if(!document.execCommand('copy'))throw new Error('Selecciona y copia el enlace de esta hoja.')}finally{area.remove()}
 }
-export async function inviteSomeone(){
-  const data=await szApi('invitaciones',{method:'POST'})
+export async function inviteSomeone(owner,days){
+  const data=peekInvitation(owner)||await prepareInvitation(owner,'game',days)
   const url=SHARE_URL+data.enlace
   if(navigator.share)await navigator.share({title:'Suizamente',text:'¿Jugamos una partida de Suizamente?',url})
   else await copyText(url)
+  discardInvitation(owner,'game',data.enlace)
+  prepareInvitation(owner,'game',days).catch(()=>{})
   return url
 }
 export function FriendInviteSheet({onClose}){
-  const request=useRef(null),[url,setUrl]=useState(''),[error,setError]=useState(''),[notice,setNotice]=useState(''),[busy,setBusy]=useState(false),[attempt,setAttempt]=useState(0)
+  const {user,config}=useSv()
+  const request=useRef(null),[url,setUrl]=useState(()=>{const ready=peekInvitation(user?.id,'friend');return ready?SHARE_URL+ready.enlace:''}),[error,setError]=useState(''),[notice,setNotice]=useState(''),[busy,setBusy]=useState(false),[attempt,setAttempt]=useState(0)
   useEffect(()=>{
     let active=true
-    if(!request.current)request.current=szApi('amigos/invitaciones',{method:'POST'})
+    if(!request.current)request.current=prepareInvitation(user?.id,'friend',config.partida.invitacionDias)
     request.current.then(data=>{if(active)setUrl(SHARE_URL+data.enlace)}).catch(e=>{if(active)setError(e.message)})
     return()=>{active=false}
-  },[attempt])
+  },[attempt,user?.id,config.partida.invitacionDias])
   const text='¿Jugamos a Suizamente? Entra con tu cuenta o crea una gratis y apareceremos en Amigos.'
   async function run(action){setBusy(true);setError('');setNotice('');try{await action()}catch(e){if(e.name!=='AbortError')setError(e.message)}finally{setBusy(false)}}
   return <Sheet title="Invitar a un amigo" onClose={onClose} footerClose={false} className="sv-friend-invite"><button className="sv-friend-invite-close" aria-label="Cerrar" onClick={onClose}>×</button><p>Invita a quien quieras, aunque aún no tenga cuenta. Al entrar, apareceréis en Amigos.</p>{url?<><input aria-label="Enlace de invitación" readOnly value={url} onFocus={e=>e.target.select()}/><div className="sv-share-actions"><Button disabled={busy} onClick={()=>run(async()=>{if(navigator.share)await navigator.share({title:'Suizamente',text,url});else{await copyText(url);setNotice('Enlace copiado')}})}><Icono nombre="compartir"/> Compartir enlace</Button><Button tone="quiet" disabled={busy} onClick={()=>run(async()=>{await copyText(url);setNotice('Enlace copiado')})}>📋 Copiar enlace</Button></div></>:!error&&<p role="status">Preparando tu enlace…</p>}{notice&&<p role="status">{notice}</p>}{error&&<p className="sv-error" role="alert">{error} {!url&&<button className="sv-text-button" onClick={()=>{request.current=null;setError('');setAttempt(n=>n+1)}}>Reintentar</button>}</p>}</Sheet>
 }
 export function ShareSheet({data,onClose}){
-  const {user}=useSv(),navigate=useNavigate(),canvas=useRef(null),prepared=useRef(null),[imageReady,setImageReady]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState(''),[busy,setBusy]=useState(false)
+  const {user,config}=useSv(),navigate=useNavigate(),canvas=useRef(null),prepared=useRef(null),[imageReady,setImageReady]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState(''),[busy,setBusy]=useState(false)
+  useEffect(()=>{if(user)prepareInvitation(user.id,'game',config.partida.invitacionDias).catch(()=>{})},[user?.id,config.partida.invitacionDias])
   const previewKey=JSON.stringify(data)
   useEffect(()=>{let active=true;prepared.current=null;setImageReady(false);const draft=document.createElement('canvas');dibujarHistoria(draft,JSON.parse(previewKey)).then(()=>{if(!active)return;canvas.current.width=draft.width;canvas.current.height=draft.height;canvas.current.getContext('2d').drawImage(draft,0,0);draft.toBlob(blob=>{if(active){prepared.current=blob;setImageReady(!!blob)}},'image/png')}).catch(e=>{if(active)setError(e.message)});return()=>{active=false}},[previewKey])
   const url=data.url||SHARE_URL,text=shareText(data)
   async function run(fn){setBusy(true);setError('');try{await fn()}catch(e){if(e.name!=='AbortError')setError(e.message)}finally{setBusy(false)}}
-  return <Sheet title="📤 Compartir" onClose={onClose}><p className="sv-muted">Así se verá tu historia. Tu nombre no aparece.</p><canvas ref={canvas} className="sv-story-preview" aria-label="Vista previa de la historia"/><div className="sv-share-actions"><Button disabled={busy||!imageReady} tone="quiet" onClick={()=>run(()=>compartirHistoria(data,prepared.current))}>📸 Imagen para historias</Button><Button disabled={busy} tone="quiet" onClick={()=>run(async()=>{if(navigator.share)await navigator.share({text,url});else{await copyText(text);setNotice('Texto y enlace copiados')}})}>💬 Enviar a un grupo</Button><Button disabled={busy} tone="quiet" onClick={()=>run(async()=>{await copyText(text);setNotice('Texto copiado')})}>📋 Copiar texto</Button><Button disabled={busy} onClick={()=>user?run(async()=>{const link=await inviteSomeone();setNotice('Invitación lista: '+link)}):navigate('/suizamente/entrar')}><Icono nombre="duelo"/> Retar a alguien</Button></div>{notice&&<p role="status">{notice}</p>}{error&&<p className="sv-error" role="alert">{error}</p>}</Sheet>
+  return <Sheet title="📤 Compartir" onClose={onClose}><p className="sv-muted">Así se verá tu historia. Tu nombre no aparece.</p><canvas ref={canvas} className="sv-story-preview" aria-label="Vista previa de la historia"/><div className="sv-share-actions"><Button disabled={busy||!imageReady} tone="quiet" onClick={()=>run(()=>compartirHistoria(data,prepared.current))}>📸 Imagen para historias</Button><Button disabled={busy} tone="quiet" onClick={()=>run(async()=>{if(navigator.share)await navigator.share({text,url});else{await copyText(text);setNotice('Texto y enlace copiados')}})}>💬 Enviar a un grupo</Button><Button disabled={busy} tone="quiet" onClick={()=>run(async()=>{await copyText(text);setNotice('Texto copiado')})}>📋 Copiar texto</Button><Button disabled={busy} onClick={()=>user?run(async()=>{const link=await inviteSomeone(user.id,config.partida.invitacionDias);setNotice('Invitación lista: '+link)}):navigate('/suizamente/entrar')}><Icono nombre="duelo"/> Retar a alguien</Button></div>{notice&&<p role="status">{notice}</p>}{error&&<p className="sv-error" role="alert">{error}</p>}</Sheet>
 }
 export function storyData(kind,data){
   const base={enlace:SHARE_HOST,url:SHARE_URL,opciones:[]}

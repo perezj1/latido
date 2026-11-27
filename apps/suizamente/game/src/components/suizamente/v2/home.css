@@ -20,6 +20,8 @@
 .sv-home-access-name{display:var(--sz-ini-nombre);margin-top:2px;font-size:11.5px;font-weight:800;color:#FFF;white-space:nowrap;text-shadow:0 1px 2px #0F1A2B73,0 0 6px #0F1A2B40}
 .sv-home-map-target{position:absolute;z-index:2;left:var(--sz-ini-isla-lado);right:var(--sz-ini-isla-lado);top:var(--sz-ini-isla-arriba);height:var(--sz-ini-isla-alto);border-radius:24px}
 .sv-home-photo{position:absolute;inset:0;display:grid;place-items:end center;pointer-events:none}.sv-home-photo>img,.sv-home-photo>.sv-map-drawing{display:block;width:100%;height:100%;max-width:100%;max-height:100%;object-fit:contain;object-position:center bottom;filter:drop-shadow(0 8px 8px #0F1A2B29);user-select:none}
+.sv-home-photo>img,.sv-home-photo>.sv-map-drawing{transform-origin:50% 80%;animation:sz-isla-flota 6s ease-in-out infinite;will-change:transform}
+@keyframes sz-isla-flota{0%,100%{transform:translateY(0) rotate(-.4deg)}50%{transform:translateY(-6px) rotate(.4deg)}}
 @keyframes sz-aro{from{transform:translate(-50%,-50%) rotate(0deg)}to{transform:translate(-50%,-50%) rotate(360deg)}}
 .sv-root .sv-home-create{position:absolute;z-index:4;isolation:isolate;left:16px;right:16px;bottom:8px;height:var(--sz-ini-nueva);display:flex;align-items:center;justify-content:center;gap:10px;border-radius:999px;border:4px solid transparent;background:#4A76EF;color:#FFF;font-size:var(--sz-ini-nueva-fs);font-weight:800;white-space:nowrap;box-shadow:0 5px 0 #0F1A2B2E,0 10px 24px #4A76EF4D}
 .sv-home-create-ring{position:absolute;z-index:-1;inset:-4px;border-radius:inherit;overflow:hidden;pointer-events:none}.sv-home-create-ring>i{position:absolute;left:50%;top:50%;width:200%;aspect-ratio:1;background:conic-gradient(#FA2F35,#4A76EF,#24BFE2,#24E2C9,#03AA98,#F9A719,#FA2F35);transform:translate(-50%,-50%);animation:sz-aro 3s linear infinite;will-change:transform}.sv-home-create-ring::after{content:"";position:absolute;inset:4px;border-radius:inherit;background:#4A76EF}
@@ -44,7 +46,7 @@
 .sv-home-time{flex:none;height:28px;padding:0 10px;display:flex;align-items:center;gap:4px;border-radius:999px;background:#F4F7FB;color:#5A6577;font-size:12px;font-weight:800;white-space:nowrap}
 .sv-home-empty-icon{flex:none;width:44px;height:44px;border-radius:50%;background:#FEEDD1;display:grid;place-items:center;font-size:22px}.sv-home-failure{padding:8px 16px;font-size:12px;color:#B01C24}
 .sv-home-list a:focus-visible,.sv-home-list button:focus-visible{outline-offset:-3px}
-@media(prefers-reduced-motion:reduce){.sv-home-create-ring>i{animation:none!important;will-change:auto}}html[data-suizamente-reduced=true] .sv-home-create-ring>i{animation:none!important;will-change:auto}
+@media(prefers-reduced-motion:reduce){.sv-home-create-ring>i,.sv-home-photo>img,.sv-home-photo>.sv-map-drawing{animation:none!important;will-change:auto}}html[data-suizamente-reduced=true] :is(.sv-home-create-ring>i,.sv-home-photo>img,.sv-home-photo>.sv-map-drawing){animation:none!important;will-change:auto}
 @media(max-width:360px){.sv-home-header .sv-home-datum{font-size:15px;gap:4px}.sv-home-header .sv-home-datum>.sv-icono{width:22px;height:22px}.sv-root .sv-home-filters>[role=tab]{font-size:12px;padding-inline:4px;gap:4px}}
 
 /* Keep the central navigation badge clear of the first row on low screens. */

@@ -27,7 +27,7 @@ export function szKey(){
   return hex.slice(0,8)+'-'+hex.slice(8,12)+'-'+hex.slice(12,16)+'-'+hex.slice(16,20)+'-'+hex.slice(20)
 }
 
-export async function szApi(path, {method='GET',body,fresh=false,priority='auto'}={}) {
+export async function szApi(path, {method='GET',body,fresh=false,priority='auto',silent=false}={}) {
   let guest=localStorage.getItem('suizamente:jugador')
   if(!guest&&crypto.randomUUID){guest=crypto.randomUUID();localStorage.setItem('suizamente:jugador',guest)}
   const {data:{session}}=await supabase.auth.getSession()
@@ -58,12 +58,12 @@ export async function szApi(path, {method='GET',body,fresh=false,priority='auto'
     await new Promise(resolve=>setTimeout(resolve,200))
   }}
   let response
-  try{response=await read(session?.access_token)}catch{const error=new Error(method==='GET'?'No se pudo cargar. Comprueba la conexión y vuelve a intentarlo.':'No se pudo confirmar la acción. Comprueba la conexión y vuelve a intentarlo.');if(method!=='GET')notify(error,{error:true});throw error}
+  try{response=await read(session?.access_token)}catch{const error=new Error(method==='GET'?'No se pudo cargar. Comprueba la conexión y vuelve a intentarlo.':'No se pudo confirmar la acción. Comprueba la conexión y vuelve a intentarlo.');if(method!=='GET'&&!silent)notify(error,{error:true});throw error}
   const sessionRejected=response.status===401&&(await response.clone().json().catch(()=>null))?.sesionCaducada
   if(sessionRejected&&session?.access_token){const renewed=await recoverSupabaseSession(session.access_token,session.user?.id);if(renewed?.access_token){response=await read(renewed.access_token);if(response.status===401&&(await response.clone().json().catch(()=>null))?.sesionCaducada)await invalidateSupabaseSession(renewed.access_token)}}
   let data
-  try{data=await response.json()}catch{const error=new Error('No se pudo conectar con Suizamente. Inténtalo otra vez.');if(method!=='GET')notify(error,{error:true});throw error}
-  if(!response.ok){const error=new Error(data.error||'Algo ha fallado. Inténtalo otra vez.');error.status=response.status;error.partida=data.partida;if(method!=='GET')notify(error,{error:true});throw error}
+  try{data=await response.json()}catch{const error=new Error('No se pudo conectar con Suizamente. Inténtalo otra vez.');if(method!=='GET'&&!silent)notify(error,{error:true});throw error}
+  if(!response.ok){const error=new Error(data.error||'Algo ha fallado. Inténtalo otra vez.');error.status=response.status;error.partida=data.partida;if(method!=='GET'&&!silent)notify(error,{error:true});throw error}
   const current=reader===actor&&(method!=='GET'||revision===startedRevision)
   if(current)window.dispatchEvent(new Event('suizamente:conexion-restablecida'))
   data=withoutFlags(data)

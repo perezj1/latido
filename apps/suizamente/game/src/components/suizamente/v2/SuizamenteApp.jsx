@@ -7,6 +7,7 @@ import {useGameNavigation} from '../../../../navigation'
 import {szApi,szSettings,SV_STATE,SV_AVATARS} from '../../../lib/suizamenteV2'
 import {supabase} from '../../../lib/supabase'
 import {normalizeSzSettings} from '../../../lib/suizamenteSettings'
+import {warmInvitations} from '../../../lib/suizamenteInvitations'
 import {SuizamenteContext} from './Context'
 import {Brand,Button,Logo,Navigation} from './Shared'
 import {HowTo,Login,Menu,ProfileForm,Settings,Welcome} from './Account'
@@ -112,6 +113,12 @@ export default function SuizamenteApp(){
   },[entered,ready,player?.jugador_id,playing])
   useEffect(()=>{if(entered&&ready&&player?.ajustes?.onboarding)return warmNavigationCode()},[entered,ready,player?.jugador_id,player?.ajustes?.onboarding])
   useEffect(()=>{if(entered&&ready&&player?.ajustes?.onboarding)return warmNavigationData(player.jugador_id,window.location.pathname)},[entered,ready,player?.jugador_id,player?.ajustes?.onboarding])
+  useEffect(()=>{
+    if(!entered||!ready||!user||!config||!player?.ajustes?.onboarding||!/^\/suizamente\/?(?:$|nueva$|amigos$)/.test(location.pathname))return
+    const warm=()=>{if(!document.hidden)warmInvitations(user.id,config.partida.invitacionDias)}
+    warm();window.addEventListener('focus',warm);window.addEventListener('online',warm)
+    return()=>{window.removeEventListener('focus',warm);window.removeEventListener('online',warm)}
+  },[entered,ready,user?.id,!!config,player?.ajustes?.onboarding,location.pathname])
   useEffect(()=>{const media=matchMedia('(prefers-reduced-motion: reduce)'),change=()=>setSystemReduced(media.matches);media.addEventListener('change',change);return()=>media.removeEventListener('change',change)},[])
   const configRevision=useRef(-1)
   const refreshConfig=useCallback(async()=>{const d=await szApi('config',{fresh:true});configRevision.current=d.version??0;setConfig(d)},[])
