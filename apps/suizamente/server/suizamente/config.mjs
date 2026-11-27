@@ -23,7 +23,7 @@ export function publicSuizamenteConfig() {
     duelo:juego.duelo, niveles:juego.niveles,
     mapa:juego.mapa, asaltos:juego.asaltos, album:juego.album,
     minimoVotosParaPorcentajes:juego.minimoVotosParaPorcentajes,
-    mejoras:juego.mejoras,
+    mejoras:juego.mejoras,negocios:juego.negocios,
     recompensasComunidad:{dia:juego.recompensas.preguntaDelDia,valorar:juego.recompensas.valoracionPropuesta},
   }
 }

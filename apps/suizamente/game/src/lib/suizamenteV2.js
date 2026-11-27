@@ -66,7 +66,12 @@ export async function szApi(path, {method='GET',body,fresh=false,priority='auto'
   if(!response.ok){const error=new Error(data.error||'Algo ha fallado. Inténtalo otra vez.');error.status=response.status;error.partida=data.partida;if(method!=='GET'&&!silent)notify(error,{error:true});throw error}
   const current=reader===actor&&(method!=='GET'||revision===startedRevision)
   if(current)window.dispatchEvent(new Event('suizamente:conexion-restablecida'))
+  const billingView=/^negocios\/[0-9a-f-]{36}\/panel(?:\?|$)/i.test(path)?data:null
   data=withoutFlags(data)
+  // Only the new, server-authorized business panel may show its invoice email.
+  // Every legacy response and every public business profile keeps the old filter.
+  if(billingView?.negocio?.datos?.email&&data.negocio?.datos)data.negocio.datos.email=billingView.negocio.datos.email
+  if(billingView?.cambios)data.cambios?.forEach((c,i)=>{if(c.datos&&billingView.cambios[i]?.datos?.email)c.datos.email=billingView.cambios[i].datos.email})
   if(current&&data.avatares)window.dispatchEvent(new CustomEvent(SV_AVATARS,{detail:{userId:session?.user?.id,photos:data.avatares}}))
   if(current&&data.identidad?.startsWith('invitado-'))localStorage.setItem('suizamente:jugador',data.identidad.slice(9))
   if(current&&data.jugador)window.dispatchEvent(new CustomEvent(SV_STATE,{detail:data}))

@@ -261,6 +261,7 @@
   }
  },
  "mapa": {
+  "barraCanton": false,
   "nivelesPorCanton": 3,
   "coste": {
    "formula": "redondear_a_10((60 + 20·i + 40·r) × (1 + 0,5·n))",
@@ -1049,5 +1050,41 @@
       "sinAvisosDe": "22:00",
       "sinAvisosHasta": "08:00"
     }
+  },
+ "negocios": {
+  "activo": false,
+  "cobroAutomatico": false,
+  "planes": {
+   "mapa": {
+    "mes": 19,
+    "ano": 190
+   },
+   "plus": {
+    "mes": 39,
+    "ano": 390
+   }
+  },
+  "figuraMedidaDesde": 150,
+  "plazasPorCanton": {
+   "porDefecto": 3,
+   "ZH": 5,
+   "GE": 5,
+   "BS": 4,
+   "BE": 4,
+   "VD": 4
+  },
+  "revisionDiasMax": 2,
+  "cambioPedidoDiasMax": 14,
+  "graciaImpagoDias": 7,
+  "preguntasNegocioPorPartidaMax": 1,
+  "preguntasAlMesPlus": 1,
+  "minimoParaPorcentaje": 20,
+  "limites": {
+   "nombre": 24,
+   "descripcion": 90,
+   "oferta": 40,
+   "codigo": 12,
+   "pregunta": 110
   }
+ }
 }

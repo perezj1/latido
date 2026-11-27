@@ -53,6 +53,7 @@ const OtherProfile=screen('Community','OtherProfile')
 const Proposals=screen('Community','Proposals')
 const Ranking=screen('Community','Ranking')
 const AdminPanel=screen('Admin','AdminPanel')
+const Businesses=lazy(()=>import('./Negocios').then(m=>({default:m.Businesses})))
 const VictoryAttack=screen('VictoryAttack','VictoryAttack')
 const improvementScreen=(group,name)=>lazy(()=>import('./mejorasPreload').then(m=>m.loadImprovement(group)).then(m=>({default:m[name]})))
 const Minute=improvementScreen('MejorasMinuto','Minute'),Mirror=improvementScreen('MejorasEspejo','Mirror'),MirrorLink=improvementScreen('MejorasEspejo','MirrorLink'),Mystery=improvementScreen('MejorasMisterio','Mystery')
@@ -242,6 +243,7 @@ export default function SuizamenteApp(){
     {authLoading||resetting?<Loading/>:onboarding&&config?<Suspense fallback={<Loading/>}><Onboarding/></Suspense>:!entered?<Login/>:error?<section className="sv-screen"><div className="sv-welcome"><Logo size={90}/><h1>No se pudo abrir Suizamente</h1><p role="alert">{error}</p><Button onClick={()=>setRetry(n=>n+1)}>Reintentar</Button></div></section>:!config||!ready||!player&&!profileMetaLoaded?<Loading/>:
     <Suspense fallback={<Loading/>}><Routes>
       <Route path="admin/*" element={<IconScope enabled={false}><AdminPanel/></IconScope>}/>
+      <Route path="negocios/*" element={config.negocios?.activo===true?gate(<Businesses/>):<Navigate to="/suizamente" replace/>}/>
       <Route path="primera-vez" element={<Onboarding/>}/>
       <Route path="bienvenida" element={<Welcome/>}/>
       <Route path="como-se-juega" element={<HowTo/>}/>

@@ -6,6 +6,9 @@ import {chromium} from '@playwright/test'
 import assert from 'node:assert/strict'
 import {resolve} from 'node:path'
 const dataFile='server/suizamente/data/decoraciones.json',catalog=JSON.parse(await readFile(dataFile,'utf8')),config=JSON.parse(await readFile('server/suizamente/data/juego.json','utf8')),geometry=JSON.parse(await readFile('public/suizamente-assets/mapa3d.json','utf8')),out='output/mejoras/huecos'
+// The old authoring fixture remains below for historical checks. New catalogs use
+// the supplied Huecos3D allocator and stable references (NEGOCIOS section 2).
+if(typeof catalog.huecos[0]==='string'){await import('./generar-huecos.mjs');process.exit(0)}
 await mkdir(out,{recursive:true})
 const server=await createServer({configFile:false,cacheDir:'output/vite-decoraciones',plugins:[react()],server:{host:'127.0.0.1',port:5670,strictPort:true}});await server.listen();let browser
 try{

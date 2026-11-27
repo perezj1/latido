@@ -17,3 +17,12 @@
 .sv-root .sv-map-page>.sv-content{padding-block:4px}.sv-root .sv-map-page>.sv-content:empty{display:none}
 
 .sv-canton-card.complete>.sv-canton-plate{background:var(--lap-tint)}
+
+/* NEGOCIOS 1: independent focus link and 44px construction control. */
+.sv-root .sv-canton-strip>.sv-canton-controls{height:189px;padding:8px;gap:8px}
+.sv-root .sv-canton-controls>a{display:flex;flex-direction:column;align-items:center;gap:5px;width:100%;color:inherit;text-decoration:none;border-radius:12px}
+.sv-root .sv-canton-controls .sv-canton-name{font-size:13px;line-height:15px;min-height:30px;display:flex;align-items:center;text-align:center}
+.sv-root .sv-canton-controls>.sv-canton-price{height:44px;min-height:44px;font-size:12px;border:0}
+.sv-root .sv-canton-controls.selected{border-color:#4A76EF;background:#DFE7FC;box-shadow:0 4px 0 #4A76EF4D}
+.sv-canton-controls.selected .sv-canton-plate{background:white}
+.sv-canton-controls a:focus-visible,.sv-canton-controls button:focus-visible{outline:3px solid #4A76EF;outline-offset:2px}

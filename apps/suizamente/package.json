@@ -64,7 +64,15 @@
     "dev:qa": "node scripts/preview-suizamente.mjs --lan",
     "test:rules": "node scripts/test-suizamente-v17.mjs && node scripts/test-suizamente-v17-browser.mjs && node scripts/test-suizamente-v17-browser.mjs --webkit",
     "test:game": "node scripts/test-suizamente-production-browser.mjs",
-    "test:independence": "node scripts/test-independencia.mjs"
+    "test:independence": "node scripts/test-independencia.mjs",
+    "dev:negocios": "node scripts/preview-negocios.mjs",
+    "generar:negocios:sql": "node scripts/generar-negocios-sql.mjs",
+    "test:negocios:datos": "node scripts/test-negocios-datos.mjs",
+    "test:negocios:servidor": "node scripts/test-negocios-servidor.mjs",
+    "test:negocios:browser": "node scripts/test-negocios-browser.mjs && node scripts/test-negocios-browser.mjs --webkit",
+    "test:negocios:huecos": "node scripts/generar-huecos.mjs",
+    "capturas:negocios": "node scripts/capturar-negocios-referencia.mjs && node scripts/comparar-negocios-pantallas.mjs",
+    "test:negocios:apagados": "node scripts/test-negocios-apagados.mjs && node scripts/comparar-negocios-apagados.mjs"
   },
   "dependencies": {
     "@fontsource/poppins": "^5.2.7",

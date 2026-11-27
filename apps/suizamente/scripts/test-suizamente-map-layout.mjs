@@ -15,7 +15,7 @@ async function paired(node){
 async function visibleModel(page){const picture=await page.locator('.sv-world-map').screenshot();const green=await page.evaluate(async encoded=>{const img=new Image();img.src='data:image/png;base64,'+encoded;await img.decode();const copy=document.createElement('canvas');copy.width=img.width;copy.height=img.height;const x=copy.getContext('2d');x.drawImage(img,0,0);const pixels=x.getImageData(0,0,copy.width,copy.height).data;let green=0;for(let i=0;i<pixels.length;i+=4)if(pixels[i+1]>pixels[i]+10&&pixels[i+1]>pixels[i+2]+20)green++;return green},picture.toString('base64'));assert.ok(green>30,'The 3D model is actually visible in the composed screen');}
 
 try{
- await mkdir(out,{recursive:true});preview=await startSuizamentePreview(engine==='webkit'?5525:5524,{hmr:false});const db=preview.db,config=await call(db,A,'config')
+ await mkdir(out,{recursive:true});preview=await startSuizamentePreview(engine==='webkit'?5525:5524,{hmr:false,barraCanton:true});const db=preview.db,config=await call(db,A,'config')
  await call(db,A,'regalo');await db.query("SELECT suizamente_private.v3_anotar($1,'fixture','map-layout',5000)",[A]);await call(db,A,'construir',{canton:'LU',nivel:0,clave:crypto.randomUUID()})
  await db.query("INSERT INTO suizamente_private.suizamente_mapa(jugador_id,vuelta,canton,nivel) VALUES($1,1,'UR',2),($1,1,'SZ',3) ON CONFLICT(jugador_id,vuelta,canton) DO UPDATE SET nivel=excluded.nivel",[A])
  browser=await(engine==='webkit'?webkit:chromium).launch({headless:true,args:engine==='chromium'?['--enable-unsafe-swiftshader']:[]})

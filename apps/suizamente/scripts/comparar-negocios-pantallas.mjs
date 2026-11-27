@@ -1,0 +1,12 @@
+import {readFile,writeFile,access} from 'node:fs/promises'
+import {resolve} from 'node:path'
+import {chromium} from '@playwright/test'
+const root='output/negocios',screens=['MapaZH','MapaZHLleno','FichaNegocio','Negocios','PreguntaNegocio','RespuestaNegocio','MenuNegocios','NegocioInfo','NegocioDatos','NegocioPlaza','NegocioFigura','NegocioOferta','NegocioPlan','NegocioPago','NegocioEnviado','NegocioPanel','NegocioResumen','NegocioPregunta','NegocioCuenta','NegocioBaja','NegocioCambios','AdminNegocios','AdminNegocio']
+const exists=async p=>access(root+'/'+p).then(()=>true,()=>false)
+let html='<!doctype html><html lang="es"><meta charset="utf-8"><title>Suizamente · revisión de negocios</title><style>body{background:#EEF1F5;color:#0F1A2B;font:16px system-ui;margin:20px}section{display:flex;gap:16px;flex-wrap:wrap}figure{margin:0}img{max-width:390px;vertical-align:top;border-radius:16px}figcaption{margin:8px 0}article{margin-bottom:30px}nav{display:flex;gap:12px;flex-wrap:wrap}</style><h1>Negocios · diseño y aplicación</h1><p>Solo ejemplos en la base temporal. Pago automático aplazado: próximamente disponible.</p><nav><a href="apagadas/comparacion.html">Interruptores apagados</a><a href="../mapa-fichas/chromium/comparacion.html">Barra antigua activada</a></nav>'
+for(const name of screens){html+='<article><h2>'+name+'</h2><section><figure><figcaption>Referencia</figcaption><img src="referencia/'+name+'.png"></figure>';for(const [engine,width]of [['chromium',390],['chromium',375],['webkit',390]]){const path=engine+'/'+name+'-'+width+'.png';if(await exists(path))html+='<figure><figcaption>'+engine+' · '+width+'</figcaption><img src="'+path+'"></figure>'}html+='</section></article>'}
+html+='<h2>26 cantones · nivel 3 · todos los huecos ocupados</h2><section><figure><figcaption>Referencia · Zúrich</figcaption><img src="referencia/ZurichLleno.png"></figure>'
+const slots=JSON.parse(await readFile('server/suizamente/data/huecos.json','utf8'));for(const id of Object.keys(slots))html+='<figure><figcaption>'+id+'</figcaption><img src="huecos/'+id+'.png"></figure>'
+await writeFile(root+'/comparacion.html',html+'</section></html>')
+const browser=await chromium.launch({headless:true});try{const page=await browser.newPage({viewport:{width:1280,height:1100}});await page.goto('file:///'+resolve(root+'/comparacion.html').replaceAll('\\','/'));await page.screenshot({path:root+'/comparacion.png'})}finally{await browser.close()}
+console.log('Review gallery: '+resolve(root+'/comparacion.html'))

@@ -1,6 +1,7 @@
 import {readFile} from 'node:fs/promises'
 import {database} from './suizamente-v2-test-db.mjs'
 import assert from 'node:assert/strict'
+import {resolverHuecos} from '../../server/suizamente/huecos.mjs'
 export const migrations=['27_mejoras_base','28_minuto','29_espejo','30_misterio','31_decorar','32_un_toque']
 export async function mejorasDatabase(flags=false){
  const db=await database({emparejamiento:true})
@@ -14,7 +15,7 @@ export async function mejorasDatabase(flags=false){
   assert.deepEqual((await db.query(fingerprint)).rows,before,'Initial additive migration preserves every legacy function and its ACL')
   const juego=JSON.parse(await readFile('server/suizamente/data/juego.json','utf8')),config=juego.mejoras
   for(const [key,value] of Object.entries(config))if(value&&typeof value==='object')value.activo=flags===true||!!flags?.[key]
-  const decoraciones=JSON.parse(await readFile('server/suizamente/data/decoraciones.json','utf8'))
+  const decoraciones=resolverHuecos(JSON.parse(await readFile('server/suizamente/data/decoraciones.json','utf8')))
   await db.query('UPDATE suizamente_private.mejoras_configuracion SET mejoras=$1::jsonb,decoraciones=$2::jsonb',[JSON.stringify(config),JSON.stringify(decoraciones)])
   return {db,config}
  }catch(e){await db.close();throw e}

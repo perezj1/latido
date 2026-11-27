@@ -1,0 +1,106 @@
+{
+  "ZH": {
+    "factor": 1,
+    "radio": 1
+  },
+  "BE": {
+    "factor": 1,
+    "radio": 1
+  },
+  "LU": {
+    "factor": 1,
+    "radio": 1
+  },
+  "UR": {
+    "factor": 0.9,
+    "radio": 1
+  },
+  "SZ": {
+    "factor": 0.9,
+    "radio": 2.4
+  },
+  "OW": {
+    "factor": 0.9,
+    "radio": 1
+  },
+  "NW": {
+    "factor": 1,
+    "radio": 1
+  },
+  "GL": {
+    "factor": 0.7,
+    "radio": 1
+  },
+  "ZG": {
+    "factor": 1,
+    "radio": 1
+  },
+  "FR": {
+    "factor": 0.8,
+    "radio": 1
+  },
+  "SO": {
+    "factor": 1,
+    "radio": 1.15
+  },
+  "BS": {
+    "factor": 1,
+    "radio": 1
+  },
+  "BL": {
+    "factor": 1,
+    "radio": 1.15
+  },
+  "SH": {
+    "factor": 1,
+    "radio": 1
+  },
+  "AR": {
+    "factor": 1,
+    "radio": 2.4
+  },
+  "AI": {
+    "factor": 1,
+    "radio": 1
+  },
+  "SG": {
+    "factor": 0.9,
+    "radio": 1.3
+  },
+  "GR": {
+    "factor": 1,
+    "radio": 1
+  },
+  "AG": {
+    "factor": 0.9,
+    "radio": 1
+  },
+  "TG": {
+    "factor": 1,
+    "radio": 1
+  },
+  "TI": {
+    "factor": 0.9,
+    "radio": 1
+  },
+  "VD": {
+    "factor": 0.8,
+    "radio": 1
+  },
+  "VS": {
+    "factor": 1,
+    "radio": 1
+  },
+  "NE": {
+    "factor": 1,
+    "radio": 1
+  },
+  "GE": {
+    "factor": 1,
+    "radio": 1
+  },
+  "JU": {
+    "factor": 1,
+    "radio": 1
+  }
+}

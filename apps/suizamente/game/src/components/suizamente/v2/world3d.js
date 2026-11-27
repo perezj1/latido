@@ -485,11 +485,67 @@ function crear(op) {
 
   return {
     elemento: caja,
+    anadirFiguraHueco(figura) { escena.add(figura);invalidar(); },
+    negocios(lista=[]) {
+      const cache=this._negocios||(this._negocios=new Map());
+      if(lista.length&&lista.every(h=>h.soloProyectar)){
+        camara.updateMatrixWorld();return lista.map(h=>{const g=cache.get(h.id);if(!g||!g.visible||!g.parent.visible)return null;const p=g.getWorldPosition(new THREE.Vector3());p.y+=cantones[h.canton].u*.8;p.project(camara);return {id:h.id,canton:h.canton,nombre:h.nombre,color:h.color,x:(p.x+1)/2,y:(1-p.y)/2,visible:p.z>-1&&p.z<1};}).filter(Boolean);
+      }
+      cache.forEach(g=>{g.visible=false});
+      const engine=op.negocios;
+      if(engine)for(const h of lista){
+        const can=cantones[h.canton];if(!can)continue;
+        const key=h.tipo+':'+h.color;let g=cache.get(h.id);
+        if(g&&g.userData.modeloNegocio!==key){g.parent.remove(g);cache.delete(h.id);g=null;}
+        if(!g){
+          const models=this._modelosNegocios||(this._modelosNegocios=new Map());
+          if(!this._bibliotecaNegocios){this._bibliotecaNegocios=new THREE.Group();this._bibliotecaNegocios.visible=false;escena.add(this._bibliotecaNegocios);}
+          if(!models.has(key)){const model=engine.modelo(h.tipo,h.color);models.set(key,model);this._bibliotecaNegocios.add(model);}
+          g=models.get(key).clone(true);g.userData.modeloNegocio=key;cache.set(h.id,g);
+        }
+        can.grupo.add(g);const p=centroMundo(can);g.position.set(p.x+(h.dx||0)*can.u,can.alto+.02,p.z+(h.dz||0)*can.u);g.scale.setScalar((h.escala||.32)*can.u);g.visible=true;g.traverse(o=>{if(o.isMesh){o.castShadow=false;o.receiveShadow=false}});
+      }
+      this.ocuparHuecos(lista,'negocios');invalidar();
+    },
+    // Authoring queries only. No change to terrain, levels or the original camera.
+    consultarHuecos(k) {
+      const can=cantones[k];if(!can)return null;
+      can.grupo.updateMatrixWorld(true);camara.updateMatrixWorld(true);
+      const p=centroMundo(can),u=can.u,ray=new THREE.Raycaster(),down=new THREE.Vector3(0,-1,0);
+      const hit=(obj,x,z)=>{if(!obj)return false;ray.set(new THREE.Vector3(x,can.alto+100*u,z),down);return ray.intersectObject(obj,true).length>0;};
+      const removible=o=>o.geometry?.type==='DodecahedronGeometry'||o.children.some(c=>c.geometry?.type==='CylinderGeometry'&&c.material?.color?.getHexString()==='7a5236');
+      const naturales=(can.deco[1]?.g.children||[]).filter(o=>!removible(o)&&((o.children[0]?.material?.color?.getHexString()==='e4e8ed')||o.material?.color?.getHexString()==='8cc456'));
+      const objetos=[...naturales,...(can.deco[2]?.g.children||[]),...(can.deco[3]?.g.children||[])];
+      const meshes=[],obstaculos=[];
+      for(const o of objetos)o.traverse(m=>{if(!m.isMesh)return;const b=new THREE.Box3().setFromObject(m);if(b.max.y-b.min.y<=.35*u)return;meshes.push(m);const c=b.getCenter(new THREE.Vector3());obstaculos.push([c.x,c.z,Math.hypot(b.max.x-b.min.x,b.max.z-b.min.z)/2]);});
+      const b=new THREE.Box3().setFromObject(can.tierra);
+      return {u,centro:[p.x,p.z],radioPueblo:Math.max(2.2*u,Math.min(can.radio*.8,5*u)),caja:[b.min.x,b.min.z,b.max.x,b.max.z],
+        enTierra:(x,z)=>hit(can.tierra,x,z)&&!hit(can.agua,x,z),enAgua:(x,z)=>hit(can.agua,x,z),obstaculos,
+        tapado:(x,z)=>{const target=new THREE.Vector3(x,can.alto+.35*u,z),direction=target.clone().sub(camara.position),distance=direction.length();ray.set(camara.position,direction.normalize());return ray.intersectObjects(meshes,false).some(h=>h.distance<distance-.1*u);},
+        proyectar:(dx,dz,dy=0)=>{const v=new THREE.Vector3(p.x+dx*u,can.alto+dy*u,p.z+dz*u).project(camara);return {x:(v.x+1)/2,y:(1-v.y)/2,visible:v.z>-1&&v.z<1};},
+        naturaleza:(can.deco[1]?.g.children||[]).filter(removible).map(o=>({id:o.uuid,visible:o.visible,x:o.position.x,z:o.position.z})),
+        tieneAgua:!!can.agua};
+    },
+    // Independent occupation sources restore nature only after the last occupier leaves.
+    ocuparHuecos(lista=[],fuente='decoraciones') {
+      const sources=this._huecosOcupados||(this._huecosOcupados=new Map());sources.set(fuente,lista);
+      const all=[...sources.values()].flat();let ocultos=0;
+      for(const can of Object.values(cantones)){
+        const p=centroMundo(can),slots=all.filter(h=>h.canton===can.k&&h.tipo!=='aire'&&h.tipo!=='agua');
+        for(const o of can.deco[1]?.g.children||[]){
+          const movable=o.geometry?.type==='DodecahedronGeometry'||o.children.some(c=>c.geometry?.type==='CylinderGeometry'&&c.material?.color?.getHexString()==='7a5236');
+          if(!movable)continue;
+          const near=slots.some(h=>Math.hypot(o.position.x-p.x-(h.dx||0)*can.u,o.position.z-p.z-(h.dz||0)*can.u)<.95*can.u);
+          o.visible=!near;if(near)ocultos++;
+        }
+      }
+      invalidar();return {ocultos};
+    },
     // Additive extension. Every original model, camera and animation is unchanged.
     decorar(lista = []) {
       const engine = op.decoraciones;
       const cache = this._decoraciones || (this._decoraciones = new Map());
-      const anclar = h => { const can = cantones[h.canton]; if (!can) return null; let p = centroMundo(can); if (h.tipo === 'agua') { if (!can.agua) return null; can.grupo.updateMatrixWorld(true); const b = new THREE.Box3().setFromObject(can.agua); p = b.getCenter(new THREE.Vector3()); p.y = b.max.y; } return p.add(new THREE.Vector3((h.dx || 0) * can.u, (h.dy || 0) * can.u, (h.dz || 0) * can.u)); };
+      const anclar = h => { const can = cantones[h.canton]; if (!can) return null; let p = centroMundo(can); if (h.tipo === 'agua'&&h.ancla!=='pueblo') { if (!can.agua) return null; can.grupo.updateMatrixWorld(true); const b = new THREE.Box3().setFromObject(can.agua); p = b.getCenter(new THREE.Vector3()); p.y = b.max.y; } return p.add(new THREE.Vector3((h.dx || 0) * can.u, (h.dy || 0) * can.u, (h.dz || 0) * can.u)); };
       if (lista.length && lista.every(h => h.soloProyectar)) {
         camara.updateMatrixWorld();
         return lista.map(h => { const p = anclar(h), can = cantones[h.canton]; if (!p || !can.grupo.visible || can.nivel < 1) return null; p.project(camara); return { id: h.id, x: (p.x + 1) / 2, y: (1 - p.y) / 2, visible: p.z > -1 && p.z < 1 }; }).filter(Boolean);
@@ -511,18 +567,19 @@ function crear(op) {
         const can = cantones[h.canton];
         if (!can || can.nivel < 1 || h.vuelta && h.vuelta !== est.v) continue;
         let ancla = centroMundo(can);
-        if (h.tipo === 'agua') {
+        if (h.tipo === 'agua'&&h.ancla!=='pueblo') {
           if (!can.agua) continue;
           can.grupo.updateMatrixWorld(true);
           const bounds = new THREE.Box3().setFromObject(can.agua);
           ancla = bounds.getCenter(new THREE.Vector3()); ancla.y = bounds.max.y;
         }
-        let g = cache.get(h.k);
-        if (!g) { g = engine.colocar(can.grupo, h, ancla, can.u); cache.set(h.k, g); }
+        let g = cache.get(h.cacheId||h.k);
+        if (!g) { g = engine.colocar(can.grupo, h, ancla, can.u); cache.set(h.cacheId||h.k, g); }
         else { can.grupo.add(g); g.position.set(ancla.x + (h.dx || 0) * can.u, ancla.y + .02 + (h.dy || 0) * can.u, ancla.z + (h.dz || 0) * can.u); g.scale.setScalar((h.escala || 1) * can.u); g.rotation.y = h.giro || 0; }
         g.visible = true;
         g.traverse(o => { if (o.isMesh) { o.castShadow = sombras; o.receiveShadow = sombras; } });
       }
+      this.ocuparHuecos(lista.filter(h=>!h.vuelta||h.vuelta===est.v));
       invalidar();
       // Read-only layout metadata for checking the authored slots in local QA.
       if (lista.length || cache.size) return [];

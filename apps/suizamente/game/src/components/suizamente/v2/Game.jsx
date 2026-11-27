@@ -4,7 +4,7 @@ import {FirstGameHint} from './FirstGameHint'
 import './onboarding.css'
 import {useMoment} from './Moment'
 import {stampSteps,duelSteps,finishSteps} from './moments'
-import {useCallback,useEffect,useRef,useState} from 'react'
+import {lazy,Suspense,useCallback,useEffect,useRef,useState} from 'react'
 import {Link,Navigate,useLocation,useNavigate,useParams} from 'react-router-dom'
 import {useSv,useQuestionScreen} from './Context'
 import {Avatar,Button,Card,Earnings,Header,Sheet,Stamps,LatidoBackdrop,MatchWheel} from './Shared'
@@ -17,6 +17,7 @@ import {notify} from '../../../lib/suizamenteNotices'
 import {ResultStampBar,SealChoice,useSealMotion,sealMotionSeen} from './SealProgress'
 
 const sealTurn=m=>'elegir:'+m.id+':'+m.turnoN+':'+(m.resultado?.n||0)
+const BusinessQuestion=lazy(()=>import('./NegocioPregunta').then(m=>({default:m.BusinessQuestion})))
 
 function Passport({name,avatarName,color,owned,active,categories,id,fresh}){
   const {player}=useSv()
@@ -34,6 +35,7 @@ export function Game(){
   const [dismissed,setDismissed]=useState(null),[resign,setResign]=useState(false),[now,setNow]=useState(Date.now()),[offline,setOffline]=useState(!navigator.onLine)
   const [preparingDuel,setPreparingDuel]=useState(false)
   const [sharing,setSharing]=useState(false)
+  const [businessDone,setBusinessDone]=useState(null)
   const [handoff,setHandoff]=useState(false)
   const previousStamps=useRef(null),heard=useRef(new Set()),pendingStamp=useRef(''),[stampHit,setStampHit]=useState('')
   const offset=useRef(0),pending=useRef(false),mounted=useRef(true)
@@ -171,6 +173,7 @@ export function Game(){
   if(choosingSeal)return <SealChoice match={m} config={config} animate={choiceMotion} busy={busy} error={error} onRetry={load} onChoose={categoria=>act('pregunta',{modo:'sello',categoria})} onDuel={()=>setPreparingDuel(true)}/>
   if(m.asalto?.estado==='pregunta')return <Navigate to={'/suizamente/asalto/'+m.asalto.id} replace/>
   if(!q&&!result&&m.duelo?.mostrarResultado)return <DuelResult match={m} act={act} busy={busy}/>
+  if(globalConfig.negocios?.activo&&businessDone!==mid&&m.estado==='jugando'&&m.teToca&&m.fase==='girar'&&!q&&!result)return <Suspense fallback={<div className="sv-skeleton" role="status" aria-label="Preparando la partida"/>}><BusinessQuestion partida={mid} onDone={()=>setBusinessDone(mid)}/></Suspense>
   return <section className={'sv-screen sv-game'+(themed?' sv-themed-screen '+(ended?'sv-game-finish':choosing?'sv-game-seal':'sv-game-board'):'')}>
     {themed&&<LatidoBackdrop tint={tint} deco={!ended&&!choosing&&m.fase!=='duelo'}/>}
     {ended&&m.ganador===m.tuId&&<Confetti/>}

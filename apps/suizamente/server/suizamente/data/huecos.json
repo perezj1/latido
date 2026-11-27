@@ -1,0 +1,1746 @@
+{
+  "ZH": [
+    {
+      "id": "ZH-p1",
+      "tipo": "plaza",
+      "dx": -0.26,
+      "dz": 4.3
+    },
+    {
+      "id": "ZH-p2",
+      "tipo": "plaza",
+      "dx": 0.94,
+      "dz": -4.5
+    },
+    {
+      "id": "ZH-p3",
+      "tipo": "plaza",
+      "dx": -4.26,
+      "dz": -0.9
+    },
+    {
+      "id": "ZH-p4",
+      "tipo": "plaza",
+      "dx": 4.14,
+      "dz": 0.3
+    },
+    {
+      "id": "ZH-p5",
+      "tipo": "plaza",
+      "dx": 3.34,
+      "dz": -2.5
+    },
+    {
+      "id": "ZH-t1",
+      "tipo": "tierra",
+      "dx": -5.46,
+      "dz": 6.3
+    },
+    {
+      "id": "ZH-t2",
+      "tipo": "tierra",
+      "dx": 4.94,
+      "dz": 5.5
+    },
+    {
+      "id": "ZH-t3",
+      "tipo": "tierra",
+      "dx": -4.66,
+      "dz": 2.7
+    },
+    {
+      "id": "ZH-t4",
+      "tipo": "tierra",
+      "dx": -5.06,
+      "dz": -4.1
+    },
+    {
+      "id": "ZH-t5",
+      "tipo": "tierra",
+      "dx": -0.66,
+      "dz": -6.9
+    },
+    {
+      "id": "ZH-t6",
+      "tipo": "tierra",
+      "dx": 2.14,
+      "dz": 5.9
+    },
+    {
+      "id": "ZH-a1",
+      "tipo": "agua",
+      "dx": -0.66,
+      "dz": 6.7
+    },
+    {
+      "id": "ZH-v1",
+      "tipo": "aire",
+      "dx": 2.54,
+      "dz": -3.7
+    }
+  ],
+  "BE": [
+    {
+      "id": "BE-p1",
+      "tipo": "plaza",
+      "dx": -5.67,
+      "dz": 1.3
+    },
+    {
+      "id": "BE-p2",
+      "tipo": "plaza",
+      "dx": 5.53,
+      "dz": -1.1
+    },
+    {
+      "id": "BE-p3",
+      "tipo": "plaza",
+      "dx": -4.87,
+      "dz": -3.1
+    },
+    {
+      "id": "BE-p4",
+      "tipo": "plaza",
+      "dx": -3.67,
+      "dz": 0.1
+    },
+    {
+      "id": "BE-t1",
+      "tipo": "tierra",
+      "dx": 14.73,
+      "dz": 9.3
+    },
+    {
+      "id": "BE-t2",
+      "tipo": "tierra",
+      "dx": -13.67,
+      "dz": -5.1
+    },
+    {
+      "id": "BE-t3",
+      "tipo": "tierra",
+      "dx": 1.13,
+      "dz": -8.7
+    },
+    {
+      "id": "BE-t4",
+      "tipo": "tierra",
+      "dx": -10.47,
+      "dz": -1.5
+    },
+    {
+      "id": "BE-t5",
+      "tipo": "tierra",
+      "dx": 12.73,
+      "dz": 6.9
+    },
+    {
+      "id": "BE-t6",
+      "tipo": "tierra",
+      "dx": -4.87,
+      "dz": 4.1
+    },
+    {
+      "id": "BE-a1",
+      "tipo": "agua",
+      "dx": -10.07,
+      "dz": -2.7
+    },
+    {
+      "id": "BE-v1",
+      "tipo": "aire",
+      "dx": -5.27,
+      "dz": -1.9
+    }
+  ],
+  "LU": [
+    {
+      "id": "LU-p1",
+      "tipo": "plaza",
+      "dx": -2.94,
+      "dz": 3.62
+    },
+    {
+      "id": "LU-p2",
+      "tipo": "plaza",
+      "dx": 5.06,
+      "dz": -2.78
+    },
+    {
+      "id": "LU-p3",
+      "tipo": "plaza",
+      "dx": -2.94,
+      "dz": -4.78
+    },
+    {
+      "id": "LU-t1",
+      "tipo": "tierra",
+      "dx": 5.06,
+      "dz": 2.82
+    },
+    {
+      "id": "LU-t2",
+      "tipo": "tierra",
+      "dx": -4.94,
+      "dz": -0.38
+    },
+    {
+      "id": "LU-t3",
+      "tipo": "tierra",
+      "dx": 1.06,
+      "dz": -3.98
+    },
+    {
+      "id": "LU-t4",
+      "tipo": "tierra",
+      "dx": 7.46,
+      "dz": 0.02
+    },
+    {
+      "id": "LU-t5",
+      "tipo": "tierra",
+      "dx": 3.86,
+      "dz": -5.58
+    },
+    {
+      "id": "LU-t6",
+      "tipo": "tierra",
+      "dx": -4.94,
+      "dz": -3.18
+    },
+    {
+      "id": "LU-a1",
+      "tipo": "agua",
+      "dx": 6.66,
+      "dz": 3.22
+    },
+    {
+      "id": "LU-v1",
+      "tipo": "aire",
+      "dx": -1.74,
+      "dz": -4.38
+    }
+  ],
+  "UR": [
+    {
+      "id": "UR-p1",
+      "tipo": "plaza",
+      "dx": 2.952,
+      "dz": 1.728
+    },
+    {
+      "id": "UR-p2",
+      "tipo": "plaza",
+      "dx": -3.888,
+      "dz": -2.592
+    },
+    {
+      "id": "UR-p3",
+      "tipo": "plaza",
+      "dx": 0.432,
+      "dz": -4.752
+    },
+    {
+      "id": "UR-t1",
+      "tipo": "tierra",
+      "dx": -2.448,
+      "dz": -5.112
+    },
+    {
+      "id": "UR-t2",
+      "tipo": "tierra",
+      "dx": -0.648,
+      "dz": -2.592
+    },
+    {
+      "id": "UR-t3",
+      "tipo": "tierra",
+      "dx": -2.448,
+      "dz": -0.792
+    },
+    {
+      "id": "UR-t4",
+      "tipo": "tierra",
+      "dx": -4.248,
+      "dz": -4.392
+    },
+    {
+      "id": "UR-t5",
+      "tipo": "tierra",
+      "dx": 1.512,
+      "dz": 0.648
+    },
+    {
+      "id": "UR-t6",
+      "tipo": "tierra",
+      "dx": -2.448,
+      "dz": -3.312
+    },
+    {
+      "id": "UR-a1",
+      "tipo": "agua",
+      "dx": -1.008,
+      "dz": -6.912
+    },
+    {
+      "id": "UR-v1",
+      "tipo": "aire",
+      "dx": 0.792,
+      "dz": -5.832
+    }
+  ],
+  "SZ": [
+    {
+      "id": "SZ-p1",
+      "tipo": "plaza",
+      "dx": 2.331,
+      "dz": 8.496
+    },
+    {
+      "id": "SZ-p2",
+      "tipo": "plaza",
+      "dx": 3.771,
+      "dz": 5.616
+    },
+    {
+      "id": "SZ-p3",
+      "tipo": "plaza",
+      "dx": 4.131,
+      "dz": 7.776
+    },
+    {
+      "id": "SZ-t1",
+      "tipo": "tierra",
+      "dx": 4.491,
+      "dz": 0.576
+    },
+    {
+      "id": "SZ-t2",
+      "tipo": "tierra",
+      "dx": -3.429,
+      "dz": -1.584
+    },
+    {
+      "id": "SZ-t3",
+      "tipo": "tierra",
+      "dx": 1.251,
+      "dz": 3.096
+    },
+    {
+      "id": "SZ-t4",
+      "tipo": "tierra",
+      "dx": -0.549,
+      "dz": -2.664
+    },
+    {
+      "id": "SZ-t5",
+      "tipo": "tierra",
+      "dx": 2.331,
+      "dz": 4.536
+    },
+    {
+      "id": "SZ-t6",
+      "tipo": "tierra",
+      "dx": 2.331,
+      "dz": 6.696
+    },
+    {
+      "id": "SZ-a1",
+      "tipo": "agua",
+      "dx": -6.669,
+      "dz": 5.256
+    },
+    {
+      "id": "SZ-v1",
+      "tipo": "aire",
+      "dx": 4.491,
+      "dz": 6.696
+    }
+  ],
+  "OW": [
+    {
+      "id": "OW-p1",
+      "tipo": "plaza",
+      "dx": -2.295,
+      "dz": 4.95
+    },
+    {
+      "id": "OW-p2",
+      "tipo": "plaza",
+      "dx": -0.495,
+      "dz": -5.49
+    },
+    {
+      "id": "OW-p3",
+      "tipo": "plaza",
+      "dx": -5.535,
+      "dz": -0.45
+    },
+    {
+      "id": "OW-t1",
+      "tipo": "tierra",
+      "dx": -3.015,
+      "dz": 1.35
+    },
+    {
+      "id": "OW-t2",
+      "tipo": "tierra",
+      "dx": -2.655,
+      "dz": -1.17
+    },
+    {
+      "id": "OW-t3",
+      "tipo": "tierra",
+      "dx": -0.495,
+      "dz": 3.15
+    },
+    {
+      "id": "OW-t4",
+      "tipo": "tierra",
+      "dx": -5.895,
+      "dz": 1.71
+    },
+    {
+      "id": "OW-t5",
+      "tipo": "tierra",
+      "dx": 0.585,
+      "dz": -7.29
+    },
+    {
+      "id": "OW-t6",
+      "tipo": "tierra",
+      "dx": -0.495,
+      "dz": -3.69
+    },
+    {
+      "id": "OW-v1",
+      "tipo": "aire",
+      "dx": -3.735,
+      "dz": 4.23
+    }
+  ],
+  "NW": [
+    {
+      "id": "NW-p1",
+      "tipo": "plaza",
+      "dx": -1.59,
+      "dz": 4.42
+    },
+    {
+      "id": "NW-p2",
+      "tipo": "plaza",
+      "dx": -0.39,
+      "dz": -4.38
+    },
+    {
+      "id": "NW-p3",
+      "tipo": "plaza",
+      "dx": -3.99,
+      "dz": -1.58
+    },
+    {
+      "id": "NW-t1",
+      "tipo": "tierra",
+      "dx": 9.21,
+      "dz": -3.58
+    },
+    {
+      "id": "NW-t2",
+      "tipo": "tierra",
+      "dx": -1.99,
+      "dz": 11.62
+    },
+    {
+      "id": "NW-t3",
+      "tipo": "tierra",
+      "dx": -9.19,
+      "dz": -5.18
+    },
+    {
+      "id": "NW-t4",
+      "tipo": "tierra",
+      "dx": 4.81,
+      "dz": -1.18
+    },
+    {
+      "id": "NW-t5",
+      "tipo": "tierra",
+      "dx": 3.21,
+      "dz": 5.62
+    },
+    {
+      "id": "NW-t6",
+      "tipo": "tierra",
+      "dx": -3.99,
+      "dz": 8.02
+    },
+    {
+      "id": "NW-a1",
+      "tipo": "agua",
+      "dx": 2.81,
+      "dz": -5.58
+    },
+    {
+      "id": "NW-v1",
+      "tipo": "aire",
+      "dx": -1.19,
+      "dz": -5.98
+    }
+  ],
+  "GL": [
+    {
+      "id": "GL-p1",
+      "tipo": "plaza",
+      "dx": 0.728,
+      "dz": 4.431
+    },
+    {
+      "id": "GL-p2",
+      "tipo": "plaza",
+      "dx": 3.528,
+      "dz": -3.409
+    },
+    {
+      "id": "GL-p3",
+      "tipo": "plaza",
+      "dx": -4.592,
+      "dz": 0.791
+    },
+    {
+      "id": "GL-t1",
+      "tipo": "tierra",
+      "dx": 4.368,
+      "dz": 1.911
+    },
+    {
+      "id": "GL-t2",
+      "tipo": "tierra",
+      "dx": -2.632,
+      "dz": 3.591
+    },
+    {
+      "id": "GL-t3",
+      "tipo": "tierra",
+      "dx": 5.208,
+      "dz": -0.889
+    },
+    {
+      "id": "GL-t4",
+      "tipo": "tierra",
+      "dx": 2.688,
+      "dz": -0.609
+    },
+    {
+      "id": "GL-t5",
+      "tipo": "tierra",
+      "dx": -2.072,
+      "dz": 1.351
+    },
+    {
+      "id": "GL-t6",
+      "tipo": "tierra",
+      "dx": 1.008,
+      "dz": 2.191
+    },
+    {
+      "id": "GL-v1",
+      "tipo": "aire",
+      "dx": 4.368,
+      "dz": -3.969
+    }
+  ],
+  "ZG": [
+    {
+      "id": "ZG-p1",
+      "tipo": "plaza",
+      "dx": -2.89,
+      "dz": 3.45
+    },
+    {
+      "id": "ZG-p2",
+      "tipo": "plaza",
+      "dx": 3.91,
+      "dz": -2.15
+    },
+    {
+      "id": "ZG-p3",
+      "tipo": "plaza",
+      "dx": -2.89,
+      "dz": -3.75
+    },
+    {
+      "id": "ZG-t1",
+      "tipo": "tierra",
+      "dx": -11.69,
+      "dz": -9.35
+    },
+    {
+      "id": "ZG-t2",
+      "tipo": "tierra",
+      "dx": -10.89,
+      "dz": -0.95
+    },
+    {
+      "id": "ZG-t3",
+      "tipo": "tierra",
+      "dx": -8.09,
+      "dz": -5.35
+    },
+    {
+      "id": "ZG-t4",
+      "tipo": "tierra",
+      "dx": -4.09,
+      "dz": -0.15
+    },
+    {
+      "id": "ZG-t5",
+      "tipo": "tierra",
+      "dx": -3.69,
+      "dz": -7.35
+    },
+    {
+      "id": "ZG-t6",
+      "tipo": "tierra",
+      "dx": 1.11,
+      "dz": -4.15
+    },
+    {
+      "id": "ZG-a1",
+      "tipo": "agua",
+      "dx": -7.29,
+      "dz": -1.75
+    },
+    {
+      "id": "ZG-v1",
+      "tipo": "aire",
+      "dx": 5.51,
+      "dz": -1.35
+    }
+  ],
+  "FR": [
+    {
+      "id": "FR-p1",
+      "tipo": "plaza",
+      "dx": -0.408,
+      "dz": 4.728
+    },
+    {
+      "id": "FR-p2",
+      "tipo": "plaza",
+      "dx": 3.112,
+      "dz": -2.632
+    },
+    {
+      "id": "FR-p3",
+      "tipo": "plaza",
+      "dx": -4.568,
+      "dz": -1.032
+    },
+    {
+      "id": "FR-t1",
+      "tipo": "tierra",
+      "dx": -0.408,
+      "dz": -10.952
+    },
+    {
+      "id": "FR-t2",
+      "tipo": "tierra",
+      "dx": -6.488,
+      "dz": -6.792
+    },
+    {
+      "id": "FR-t3",
+      "tipo": "tierra",
+      "dx": 3.752,
+      "dz": 0.888
+    },
+    {
+      "id": "FR-t4",
+      "tipo": "tierra",
+      "dx": 4.712,
+      "dz": -1.032
+    },
+    {
+      "id": "FR-t5",
+      "tipo": "tierra",
+      "dx": -4.248,
+      "dz": -2.952
+    },
+    {
+      "id": "FR-t6",
+      "tipo": "tierra",
+      "dx": -7.448,
+      "dz": -5.192
+    },
+    {
+      "id": "FR-a1",
+      "tipo": "agua",
+      "dx": -8.408,
+      "dz": -6.792
+    },
+    {
+      "id": "FR-v1",
+      "tipo": "aire",
+      "dx": -5.848,
+      "dz": -0.712
+    }
+  ],
+  "SO": [
+    {
+      "id": "SO-p1",
+      "tipo": "plaza",
+      "dx": 1.65,
+      "dz": 2.99
+    },
+    {
+      "id": "SO-p2",
+      "tipo": "plaza",
+      "dx": 1.25,
+      "dz": -3.01
+    },
+    {
+      "id": "SO-p3",
+      "tipo": "plaza",
+      "dx": -3.15,
+      "dz": 0.59
+    },
+    {
+      "id": "SO-t1",
+      "tipo": "tierra",
+      "dx": 16.85,
+      "dz": -8.21
+    },
+    {
+      "id": "SO-t2",
+      "tipo": "tierra",
+      "dx": 5.65,
+      "dz": -11.81
+    },
+    {
+      "id": "SO-t3",
+      "tipo": "tierra",
+      "dx": 11.25,
+      "dz": -3.81
+    },
+    {
+      "id": "SO-t4",
+      "tipo": "tierra",
+      "dx": 1.25,
+      "dz": -8.61
+    },
+    {
+      "id": "SO-t5",
+      "tipo": "tierra",
+      "dx": 5.65,
+      "dz": -5.81
+    },
+    {
+      "id": "SO-t6",
+      "tipo": "tierra",
+      "dx": 13.25,
+      "dz": -7.01
+    },
+    {
+      "id": "SO-v1",
+      "tipo": "aire",
+      "dx": 4.45,
+      "dz": 2.99
+    }
+  ],
+  "BS": [
+    {
+      "id": "BS-p1",
+      "tipo": "plaza",
+      "dx": -0.99,
+      "dz": 3.79
+    },
+    {
+      "id": "BS-p2",
+      "tipo": "plaza",
+      "dx": 1.81,
+      "dz": -3.41
+    },
+    {
+      "id": "BS-p3",
+      "tipo": "plaza",
+      "dx": 2.21,
+      "dz": 0.99
+    },
+    {
+      "id": "BS-p4",
+      "tipo": "plaza",
+      "dx": -2.99,
+      "dz": 0.99
+    },
+    {
+      "id": "BS-t1",
+      "tipo": "tierra",
+      "dx": 9.81,
+      "dz": -3.01
+    },
+    {
+      "id": "BS-t2",
+      "tipo": "tierra",
+      "dx": 6.21,
+      "dz": -6.21
+    },
+    {
+      "id": "BS-t3",
+      "tipo": "tierra",
+      "dx": 5.81,
+      "dz": -1.81
+    },
+    {
+      "id": "BS-t4",
+      "tipo": "tierra",
+      "dx": 3.81,
+      "dz": -5.01
+    },
+    {
+      "id": "BS-t5",
+      "tipo": "tierra",
+      "dx": 7.41,
+      "dz": -3.81
+    },
+    {
+      "id": "BS-t6",
+      "tipo": "tierra",
+      "dx": 1.01,
+      "dz": 2.99
+    },
+    {
+      "id": "BS-v1",
+      "tipo": "aire",
+      "dx": 0.61,
+      "dz": -3.41
+    }
+  ],
+  "BL": [
+    {
+      "id": "BL-p1",
+      "tipo": "plaza",
+      "dx": -1.75,
+      "dz": 5.05
+    },
+    {
+      "id": "BL-p2",
+      "tipo": "plaza",
+      "dx": -4.15,
+      "dz": -0.55
+    },
+    {
+      "id": "BL-p3",
+      "tipo": "plaza",
+      "dx": -3.75,
+      "dz": 3.85
+    },
+    {
+      "id": "BL-t1",
+      "tipo": "tierra",
+      "dx": -15.75,
+      "dz": 0.25
+    },
+    {
+      "id": "BL-t2",
+      "tipo": "tierra",
+      "dx": -11.75,
+      "dz": -5.75
+    },
+    {
+      "id": "BL-t3",
+      "tipo": "tierra",
+      "dx": -10.15,
+      "dz": -0.15
+    },
+    {
+      "id": "BL-t4",
+      "tipo": "tierra",
+      "dx": -6.95,
+      "dz": 3.05
+    },
+    {
+      "id": "BL-t5",
+      "tipo": "tierra",
+      "dx": -9.75,
+      "dz": -3.35
+    },
+    {
+      "id": "BL-t6",
+      "tipo": "tierra",
+      "dx": -12.95,
+      "dz": 1.45
+    },
+    {
+      "id": "BL-v1",
+      "tipo": "aire",
+      "dx": -2.95,
+      "dz": -0.15
+    }
+  ],
+  "SH": [
+    {
+      "id": "SH-p1",
+      "tipo": "plaza",
+      "dx": -2.22,
+      "dz": 4.52
+    },
+    {
+      "id": "SH-p2",
+      "tipo": "plaza",
+      "dx": -0.22,
+      "dz": -5.08
+    },
+    {
+      "id": "SH-p3",
+      "tipo": "plaza",
+      "dx": 4.98,
+      "dz": 0.12
+    },
+    {
+      "id": "SH-t1",
+      "tipo": "tierra",
+      "dx": 13.78,
+      "dz": 4.92
+    },
+    {
+      "id": "SH-t2",
+      "tipo": "tierra",
+      "dx": -9.02,
+      "dz": 2.12
+    },
+    {
+      "id": "SH-t3",
+      "tipo": "tierra",
+      "dx": -5.42,
+      "dz": -2.28
+    },
+    {
+      "id": "SH-t4",
+      "tipo": "tierra",
+      "dx": 10.98,
+      "dz": 0.92
+    },
+    {
+      "id": "SH-t5",
+      "tipo": "tierra",
+      "dx": -6.62,
+      "dz": 5.72
+    },
+    {
+      "id": "SH-t6",
+      "tipo": "tierra",
+      "dx": 0.98,
+      "dz": 3.32
+    },
+    {
+      "id": "SH-v1",
+      "tipo": "aire",
+      "dx": -1.42,
+      "dz": -5.08
+    }
+  ],
+  "AR": [
+    {
+      "id": "AR-p1",
+      "tipo": "plaza",
+      "dx": 3.22,
+      "dz": -4.85
+    },
+    {
+      "id": "AR-p2",
+      "tipo": "plaza",
+      "dx": 1.62,
+      "dz": -7.65
+    },
+    {
+      "id": "AR-p3",
+      "tipo": "plaza",
+      "dx": 3.62,
+      "dz": -6.85
+    },
+    {
+      "id": "AR-t1",
+      "tipo": "tierra",
+      "dx": 19.22,
+      "dz": -13.65
+    },
+    {
+      "id": "AR-t2",
+      "tipo": "tierra",
+      "dx": 13.22,
+      "dz": -6.05
+    },
+    {
+      "id": "AR-t3",
+      "tipo": "tierra",
+      "dx": 13.22,
+      "dz": -12.05
+    },
+    {
+      "id": "AR-t4",
+      "tipo": "tierra",
+      "dx": 8.82,
+      "dz": -8.85
+    },
+    {
+      "id": "AR-t5",
+      "tipo": "tierra",
+      "dx": 12.02,
+      "dz": -9.25
+    },
+    {
+      "id": "AR-t6",
+      "tipo": "tierra",
+      "dx": 5.62,
+      "dz": -8.85
+    },
+    {
+      "id": "AR-v1",
+      "tipo": "aire",
+      "dx": 0.42,
+      "dz": -8.45
+    }
+  ],
+  "AI": [
+    {
+      "id": "AI-p1",
+      "tipo": "plaza",
+      "dx": 0.46,
+      "dz": 5.43
+    },
+    {
+      "id": "AI-p2",
+      "tipo": "plaza",
+      "dx": -2.34,
+      "dz": -4.97
+    },
+    {
+      "id": "AI-p3",
+      "tipo": "plaza",
+      "dx": 4.86,
+      "dz": -2.57
+    },
+    {
+      "id": "AI-t1",
+      "tipo": "tierra",
+      "dx": 13.66,
+      "dz": -11.77
+    },
+    {
+      "id": "AI-t2",
+      "tipo": "tierra",
+      "dx": -6.34,
+      "dz": 0.63
+    },
+    {
+      "id": "AI-t3",
+      "tipo": "tierra",
+      "dx": 5.26,
+      "dz": 2.63
+    },
+    {
+      "id": "AI-t4",
+      "tipo": "tierra",
+      "dx": 9.66,
+      "dz": -9.37
+    },
+    {
+      "id": "AI-t5",
+      "tipo": "tierra",
+      "dx": 1.26,
+      "dz": -3.77
+    },
+    {
+      "id": "AI-t6",
+      "tipo": "tierra",
+      "dx": -3.54,
+      "dz": -1.77
+    },
+    {
+      "id": "AI-v1",
+      "tipo": "aire",
+      "dx": 0.06,
+      "dz": 7.03
+    }
+  ],
+  "SG": [
+    {
+      "id": "SG-p1",
+      "tipo": "plaza",
+      "dx": 1.485,
+      "dz": 3.465
+    },
+    {
+      "id": "SG-p2",
+      "tipo": "plaza",
+      "dx": 1.125,
+      "dz": -3.375
+    },
+    {
+      "id": "SG-p3",
+      "tipo": "plaza",
+      "dx": 2.205,
+      "dz": 2.025
+    },
+    {
+      "id": "SG-t1",
+      "tipo": "tierra",
+      "dx": -8.235,
+      "dz": -11.295
+    },
+    {
+      "id": "SG-t2",
+      "tipo": "tierra",
+      "dx": 2.205,
+      "dz": -14.535
+    },
+    {
+      "id": "SG-t3",
+      "tipo": "tierra",
+      "dx": 4.005,
+      "dz": -10.215
+    },
+    {
+      "id": "SG-t4",
+      "tipo": "tierra",
+      "dx": 2.205,
+      "dz": -6.975
+    },
+    {
+      "id": "SG-t5",
+      "tipo": "tierra",
+      "dx": 5.445,
+      "dz": -12.015
+    },
+    {
+      "id": "SG-t6",
+      "tipo": "tierra",
+      "dx": 0.045,
+      "dz": -14.175
+    },
+    {
+      "id": "SG-a1",
+      "tipo": "agua",
+      "dx": 2.565,
+      "dz": -15.975
+    },
+    {
+      "id": "SG-v1",
+      "tipo": "aire",
+      "dx": 2.205,
+      "dz": -3.015
+    }
+  ],
+  "GR": [
+    {
+      "id": "GR-p1",
+      "tipo": "plaza",
+      "dx": -1.97,
+      "dz": 6.64
+    },
+    {
+      "id": "GR-p2",
+      "tipo": "plaza",
+      "dx": 6.03,
+      "dz": 2.64
+    },
+    {
+      "id": "GR-p3",
+      "tipo": "plaza",
+      "dx": 2.83,
+      "dz": 6.24
+    },
+    {
+      "id": "GR-t1",
+      "tipo": "tierra",
+      "dx": -20.77,
+      "dz": 0.64
+    },
+    {
+      "id": "GR-t2",
+      "tipo": "tierra",
+      "dx": 13.23,
+      "dz": -7.76
+    },
+    {
+      "id": "GR-t3",
+      "tipo": "tierra",
+      "dx": -12.37,
+      "dz": 13.04
+    },
+    {
+      "id": "GR-t4",
+      "tipo": "tierra",
+      "dx": 14.43,
+      "dz": 2.64
+    },
+    {
+      "id": "GR-t5",
+      "tipo": "tierra",
+      "dx": 5.63,
+      "dz": -5.36
+    },
+    {
+      "id": "GR-t6",
+      "tipo": "tierra",
+      "dx": 7.63,
+      "dz": 12.24
+    },
+    {
+      "id": "GR-v1",
+      "tipo": "aire",
+      "dx": -2.37,
+      "dz": 10.24
+    }
+  ],
+  "AG": [
+    {
+      "id": "AG-p1",
+      "tipo": "plaza",
+      "dx": 0.18,
+      "dz": 5.094
+    },
+    {
+      "id": "AG-p2",
+      "tipo": "plaza",
+      "dx": 3.42,
+      "dz": -1.746
+    },
+    {
+      "id": "AG-p3",
+      "tipo": "plaza",
+      "dx": 4.14,
+      "dz": 2.934
+    },
+    {
+      "id": "AG-t1",
+      "tipo": "tierra",
+      "dx": -9.54,
+      "dz": -5.346
+    },
+    {
+      "id": "AG-t2",
+      "tipo": "tierra",
+      "dx": -8.46,
+      "dz": 6.174
+    },
+    {
+      "id": "AG-t3",
+      "tipo": "tierra",
+      "dx": 4.14,
+      "dz": 8.334
+    },
+    {
+      "id": "AG-t4",
+      "tipo": "tierra",
+      "dx": 3.06,
+      "dz": 5.454
+    },
+    {
+      "id": "AG-t5",
+      "tipo": "tierra",
+      "dx": 1.98,
+      "dz": 3.294
+    },
+    {
+      "id": "AG-t6",
+      "tipo": "tierra",
+      "dx": -7.38,
+      "dz": 4.734
+    },
+    {
+      "id": "AG-v1",
+      "tipo": "aire",
+      "dx": -0.54,
+      "dz": 6.534
+    }
+  ],
+  "TG": [
+    {
+      "id": "TG-p1",
+      "tipo": "plaza",
+      "dx": -0.55,
+      "dz": 3.26
+    },
+    {
+      "id": "TG-p2",
+      "tipo": "plaza",
+      "dx": -4.15,
+      "dz": -2.34
+    },
+    {
+      "id": "TG-p3",
+      "tipo": "plaza",
+      "dx": -4.55,
+      "dz": 2.06
+    },
+    {
+      "id": "TG-t1",
+      "tipo": "tierra",
+      "dx": 10.65,
+      "dz": 3.66
+    },
+    {
+      "id": "TG-t2",
+      "tipo": "tierra",
+      "dx": -11.75,
+      "dz": -4.34
+    },
+    {
+      "id": "TG-t3",
+      "tipo": "tierra",
+      "dx": -4.55,
+      "dz": 8.46
+    },
+    {
+      "id": "TG-t4",
+      "tipo": "tierra",
+      "dx": 6.25,
+      "dz": -0.74
+    },
+    {
+      "id": "TG-t5",
+      "tipo": "tierra",
+      "dx": 5.05,
+      "dz": 3.66
+    },
+    {
+      "id": "TG-t6",
+      "tipo": "tierra",
+      "dx": -8.15,
+      "dz": -0.74
+    },
+    {
+      "id": "TG-a1",
+      "tipo": "agua",
+      "dx": 11.85,
+      "dz": 0.86
+    },
+    {
+      "id": "TG-v1",
+      "tipo": "aire",
+      "dx": -4.15,
+      "dz": 3.26
+    }
+  ],
+  "TI": [
+    {
+      "id": "TI-p1",
+      "tipo": "plaza",
+      "dx": -5.283,
+      "dz": 0.909
+    },
+    {
+      "id": "TI-p2",
+      "tipo": "plaza",
+      "dx": 3.357,
+      "dz": -4.851
+    },
+    {
+      "id": "TI-p3",
+      "tipo": "plaza",
+      "dx": -2.763,
+      "dz": -5.211
+    },
+    {
+      "id": "TI-t1",
+      "tipo": "tierra",
+      "dx": 4.077,
+      "dz": 14.949
+    },
+    {
+      "id": "TI-t2",
+      "tipo": "tierra",
+      "dx": 1.197,
+      "dz": 10.269
+    },
+    {
+      "id": "TI-t3",
+      "tipo": "tierra",
+      "dx": -6.363,
+      "dz": -3.051
+    },
+    {
+      "id": "TI-t4",
+      "tipo": "tierra",
+      "dx": -3.843,
+      "dz": -2.331
+    },
+    {
+      "id": "TI-t5",
+      "tipo": "tierra",
+      "dx": 4.437,
+      "dz": -2.691
+    },
+    {
+      "id": "TI-t6",
+      "tipo": "tierra",
+      "dx": -4.923,
+      "dz": -4.851
+    },
+    {
+      "id": "TI-a1",
+      "tipo": "agua",
+      "dx": -1.323,
+      "dz": 7.029
+    },
+    {
+      "id": "TI-v1",
+      "tipo": "aire",
+      "dx": 2.997,
+      "dz": -6.651
+    }
+  ],
+  "VD": [
+    {
+      "id": "VD-p1",
+      "tipo": "plaza",
+      "dx": 1.536,
+      "dz": 3.536
+    },
+    {
+      "id": "VD-p2",
+      "tipo": "plaza",
+      "dx": -0.704,
+      "dz": -4.464
+    },
+    {
+      "id": "VD-p3",
+      "tipo": "plaza",
+      "dx": 4.096,
+      "dz": -1.584
+    },
+    {
+      "id": "VD-p4",
+      "tipo": "plaza",
+      "dx": 4.096,
+      "dz": 1.616
+    },
+    {
+      "id": "VD-t1",
+      "tipo": "tierra",
+      "dx": 9.536,
+      "dz": -7.984
+    },
+    {
+      "id": "VD-t2",
+      "tipo": "tierra",
+      "dx": 3.136,
+      "dz": -6.704
+    },
+    {
+      "id": "VD-t3",
+      "tipo": "tierra",
+      "dx": 6.656,
+      "dz": -2.544
+    },
+    {
+      "id": "VD-t4",
+      "tipo": "tierra",
+      "dx": 0.896,
+      "dz": -6.064
+    },
+    {
+      "id": "VD-t5",
+      "tipo": "tierra",
+      "dx": 3.456,
+      "dz": -3.504
+    },
+    {
+      "id": "VD-t6",
+      "tipo": "tierra",
+      "dx": 4.416,
+      "dz": 0.016
+    },
+    {
+      "id": "VD-a1",
+      "tipo": "agua",
+      "dx": -3.264,
+      "dz": 6.416
+    },
+    {
+      "id": "VD-v1",
+      "tipo": "aire",
+      "dx": 5.056,
+      "dz": -1.904
+    }
+  ],
+  "VS": [
+    {
+      "id": "VS-p1",
+      "tipo": "plaza",
+      "dx": 1.56,
+      "dz": 6.15
+    },
+    {
+      "id": "VS-p2",
+      "tipo": "plaza",
+      "dx": -0.84,
+      "dz": -6.25
+    },
+    {
+      "id": "VS-p3",
+      "tipo": "plaza",
+      "dx": 5.56,
+      "dz": 2.95
+    },
+    {
+      "id": "VS-t1",
+      "tipo": "tierra",
+      "dx": -16.44,
+      "dz": -0.65
+    },
+    {
+      "id": "VS-t2",
+      "tipo": "tierra",
+      "dx": 14.36,
+      "dz": -11.05
+    },
+    {
+      "id": "VS-t3",
+      "tipo": "tierra",
+      "dx": 8.76,
+      "dz": -1.05
+    },
+    {
+      "id": "VS-t4",
+      "tipo": "tierra",
+      "dx": -5.24,
+      "dz": -5.05
+    },
+    {
+      "id": "VS-t5",
+      "tipo": "tierra",
+      "dx": -16.84,
+      "dz": -5.05
+    },
+    {
+      "id": "VS-t6",
+      "tipo": "tierra",
+      "dx": -15.64,
+      "dz": -2.65
+    },
+    {
+      "id": "VS-a1",
+      "tipo": "agua",
+      "dx": -17.24,
+      "dz": -7.05
+    },
+    {
+      "id": "VS-v1",
+      "tipo": "aire",
+      "dx": 3.16,
+      "dz": 6.15
+    }
+  ],
+  "NE": [
+    {
+      "id": "NE-p1",
+      "tipo": "plaza",
+      "dx": -1.18,
+      "dz": 3.78
+    },
+    {
+      "id": "NE-p2",
+      "tipo": "plaza",
+      "dx": 1.22,
+      "dz": -3.42
+    },
+    {
+      "id": "NE-p3",
+      "tipo": "plaza",
+      "dx": 3.22,
+      "dz": 0.98
+    },
+    {
+      "id": "NE-t1",
+      "tipo": "tierra",
+      "dx": -2.78,
+      "dz": -2.62
+    },
+    {
+      "id": "NE-t2",
+      "tipo": "tierra",
+      "dx": 1.62,
+      "dz": -6.22
+    },
+    {
+      "id": "NE-t3",
+      "tipo": "tierra",
+      "dx": -3.58,
+      "dz": 2.58
+    },
+    {
+      "id": "NE-t4",
+      "tipo": "tierra",
+      "dx": 1.22,
+      "dz": 2.58
+    },
+    {
+      "id": "NE-t5",
+      "tipo": "tierra",
+      "dx": -1.58,
+      "dz": 6.18
+    },
+    {
+      "id": "NE-t6",
+      "tipo": "tierra",
+      "dx": 2.42,
+      "dz": -1.42
+    },
+    {
+      "id": "NE-a1",
+      "tipo": "agua",
+      "dx": 3.22,
+      "dz": 3.38
+    },
+    {
+      "id": "NE-v1",
+      "tipo": "aire",
+      "dx": -1.18,
+      "dz": 2.18
+    }
+  ],
+  "GE": [
+    {
+      "id": "GE-p1",
+      "tipo": "plaza",
+      "dx": -2.86,
+      "dz": 3.78
+    },
+    {
+      "id": "GE-p2",
+      "tipo": "plaza",
+      "dx": 2.74,
+      "dz": -3.82
+    },
+    {
+      "id": "GE-p3",
+      "tipo": "plaza",
+      "dx": -2.46,
+      "dz": -2.22
+    },
+    {
+      "id": "GE-p4",
+      "tipo": "plaza",
+      "dx": 4.34,
+      "dz": 0.58
+    },
+    {
+      "id": "GE-p5",
+      "tipo": "plaza",
+      "dx": -0.06,
+      "dz": -3.42
+    },
+    {
+      "id": "GE-t1",
+      "tipo": "tierra",
+      "dx": 11.94,
+      "dz": -4.62
+    },
+    {
+      "id": "GE-t2",
+      "tipo": "tierra",
+      "dx": 3.94,
+      "dz": -9.42
+    },
+    {
+      "id": "GE-t3",
+      "tipo": "tierra",
+      "dx": 7.54,
+      "dz": -3.02
+    },
+    {
+      "id": "GE-t4",
+      "tipo": "tierra",
+      "dx": 3.14,
+      "dz": 3.78
+    },
+    {
+      "id": "GE-t5",
+      "tipo": "tierra",
+      "dx": 10.34,
+      "dz": -7.42
+    },
+    {
+      "id": "GE-t6",
+      "tipo": "tierra",
+      "dx": 7.54,
+      "dz": 0.18
+    },
+    {
+      "id": "GE-a1",
+      "tipo": "agua",
+      "dx": 7.54,
+      "dz": -7.82
+    },
+    {
+      "id": "GE-v1",
+      "tipo": "aire",
+      "dx": -4.86,
+      "dz": 3.78
+    }
+  ],
+  "JU": [
+    {
+      "id": "JU-p1",
+      "tipo": "plaza",
+      "dx": 3.01,
+      "dz": 1.61
+    },
+    {
+      "id": "JU-p2",
+      "tipo": "plaza",
+      "dx": -0.19,
+      "dz": -3.19
+    },
+    {
+      "id": "JU-p3",
+      "tipo": "plaza",
+      "dx": 3.41,
+      "dz": -1.19
+    },
+    {
+      "id": "JU-t1",
+      "tipo": "tierra",
+      "dx": -7.39,
+      "dz": 8.41
+    },
+    {
+      "id": "JU-t2",
+      "tipo": "tierra",
+      "dx": 12.21,
+      "dz": 2.01
+    },
+    {
+      "id": "JU-t3",
+      "tipo": "tierra",
+      "dx": -7.39,
+      "dz": -0.39
+    },
+    {
+      "id": "JU-t4",
+      "tipo": "tierra",
+      "dx": 5.01,
+      "dz": 3.21
+    },
+    {
+      "id": "JU-t5",
+      "tipo": "tierra",
+      "dx": -0.99,
+      "dz": -5.19
+    },
+    {
+      "id": "JU-t6",
+      "tipo": "tierra",
+      "dx": 10.21,
+      "dz": 2.41
+    },
+    {
+      "id": "JU-v1",
+      "tipo": "aire",
+      "dx": 5.01,
+      "dz": -1.99
+    }
+  ]
+}
