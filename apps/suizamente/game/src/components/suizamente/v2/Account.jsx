@@ -1,4 +1,3 @@
-import {NotificationBell} from './NotificationBell'
 import {Icono,UiIcon} from './Icono'
 import {useRef,useState} from 'react'
 import {Link,useLocation,useNavigate} from 'react-router-dom'
@@ -8,7 +7,7 @@ import {useEntry,rememberEntryDestination} from '../../../../entry'
 import {useGameNavigation} from '../../../../navigation'
 import {prepareProfilePhoto,uploadProfilePhoto} from '../../../lib/suizamentePhoto'
 import {useSv} from './Context'
-import {Avatar,Brand,Button,Card,Chip,Header,Logo,Sheet,Stamps} from './Shared'
+import {Avatar,Brand,Button,Card,Header,Logo,Sheet,Stamps} from './Shared'
 import {szApi,cantonNames,countryNames} from '../../../lib/suizamenteV2'
 import {normalizeSzSettings} from '../../../lib/suizamenteSettings'
 import {loadPushSettings,subscribeToPushNotifications} from '../../../lib/pushNotifications'
@@ -82,10 +81,7 @@ export function ProfileForm({editing=false}){
     <fieldset><legend>¿Cuánto llevas en Suiza?</legend><div className="sv-choice-grid">{Object.entries(years).map(([id,label])=><button type="button" key={id} aria-pressed={form.anos_suiza===id} onClick={()=>change('anos_suiza',id)}>{label}</button>)}</div></fieldset>
     {error&&<p className="sv-error" role="alert">{error}</p>}</div><footer className="sv-footer"><button className="sv-button" disabled={busy||photoBusy} type="submit">{busy?'Guardando…':editing?'Guardar cambios':'▶ ¡A jugar!'}</button>{!editing&&<button className="sv-button quiet" disabled={busy||photoBusy} type="button" onClick={useAnotherProfile}>Usar otro perfil</button>}</footer></form>
 }
-export function Menu(){
-  const {player,config,capabilities}=useSv()
-  return <section className="sv-screen"><Header title="Menú" right={<NotificationBell/>}/><div className="sv-content"><div className="sv-chips">{config.comodines.map(c=><Chip key={c.id} role="img" aria-label={c.nombre+': tienes '+(player.inventario?.[c.id]||0)}>{c.emoji} {player.inventario?.[c.id]||0}</Chip>)}<Chip><Icono nombre="escudo"/> {player.inventario?.escudos||0}</Chip><Link to="/suizamente/tienda"><Chip><Icono nombre="moneda"/> {player.monedas}</Chip></Link></div><nav className="sv-menu" aria-label="Menú"><Link to="/suizamente/misiones"><Icono nombre="misiones"/> <span>Misiones y eventos</span>›</Link>{capabilities?.admin&&<Link to="/suizamente/admin">🛠️ <span>Administración</span>›</Link>}<Link to="/suizamente/amigos"><Icono nombre="amigos"/> <span>Amigos</span>›</Link><Link to="/suizamente/ranking"><Icono nombre="trofeo"/> <span>Ranking</span>›</Link><Link to="/suizamente/libreta">🔖 <span>Libreta</span>›</Link><Link to="/suizamente/crea-preguntas">✍️ <span>Crea preguntas</span>›</Link><Link to="/suizamente/amigos">🔍 <span>Buscar jugadores</span>›</Link><Link to="/suizamente/perfil">👤 <span>Perfil</span>›</Link><Link to="/suizamente/logros">🏅 <span>Logros</span>›</Link><Link to="/suizamente/tienda"><Icono nombre="tienda"/> <span>Tienda</span>›</Link><Link to="/suizamente/como-se-juega">❓ <span>Cómo se juega</span>›</Link><Link to="/suizamente/ajustes">⚙️ <span>Ajustes<small>Avisos, cuenta y privacidad</small></span>›</Link></nav><Card className="sv-latido-card"><img src="/suizamente-assets/latido.svg" width="44" height="44" alt="Latido"/><div><b>Un juego de Latido</b><p>La comunidad hispanohablante en Suiza</p></div><a href="https://www.latido.ch" target="_blank" rel="noopener noreferrer">Abrir</a></Card></div></section>
-}
+export {Menu} from './Menu'
 export function Settings(){
   const {player,user,settings,updateSettings,savePlayer,signOut}=useSv(),navigate=useNavigate()
   const [error,setError]=useState(''),[busy,setBusy]=useState(false),[deletion,setDeletion]=useState(0)

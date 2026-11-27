@@ -4,6 +4,7 @@ import './icons.css'
 // 23.22. Only call iconizar for interface text. Questions, facts and cards stay literal.
 export const EMOJI_ICONO={'🪙':'moneda','🔥':'racha','⭐':'xp','🎁':'regalo','🃏':'sobre','🛡':'escudo','🎯':'misiones','📊':'pregunta','🏆':'trofeo','⏳':'tiempo','🗺':'mapa','🛒':'tienda','👥':'amigos','⚔':'duelo','🛂':'pasaporte','✂':'quita','🔁':'otra','⏭':'cambiar','⏱':'mas15','🔔':'aviso','📤':'compartir','🌿':'pradera','🌲':'bosque','🧊':'glaciar','🏔':'cumbre','🥇':'medalla-oro','💎':'medalla-cristal','🗣':'sello-idioma','🎭':'sello-cultura','🧀':'sello-comida','📄':'sello-papeles','🏠':'sello-casa','🚆':'sello-dia'}
 EMOJI_ICONO['🎲']='dado'
+Object.assign(EMOJI_ICONO,{'📒':'libreta','✍':'lapiz','❓':'ayuda','⚙':'ajustes'})
 const legacy=Object.fromEntries(Object.entries(EMOJI_ICONO).map(([emoji,name])=>[name,emoji])),enabledContext=createContext(true)
 const tokens=new RegExp('('+Object.keys(EMOJI_ICONO).join('|')+')\uFE0F?','gu')
 export function IconScope({enabled=true,children}){return <enabledContext.Provider value={enabled}>{children}</enabledContext.Provider>}

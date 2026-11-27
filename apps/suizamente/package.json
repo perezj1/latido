@@ -43,6 +43,7 @@
     "test:map-layout": "node scripts/test-suizamente-map-layout.mjs && node scripts/test-suizamente-map-layout.mjs --webkit",
     "test:matchmaking": "node scripts/test-suizamente-matchmaking.mjs && node scripts/test-suizamente-matchmaking-concurrency.mjs && node scripts/test-suizamente-matchmaking-browser.mjs && node scripts/test-suizamente-matchmaking-browser.mjs --webkit",
     "test:home": "node scripts/test-suizamente-home-browser.mjs && node scripts/test-suizamente-home-browser.mjs --webkit",
+    "test:menu": "node scripts/test-suizamente-menu-browser.mjs && node scripts/test-suizamente-menu-browser.mjs --webkit",
     "test:new-game": "node scripts/test-suizamente-new-game-browser.mjs && node scripts/test-suizamente-new-game-browser.mjs --webkit",
     "test:home-framing": "node scripts/test-suizamente-home-framing.mjs && node scripts/test-suizamente-home-framing.mjs --webkit",
     "test:seals": "node scripts/test-suizamente-seal-browser.mjs && node scripts/test-suizamente-seal-browser.mjs --webkit",
