@@ -1,6 +1,4 @@
-import {useLayoutEffect,useRef} from 'react'
 import {Link} from 'react-router-dom'
-import {useSv} from './Context'
 import {IconText,Icono} from './Icono'
 import {Avatar} from './Shared'
 import {timeLeft} from '../../../lib/suizamenteV2'
@@ -11,29 +9,18 @@ export function HomeBadge({to,onClick,label,image,tint,chip,name,alert,green,dis
  return to?<Link {...props} to={to}>{content}</Link>:<button {...props} onClick={onClick} disabled={disabled}>{content}</button>
 }
 export function HomeRow({label,children}){
- const row=useRef(null),drag=useRef(null),moved=useRef(false),{reduced}=useSv()
- useLayoutEffect(()=>{row.current.scrollLeft=0},[label])
- function end(e){
-  if(!drag.current)return
-  drag.current=null;row.current.style.scrollSnapType=''
-  if(row.current.hasPointerCapture(e.pointerId))row.current.releasePointerCapture(e.pointerId)
-  const base=row.current.children[0]?.offsetLeft||0,positions=[...row.current.children].map(n=>n.offsetLeft-base),left=row.current.scrollLeft
-  row.current.scrollTo({left:positions.reduce((best,x)=>Math.abs(x-left)<Math.abs(best-left)?x:best,0),behavior:reduced?'instant':'smooth'})
- }
- return <div ref={row} className="sv-home-carousel-row" role="list" aria-label={label}
-  onPointerDown={e=>{if(e.pointerType!=='mouse'||e.button!==0)return;drag.current={x:e.clientX,left:row.current.scrollLeft};moved.current=false}}
-  onPointerMove={e=>{if(!drag.current)return;const delta=e.clientX-drag.current.x;if(Math.abs(delta)>4){moved.current=true;row.current.setPointerCapture(e.pointerId);row.current.style.scrollSnapType='none';row.current.scrollLeft=drag.current.left-delta}}}
-  onPointerUp={end} onPointerCancel={end} onLostPointerCapture={end} onDragStart={e=>e.preventDefault()} onClickCapture={e=>{if(moved.current){e.preventDefault();e.stopPropagation();moved.current=false}}}
-  onFocusCapture={e=>{const item=e.target.closest('[role=listitem]');if(item)row.current.scrollTo({left:item.offsetLeft-row.current.children[0].offsetLeft,behavior:'instant'})}}>{children}</div>
+ return <div className="sv-home-list" role="list" aria-label={label}>{children}</div>
 }
-export function HomeAction({to,onClick,icon,children,label}){
- const props={role:'listitem',className:'sv-home-action '+icon,'aria-label':label}
- const content=<><Icono nombre={icon} size={36}/><b>{children}</b></>
- return to?<Link {...props} to={to}>{content}</Link>:<button {...props} onClick={onClick}>{content}</button>
+export function HomeAction({to,onClick,icon,children,label,subtitle}){
+ const props={className:'sv-home-action '+icon,'aria-label':label}
+ const content=<><span className="sv-home-action-icon" aria-hidden="true"><Icono nombre={icon} size={24}/></span><span className="sv-home-row-text"><b>{children}</b><span>{subtitle}</span></span><span className="sv-home-chevron" aria-hidden="true">›</span></>
+ return <div role="listitem">{to?<Link {...props} to={to}>{content}</Link>:<button type="button" {...props} onClick={onClick}>{content}</button>}</div>
 }
 export function HomeMatch({match:m,mine,sealText}){
  const left=timeLeft(m.plazo,Date.parse(m.servidorAhora)),name=m.rival?.apodo||'Buscando rival…'
- return <Link role="listitem" className={'sv-home-match '+(mine?'sv-home-turn':'sv-home-wait')} to={'/suizamente/partida/'+m.id} aria-label={mine?'Te toca contra '+name+', '+m.tusSellos.length+' a '+m.susSellos.length+'. '+sealText+'. Quedan '+left+'. Jugar':m.rival?'Turno de '+name+', '+m.tusSellos.length+' a '+m.susSellos.length+'. Le quedan '+left:'Partida pendiente: buscando rival'}>
-  <span className="sv-home-rival"><Avatar id={m.rival?.id} name={m.rival?.apodo||'?'} color={m.rival?.color}/>{m.rival?.online&&<i aria-label="En línea"/>}</span><span className="sv-home-score">{m.tusSellos.length} – {m.susSellos.length}</span><b>{name}</b><span className="sv-home-match-foot" aria-hidden="true">{mine?'▶︎ Tu turno':<><Icono nombre="tiempo" size={14}/><span>Su turno · {left}</span></>}</span>
- </Link>
+ return <div role="listitem"><Link className={'sv-home-match '+(mine?'sv-home-turn':'sv-home-wait')} to={'/suizamente/partida/'+m.id} aria-label={mine?'Te toca contra '+name+', '+m.tusSellos.length+' a '+m.susSellos.length+'. '+sealText+'. Quedan '+left+'. Jugar':m.rival?'Turno de '+name+', '+m.tusSellos.length+' a '+m.susSellos.length+'. Le quedan '+left:'Partida pendiente: buscando rival'}>
+  <span className="sv-home-rival"><Avatar id={m.rival?.id} name={m.rival?.apodo||'?'} color={m.rival?.color}/>{m.rival?.online&&<i aria-label="En línea"/>}</span>
+  <span className="sv-home-row-text"><b className="sv-home-match-heading"><span>{name}</span><span className="sv-home-score">{m.tusSellos.length} – {m.susSellos.length}</span></b><span>{mine?<><strong>Tu turno</strong> · quedan {left}</>:m.rival?'Su turno · te avisamos':'Buscando rival…'}</span></span>
+  {mine?<span className="sv-home-play" aria-hidden="true">▶︎</span>:<span className="sv-home-time" aria-hidden="true"><Icono nombre="tiempo" size={14}/>{left}</span>}
+ </Link></div>
 }

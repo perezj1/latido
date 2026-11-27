@@ -1,11 +1,11 @@
 // Real React/temporary SQL. Native OS bars are not emulated by Playwright.
-/* global getComputedStyle */
+/* global getComputedStyle, requestAnimationFrame, scrollY, innerHeight */
 import assert from 'node:assert/strict'
 import {mkdir,readFile,writeFile} from 'node:fs/promises'
-import {chromium,webkit,expect} from '@playwright/test'
+import {chromium,webkit,expect as rawExpect} from '@playwright/test'
 import {startSuizamentePreview,testToken,testUser} from './lib/suizamente-v2-preview.mjs'
 import {A,B,call} from './lib/suizamente-v2-test-db.mjs'
-const engine=process.argv.includes('--webkit')?'webkit':'chromium',out='output/barras-sistema/'+engine,errors=[],metrics=[]
+const expect=rawExpect.configure({timeout:20000}),engine=process.argv.includes('--webkit')?'webkit':'chromium',out='output/barras-sistema/'+engine,errors=[],metrics=[]
 let preview,browser,page
 try{
  const html=await readFile('index.html','utf8'),manifest=JSON.parse(await readFile('public/suizamente.webmanifest','utf8'))
@@ -43,7 +43,21 @@ try{
   await page.screenshot({path:out+'/mapa-'+width+'.png',fullPage:false})
  }
  await page.setViewportSize({width:390,height:844})
- await go('/tienda');await expect(page.locator('.sv-daily-gift')).toBeVisible();await theme('rgb(255, 255, 255)');await page.locator('.sv-daily-gift').tap();await expect(page.getByRole('dialog')).toHaveAccessibleName('¡Regalo diario!');await theme('#FBF9F6');await page.getByRole('button',{name:'Omitir',exact:true}).click();await theme('rgb(255, 255, 255)')
+ // Sticky headers must paint an opaque surface above scrolled cards.
+ for(const path of ['/tienda','/album','/amigos']){
+  await go(path);const header=page.locator(({ '/tienda':'.sv-shop','/album':'.sv-album','/amigos':'.sv-friends' })[path]+'>.sv-shop-header');await expect(header).toBeVisible()
+  for(const [width,height] of [[390,844],[375,667]]){
+   await page.setViewportSize({width,height});await page.waitForLoadState('networkidle')
+   await page.evaluate(async()=>{window.scrollTo(0,300);await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))})
+   const scroll=await page.evaluate(()=>({y:scrollY,max:document.scrollingElement.scrollHeight-innerHeight}));if(scroll.max>0)assert.ok(scroll.y>0,'The document actually scrolled');metrics.push({screen:path,width,height,scroll})
+   await expect(header).toHaveCSS('background-color','rgb(255, 255, 255)');await expect(header).toHaveCSS('position','sticky')
+   assert.ok((await header.boundingBox()).y>=-1,'Sticky header stays at the top')
+   assert.ok(await header.evaluate(e=>{const r=e.getBoundingClientRect();return e.contains(document.elementFromPoint(r.x+r.width/2,r.y+r.height/2))}),'Header is above the scrolled content')
+   await page.screenshot({path:out+'/barra-'+path.slice(1)+'-'+width+'.png'})
+  }
+  await page.evaluate(()=>window.scrollTo(0,0))
+ }
+ await page.setViewportSize({width:390,height:844});await go('/tienda');await expect(page.locator('.sv-daily-gift')).toBeVisible();await theme('rgb(255, 255, 255)');await page.locator('.sv-daily-gift').tap();await expect(page.getByRole('dialog')).toHaveAccessibleName('¡Regalo diario!');await theme('#FBF9F6');await page.getByRole('button',{name:'Omitir',exact:true}).click();await theme('rgb(255, 255, 255)')
  let match=await call(db,A,'crear_partida',{rival:B});await db.query("UPDATE suizamente_private.suizamente_partidas SET reglas=jsonb_set(reglas,'{ruleta,casillas}',$2::jsonb) WHERE id=$1",[match.id,JSON.stringify(['idioma'])]);match=await call(db,A,'girar',{id:match.id,turnoN:match.turnoN});await call(db,A,'pregunta',{id:match.id,turnoN:match.turnoN})
  await go('/partida/'+match.id);await expect(page.locator('.sv-question-header')).toBeVisible();await theme(await page.locator('.sv-question-header').evaluate(e=>getComputedStyle(e).backgroundColor));await page.screenshot({path:out+'/pregunta.png'})
  await go('/primera-vez?repetir=1');await expect(page.locator('[data-onb-step="1"]')).toBeVisible();const tint=await page.locator('[data-latido-backdrop]').getAttribute('data-chrome-color');await theme(tint);await page.getByRole('button',{name:'Ahora no',exact:true}).click();await expect(page.locator('[data-onb-step="2"]')).toBeVisible();await theme(await page.locator('[data-latido-backdrop]').getAttribute('data-chrome-color'))

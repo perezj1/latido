@@ -6,3 +6,6 @@
 .sv-push-prompt>h2{font-size:25px;line-height:1.17;text-align:center;font-weight:800;letter-spacing:-.6px;margin:0}.sv-push-prompt>p{text-align:center;line-height:1.5;margin:0}.sv-push-prompt>.sv-button{min-height:50px}.sv-push-prompt>.sv-push-later{font-size:12px;color:#5A6577}.sv-push-prompt>.sv-error{font-size:13px;text-align:left}
 .sv-achievement-sheet>p{margin:0}.sv-achievement-sheet .sv-card-detail{padding:8px 0}.sv-achievement-sheet .sv-xp-bar{flex-shrink:0}
 @media(max-width:360px){.sv-home-new .sv-home-header>span.sv-chip{display:none}.sv-root .sv-home-new>.sv-home-header{gap:4px;padding-inline:12px}.sv-friends .sv-shop-header{padding-inline:12px;gap:4px}.sv-friends .sv-shop-header>.sv-mini-button{padding-inline:8px}.sv-friends .sv-shop-header>h1{font-size:21px}.sv-push-prompt>h2{font-size:23px}}
+
+/* Opaque sticky bars keep scrolled content below the heading and controls. */
+.sv-root .sv-album>.sv-shop-header,.sv-root .sv-shop>.sv-shop-header,.sv-root .sv-friends>.sv-shop-header,.sv-root .sv-map-page>.sv-map-header{background:#FFF;box-shadow:0 1px 0 #0F1A2B0F}
