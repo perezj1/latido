@@ -66,6 +66,7 @@
     "test:game": "node scripts/test-suizamente-production-browser.mjs",
     "test:independence": "node scripts/test-independencia.mjs",
     "dev:negocios": "node scripts/preview-negocios.mjs",
+    "test:negocios:gratis": "node scripts/test-negocios-gratis.mjs && node scripts/test-negocios-gratis-browser.mjs && node scripts/test-negocios-gratis-browser.mjs --webkit",
     "generar:negocios:sql": "node scripts/generar-negocios-sql.mjs",
     "test:negocios:datos": "node scripts/test-negocios-datos.mjs",
     "test:negocios:servidor": "node scripts/test-negocios-servidor.mjs",

@@ -8,7 +8,7 @@ import {createBusinessPayments,stripeTestSettings,hostedStripeUrl} from '../serv
 import {getSuizamenteConfig} from '../server/suizamente/config.mjs'
 import {createSuizamenteHandler} from '../server/suizamente/http.mjs'
 
-const {db}=await negociosDatabase(),config={...getSuizamenteConfig().juego.negocios,activo:true,cobroAutomatico:true}
+const {db}=await negociosDatabase(),config={...getSuizamenteConfig().juego.negocios,activo:true,cobroAutomatico:true,gratis:false}
 const env={SUPABASE_URL:'https://suizamente.test',SUPABASE_ANON_KEY:'test-anon',SUIZAMENTE_SUPABASE_SERVICE_ROLE_KEY:'local-service',SUIZAMENTE_STRIPE_TEST_SECRET_KEY:'sk_test_local_fixture',SUIZAMENTE_STRIPE_WEBHOOK_SECRET:'whsec_local_fixture',SUIZAMENTE_STRIPE_RETURN_ORIGIN:'https://suizamente.test',SUIZAMENTE_STRIPE_CARD_CONFIGURATION:'pmc_card',SUIZAMENTE_STRIPE_TWINT_CONFIGURATION:'pmc_twint',SUIZAMENTE_STRIPE_PORTAL_CONFIGURATION:'bpc_test',SUIZAMENTE_STRIPE_CRON_SECRET:'local-cron-fixture',SUIZAMENTE_STRIPE_TWINT_ELIGIBLE:'true'}
 const prices={}
 for(const plan of ['mapa','plus'])for(const period of ['mes','ano']){const id='price_'+plan+'_'+period;env['SUIZAMENTE_STRIPE_PRICE_'+plan.toUpperCase()+'_'+period.toUpperCase()]=id;prices[id]={id,active:true,livemode:false,currency:'chf',unit_amount:config.planes[plan][period]*100,recurring:{interval:period==='ano'?'year':'month',interval_count:1},product:'prod_'+plan}}

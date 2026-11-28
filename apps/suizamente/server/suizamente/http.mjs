@@ -39,8 +39,9 @@ export function createSuizamenteHandler({ fetchImpl = fetch,mejorasConfig=()=>ge
       // Vercel's Node runtime uses one concrete function and an explicit rewrite.
       const rewritten = url.pathname.replace(/\/$/,'')==='/api/suizamente'?url.searchParams.get('_ruta'):null
       const route = (rewritten??url.pathname.replace(/^\/api\/suizamente\/?/, '')).replace(/\/$/, '')
-      const paymentRoute=isBusinessPaymentRoute(route,negociosConfig()?.cobroAutomatico)
-      if(paymentRoute&&['negocios/pagos/webhook','negocios/pagos/procesar'].includes(route))return send(200,await payments.handle({req,route,config:negociosConfig()}))
+      const rawBusinessConfig=negociosConfig()||{},businessConfig={...rawBusinessConfig,cobroAutomatico:!!rawBusinessConfig.cobroAutomatico&&!rawBusinessConfig.gratis}
+      const paymentRoute=isBusinessPaymentRoute(route,businessConfig.cobroAutomatico)
+      if(paymentRoute&&['negocios/pagos/webhook','negocios/pagos/procesar'].includes(route))return send(200,await payments.handle({req,route,config:businessConfig}))
       if (req.method === 'POST' && route === 'sesion/salir') {
         if (req.headers.origin && new URL(req.headers.origin).host !== req.headers.host) return send(403, {error:'Origen no permitido'})
         res.setHeader('Set-Cookie', COOKIE + '=; HttpOnly; SameSite=Lax; Path=/api/suizamente; Max-Age=0')
@@ -94,7 +95,7 @@ export function createSuizamenteHandler({ fetchImpl = fetch,mejorasConfig=()=>ge
       if(action==='guardar_jugador'&&body?.ajustes&&Object.hasOwn(body.ajustes,'musica')&&typeof body.ajustes.musica!=='boolean')return send(400,{error:'Ajustes no válidos'})
       if(action==='girar_carta'&&body&&Object.hasOwn(body,'todas')&&typeof body.todas!=='boolean')return send(400,{error:'Solicitud no válida'})
       if(body&&Buffer.byteLength(JSON.stringify(body),'utf8')>(adminRoute?150000:20000))return send(413,{error:'Solicitud demasiado grande'})
-      if(paymentRoute)return send(200,await payments.handle({req,route,body,config:negociosConfig()}))
+      if(paymentRoute)return send(200,await payments.handle({req,route,body,config:businessConfig}))
       const args = { ...Object.fromEntries(url.searchParams), ...body }
       if(improvement)Object.assign(args,improvement.args)
       if(business)Object.assign(args,business.args)
@@ -161,7 +162,7 @@ export function createSuizamenteHandler({ fetchImpl = fetch,mejorasConfig=()=>ge
         return send(503, { error:'No se pudo completar la acción. Inténtalo otra vez.' })
       }
       if (data?.conflicto) return send(409, { error:'El turno ha caducado', partida:data.partida })
-      if(action==='config')data={...data,mejoras:publicImprovementFlags(mejorasConfig(),mysteryToday()),mapa:{...data.mapa,barraCanton:barraCanton()},negocios:negociosConfig()}
+      if(action==='config')data={...data,mejoras:publicImprovementFlags(mejorasConfig(),mysteryToday()),mapa:{...data.mapa,barraCanton:barraCanton()},negocios:businessConfig}
       return send(200, data)
     } catch (error) {
       if(error.status)return send(error.status,{error:error.message})

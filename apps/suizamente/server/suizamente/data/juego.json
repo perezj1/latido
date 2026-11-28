@@ -1052,6 +1052,7 @@
     }
   },
  "negocios": {
+  "gratis": true,
   "activo": true,
   "cobroAutomatico": false,
   "planes": {

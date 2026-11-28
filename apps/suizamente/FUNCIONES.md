@@ -681,3 +681,13 @@ Las decoraciones conseguidas indican que ya son tuyas. Los controles de colocar,
 mover y quitar se conservan; al gestionar una puesta también se explica cómo se
 consigue. La ficha reutiliza los datos cargados, se cierra con «Cerrar» o Escape,
 devuelve el foco y respeta «menos animaciones». No requiere migraciones.
+
+## Negocios gratuitos
+
+Con `negocios.gratis` activo, el alta se reduce a datos/contacto y plaza/figura,
+con vista previa y revisión de Latido. No pide plan ni pago. Los negocios
+aprobados se mantienen sin facturas ni caducidad por impago; retirarlos libera
+su plaza. El modo de pago, sus precios y sus tablas se conservan para el futuro.
+La marca `alta_gratuita` impide convertir estas altas en cobros automáticos.
+Archivos, migraciones V44/V45, pruebas y reactivación del pago en
+`NEGOCIOS-GRATIS-IMPLEMENTACION.md`.

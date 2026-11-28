@@ -1,11 +1,13 @@
 import {readFile} from 'node:fs/promises'
 import {mejorasDatabase} from './mejoras-test-db.mjs'
-export async function negociosDatabase(active=true,flags=false,{payments=false}={}){
+export async function negociosDatabase(active=true,flags=false,{payments=false,gratis=false}={}){
  const extra=await mejorasDatabase(flags),db=extra.db
  try{
   for(const n of ['34_huecos','35_negocios','36_negocios_datos'])await db.exec(await readFile('supabase/suizamente_v'+n+'.sql','utf8'))
   await db.query("UPDATE suizamente_private.negocios_configuracion SET config=jsonb_set(config,'{activo}',$1::jsonb),condiciones_url='https://suizamente.test/condiciones-negocios'",[JSON.stringify(active)])
   if(payments){await db.exec(await readFile('supabase/suizamente_v37_negocios_cobros.sql','utf8'));await db.exec("UPDATE suizamente_private.negocios_configuracion SET config=jsonb_set(config,'{cobroAutomatico}','true')")}
+  await db.exec(await readFile('supabase/suizamente_v44_negocios_gratis.sql','utf8'))
+  await db.query("UPDATE suizamente_private.negocios_configuracion SET config=jsonb_set(config,'{gratis}',$1::jsonb)",[JSON.stringify(gratis)])
   return extra
  }catch(e){await db.close();throw e}
 }
