@@ -41,7 +41,7 @@ export function Achievements(){
 }
 export function Shop(){
   const openGift=useDailyGift()
-  const {player}=useSv(),{data,setData,error,setError}=useData('tienda',{refreshMs:60000}),[busy,setBusy]=useState(false),[notice,setNotice]=useState('')
+  const {player}=useSv(),{data,setData,error,setError}=useData('tienda',{refreshMs:60000,reuseCached:true}),[busy,setBusy]=useState(false),[notice,setNotice]=useState('')
   async function load(){try{setData(await szApi('tienda',{fresh:true}))}catch(e){setError(e.message)}}
   async function buy(article){
     if(busy)return

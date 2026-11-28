@@ -5,3 +5,736 @@
 # Propuesta completa presentada a Latido y continuada el 28 de noviembre de 2026.
 # Fuente: https://www.luzern.com/en/the-city/sights/top-sights/lion-monument
 2026-11-28 | monumento | ¿Qué monumento es? | - | Está en Lucerna. | Se inauguró en 1821. | Representa un león tallado en roca. | *Monumento del León | Kapellbrücke | Jet d’Eau | Torre del Reloj | Recuerda a los guardias suizos muertos en París en 1792.
+
+# BEGIN CALENDARIO 2026-2027 · adaptación del banco existente, solicitada por Latido.
+# Origen: voc_m2glr5
+2026-11-29 | palabra | ¿Qué significa esta expresión? | - | En suizo alemán. | La expresión es «Grüezi». | Empieza por «h». | céntimo | *hola (formal) | cartero | cena | Saludo formal típico de Zúrich y del este de Suiza. Se dice al entrar en tiendas, consultas y ascensores.
+# Origen: vocr_fs81t9
+2026-11-30 | palabra | ¿Qué palabra o expresión buscamos? | - | Se usa en suizo alemán. | Significa «monedero». | Del francés y muy usada en suizo alemán. | Kafi Luz | Brötli | *Portemonnaie | Chue | Del francés y muy usada en suizo alemán.
+# Origen: per_195ucsv
+2026-12-01 | personaje | ¿Qué personaje es? | - | El fundador de la Cruz Roja. | Recibió el primer premio Nobel de la Paz, en 1901. | Empieza por «H». | *Henri Dunant | Jean Piaget | Simon Ammann | Albert Einstein | Recibió el primer premio Nobel de la Paz, en 1901.
+# Origen: ciu_iek7ww
+2026-12-02 | palabra | ¿Qué lugar de Suiza buscamos? | - | Pueblo sin coches de combustión a los pies del Cervino. | Está en el cantón de Valais. | Empieza por «Z». | *Zermatt | Davos | St. Moritz | Lugano | Pueblo sin coches de combustión a los pies del Cervino.
+# Origen: cap_blupch
+2026-12-03 | palabra | ¿Qué capital cantonal buscamos? | - | A Argovia la llaman «el cantón de los castillos» y su tarta de zanahoria es famosa en todo el país. | Es la capital del cantón de Argovia. | Empieza por «A». | Lausana | *Aarau | Delémont | Frauenfeld | A Argovia la llaman «el cantón de los castillos» y su tarta de zanahoria es famosa en todo el país.
+# Origen: inv_oped5b
+2026-12-04 | palabra | ¿Qué invento o creación buscamos? | - | Su historia está relacionada con Suiza. | George de Mestral se inspiró en los cardos que se pegaban al pelo de su perro tras una excursión. | Empieza por «v». | El telescopio | *El velcro | El avión | El automóvil | George de Mestral se inspiró en los cardos que se pegaban al pelo de su perro tras una excursión.
+# Origen: mapa:LU
+2026-12-05 | silueta | ¿De qué cantón es esta silueta? | LU | Es el contorno de un cantón suizo. | En el mapa del juego está en Suiza central. | Empieza por «L». | *Lucerna | Uri | Schwyz | Obwalden | En el mapa de Suizamente, Lucerna pertenece a la región Suiza central.
+# Origen: voc_9gqg7q
+2026-12-06 | palabra | ¿Qué significa esta expresión? | - | En suizo alemán. | La expresión es «Grüessech». | Empieza por «h». | *hola (en Berna) | jugar al fútbol | hola (formal) | hoy | Es la versión bernesa de «Grüezi». Cada región de la Suiza alemana tiene su manera de saludar.
+# Origen: vocr_ynslns
+2026-12-07 | palabra | ¿Qué palabra o expresión buscamos? | - | Se usa en el Tesino. | Significa «teleférico». | El Monte Generoso y el Monte Brè tienen trenes y teleféricos con vistas al lago de Lugano. | *Funivia | Gazzosa | Rabadan | Grotto | El Monte Generoso y el Monte Brè tienen trenes y teleféricos con vistas al lago de Lugano.
+# Origen: per_1whf753
+2026-12-08 | personaje | ¿Qué personaje es? | - | La autora de «Heidi». | «Heidi» se publicó en 1880 y es uno de los libros suizos más leídos del mundo. | Empieza por «J». | Le Corbusier | Auguste Piccard | *Johanna Spyri | Bernhard Russi | «Heidi» se publicó en 1880 y es uno de los libros suizos más leídos del mundo.
+# Origen: ciu_1784dhm
+2026-12-09 | palabra | ¿Qué lugar de Suiza buscamos? | - | Sede del Foro Económico Mundial y una de las ciudades más altas de Europa. | Está en el cantón de Grisones. | Empieza por «D». | St. Moritz | *Davos | Lugano | Locarno | Sede del Foro Económico Mundial y una de las ciudades más altas de Europa.
+# Origen: cap_9xx36n
+2026-12-10 | palabra | ¿Qué capital cantonal buscamos? | - | Fue el último cantón en dar el voto a las mujeres, en 1990, por orden del Tribunal Federal. | Es la capital del cantón de Appenzell Rodas Interiores. | Empieza por «A». | Stans | *Appenzell | Soleura | Sarnen | Fue el último cantón en dar el voto a las mujeres, en 1990, por orden del Tribunal Federal.
+# Origen: inv_8jha0u
+2026-12-11 | palabra | ¿Qué invento o creación buscamos? | - | Su historia está relacionada con Suiza. | Lo inventó el químico suizo Jacques Brandenberger en 1908. | Empieza por «c». | *El celofán | El bolígrafo | El avión | El automóvil | Lo inventó el químico suizo Jacques Brandenberger en 1908.
+# Origen: mapa:UR / cap_s0dih2
+2026-12-12 | silueta | ¿De qué cantón es esta silueta? | UR | Es el contorno de un cantón suizo. | Su capital es Altdorf. | Empieza por «U». | Schwyz | *Uri | Obwalden | Nidwalden | Es la tierra de Guillermo Tell: su estatua está en la plaza de Altdorf.
+# Origen: voc_zo0xfi
+2026-12-13 | palabra | ¿Qué significa esta expresión? | - | En suizo alemán. | La expresión es «Hoi». | Empieza por «h». | banda de carnaval | comida del mediodía | *hola (entre amigos) | pan trenzado | Saludo informal entre amigos. Para varias personas se dice «Hoi zäme».
+# Origen: vocr_ljrmfq
+2026-12-14 | palabra | ¿Qué palabra o expresión buscamos? | - | Se usa en suizo alemán. | Significa «jugar al fútbol». | El balón de fútbol es el «Tschuttiballe». | Grosi | *Tschutte | Rüüdig | Lüüt | El balón de fútbol es el «Tschuttiballe».
+# Origen: per_1rumr3z
+2026-12-15 | personaje | ¿Qué personaje es? | - | Un tenista de Basilea con 20 títulos de Grand Slam. | Ganó Wimbledon 8 veces. | Empieza por «R». | Albert Einstein | Ella Maillart | *Roger Federer | Friedrich Dürrenmatt | Ganó Wimbledon 8 veces.
+# Origen: ciu_1mef30v
+2026-12-16 | palabra | ¿Qué lugar de Suiza buscamos? | - | Acogió los Juegos Olímpicos de invierno de 1928 y de 1948. | Está en el cantón de Grisones. | Empieza por «S». | Lugano | Locarno | *St. Moritz | Ascona | Acogió los Juegos Olímpicos de invierno de 1928 y de 1948.
+# Origen: cap_gvn5iy
+2026-12-17 | palabra | ¿Qué capital cantonal buscamos? | - | En Urnäsch celebran el Año Nuevo dos veces, con los Silvesterchläuse y sus enormes trajes. | Es la capital del cantón de Appenzell Rodas Exteriores. | Empieza por «H». | Soleura | *Herisau | Bellinzona | Sion | En Urnäsch celebran el Año Nuevo dos veces, con los Silvesterchläuse y sus enormes trajes.
+# Origen: inv_sxo17t
+2026-12-18 | palabra | ¿Qué invento o creación buscamos? | - | Su historia está relacionada con Suiza. | El ejército suizo encargó sus primeras navajas en 1891. | Empieza por «n». | El avión | La bombilla eléctrica | *La navaja suiza | El teléfono | El ejército suizo encargó sus primeras navajas en 1891.
+# Origen: mapa:SZ / ciu_bj3kmb
+2026-12-19 | silueta | ¿De qué cantón es esta silueta? | SZ | Es el contorno de un cantón suizo. | En el mapa del juego está en Suiza central. | Empieza por «S». | Obwalden | Nidwalden | *Schwyz | Zug | Su abadía, con la Virgen Negra, es un gran lugar de peregrinación.
+# Origen: voc_f1kw8q
+2026-12-20 | palabra | ¿Qué significa esta expresión? | - | En suizo alemán. | La expresión es «Tschüss». | Empieza por «a». | pera | cariño | *adiós (informal) | tonterías | Despedida entre amigos. También se oye mucho «Tschau» o «Ciao».
+# Origen: vocr_hhzami
+2026-12-21 | palabra | ¿Qué palabra o expresión buscamos? | - | Se usa en suizo alemán. | Significa «cartero». | El cartero de Correos. Pon tu nombre en el buzón o no te dejará nada. | Gstell | *Pöstler | Portemonnaie | Sünneli | El cartero de Correos. Pon tu nombre en el buzón o no te dejará nada.
+# Origen: per_lenx8c
+2026-12-22 | personaje | ¿Qué personaje es? | - | El físico que publicó la relatividad especial viviendo en Berna. | Trabajaba en la oficina de patentes de Berna y tenía nacionalidad suiza desde 1901. | Empieza por «A». | *Albert Einstein | Ferdinand Hodler | Le Corbusier | H. R. Giger | Trabajaba en la oficina de patentes de Berna y tenía nacionalidad suiza desde 1901.
+# Origen: ciu_4ext5t
+2026-12-23 | palabra | ¿Qué lugar de Suiza buscamos? | - | La ciudad más grande del Tesino, a orillas de su lago. | Está en el cantón de Tesino. | Empieza por «L». | Locarno | Ascona | Montreux | *Lugano | La ciudad más grande del Tesino, a orillas de su lago.
+# Origen: cap_949y7f
+2026-12-24 | palabra | ¿Qué capital cantonal buscamos? | - | Se separó de Basilea-Ciudad en 1833, tras un conflicto entre la ciudad y el campo. | Es la capital del cantón de Basilea-Campiña. | Empieza por «L». | *Liestal | Schwyz | Ginebra | Coira | Se separó de Basilea-Ciudad en 1833, tras un conflicto entre la ciudad y el campo.
+# Origen: inv_4eh3qx
+2026-12-25 | palabra | ¿Qué invento o creación buscamos? | - | Su historia está relacionada con Suiza. | Daniel Peter lo creó en Vevey en 1875 usando leche condensada. | Empieza por «c». | La fotografía | El bolígrafo | *El chocolate con leche | El avión | Daniel Peter lo creó en Vevey en 1875 usando leche condensada.
+# Origen: mapa:OW / cap_xtk1fv
+2026-12-26 | silueta | ¿De qué cantón es esta silueta? | OW | Es el contorno de un cantón suizo. | Su capital es Sarnen. | Empieza por «O». | Nidwalden | Zug | Zúrich | *Obwalden | Es la tierra de Nicolás de Flüe, santo patrón de Suiza.
+# Origen: voc_73gyeg
+2026-12-27 | palabra | ¿Qué significa esta expresión? | - | En suizo alemán. | La expresión es «Uf Widerluege». | Empieza por «a». | café | *adiós (formal) | no | móvil | Despedida formal en tiendas y oficinas. Literalmente, «hasta volver a vernos».
+# Origen: vocr_kw5i6m
+2026-12-28 | palabra | ¿Qué palabra o expresión buscamos? | - | Se usa en suizo alemán. | Significa «escuela». | En alemán estándar, «Schule». | Gschtürm | Rappe | *Schuel | Rüüdig | En alemán estándar, «Schule».
+# Origen: per_7vpsbs
+2026-12-29 | personaje | ¿Qué personaje es? | - | Un arquitecto nacido en La Chaux-de-Fonds. | Varias de sus obras en el mundo son Patrimonio de la Humanidad. | Empieza por «L». | Ursula Andress | Friedrich Dürrenmatt | *Le Corbusier | Lara Gut-Behrami | Varias de sus obras en el mundo son Patrimonio de la Humanidad.
+# Origen: ciu_1id4k1t
+2026-12-30 | palabra | ¿Qué lugar de Suiza buscamos? | - | Su festival de cine proyecta películas al aire libre en la Piazza Grande. | Está en el cantón de Tesino. | Empieza por «L». | *Locarno | Ascona | Montreux | Vevey | Su festival de cine proyecta películas al aire libre en la Piazza Grande.
+# Origen: cap_cq4s82
+2026-12-31 | palabra | ¿Qué capital cantonal buscamos? | - | Es el cantón más pequeño de Suiza por superficie, pero lleno de museos. | Es la capital del cantón de Basilea-Ciudad. | Empieza por «B». | *Basilea | Schaffhausen | Lucerna | Delémont | Es el cantón más pequeño de Suiza por superficie, pero lleno de museos.
+# Origen: inv_6l2fyv
+2027-01-01 | palabra | ¿Qué invento o creación buscamos? | - | Su historia está relacionada con Suiza. | Nestlé lanzó su café soluble en 1938. | Empieza por «c». | *El café soluble de éxito | La televisión | El teléfono | El avión | Nestlé lanzó su café soluble en 1938.
+# Origen: mapa:NW / cap_bmizg2
+2027-01-02 | silueta | ¿De qué cantón es esta silueta? | NW | Es el contorno de un cantón suizo. | Su capital es Stans. | Empieza por «N». | *Nidwalden | Zug | Zúrich | Basilea-Ciudad | En Stans se fabrican los aviones Pilatus.
+# Origen: voc_1r6xy9s
+2027-01-03 | palabra | ¿Qué significa esta expresión? | - | En suizo alemán. | La expresión es «Merci vielmal». | Empieza por «m». | *muchas gracias | engaño | trabajar muy duro | panecillo blando | Mezcla de francés («merci») y alemán («vielmal»). Es el «gracias» suizo por excelencia.
+# Origen: vocr_lm191b
+2027-01-04 | palabra | ¿Qué palabra o expresión buscamos? | - | Se usa en suizo alemán. | Significa «ayer». | En alemán estándar, «gestern». | Gschänkli | *Geschter | Büsi | Gnueg | En alemán estándar, «gestern».
+# Origen: per_od1pqm
+2027-01-05 | personaje | ¿Qué personaje es? | - | Un escultor de figuras humanas muy alargadas. | Nació en Grisones y aparecía en el billete de 100 francos de la serie anterior. | Empieza por «A». | Le Corbusier | *Alberto Giacometti | Roger Federer | Jean Tinguely | Nació en Grisones y aparecía en el billete de 100 francos de la serie anterior.
+# Origen: ciu_92fvt2
+2027-01-06 | palabra | ¿Qué lugar de Suiza buscamos? | - | Pueblo junto al lago Mayor, con el famoso Monte Verità. | Está en el cantón de Tesino. | Empieza por «A». | Montreux | *Ascona | Vevey | Nyon | Pueblo junto al lago Mayor, con el famoso Monte Verità.
+# Origen: cap_u6xrto
+2027-01-07 | palabra | ¿Qué capital cantonal buscamos? | - | Es el cantón más grande de Suiza y el único trilingüe: alemán, romanche e italiano. | Es la capital del cantón de Grisones. | Empieza por «C». | Stans | Ginebra | *Coira | Basilea | Es el cantón más grande de Suiza y el único trilingüe: alemán, romanche e italiano.
+# Origen: inv_1caocon
+2027-01-08 | palabra | ¿Qué invento o creación buscamos? | - | Su historia está relacionada con Suiza. | Albert Hofmann lo sintetizó en Basilea y descubrió sus efectos en 1943. | Empieza por «L». | El teléfono | *El LSD | La televisión | El avión | Albert Hofmann lo sintetizó en Basilea y descubrió sus efectos en 1943.
+# Origen: mapa:ZG
+2027-01-09 | silueta | ¿De qué cantón es esta silueta? | ZG | Es el contorno de un cantón suizo. | En el mapa del juego está en Suiza central. | Empieza por «Z». | Zúrich | *Zug | Basilea-Ciudad | Basilea-Campiña | En el mapa de Suizamente, Zug pertenece a la región Suiza central.
+# Origen: voc_1yc8upw
+2027-01-10 | palabra | ¿Qué significa esta expresión? | - | En suizo alemán. | La expresión es «Exgüsi». | Empieza por «p». | *perdón | gente | regalito | galleta | Viene del francés «excusez». Sirve para pedir paso en el tranvía o disculparse.
+# Origen: vocr_carfe3
+2027-01-11 | palabra | ¿Qué palabra o expresión buscamos? | - | Se usa en suizo alemán. | Significa «muñeco de pan dulce». | Pan con forma de hombrecito que se come alrededor del 6 de diciembre, día de San Nicolás. | Schätzli | *Grittibänz | Lueg | Alp | Pan con forma de hombrecito que se come alrededor del 6 de diciembre, día de San Nicolás.
+# Origen: per_aha4ou
+2027-01-12 | personaje | ¿Qué personaje es? | - | Un héroe legendario de la ballesta y la manzana. | Según la leyenda, disparó a una manzana sobre la cabeza de su hijo en Altdorf. | Empieza por «G». | Johanna Spyri | *Guillermo Tell | Bernhard Russi | Paracelso | Según la leyenda, disparó a una manzana sobre la cabeza de su hijo en Altdorf.
+# Origen: ciu_8sjo0z
+2027-01-13 | palabra | ¿Qué lugar de Suiza buscamos? | - | Festival de jazz cada julio y una estatua de Freddie Mercury frente al lago. | Está en el cantón de Vaud. | Empieza por «M». | Vevey | Nyon | *Montreux | Yverdon-les-Bains | Festival de jazz cada julio y una estatua de Freddie Mercury frente al lago.
+# Origen: cap_fis8rc
+2027-01-14 | palabra | ¿Qué capital cantonal buscamos? | - | Es el cantón más joven de Suiza: nació en 1979 al separarse de Berna. | Es la capital del cantón de Jura. | Empieza por «D». | Coira | Herisau | *Delémont | Aarau | Es el cantón más joven de Suiza: nació en 1979 al separarse de Berna.
+# Origen: inv_1n1i0fj
+2027-01-15 | palabra | ¿Qué invento o creación buscamos? | - | Su historia está relacionada con Suiza. | Tim Berners-Lee la propuso en 1989 en el CERN, cerca de Ginebra. | Empieza por «W». | La imprenta | La bombilla eléctrica | *La World Wide Web | La radio | Tim Berners-Lee la propuso en 1989 en el CERN, cerca de Ginebra.
+# Origen: mapa:ZH / ciu_tntngn
+2027-01-16 | silueta | ¿De qué cantón es esta silueta? | ZH | Es el contorno de un cantón suizo. | En el mapa del juego está en Zúrich. | Empieza por «Z». | Basilea-Ciudad | Basilea-Campiña | *Zúrich | Argovia | La sexta ciudad de Suiza, con museos de arte de primer nivel.
+# Origen: voc_ez4ckd
+2027-01-17 | palabra | ¿Qué significa esta expresión? | - | En suizo alemán. | La expresión es «En Guete». | Empieza por «b». | móvil | ayudante de San Nicolás | *buen provecho | billete | Se dice antes de empezar a comer, y nadie empieza hasta que se ha dicho.
+# Origen: vocr_9gqg7q
+2027-01-18 | palabra | ¿Qué palabra o expresión buscamos? | - | Se usa en suizo alemán. | Significa «hola (en Berna)». | Es la versión bernesa de «Grüezi». Cada región de la Suiza alemana tiene su manera de saludar. | *Grüessech | Geschter | Sünneli | Gnueg | Es la versión bernesa de «Grüezi». Cada región de la Suiza alemana tiene su manera de saludar.
+# Origen: per_1qqwcrm
+2027-01-19 | personaje | ¿Qué personaje es? | - | Un ermitaño que hoy es el santo patrón de Suiza. | Vivió en Flüeli-Ranft, en el cantón de Obwalden. | Empieza por «N». | *Nicolás de Flüe | Martina Hingis | Henri Nestlé | Alberto Giacometti | Vivió en Flüeli-Ranft, en el cantón de Obwalden.
+# Origen: ciu_1dyt7gw
+2027-01-20 | palabra | ¿Qué lugar de Suiza buscamos? | - | Sede de Nestlé. Charlie Chaplin vivió muy cerca sus últimos años. | Está en el cantón de Vaud. | Empieza por «V». | Nyon | Yverdon-les-Bains | Interlaken | *Vevey | Sede de Nestlé. Charlie Chaplin vivió muy cerca sus últimos años.
+# Origen: cap_bmizg2
+2027-01-21 | palabra | ¿Qué capital cantonal buscamos? | - | En […] se fabrican los aviones Pilatus. | Es la capital del cantón de Nidwalden. | Empieza por «S». | *Stans | Glaris | Neuchâtel | Ginebra | En Stans se fabrican los aviones Pilatus.
+# Origen: inv_1dbbifr
+2027-01-22 | palabra | ¿Qué invento o creación buscamos? | - | Su historia está relacionada con Suiza. | Este pelador se inventó en Suiza en 1947 y se sigue fabricando casi igual. | Empieza por «p». | El bolígrafo | *El pelador de patatas Rex | La cremallera | La televisión | Este pelador se inventó en Suiza en 1947 y se sigue fabricando casi igual.
+# Origen: mapa:BS / cap_cq4s82
+2027-01-23 | silueta | ¿De qué cantón es esta silueta? | BS | Es el contorno de un cantón suizo. | Su capital es Basilea. | Empieza por «B». | Basilea-Campiña | Argovia | Berna | *Basilea-Ciudad | Es el cantón más pequeño de Suiza por superficie, pero lleno de museos.
+# Origen: voc_9gowv
+2027-01-24 | palabra | ¿Qué significa esta expresión? | - | En suizo alemán. | La expresión es «Znüni». | Empieza por «t». | *tentempié de media mañana | niña (chica) | engaño | sí | Literalmente «a las nueve». En muchas oficinas la pausa del Znüni es sagrada.
+# Origen: vocr_1yvm3h3
+2027-01-25 | palabra | ¿Qué palabra o expresión buscamos? | - | Se usa en suizo alemán. | Significa «cereza». | El «[…]wasser» o kirsch es aguardiente de cerezas, típico de Zug. | Müntschi | *Chriesi | Chuchichäschtli | Schnuder | El «Chriesiwasser» o kirsch es aguardiente de cerezas, típico de Zug.
+# Origen: per_1eq4zcj
+2027-01-26 | personaje | ¿Qué personaje es? | - | Un genio de las matemáticas nacido en Basilea. | Es uno de los matemáticos más importantes de la historia. | Empieza por «L». | Le Corbusier | *Leonhard Euler | Bertrand Piccard | Ruth Dreifuss | Es uno de los matemáticos más importantes de la historia.
+# Origen: ciu_1l2fhvl
+2027-01-27 | palabra | ¿Qué lugar de Suiza buscamos? | - | Sede de la UEFA, a orillas del lago Lemán. | Está en el cantón de Vaud. | Empieza por «N». | *Nyon | Yverdon-les-Bains | Interlaken | Grindelwald | Sede de la UEFA, a orillas del lago Lemán.
+# Origen: cap_xtk1fv
+2027-01-28 | palabra | ¿Qué capital cantonal buscamos? | - | Es la tierra de Nicolás de Flüe, santo patrón de Suiza. | Es la capital del cantón de Obwalden. | Empieza por «S». | *Sarnen | Altdorf | Zug | Herisau | Es la tierra de Nicolás de Flüe, santo patrón de Suiza.
+# Origen: inv_11jpr6v
+2027-01-29 | palabra | ¿Qué invento o creación buscamos? | - | Su historia está relacionada con Suiza. | Lo inventó el médico Maximilian Bircher-Benner hacia 1900. | Empieza por «B». | La brújula | *El Birchermüesli | El teléfono | La fotografía | Lo inventó el médico Maximilian Bircher-Benner hacia 1900.
+# Origen: mapa:BL / cap_949y7f
+2027-01-30 | silueta | ¿De qué cantón es esta silueta? | BL | Es el contorno de un cantón suizo. | Su capital es Liestal. | Empieza por «B». | *Basilea-Campiña | Argovia | Berna | Friburgo | Se separó de Basilea-Ciudad en 1833, tras un conflicto entre la ciudad y el campo.
+# Origen: voc_xwcufl
+2027-01-31 | palabra | ¿Qué significa esta expresión? | - | En suizo alemán. | La expresión es «Zvieri». | Empieza por «m». | *merienda | mañana (el día siguiente) | adiós (informal) | ayer | Literalmente «a las cuatro»: la merienda de media tarde.
+# Origen: vocr_qzbw1l
+2027-02-01 | palabra | ¿Qué palabra o expresión buscamos? | - | Se usa en suizo alemán. | Significa «peluquería». | Otra palabra francesa del suizo alemán. | Merci vielmal | Zibele | *Coiffeur | Chabis | Otra palabra francesa del suizo alemán.
+# Origen: per_1loy0zv
+2027-02-02 | personaje | ¿Qué personaje es? | - | Un médico y alquimista del siglo XVI. | Nació cerca de Einsiedeln y revolucionó la medicina de su época. | Empieza por «P». | *Paracelso | Auguste Piccard | Martina Hingis | Hermann Hesse | Nació cerca de Einsiedeln y revolucionó la medicina de su época.
+# Origen: ciu_zl6vft
+2027-02-03 | palabra | ¿Qué lugar de Suiza buscamos? | - | Ciudad termal en el extremo sur del lago de Neuchâtel. | Está en el cantón de Vaud. | Empieza por «Y». | Interlaken | *Yverdon-les-Bains | Grindelwald | Lauterbrunnen | Ciudad termal en el extremo sur del lago de Neuchâtel.
+# Origen: cap_77agy4
+2027-02-04 | palabra | ¿Qué capital cantonal buscamos? | - | La llaman en broma «Mostindien» por sus manzanas y su sidra. | Es la capital del cantón de Turgovia. | Empieza por «F». | *Frauenfeld | Glaris | Delémont | Schaffhausen | La llaman en broma «Mostindien» por sus manzanas y su sidra.
+# Origen: inv_9wo2xh
+2027-02-05 | palabra | ¿Qué invento o creación buscamos? | - | Su historia está relacionada con Suiza. | Julius Maggi lo lanzó en 1908. | Empieza por «c». | La brújula | *El cubito de caldo Maggi | El telescopio | El avión | Julius Maggi lo lanzó en 1908.
+# Origen: mapa:AG / cap_blupch
+2027-02-06 | silueta | ¿De qué cantón es esta silueta? | AG | Es el contorno de un cantón suizo. | Su capital es Aarau. | Empieza por «A». | Berna | *Argovia | Friburgo | Soleura | A Argovia la llaman «el cantón de los castillos» y su tarta de zanahoria es famosa en todo el país.
+# Origen: voc_1m5xvqa
+2027-02-07 | palabra | ¿Qué significa esta expresión? | - | En suizo alemán. | La expresión es «Zmorge». | Empieza por «d». | suizo alemán | *desayuno | resfriado | andén | Viene de «Morge» (mañana). Un Zmorge de domingo es largo, con trenza, mermelada y queso.
+# Origen: vocr_g1atvk
+2027-02-08 | palabra | ¿Qué palabra o expresión buscamos? | - | Se usa en la Suiza francesa. | Significa «secador de pelo». | En Suiza el secador se llama «[…]», como el viento cálido de los Alpes. | Tip-top | Ça joue | *Fœhn | Santé | En Suiza el secador se llama «fœhn», como el viento cálido de los Alpes.
+# Origen: per_1jrk95d
+2027-02-09 | personaje | ¿Qué personaje es? | - | El psiquiatra creador de la psicología analítica. | Vivió y trabajó en Küsnacht, junto al lago de Zúrich. | Empieza por «C». | *Carl Gustav Jung | Nicolás de Flüe | Roger Federer | Louis Chevrolet | Vivió y trabajó en Küsnacht, junto al lago de Zúrich.
+# Origen: ciu_8pbvlg
+2027-02-10 | palabra | ¿Qué lugar de Suiza buscamos? | - | Está entre los lagos de Thun y Brienz, y es un paraíso del parapente. | Está en el cantón de Berna. | Empieza por «I». | Grindelwald | Lauterbrunnen | *Interlaken | Wengen | Está entre los lagos de Thun y Brienz, y es un paraíso del parapente.
+# Origen: cap_8v833y
+2027-02-11 | palabra | ¿Qué capital cantonal buscamos? | - | Es el cantón de habla italiana, con palmeras junto a sus lagos. | Es la capital del cantón de Tesino. | Empieza por «B». | Herisau | *Bellinzona | Basilea | Zug | Es el cantón de habla italiana, con palmeras junto a sus lagos.
+# Origen: inv_k2fcsj
+2027-02-12 | palabra | ¿Qué invento o creación buscamos? | - | Su historia está relacionada con Suiza. | Max Miedinger y Eduard Hoffmann la diseñaron en 1957. | Empieza por «t». | *La tipografía Helvetica | La brújula | La fotografía | El telescopio | Max Miedinger y Eduard Hoffmann la diseñaron en 1957.
+# Origen: mapa:BE / ciu_8pbvlg
+2027-02-13 | silueta | ¿De qué cantón es esta silueta? | BE | Es el contorno de un cantón suizo. | En el mapa del juego está en Espacio Mittelland. | Empieza por «B». | Friburgo | Soleura | *Berna | Neuchâtel | Está entre los lagos de Thun y Brienz, y es un paraíso del parapente.
+# Origen: voc_1tzcdei
+2027-02-14 | palabra | ¿Qué significa esta expresión? | - | En suizo alemán. | La expresión es «Zmittag». | Empieza por «c». | trabajar | curiosidad | *comida del mediodía | sirope para mezclar con agua | En Suiza se come pronto: muchas cantinas sirven desde las 11:30.
+# Origen: vocr_oxvutq
+2027-02-15 | palabra | ¿Qué palabra o expresión buscamos? | - | Se usa en suizo alemán. | Significa «quesero de montaña». | Pastor que pasa el verano en los pastos alpinos haciendo queso. | *Senn | Grüezi | Schwümme | Schwiizerdütsch | Pastor que pasa el verano en los pastos alpinos haciendo queso.
+# Origen: per_1p4r9xf
+2027-02-16 | personaje | ¿Qué personaje es? | - | Un psicólogo que estudió cómo aprenden los niños. | Nació en Neuchâtel. | Empieza por «J». | Nicolás de Flüe | *Jean Piaget | Lara Gut-Behrami | Jean-Luc Godard | Nació en Neuchâtel.
+# Origen: ciu_tjdet4
+2027-02-17 | palabra | ¿Qué lugar de Suiza buscamos? | - | Está a los pies de la cara norte del Eiger. | Está en el cantón de Berna. | Empieza por «G». | Lauterbrunnen | Wengen | Gstaad | *Grindelwald | Está a los pies de la cara norte del Eiger.
+# Origen: cap_s0dih2
+2027-02-18 | palabra | ¿Qué capital cantonal buscamos? | - | Es la tierra de Guillermo Tell: su estatua está en la plaza de […]. | Es la capital del cantón de Uri. | Empieza por «A». | *Altdorf | Schwyz | Aarau | Zug | Es la tierra de Guillermo Tell: su estatua está en la plaza de Altdorf.
+# Origen: inv_a68yce
+2027-02-19 | palabra | ¿Qué invento o creación buscamos? | - | Su historia está relacionada con Suiza. | Nació a finales del siglo XVIII en el Val-de-Travers, en Neuchâtel. | Empieza por «a». | El automóvil | La imprenta | *La absenta | La fotografía | Nació a finales del siglo XVIII en el Val-de-Travers, en Neuchâtel.
+# Origen: mapa:FR / ciu_1frkm4c
+2027-02-20 | silueta | ¿De qué cantón es esta silueta? | FR | Es el contorno de un cantón suizo. | En el mapa del juego está en Espacio Mittelland. | Empieza por «F». | Soleura | Neuchâtel | Jura | *Friburgo | El pueblo medieval que da nombre al queso Gruyère.
+# Origen: voc_15p8jfm
+2027-02-21 | palabra | ¿Qué significa esta expresión? | - | En suizo alemán. | La expresión es «Znacht». | Empieza por «c». | banda de carnaval | *cena | pera | queso | La cena suele ser entre las 18:00 y las 19:30.
+# Origen: vocr_1vk1x26
+2027-02-22 | palabra | ¿Qué palabra o expresión buscamos? | - | Se usa en la Suiza francesa. | Significa «barbacoa en el bosque». | Tradición de Neuchâtel: salchicha cocinada en las brasas de un gran fuego, en otoño. | *Torrée | Tomme | Livret de famille | Linge | Tradición de Neuchâtel: salchicha cocinada en las brasas de un gran fuego, en otoño.
+# Origen: per_4km00f
+2027-02-23 | personaje | ¿Qué personaje es? | - | La actriz bernesa de la primera película de James Bond. | Su salida del mar en «Agente 007 contra el Dr. No» (1962) es una escena mítica. | Empieza por «U». | Paul Klee | Henri Nestlé | *Ursula Andress | Lara Gut-Behrami | Su salida del mar en «Agente 007 contra el Dr. No» (1962) es una escena mítica.
+# Origen: ciu_i0ntc8
+2027-02-24 | palabra | ¿Qué lugar de Suiza buscamos? | - | El valle de las 72 cascadas. | Está en el cantón de Berna. | Empieza por «L». | *Lauterbrunnen | Wengen | Gstaad | Adelboden | El valle de las 72 cascadas.
+# Origen: cap_t4ldqv
+2027-02-25 | palabra | ¿Qué capital cantonal buscamos? | - | Acoge el Comité Olímpico Internacional, en […]. | Es la capital del cantón de Vaud. | Empieza por «L». | Lucerna | Basilea | *Lausana | Zúrich | Acoge el Comité Olímpico Internacional, en Lausana.
+# Origen: inv_1pokm3i
+2027-02-26 | palabra | ¿Qué invento o creación buscamos? | - | Su historia está relacionada con Suiza. | Salió en 1983 y ayudó a salvar la relojería suiza. | Empieza por «r». | El teléfono | *El reloj Swatch | La bombilla eléctrica | El telescopio | Salió en 1983 y ayudó a salvar la relojería suiza.
+# Origen: mapa:SO / ciu_1rkmxxx
+2027-02-27 | silueta | ¿De qué cantón es esta silueta? | SO | Es el contorno de un cantón suizo. | En el mapa del juego está en Espacio Mittelland. | Empieza por «S». | *Soleura | Neuchâtel | Jura | Vaud | Uno de los grandes nudos ferroviarios de Suiza.
+# Origen: voc_1j8yzf4
+2027-02-28 | palabra | ¿Qué significa esta expresión? | - | En suizo alemán. | La expresión es «Natel». | Empieza por «m». | caña de cerveza | *móvil | conejo | adiós (formal) | Nombre suizo del teléfono móvil. Venía de la antigua red de telefonía móvil del país y se quedó.
+# Origen: vocr_1s99qa8
+2027-03-01 | palabra | ¿Qué palabra o expresión buscamos? | - | Se usa en suizo alemán. | Significa «galleta». | En Navidad se hornean muchas: Mailänderli, Brunsli, Zimtsterne y Spitzbuebe. | Portemonnaie | *Guetzli | Geiss | Bierli | En Navidad se hornean muchas: Mailänderli, Brunsli, Zimtsterne y Spitzbuebe.
+# Origen: per_18g1cy7
+2027-03-02 | personaje | ¿Qué personaje es? | - | Una tenista que fue número 1 del mundo con 16 años. | Es la persona más joven que ha llegado al número 1 del tenis mundial. | Empieza por «M». | *Martina Hingis | Stan Wawrinka | Jean-Jacques Rousseau | Henri Nestlé | Es la persona más joven que ha llegado al número 1 del tenis mundial.
+# Origen: ciu_10t27cl
+2027-03-03 | palabra | ¿Qué lugar de Suiza buscamos? | - | Cada enero acoge el descenso de esquí del Lauberhorn. | Está en el cantón de Berna. | Empieza por «W». | Gstaad | *Wengen | Adelboden | Thun | Cada enero acoge el descenso de esquí del Lauberhorn.
+# Origen: cap_wqg7ri
+2027-03-04 | palabra | ¿Qué capital cantonal buscamos? | - | Tiene la mayoría de las cumbres de más de 4000 metros de Suiza, incluido el Cervino. | Es la capital del cantón de Valais. | Empieza por «S». | *Sion | Altdorf | Soleura | Aarau | Tiene la mayoría de las cumbres de más de 4000 metros de Suiza, incluido el Cervino.
+# Origen: inv_13l8ci0
+2027-03-05 | palabra | ¿Qué invento o creación buscamos? | - | Su historia está relacionada con Suiza. | Lo creó Niklaus Wirth en la ETH de Zúrich hacia 1970. | Empieza por «l». | La brújula | *El lenguaje de programación Pascal | La radio | La bombilla eléctrica | Lo creó Niklaus Wirth en la ETH de Zúrich hacia 1970.
+# Origen: mapa:NE / ciu_6r6t4g
+2027-03-06 | silueta | ¿De qué cantón es esta silueta? | NE | Es el contorno de un cantón suizo. | En el mapa del juego está en Espacio Mittelland. | Empieza por «N». | Jura | *Neuchâtel | Vaud | Valais | Ciudad relojera Patrimonio de la Humanidad y cuna de Le Corbusier.
+# Origen: voc_1hvp94e
+2027-03-07 | palabra | ¿Qué significa esta expresión? | - | En suizo alemán. | La expresión es «Velo». | Empieza por «b». | ¡caramba! | *bicicleta | mantequilla | ciclista de carretera | Palabra de origen francés que se usa en toda la Suiza alemana. En Alemania dirían «Fahrrad».
+# Origen: vocr_tz0nfh
+2027-03-08 | palabra | ¿Qué palabra o expresión buscamos? | - | Se usa en suizo alemán. | Significa «bizcocho de molde con agujero». | Bizcocho típico de las fiestas, en molde redondo con un agujero en el centro. | *Gugelhopf | Bierli | Meitli | Jo | Bizcocho típico de las fiestas, en molde redondo con un agujero en el centro.
+# Origen: per_10z8gzd
+2027-03-09 | personaje | ¿Qué personaje es? | - | Un tenista suizo con tres títulos de Grand Slam. | Ganó el Open de Australia, Roland Garros y el US Open. | Empieza por «S». | Henri Nestlé | Jacques Piccard | *Stan Wawrinka | Leonhard Euler | Ganó el Open de Australia, Roland Garros y el US Open.
+# Origen: ciu_1q2yigl
+2027-03-10 | palabra | ¿Qué lugar de Suiza buscamos? | - | Estación de esquí famosa por su ambiente exclusivo. | Está en el cantón de Berna. | Empieza por «G». | Adelboden | Thun | *Gstaad | Biel/Bienne | Estación de esquí famosa por su ambiente exclusivo.
+# Origen: inv_1jajbkf
+2027-03-11 | palabra | ¿Qué invento o creación buscamos? | - | Su historia está relacionada con Suiza. | Lo inventaron Gerd Binnig y Heinrich Rohrer en IBM Zúrich; ganaron el Nobel en 1986. | Empieza por «m». | *El microscopio de efecto túnel | La imprenta | La bombilla eléctrica | La brújula | Lo inventaron Gerd Binnig y Heinrich Rohrer en IBM Zúrich; ganaron el Nobel en 1986.
+# Origen: mapa:JU / cap_fis8rc
+2027-03-12 | silueta | ¿De qué cantón es esta silueta? | JU | Es el contorno de un cantón suizo. | Su capital es Delémont. | Empieza por «J». | Vaud | Valais | *Jura | Ginebra | Es el cantón más joven de Suiza: nació en 1979 al separarse de Berna.
+# Origen: voc_1l60gd
+2027-03-13 | palabra | ¿Qué significa esta expresión? | - | En suizo alemán. | La expresión es «Trottoir». | Empieza por «a». | gente | *acera | andén | jaleo | Otra palabra francesa adoptada por el suizo alemán. En Alemania dirían «Bürgersteig».
+# Origen: vocr_my1qfv
+2027-03-14 | palabra | ¿Qué palabra o expresión buscamos? | - | Se usa en el Tesino. | Significa «quesitos frescos». | Quesitos pequeños de cabra o vaca, a menudo con pimienta. | *Formaggini | Nocino | Merlot | Azione | Quesitos pequeños de cabra o vaca, a menudo con pimienta.
+# Origen: per_o8oorv
+2027-03-15 | personaje | ¿Qué personaje es? | - | Un saltador de esquí con cuatro oros olímpicos. | Ganó dos oros en 2002 y otros dos en 2010. | Empieza por «S». | *Simon Ammann | Roger Federer | H. R. Giger | Stan Wawrinka | Ganó dos oros en 2002 y otros dos en 2010.
+# Origen: ciu_x52ac1
+2027-03-16 | palabra | ¿Qué lugar de Suiza buscamos? | - | Acoge cada año una prueba de la Copa del Mundo de esquí. | Está en el cantón de Berna. | Empieza por «A». | Thun | Biel/Bienne | Mürren | *Adelboden | Acoge cada año una prueba de la Copa del Mundo de esquí.
+# Origen: inv_nglod
+2027-03-17 | palabra | ¿Qué invento o creación buscamos? | - | Su historia está relacionada con Suiza. | Emil Richterich los creó en 1940 en Laufen. | Empieza por «c». | El bolígrafo | El avión | *Los caramelos de hierbas Ricola | La brújula | Emil Richterich los creó en 1940 en Laufen.
+# Origen: mapa:VD / cap_t4ldqv
+2027-03-18 | silueta | ¿De qué cantón es esta silueta? | VD | Es el contorno de un cantón suizo. | Su capital es Lausana. | Empieza por «V». | Valais | Ginebra | Tesino | *Vaud | Acoge el Comité Olímpico Internacional, en Lausana.
+# Origen: voc_1k44rpo
+2027-03-19 | palabra | ¿Qué significa esta expresión? | - | En suizo alemán. | La expresión es «Glace». | Empieza por «h». | *helado | franco (dinero) | fin de la jornada laboral | no | Del francés. En Alemania dirían «Eis».
+# Origen: vocr_8vv4po
+2027-03-20 | palabra | ¿Qué palabra o expresión buscamos? | - | Se usa en la Suiza francesa. | Significa «comida del mediodía». | En Suiza, «déjeuner» es el desayuno, «[…]» la comida y «souper» la cena. | *Dîner | Cuchaule | Ça joue | Nonante | En Suiza, «déjeuner» es el desayuno, «dîner» la comida y «souper» la cena.
+# Origen: per_1obsi1j
+2027-03-21 | personaje | ¿Qué personaje es? | - | Un campeón olímpico de descenso que diseña pistas olímpicas. | Ganó el oro olímpico de descenso en 1972. | Empieza por «B». | *Bernhard Russi | Carl Gustav Jung | Alberto Giacometti | Johanna Spyri | Ganó el oro olímpico de descenso en 1972.
+# Origen: ciu_j6s3pi
+2027-03-22 | palabra | ¿Qué lugar de Suiza buscamos? | - | Castillo y lago turquesa con vistas a las cumbres del Oberland. | Está en el cantón de Berna. | Empieza por «T». | *Thun | Biel/Bienne | Mürren | Gruyères | Castillo y lago turquesa con vistas a las cumbres del Oberland.
+# Origen: inv_1ldz4mk
+2027-03-23 | palabra | ¿Qué invento o creación buscamos? | - | Su historia está relacionada con Suiza. | Albert Wander la lanzó en Berna en 1904. | Empieza por «O». | La cremallera | La bombilla eléctrica | *La Ovomaltine | El avión | Albert Wander la lanzó en Berna en 1904.
+# Origen: mapa:VS / cap_wqg7ri
+2027-03-24 | silueta | ¿De qué cantón es esta silueta? | VS | Es el contorno de un cantón suizo. | Su capital es Sion. | Empieza por «V». | *Valais | Ginebra | Tesino | Glaris | Tiene la mayoría de las cumbres de más de 4000 metros de Suiza, incluido el Cervino.
+# Origen: voc_1i482vn
+2027-03-25 | palabra | ¿Qué significa esta expresión? | - | En suizo alemán. | La expresión es «Poulet». | Empieza por «p». | cariño | *pollo | abuela | cervecita | Del francés. En la carta de un restaurante suizo verás «Poulet», no «Hähnchen».
+# Origen: vocr_gxie66
+2027-03-26 | palabra | ¿Qué palabra o expresión buscamos? | - | Se usa en suizo alemán. | Significa «chocolate». | Un «[…]stängeli» es una barrita de chocolate. Suiza come unos 10 kilos por persona al año. | Exgüsi | Bschiss | *Schoggi | Hoger | Un «Schoggistängeli» es una barrita de chocolate. Suiza come unos 10 kilos por persona al año.
+# Origen: per_1nxhi2v
+2027-03-27 | personaje | ¿Qué personaje es? | - | Un filósofo de la Ilustración nacido en Ginebra. | Escribió «El contrato social». | Empieza por «J». | Ella Maillart | Paul Klee | *Jean-Jacques Rousseau | César Ritz | Escribió «El contrato social».
+# Origen: ciu_mlq7a5
+2027-03-28 | palabra | ¿Qué lugar de Suiza buscamos? | - | La ciudad bilingüe más grande de Suiza. | Está en el cantón de Berna. | Empieza por «B». | Mürren | *Biel/Bienne | Gruyères | Einsiedeln | La ciudad bilingüe más grande de Suiza.
+# Origen: inv_1yugnl4
+2027-03-29 | palabra | ¿Qué invento o creación buscamos? | - | Su historia está relacionada con Suiza. | Rodolphe Lindt inventó en 1879 el proceso que hace el chocolate tan suave. | Empieza por «c». | El teléfono | *El conchado del chocolate | La bombilla eléctrica | La cremallera | Rodolphe Lindt inventó en 1879 el proceso que hace el chocolate tan suave.
+# Origen: mapa:GE
+2027-03-30 | silueta | ¿De qué cantón es esta silueta? | GE | Es el contorno de un cantón suizo. | En el mapa del juego está en Región del Lemán. | Empieza por «G». | Tesino | *Ginebra | Glaris | Schaffhausen | En el mapa de Suizamente, Ginebra pertenece a la región Región del Lemán.
+# Origen: voc_1xl81ww
+2027-03-31 | palabra | ¿Qué significa esta expresión? | - | En suizo alemán. | La expresión es «Gipfeli». | Empieza por «c». | *cruasán | bar de granja temporal | suizo alemán | abuela | El cruasán suizo, primo del francés y normalmente algo más denso.
+# Origen: vocr_1lumofq
+2027-04-01 | palabra | ¿Qué palabra o expresión buscamos? | - | Se usa en la Suiza francesa. | Significa «reunión». | En el trabajo, una reunión es una «[…]». | *Séance | Dîner | Bancomat | Fœhn | En el trabajo, una reunión es una «séance».
+# Origen: per_7fs459
+2027-04-02 | personaje | ¿Qué personaje es? | - | El reformador protestante que transformó Ginebra. | A Ginebra la llegaron a llamar «la Roma protestante». | Empieza por «J». | *Juan Calvino | Martina Hingis | Roger Federer | Jean-Jacques Rousseau | A Ginebra la llegaron a llamar «la Roma protestante».
+# Origen: ciu_47fdfv
+2027-04-03 | palabra | ¿Qué lugar de Suiza buscamos? | - | Pueblo sin coches colgado sobre el valle de Lauterbrunnen. | Está en el cantón de Berna. | Empieza por «M». | Gruyères | Einsiedeln | *Mürren | Winterthur | Pueblo sin coches colgado sobre el valle de Lauterbrunnen.
+# Origen: inv_1pd6pg2
+2027-04-04 | palabra | ¿Qué invento o creación buscamos? | - | Su historia está relacionada con Suiza. | Theodor Tobler y Emil Baumann la crearon en Berna en 1908. | Empieza por «T». | La fotografía | *La Toblerone | La imprenta | La brújula | Theodor Tobler y Emil Baumann la crearon en Berna en 1908.
+# Origen: mapa:TI / cap_8v833y
+2027-04-05 | silueta | ¿De qué cantón es esta silueta? | TI | Es el contorno de un cantón suizo. | Su capital es Bellinzona. | Empieza por «T». | Glaris | Schaffhausen | *Tesino | Appenzell R. Ext. | Es el cantón de habla italiana, con palmeras junto a sus lagos.
+# Origen: voc_hy2d2r
+2027-04-06 | palabra | ¿Qué significa esta expresión? | - | En suizo alemán. | La expresión es «Weggli». | Empieza por «p». | trabajar | *panecillo blando | pan trenzado | chuleta (para un examen) | Panecillo pequeño y tierno. Con una tableta de chocolate dentro es merienda de campeones.
+# Origen: vocr_mxx7oz
+2027-04-07 | palabra | ¿Qué palabra o expresión buscamos? | - | Se usa en el Tesino. | Significa «gachas de maíz». | Plato tradicional del Tesino, removido durante horas en una olla de cobre. | Castagne | Buongiorno | *Polenta | Rustico | Plato tradicional del Tesino, removido durante horas en una olla de cobre.
+# Origen: per_1tjsp5r
+2027-04-08 | personaje | ¿Qué personaje es? | - | El reformador protestante de Zúrich. | Predicaba en la Grossmünster, la gran iglesia de Zúrich. | Empieza por «H». | *Huldrych Zwinglio | Hermann Hesse | Jean-Luc Godard | Bernhard Russi | Predicaba en la Grossmünster, la gran iglesia de Zúrich.
+# Origen: ciu_1frkm4c
+2027-04-09 | palabra | ¿Qué lugar de Suiza buscamos? | - | El pueblo medieval que da nombre al queso Gruyère. | Está en el cantón de Friburgo. | Empieza por «G». | Einsiedeln | Winterthur | Rapperswil | *Gruyères | El pueblo medieval que da nombre al queso Gruyère.
+# Origen: inv_ff4vul
+2027-04-10 | palabra | ¿Qué invento o creación buscamos? | - | Su historia está relacionada con Suiza. | Robert Barth creó en 1952 este refresco hecho con suero de leche. | Empieza por «R». | El bolígrafo | La brújula | *La Rivella | La bombilla eléctrica | Robert Barth creó en 1952 este refresco hecho con suero de leche.
+# Origen: mapa:GL
+2027-04-11 | silueta | ¿De qué cantón es esta silueta? | GL | Es el contorno de un cantón suizo. | En el mapa del juego está en Suiza oriental. | Empieza por «G». | Schaffhausen | Appenzell R. Ext. | Appenzell R. Int. | *Glaris | En el mapa de Suizamente, Glaris pertenece a la región Suiza oriental.
+# Origen: voc_1abfnhn
+2027-04-12 | palabra | ¿Qué significa esta expresión? | - | En suizo alemán. | La expresión es «Zopf». | Empieza por «p». | cebolla (en Basilea) | billete | *pan trenzado | queso | La trenza del domingo, hecha con mantequilla. En Berna también se llama «Züpfe».
+# Origen: vocr_r7u44g
+2027-04-13 | palabra | ¿Qué palabra o expresión buscamos? | - | Se usa en romanche. | Significa «muchas gracias». | El romanche se habla en Grisones y tiene cinco variantes regionales. | Aua | *Grazia fitg | Pizokels | Buna saira | El romanche se habla en Grisones y tiene cinco variantes regionales.
+# Origen: per_gbfdca
+2027-04-14 | personaje | ¿Qué personaje es? | - | Un premio Nobel de Literatura que vivió en el Tesino. | Escribió «Siddhartha» y vivió en Montagnola, cerca de Lugano. | Empieza por «H». | Nicolás de Flüe | Juan Calvino | *Hermann Hesse | Max Frisch | Escribió «Siddhartha» y vivió en Montagnola, cerca de Lugano.
+# Origen: ciu_bj3kmb
+2027-04-15 | palabra | ¿Qué lugar de Suiza buscamos? | - | Su abadía, con la Virgen Negra, es un gran lugar de peregrinación. | Está en el cantón de Schwyz. | Empieza por «E». | *Einsiedeln | Winterthur | Rapperswil | Baden | Su abadía, con la Virgen Negra, es un gran lugar de peregrinación.
+# Origen: mapa:SH
+2027-04-16 | silueta | ¿De qué cantón es esta silueta? | SH | Es el contorno de un cantón suizo. | En el mapa del juego está en Suiza oriental. | Empieza por «S». | *Schaffhausen | Appenzell R. Ext. | Appenzell R. Int. | San Galo | En el mapa de Suizamente, Schaffhausen pertenece a la región Suiza oriental.
+# Origen: voc_1s5depo
+2027-04-17 | palabra | ¿Qué significa esta expresión? | - | En suizo alemán. | La expresión es «Rüebli». | Empieza por «z». | tentempié de media mañana | *zanahoria | resfriado | jugar al fútbol | La tarta de zanahoria de Argovia (Rüeblitorte) es tan famosa que a Argovia la llaman «Rüebliland».
+# Origen: vocr_1j8yzf4
+2027-04-18 | palabra | ¿Qué palabra o expresión buscamos? | - | Se usa en suizo alemán. | Significa «móvil». | Nombre suizo del teléfono móvil. Venía de la antigua red de telefonía móvil del país y se quedó. | Gugelhopf | *Natel | Gipfeli | Geschter | Nombre suizo del teléfono móvil. Venía de la antigua red de telefonía móvil del país y se quedó.
+# Origen: per_10f7g8g
+2027-04-19 | personaje | ¿Qué personaje es? | - | El autor de «La visita de la vieja dama». | Su casa en Neuchâtel es hoy un museo. | Empieza por «F». | Bernhard Russi | Ferdinand Hodler | *Friedrich Dürrenmatt | Carl Gustav Jung | Su casa en Neuchâtel es hoy un museo.
+# Origen: ciu_tntngn
+2027-04-20 | palabra | ¿Qué lugar de Suiza buscamos? | - | La sexta ciudad de Suiza, con museos de arte de primer nivel. | Está en el cantón de Zúrich. | Empieza por «W». | Rapperswil | *Winterthur | Baden | La Chaux-de-Fonds | La sexta ciudad de Suiza, con museos de arte de primer nivel.
+# Origen: mapa:AR
+2027-04-21 | silueta | ¿De qué cantón es esta silueta? | AR | Es el contorno de un cantón suizo. | En el mapa del juego está en Suiza oriental. | Empieza por «A». | Appenzell R. Int. | *Appenzell R. Ext. | San Galo | Grisones | En el mapa de Suizamente, Appenzell R. Ext. pertenece a la región Suiza oriental.
+# Origen: voc_2y931l
+2027-04-22 | palabra | ¿Qué significa esta expresión? | - | En suizo alemán. | La expresión es «Härdöpfel». | Empieza por «p». | hacer la compra | *patata | niño (chico) | nadar | Literalmente «manzana de tierra», igual que «pomme de terre» en francés.
+# Origen: vocr_xz2sn3
+2027-04-23 | palabra | ¿Qué palabra o expresión buscamos? | - | Se usa en suizo alemán. | Significa «cervecita». | «Gömmer es […] go näh?» significa «¿vamos a tomar una cervecita?». | Billett | *Bierli | Spickzettel | Chue | «Gömmer es Bierli go näh?» significa «¿vamos a tomar una cervecita?».
+# Origen: per_17mml8o
+2027-04-24 | personaje | ¿Qué personaje es? | - | El autor de la novela «Homo Faber». | Además de escritor, fue arquitecto en Zúrich. | Empieza por «M». | *Max Frisch | César Ritz | Hermann Hesse | H. R. Giger | Además de escritor, fue arquitecto en Zúrich.
+# Origen: ciu_drrhq8
+2027-04-25 | palabra | ¿Qué lugar de Suiza buscamos? | - | La «ciudad de las rosas», a orillas del lago de Zúrich. | Está en el cantón de San Galo. | Empieza por «R». | Baden | La Chaux-de-Fonds | *Rapperswil | Engelberg | La «ciudad de las rosas», a orillas del lago de Zúrich.
+# Origen: mapa:AI
+2027-04-26 | silueta | ¿De qué cantón es esta silueta? | AI | Es el contorno de un cantón suizo. | En el mapa del juego está en Suiza oriental. | Empieza por «A». | San Galo | Grisones | *Appenzell R. Int. | Turgovia | En el mapa de Suizamente, Appenzell R. Int. pertenece a la región Suiza oriental.
+# Origen: voc_lx8o6l
+2027-04-27 | palabra | ¿Qué significa esta expresión? | - | En suizo alemán. | La expresión es «Anke». | Empieza por «m». | buenísimo | niño (chico) | *mantequilla | pera | En alemán estándar es «Butter». Un «Ankezopf» es una trenza de mantequilla.
+# Origen: vocr_gnc1an
+2027-04-28 | palabra | ¿Qué palabra o expresión buscamos? | - | Se usa en la Suiza francesa. | Significa «desayuno». | En Francia «[…]» es la comida del mediodía. En Suiza, el desayuno. | Gymnase | *Déjeuner | Panosse | Raisinée | En Francia «déjeuner» es la comida del mediodía. En Suiza, el desayuno.
+# Origen: per_c6y02x
+2027-04-29 | personaje | ¿Qué personaje es? | - | Un arquitecto del Tesino de formas geométricas. | Diseñó, entre otros, el museo SFMOMA de San Francisco. | Empieza por «M». | Auguste Piccard | Roger Federer | *Mario Botta | Ruth Dreifuss | Diseñó, entre otros, el museo SFMOMA de San Francisco.
+# Origen: ciu_1c9fyj
+2027-04-30 | palabra | ¿Qué lugar de Suiza buscamos? | - | Ciudad termal con baños desde la época romana. | Está en el cantón de Argovia. | Empieza por «B». | La Chaux-de-Fonds | Engelberg | Saas-Fee | *Baden | Ciudad termal con baños desde la época romana.
+# Origen: mapa:SG / ciu_drrhq8
+2027-05-01 | silueta | ¿De qué cantón es esta silueta? | SG | Es el contorno de un cantón suizo. | En el mapa del juego está en Suiza oriental. | Empieza por «S». | Grisones | Turgovia | Lucerna | *San Galo | La «ciudad de las rosas», a orillas del lago de Zúrich.
+# Origen: voc_1yaggok
+2027-05-02 | palabra | ¿Qué significa esta expresión? | - | En suizo alemán. | La expresión es «Rahm». | Empieza por «n». | trabajar | *nata | fin de la jornada laboral | basura | En Alemania se dice «Sahne». Ojo en el súper: «Vollrahm» es nata, no leche.
+# Origen: vocr_3ci2nk
+2027-05-03 | palabra | ¿Qué palabra o expresión buscamos? | - | Se usa en suizo alemán. | Significa «nadar». | En verano, ir a nadar al lago o al río después del trabajo es un plan nacional. | *Schwümme | Poulet | Chabis | Säuli | En verano, ir a nadar al lago o al río después del trabajo es un plan nacional.
+# Origen: per_awy5ko
+2027-05-04 | personaje | ¿Qué personaje es? | - | Un escultor de máquinas en movimiento. | Su fuente de máquinas está frente al teatro de Basilea. | Empieza por «J». | *Jean Tinguely | Mario Botta | Jean-Luc Godard | Carl Gustav Jung | Su fuente de máquinas está frente al teatro de Basilea.
+# Origen: ciu_6r6t4g
+2027-05-05 | palabra | ¿Qué lugar de Suiza buscamos? | - | Ciudad relojera Patrimonio de la Humanidad y cuna de Le Corbusier. | Está en el cantón de Neuchâtel. | Empieza por «C». | *La Chaux-de-Fonds | Engelberg | Saas-Fee | Verbier | Ciudad relojera Patrimonio de la Humanidad y cuna de Le Corbusier.
+# Origen: mapa:GR / cap_u6xrto
+2027-05-06 | silueta | ¿De qué cantón es esta silueta? | GR | Es el contorno de un cantón suizo. | Su capital es Coira. | Empieza por «G». | *Grisones | Turgovia | Lucerna | Uri | Es el cantón más grande de Suiza y el único trilingüe: alemán, romanche e italiano.
+# Origen: voc_1il40mq
+2027-05-07 | palabra | ¿Qué significa esta expresión? | - | En suizo alemán. | La expresión es «Chuchichäschtli». | Empieza por «a». | merienda | *armarito de cocina | cabra | pollo | La palabra favorita de los suizos para poner a prueba a quien viene de fuera. La «ch» suena como una jota.
+# Origen: vocr_tyofsr
+2027-05-08 | palabra | ¿Qué palabra o expresión buscamos? | - | Se usa en suizo alemán. | Significa «vaca». | En Suiza hay alrededor de 1,5 millones de vacas y bueyes. | *Chue | Grosi | Öpfel | Gschänkli | En Suiza hay alrededor de 1,5 millones de vacas y bueyes.
+# Origen: per_1fs0uff
+2027-05-09 | personaje | ¿Qué personaje es? | - | El artista que diseñó el monstruo de «Alien». | Ganó un Óscar a los mejores efectos visuales por «Alien». | Empieza por «H». | Paul Klee | Ferdinand Hodler | *H. R. Giger | Jean-Luc Godard | Ganó un Óscar a los mejores efectos visuales por «Alien».
+# Origen: ciu_138e4f0
+2027-05-10 | palabra | ¿Qué lugar de Suiza buscamos? | - | Está a los pies del Titlis y de un gran monasterio. | Está en el cantón de Obwalden. | Empieza por «E». | Saas-Fee | *Engelberg | Verbier | Crans-Montana | Está a los pies del Titlis y de un gran monasterio.
+# Origen: mapa:TG / cap_77agy4
+2027-05-11 | silueta | ¿De qué cantón es esta silueta? | TG | Es el contorno de un cantón suizo. | Su capital es Frauenfeld. | Empieza por «T». | Lucerna | *Turgovia | Uri | Schwyz | La llaman en broma «Mostindien» por sus manzanas y su sidra.
+# Origen: voc_1qqkcxu
+2027-05-12 | palabra | ¿Qué significa esta expresión? | - | En suizo alemán. | La expresión es «Chuchi». | Empieza por «c». | *cocina | toro | café con aguardiente | cebolla | En alemán estándar es «Küche». La «ch» del principio se pronuncia con la garganta.
+# Origen: vocr_11vjucx
+2027-05-13 | palabra | ¿Qué palabra o expresión buscamos? | - | Se usa en la Suiza francesa. | Significa «suizo alemán (apodo)». | Apodo burlón con el que en la Romandía llaman a la gente de la Suiza alemana. | Cheni | *Bourbine | Action | Septante | Apodo burlón con el que en la Romandía llaman a la gente de la Suiza alemana.
+# Origen: per_1dxxy7j
+2027-05-14 | personaje | ¿Qué personaje es? | - | El aventurero que dio la vuelta al mundo en globo y en avión solar. | En 2016 completó la vuelta al mundo en el avión solar Solar Impulse 2. | Empieza por «B». | Bernhard Russi | *Bertrand Piccard | Nicolás de Flüe | Jacques Piccard | En 2016 completó la vuelta al mundo en el avión solar Solar Impulse 2.
+# Origen: ciu_1ozz5x0
+2027-05-15 | palabra | ¿Qué lugar de Suiza buscamos? | - | Pueblo sin coches rodeado de glaciares. | Está en el cantón de Valais. | Empieza por «S». | Verbier | Crans-Montana | *Saas-Fee | Leukerbad | Pueblo sin coches rodeado de glaciares.
+# Origen: voc_rho1yc
+2027-05-16 | palabra | ¿Qué significa esta expresión? | - | En suizo alemán. | La expresión es «Chäs». | Empieza por «q». | patata | fiesta del pueblo | *queso | estantería o armazón | «Chäs» es queso. Una «Chäsi» es la quesería del pueblo.
+# Origen: vocr_71elee
+2027-05-17 | palabra | ¿Qué palabra o expresión buscamos? | - | Se usa en la Suiza francesa. | Significa «buen provecho». | La forma corta de «bon appétit». Se dice antes de empezar a comer. | *Bonne app | Agender | Gymnase | Nonante | La forma corta de «bon appétit». Se dice antes de empezar a comer.
+# Origen: per_1btd1r5
+2027-05-18 | personaje | ¿Qué personaje es? | - | El científico que subió a la estratosfera en globo. | En 1931 llegó a casi 16 000 metros de altura. | Empieza por «A». | Max Frisch | *Auguste Piccard | Juan Calvino | Hermann Hesse | En 1931 llegó a casi 16 000 metros de altura.
+# Origen: ciu_y1qi6g
+2027-05-19 | palabra | ¿Qué lugar de Suiza buscamos? | - | Paraíso del esquí fuera de pista y del freeride. | Está en el cantón de Valais. | Empieza por «V». | Crans-Montana | Leukerbad | Martigny | *Verbier | Paraíso del esquí fuera de pista y del freeride.
+# Origen: voc_t5cii
+2027-05-20 | palabra | ¿Qué significa esta expresión? | - | En suizo alemán. | La expresión es «Gopfriedstutz». | Empieza por «¡». | patata | niño o niños | *¡caramba! | panecillo | Exclamación de enfado suave y muy suiza. Ideal para cuando pierdes el tren por un segundo.
+# Origen: vocr_1euw3bo
+2027-05-21 | palabra | ¿Qué palabra o expresión buscamos? | - | Se usa en suizo alemán. | Significa «fin de la jornada laboral». | El momento de salir del trabajo. Un «[…]bier» es la cerveza de después. | Plausch | *Fyrabig | Pfnüsel | Grüezi | El momento de salir del trabajo. Un «Fyrabigbier» es la cerveza de después.
+# Origen: per_98970x
+2027-05-22 | personaje | ¿Qué personaje es? | - | El oceanógrafo que bajó a la fosa de las Marianas. | Llegó al punto más profundo del océano en 1960. | Empieza por «J». | Nicolas Hayek | *Jacques Piccard | Simon Ammann | Paracelso | Llegó al punto más profundo del océano en 1960.
+# Origen: ciu_yza8hh
+2027-05-23 | palabra | ¿Qué lugar de Suiza buscamos? | - | Estación de golf y esquí sobre el valle del Ródano. | Está en el cantón de Valais. | Empieza por «C». | *Crans-Montana | Leukerbad | Martigny | Brig | Estación de golf y esquí sobre el valle del Ródano.
+# Origen: voc_7u990h
+2027-05-24 | palabra | ¿Qué significa esta expresión? | - | En suizo alemán. | La expresión es «Gäll». | Empieza por «¿». | *¿verdad? | cartero | banda de carnaval | buenísimo | Muletilla al final de la frase: «Schön, gäll?» significa «Bonito, ¿verdad?».
+# Origen: vocr_ryhad7
+2027-05-25 | palabra | ¿Qué palabra o expresión buscamos? | - | Se usa en suizo alemán. | Significa «persona muy cuadriculada». | Estereotipo del suizo obsesionado con las normas. Se usa en broma… y a veces en serio. | Grittibänz | *Bünzli | En Guete | Schaffe | Estereotipo del suizo obsesionado con las normas. Se usa en broma… y a veces en serio.
+# Origen: per_1miz6gv
+2027-05-26 | personaje | ¿Qué personaje es? | - | Un piloto de La Chaux-de-Fonds que fundó una marca de coches en EE. UU.. | Cofundó la marca Chevrolet en 1911. | Empieza por «L». | Roger Federer | *Louis Chevrolet | Henri Nestlé | Jean Tinguely | Cofundó la marca Chevrolet en 1911.
+# Origen: ciu_1vbxo3c
+2027-05-27 | palabra | ¿Qué lugar de Suiza buscamos? | - | Termas alpinas a los pies de enormes paredes de roca. | Está en el cantón de Valais. | Empieza por «L». | Martigny | *Leukerbad | Brig | Andermatt | Termas alpinas a los pies de enormes paredes de roca.
+# Origen: voc_xh462d
+2027-05-28 | palabra | ¿Qué significa esta expresión? | - | En suizo alemán. | La expresión es «Jo». | Empieza por «s». | *sí | resfriado | banda de carnaval | zanahoria | El «ja» alemán en Suiza suele sonar «jo» o «jaa».
+# Origen: vocr_18q5mdr
+2027-05-29 | palabra | ¿Qué palabra o expresión buscamos? | - | Se usa en la Suiza francesa. | Significa «votación popular». | Suiza vota varias veces al año sobre leyes e iniciativas populares. | Chalet | Gymnase | *Votation | Raisinée | Suiza vota varias veces al año sobre leyes e iniciativas populares.
+# Origen: per_1cblxtc
+2027-05-30 | personaje | ¿Qué personaje es? | - | El hotelero del Valais que dio nombre a los hoteles Ritz. | Nació en Niederwald, un pueblecito del Valais. | Empieza por «C». | Paracelso | Huldrych Zwinglio | *César Ritz | Alberto Giacometti | Nació en Niederwald, un pueblecito del Valais.
+# Origen: ciu_4hib3w
+2027-05-31 | palabra | ¿Qué lugar de Suiza buscamos? | - | Allí se pueden ver los famosos perros San Bernardo. | Está en el cantón de Valais. | Empieza por «M». | Brig | Andermatt | *Martigny | Laax | Allí se pueden ver los famosos perros San Bernardo.
+# Origen: voc_xmpj72
+2027-06-01 | palabra | ¿Qué significa esta expresión? | - | En suizo alemán. | La expresión es «Nei». | Empieza por «n». | fiesta del pueblo | móvil | *no | conejo | El «nein» alemán en versión suiza.
+# Origen: vocr_9ce8nh
+2027-06-02 | palabra | ¿Qué palabra o expresión buscamos? | - | Se usa en suizo alemán. | Significa «cebolla». | En Berna se celebra el […]märit, el mercado de la cebolla, cada noviembre. | *Zibele | Billett | Tschüss | Müntschi | En Berna se celebra el Zibelemärit, el mercado de la cebolla, cada noviembre.
+# Origen: per_1x2d6cm
+2027-06-03 | personaje | ¿Qué personaje es? | - | El fundador de la empresa de alimentación de Vevey. | Nació en Alemania y creó en Vevey una harina láctea para bebés. | Empieza por «H». | *Henri Nestlé | Guillermo Tell | Max Frisch | Roger Federer | Nació en Alemania y creó en Vevey una harina láctea para bebés.
+# Origen: ciu_1kpad0p
+2027-06-04 | palabra | ¿Qué lugar de Suiza buscamos? | - | Tiene el palacio Stockalper, con torres de cúpulas doradas. | Está en el cantón de Valais. | Empieza por «B». | Andermatt | Laax | Arosa | *Brig | Tiene el palacio Stockalper, con torres de cúpulas doradas.
+# Origen: voc_wudmot
+2027-06-05 | palabra | ¿Qué significa esta expresión? | - | En suizo alemán. | La expresión es «Schätzli». | Empieza por «c». | regalito | *cariño | rápido | chocolate | Apodo cariñoso para la pareja o los niños. Literalmente, «tesorito».
+# Origen: vocr_1sdb5ac
+2027-06-06 | palabra | ¿Qué palabra o expresión buscamos? | - | Se usa en romanche. | Significa «Engadina». | El valle de St. Moritz se llama […] en romanche. Por él corre el río Inn. | Pizokels | Chalandamarz | *Engiadina | Bun di | El valle de St. Moritz se llama Engiadina en romanche. Por él corre el río Inn.
+# Origen: per_1wx94fn
+2027-06-07 | personaje | ¿Qué personaje es? | - | La primera mujer presidenta de la Confederación. | Lo fue en 1999. | Empieza por «R». | Johanna Spyri | *Ruth Dreifuss | Auguste Piccard | Jean-Luc Godard | Lo fue en 1999.
+# Origen: ciu_1ad58bz
+2027-06-08 | palabra | ¿Qué lugar de Suiza buscamos? | - | Está cerca del puente del Diablo, en la ruta del San Gotardo. | Está en el cantón de Uri. | Empieza por «A». | *Andermatt | Laax | Arosa | Sils Maria | Está cerca del puente del Diablo, en la ruta del San Gotardo.
+# Origen: voc_10bbg9w
+2027-06-09 | palabra | ¿Qué significa esta expresión? | - | En suizo alemán. | La expresión es «Büsi». | Empieza por «g». | *gato | tarea doméstica asignada | suficiente | mocos | Gato en lenguaje cariñoso. Un gatito es un «Büsseli».
+# Origen: vocr_xmpj72
+2027-06-10 | palabra | ¿Qué palabra o expresión buscamos? | - | Se usa en suizo alemán. | Significa «no». | El «[…]n» alemán en versión suiza. | Weggli | Schätzli | *Nei | Chrampfe | El «nein» alemán en versión suiza.
+# Origen: per_139drxd
+2027-06-11 | personaje | ¿Qué personaje es? | - | Un cineasta franco-suizo de la «nouvelle vague». | Dirigió «Al final de la escapada». | Empieza por «J». | Sophie Taeuber-Arp | *Jean-Luc Godard | Johanna Spyri | Albert Einstein | Dirigió «Al final de la escapada».
+# Origen: ciu_1tjnhpr
+2027-06-12 | palabra | ¿Qué lugar de Suiza buscamos? | - | Una de las grandes estaciones de snowboard de Europa. | Está en el cantón de Grisones. | Empieza por «L». | Arosa | *Laax | Sils Maria | Olten | Una de las grandes estaciones de snowboard de Europa.
+# Origen: voc_mxbrt9
+2027-06-13 | palabra | ¿Qué significa esta expresión? | - | En suizo alemán. | La expresión es «Chüngel». | Empieza por «c». | *conejo | cebolla (en Basilea) | resfriado | acera | En alemán estándar es «Kaninchen».
+# Origen: vocr_doy97w
+2027-06-14 | palabra | ¿Qué palabra o expresión buscamos? | - | Se usa en la Suiza francesa. | Significa «funda». | Una «[…] de duvet» es la funda del edredón. En Francia dirían «housse». | Chalet | *Fourre | Bancomat | Papet vaudois | Una «fourre de duvet» es la funda del edredón. En Francia dirían «housse».
+# Origen: per_11socwf
+2027-06-15 | personaje | ¿Qué personaje es? | - | Una viajera y escritora de Ginebra. | Recorrió Asia en los años 30 y lo contó en sus libros. | Empieza por «E». | Stan Wawrinka | *Ella Maillart | Mario Botta | Alberto Giacometti | Recorrió Asia en los años 30 y lo contó en sus libros.
+# Origen: ciu_1bc7shb
+2027-06-16 | palabra | ¿Qué lugar de Suiza buscamos? | - | Tiene un refugio para osos rescatados. | Está en el cantón de Grisones. | Empieza por «A». | Sils Maria | Olten | *Arosa | Kreuzlingen | Tiene un refugio para osos rescatados.
+# Origen: voc_figrn4
+2027-06-17 | palabra | ¿Qué significa esta expresión? | - | En suizo alemán. | La expresión es «Hüsli». | Empieza por «c». | alemán estándar | cocina | *casita | fin de la jornada laboral | El diminutivo «-li» está por todas partes en suizo alemán: Hüsli, Lädeli, Stägeli…
+# Origen: vocr_1k44rpo
+2027-06-18 | palabra | ¿Qué palabra o expresión buscamos? | - | Se usa en suizo alemán. | Significa «helado». | Del francés. En Alemania dirían «Eis». | *Glace | Öpfel | Lüüt | Gipfeli | Del francés. En Alemania dirían «Eis».
+# Origen: per_1k6f4js
+2027-06-19 | personaje | ¿Qué personaje es? | - | El empresario que impulsó el reloj Swatch. | Ayudó a salvar la relojería suiza en los años 80. | Empieza por «N». | H. R. Giger | *Nicolas Hayek | Stan Wawrinka | Paracelso | Ayudó a salvar la relojería suiza en los años 80.
+# Origen: ciu_piixg2
+2027-06-20 | palabra | ¿Qué lugar de Suiza buscamos? | - | El filósofo Friedrich Nietzsche pasaba allí los veranos. | Está en el cantón de Grisones. | Empieza por «S». | Olten | Kreuzlingen | Stans | *Sils Maria | El filósofo Friedrich Nietzsche pasaba allí los veranos.
+# Origen: voc_s4qdo
+2027-06-21 | palabra | ¿Qué significa esta expresión? | - | En suizo alemán. | La expresión es «Müntschi». | Empieza por «b». | *besito | hola (formal) | tiendecita | quesero de montaña | Beso cariñoso, por ejemplo a un niño o a la abuela.
+# Origen: vocr_1aug1b9
+2027-06-22 | palabra | ¿Qué palabra o expresión buscamos? | - | Se usa en romanche. | Significa «posada o restaurante». | En los pueblos de Grisones verás carteles de «[…]» junto a los de «Gasthaus». | Pizokels | Chasa | *Ustaria | Aua | En los pueblos de Grisones verás carteles de «ustaria» junto a los de «Gasthaus».
+# Origen: per_4qly3k
+2027-06-23 | personaje | ¿Qué personaje es? | - | Un pintor famoso por sus paisajes alpinos. | Es uno de los pintores suizos más conocidos. | Empieza por «F». | Alberto Giacometti | Carl Gustav Jung | *Ferdinand Hodler | Jacques Piccard | Es uno de los pintores suizos más conocidos.
+# Origen: ciu_1rkmxxx
+2027-06-24 | palabra | ¿Qué lugar de Suiza buscamos? | - | Uno de los grandes nudos ferroviarios de Suiza. | Está en el cantón de Soleura. | Empieza por «O». | *Olten | Kreuzlingen | Stans | Sierre | Uno de los grandes nudos ferroviarios de Suiza.
+# Origen: voc_gxie66
+2027-06-25 | palabra | ¿Qué significa esta expresión? | - | En suizo alemán. | La expresión es «Schoggi». | Empieza por «c». | *chocolate | cena | adiós (informal) | tonterías | Un «Schoggistängeli» es una barrita de chocolate. Suiza come unos 10 kilos por persona al año.
+# Origen: per_1sxhj4j
+2027-06-26 | personaje | ¿Qué personaje es? | - | Una artista de vanguardia del dadaísmo. | Aparecía en el billete de 50 francos de la serie anterior. | Empieza por «S». | *Sophie Taeuber-Arp | Simon Ammann | Bernhard Russi | Guillermo Tell | Aparecía en el billete de 50 francos de la serie anterior.
+# Origen: ciu_1gn4zxf
+2027-06-27 | palabra | ¿Qué lugar de Suiza buscamos? | - | Está pegada a la ciudad alemana de Constanza. | Está en el cantón de Turgovia. | Empieza por «K». | Stans | *Kreuzlingen | Sierre | Zermatt | Está pegada a la ciudad alemana de Constanza.
+# Origen: voc_1s99qa8
+2027-06-28 | palabra | ¿Qué significa esta expresión? | - | En suizo alemán. | La expresión es «Guetzli». | Empieza por «g». | mantequilla | *galleta | cerdito | besito | En Navidad se hornean muchas: Mailänderli, Brunsli, Zimtsterne y Spitzbuebe.
+# Origen: per_s6sg1m
+2027-06-29 | personaje | ¿Qué personaje es? | - | Una esquiadora del Tesino ganadora de la Copa del Mundo. | Ganó la clasificación general de la Copa del Mundo en 2016 y en 2024. | Empieza por «L». | *Lara Gut-Behrami | Nicolás de Flüe | Simon Ammann | Guillermo Tell | Ganó la clasificación general de la Copa del Mundo en 2016 y en 2024.
+# Origen: ciu_4fzxiq
+2027-06-30 | palabra | ¿Qué lugar de Suiza buscamos? | - | Allí se fabrican los aviones Pilatus. | Está en el cantón de Nidwalden. | Empieza por «S». | Sierre | Zermatt | *Stans | Davos | Allí se fabrican los aviones Pilatus.
+# Origen: voc_carfe3
+2027-07-01 | palabra | ¿Qué significa esta expresión? | - | En suizo alemán. | La expresión es «Grittibänz». | Empieza por «m». | *muñeco de pan dulce | ayudante de San Nicolás | hola (formal) | abuela | Pan con forma de hombrecito que se come alrededor del 6 de diciembre, día de San Nicolás.
+# Origen: per_1iwf5xo
+2027-07-02 | personaje | ¿Qué personaje es? | - | Un pintor nacido cerca de Berna. | El Zentrum […] de Berna guarda miles de sus obras. | Empieza por «P». | César Ritz | *Paul Klee | Juan Calvino | Bernhard Russi | El Zentrum Paul Klee de Berna guarda miles de sus obras.
+# Origen: ciu_1pasvx3
+2027-07-03 | palabra | ¿Qué lugar de Suiza buscamos? | - | Una de las ciudades más soleadas de Suiza, rodeada de viñedos. | Está en el cantón de Valais. | Empieza por «S». | Zermatt | Davos | St. Moritz | *Sierre | Una de las ciudades más soleadas de Suiza, rodeada de viñedos.
+# Origen: voc_1cef8xa
+2027-07-04 | palabra | ¿Qué significa esta expresión? | - | En suizo alemán. | La expresión es «Fasnacht». | Empieza por «c». | adiós (informal) | *carnaval | niño (chico) | perdón | Los más famosos de Suiza son los de Basilea y Lucerna.
+# Origen: voc_1tv7ill
+2027-07-05 | palabra | ¿Qué significa esta expresión? | - | En suizo alemán. | La expresión es «Chilbi». | Empieza por «f». | *fiesta del pueblo | regalito | alemán estándar | monedero | Feria con atracciones, música y puestos de comida que llega cada año al pueblo.
+# Origen: voc_evlsla
+2027-07-06 | palabra | ¿Qué significa esta expresión? | - | En suizo alemán. | La expresión es «Lädeli». | Empieza por «t». | sirope para mezclar con agua | *tiendecita | tarea doméstica asignada | hola (en Berna) | Tienda pequeña de barrio. Con diminutivo todo suena más simpático.
+# Origen: voc_lt5g88
+2027-07-07 | palabra | ¿Qué significa esta expresión? | - | En suizo alemán. | La expresión es «Beiz». | Empieza por «b». | *bar o tasca | colina | cocina | chuleta (para un examen) | Bar sencillo de barrio. «Gömmer i d'Beiz?» es «¿vamos al bar?».
+# Origen: voc_1j03wdu
+2027-07-08 | palabra | ¿Qué significa esta expresión? | - | En suizo alemán. | La expresión es «Stange». | Empieza por «c». | de la Suiza francesa | *caña de cerveza | chocolate | niño o niños | Un vaso alto de cerveza de unos 3 decilitros.
+# Origen: voc_1slf1oz
+2027-07-09 | palabra | ¿Qué significa esta expresión? | - | En suizo alemán. | La expresión es «Kafi». | Empieza por «c». | *café | gato | hola (formal) | regalito | El café estándar es el «Kafi Crème», un café largo con un poco de crema.
+# Origen: voc_dn7yr0
+2027-07-10 | palabra | ¿Qué significa esta expresión? | - | En suizo alemán. | La expresión es «Kafi Luz». | Empieza por «c». | ¡mira! | *café con aguardiente | niño o niños | ¡cucú! | Café muy suave con aguardiente, típico de Lucerna y la Suiza central.
+# Origen: voc_q704vj
+2027-07-11 | palabra | ¿Qué significa esta expresión? | - | En suizo alemán. | La expresión es «Bschiss». | Empieza por «e». | bizcocho de molde con agujero | *engaño | de la Suiza francesa | céntimo | «Das isch Bschiss!» significa «¡esto es un timo!».
+# Origen: voc_1a4l2y2
+2027-07-12 | palabra | ¿Qué significa esta expresión? | - | En suizo alemán. | La expresión es «Chabis». | Empieza por «t». | *tonterías | adiós (formal) | desayuno | buen provecho | Literalmente es «col». «Das isch Chabis» quiere decir «eso es una tontería».
+# Origen: voc_1vd1f26
+2027-07-13 | palabra | ¿Qué significa esta expresión? | - | En suizo alemán. | La expresión es «Gwunder». | Empieza por «c». | tiendecita | *curiosidad | ¿verdad? | no | Una persona «gwundrig» es curiosa, o un poco cotilla.
+# Origen: voc_130uera
+2027-07-14 | palabra | ¿Qué significa esta expresión? | - | En suizo alemán. | La expresión es «Hüt». | Empieza por «h». | persona muy cuadriculada | ¡caramba! | *hoy | cerdito | En alemán estándar, «heute». «Hüt znacht» es «esta noche».
+# Origen: voc_ppu3mu
+2027-07-15 | palabra | ¿Qué significa esta expresión? | - | En suizo alemán. | La expresión es «Morn». | Empieza por «m». | merienda | adiós (informal) | *mañana (el día siguiente) | chocolate | «Bis morn!» significa «¡hasta mañana!».
+# Origen: voc_lm191b
+2027-07-16 | palabra | ¿Qué significa esta expresión? | - | En suizo alemán. | La expresión es «Geschter». | Empieza por «a». | merienda | café | *ayer | colina | En alemán estándar, «gestern».
+# Origen: voc_szkybx
+2027-07-17 | palabra | ¿Qué significa esta expresión? | - | En suizo alemán. | La expresión es «Lueg». | Empieza por «¡». | ciclista de carretera | *¡mira! | alemán estándar | acera | Viene de «luege», mirar. «Lueg emal!» es «¡mira esto!».
+# Origen: voc_f5z9ug
+2027-07-18 | palabra | ¿Qué significa esta expresión? | - | En suizo alemán. | La expresión es «Poschte». | Empieza por «h». | persona muy cuadriculada | fin de la jornada laboral | *hacer la compra | fiesta del pueblo | «I gang go poschte» significa «voy a hacer la compra».
+# Origen: voc_1dzv46a
+2027-07-19 | palabra | ¿Qué significa esta expresión? | - | En suizo alemán. | La expresión es «Schaffe». | Empieza por «t». | curiosidad | *trabajar | céntimo | muchas gracias | En alemán estándar es «arbeiten». En Suiza se «schafft» mucho.
+# Origen: voc_dlm0fq
+2027-07-20 | palabra | ¿Qué significa esta expresión? | - | En suizo alemán. | La expresión es «Zügle». | Empieza por «m». | bar o tasca | *mudarse | persona muy cuadriculada | tentempié de media mañana | Mudarse de casa. Muchos contratos de alquiler terminan en fechas fijas de mudanza.
+# Origen: voc_in7v3d
+2027-07-21 | palabra | ¿Qué significa esta expresión? | - | En suizo alemán. | La expresión es «Ferie». | Empieza por «v». | cebolla (en Basilea) | *vacaciones | galleta | fiesta del pueblo | «I bi i de Ferie» significa «estoy de vacaciones».
+# Origen: voc_196o7n2
+2027-07-22 | palabra | ¿Qué significa esta expresión? | - | En suizo alemán. | La expresión es «Ghüder». | Empieza por «b». | *basura | ayer | muñeco de pan dulce | besito | La basura. Y recuerda: en casi toda Suiza va en bolsas oficiales de pago.
+# Origen: voc_1f1z91m
+2027-07-23 | palabra | ¿Qué significa esta expresión? | - | En suizo alemán. | La expresión es «Billett». | Empieza por «b». | café | desayuno | *billete | mocos | Del francés. En Alemania dirían «Fahrkarte».
+# Origen: voc_94dcl0
+2027-07-24 | palabra | ¿Qué significa esta expresión? | - | En suizo alemán. | La expresión es «Perron». | Empieza por «a». | cervecita | tarea doméstica asignada | *andén | hola (entre amigos) | Del francés. Por megafonía oirás «uf em Perron 7».
+# Origen: voc_qzbw1l
+2027-07-25 | palabra | ¿Qué significa esta expresión? | - | En suizo alemán. | La expresión es «Coiffeur». | Empieza por «p». | zanahoria | pasto de montaña | *peluquería | sirope para mezclar con agua | Otra palabra francesa del suizo alemán.
+# Origen: voc_fs81t9
+2027-07-26 | palabra | ¿Qué significa esta expresión? | - | En suizo alemán. | La expresión es «Portemonnaie». | Empieza por «m». | mañana (el día siguiente) | *monedero | bar de granja temporal | perdón | Del francés y muy usada en suizo alemán.
+# Origen: voc_1urrd02
+2027-07-27 | palabra | ¿Qué significa esta expresión? | - | En suizo alemán. | La expresión es «Stutz». | Empieza por «f». | *franco (dinero) | solecito | nadar | pasto de montaña | Coloquial: «Das choschtet zäh Stutz» significa «cuesta diez francos».
+# Origen: voc_1b3z7wg
+2027-07-28 | palabra | ¿Qué significa esta expresión? | - | En suizo alemán. | La expresión es «Fünfliber». | Empieza por «m». | *moneda de 5 francos | nata | céntimo | queso | Así se llama popularmente a la moneda más grande de Suiza.
+# Origen: voc_n5n5i4
+2027-07-29 | palabra | ¿Qué significa esta expresión? | - | En suizo alemán. | La expresión es «Chrampfe». | Empieza por «t». | adiós (informal) | peluquería | *trabajar muy duro | andén | «Chrampfe» es currar sin parar, normalmente con esfuerzo físico.
+# Origen: voc_1euw3bo
+2027-07-30 | palabra | ¿Qué significa esta expresión? | - | En suizo alemán. | La expresión es «Fyrabig». | Empieza por «f». | *fin de la jornada laboral | mañana (el día siguiente) | caña de cerveza | cervecita | El momento de salir del trabajo. Un «Fyrabigbier» es la cerveza de después.
+# Origen: voc_1lpga07
+2027-07-31 | palabra | ¿Qué significa esta expresión? | - | En suizo alemán. | La expresión es «Sünneli». | Empieza por «s». | pan trenzado | patata | *solecito | niña (chica) | Diminutivo cariñoso del sol. En noviembre se echa mucho de menos.
+# Origen: voc_1nvj14r
+2027-08-01 | palabra | ¿Qué significa esta expresión? | - | En suizo alemán. | La expresión es «Hoger». | Empieza por «c». | basura | *colina | armarito de cocina | galleta | Una colina pequeña. La meseta suiza está llena de «Hoger».
+# Origen: voc_1yvm3h3
+2027-08-02 | palabra | ¿Qué significa esta expresión? | - | En suizo alemán. | La expresión es «Chriesi». | Empieza por «c». | *cereza | cena | tentempié de media mañana | persona muy cuadriculada | El «Chriesiwasser» o kirsch es aguardiente de cerezas, típico de Zug.
+# Origen: voc_n6f4vj
+2027-08-03 | palabra | ¿Qué significa esta expresión? | - | En suizo alemán. | La expresión es «Öpfel». | Empieza por «m». | merienda | buenísimo | *manzana | comida del mediodía | Turgovia es tan famosa por sus manzanas y su sidra que la llaman en broma «Mostindien».
+# Origen: voc_9g495m
+2027-08-04 | palabra | ¿Qué significa esta expresión? | - | En suizo alemán. | La expresión es «Bire». | Empieza por «p». | panecillo | *pera | ¡caramba! | peluquería | Con peras secas se hace el «Birnbrot», un pan relleno muy típico.
+# Origen: voc_9ce8nh
+2027-08-05 | palabra | ¿Qué significa esta expresión? | - | En suizo alemán. | La expresión es «Zibele». | Empieza por «c». | bizcocho de molde con agujero | *cebolla | de la Suiza francesa | sí | En Berna se celebra el Zibelemärit, el mercado de la cebolla, cada noviembre.
+# Origen: voc_xfmys5
+2027-08-06 | palabra | ¿Qué significa esta expresión? | - | En suizo alemán. | La expresión es «Bölle». | Empieza por «c». | *cebolla (en Basilea) | sí | caña de cerveza | vacaciones | En Basilea dicen «Bölle». En Zúrich, «Zibele». Mismo ingrediente, distinta palabra.
+# Origen: voc_1q0hxn5
+2027-08-07 | palabra | ¿Qué significa esta expresión? | - | En suizo alemán. | La expresión es «Wienerli». | Empieza por «s». | jugar al fútbol | gato | *salchicha de Viena | cariño | Salchicha fina que se come con mostaza y pan.
+# Origen: voc_fghhvn
+2027-08-08 | palabra | ¿Qué significa esta expresión? | - | En suizo alemán. | La expresión es «Gugge». | Empieza por «b». | buenísimo | vaca | *banda de carnaval | cartero | Las Guggenmusik tocan desafinado a propósito en carnaval. Es parte de la gracia.
+# Origen: voc_xe4sma
+2027-08-09 | palabra | ¿Qué significa esta expresión? | - | En suizo alemán. | La expresión es «Schwiizerdütsch». | Empieza por «s». | *suizo alemán | panecillo blando | pan trenzado | quesero de montaña | No tiene forma escrita oficial y cada región tiene su dialecto. Para escribir se usa alemán estándar.
+# Origen: voc_xbthvi
+2027-08-10 | palabra | ¿Qué significa esta expresión? | - | En suizo alemán. | La expresión es «Hochdütsch». | Empieza por «a». | *alemán estándar | moneda de 5 francos | franco (dinero) | sirope para mezclar con agua | Es el alemán de la escuela, las noticias y las cartas oficiales.
+# Origen: voc_gge13c
+2027-08-11 | palabra | ¿Qué significa esta expresión? | - | En suizo alemán. | La expresión es «Gschpänli». | Empieza por «c». | niño (chico) | trabajar | *compañero de juegos | ¡caramba! | Amiguito o compañero, sobre todo entre niños.
+# Origen: voc_l76cm0
+2027-08-12 | palabra | ¿Qué significa esta expresión? | - | En suizo alemán. | La expresión es «Grosi». | Empieza por «a». | *abuela | San Nicolás | panecillo blando | armarito de cocina | También se dice «Grossmami». El abuelo es el «Grossvati» o «Grosspapi».
+# Origen: voc_ha9iwk
+2027-08-13 | palabra | ¿Qué significa esta expresión? | - | En suizo alemán. | La expresión es «Bueb». | Empieza por «n». | café | sí | *niño (chico) | vaca | En alemán estándar sería «Junge». Un niño pequeño es un «Büebli».
+# Origen: voc_kuhgqu
+2027-08-14 | palabra | ¿Qué significa esta expresión? | - | En suizo alemán. | La expresión es «Meitli». | Empieza por «n». | nata | cabra | *niña (chica) | sirope para mezclar con agua | En alemán estándar sería «Mädchen».
+# Origen: voc_qs7a0e
+2027-08-15 | palabra | ¿Qué significa esta expresión? | - | En suizo alemán. | La expresión es «Gschtürm». | Empieza por «j». | casita | hola (entre amigos) | *jaleo | mañana (el día siguiente) | «So es Gschtürm!» significa «¡qué follón!».
+# Origen: voc_1vvblc8
+2027-08-16 | palabra | ¿Qué significa esta expresión? | - | En suizo alemán. | La expresión es «Samichlaus». | Empieza por «S». | tarea doméstica asignada | persona muy cuadriculada | *San Nicolás | trabajar | Visita a los niños el 6 de diciembre con su ayudante, el Schmutzli.
+# Origen: voc_3jmdyz
+2027-08-17 | palabra | ¿Qué significa esta expresión? | - | En suizo alemán. | La expresión es «Schmutzli». | Empieza por «a». | chocolate | comida del mediodía | *ayudante de San Nicolás | bar o tasca | Acompaña al Samichlaus vestido de oscuro y con un saco.
+# Origen: voc_ryhad7
+2027-08-18 | palabra | ¿Qué significa esta expresión? | - | En suizo alemán. | La expresión es «Bünzli». | Empieza por «p». | *persona muy cuadriculada | helado | bicicleta | cebolla | Estereotipo del suizo obsesionado con las normas. Se usa en broma… y a veces en serio.
+# Origen: voc_edkjum
+2027-08-19 | palabra | ¿Qué significa esta expresión? | - | En suizo alemán. | La expresión es «Huere guet». | Empieza por «b». | *buenísimo | salchicha de Viena | hola (entre amigos) | caña de cerveza | «Huere» es un intensificador muy coloquial. «Huere guet» es «buenísimo».
+# Origen: voc_1ised2o
+2027-08-20 | palabra | ¿Qué significa esta expresión? | - | En suizo alemán. | La expresión es «Rüüdig». | Empieza por «m». | no | *muy (en Lucerna) | adiós (formal) | tentempié de media mañana | Intensificador típico de Lucerna: «rüüdig schön» es «precioso».
+# Origen: voc_1vna4e0
+2027-08-21 | palabra | ¿Qué significa esta expresión? | - | En suizo alemán. | La expresión es «Töff». | Empieza por «m». | jugar al fútbol | *moto | rápido | buen provecho | En suizo alemán, la moto es el «Töff».
+# Origen: voc_hhzami
+2027-08-22 | palabra | ¿Qué significa esta expresión? | - | En suizo alemán. | La expresión es «Pöstler». | Empieza por «c». | *cartero | cebolla | engaño | vacaciones | El cartero de Correos. Pon tu nombre en el buzón o no te dejará nada.
+# Origen: voc_kw5i6m
+2027-08-23 | palabra | ¿Qué significa esta expresión? | - | En suizo alemán. | La expresión es «Schuel». | Empieza por «e». | muñeco de pan dulce | ciclista de carretera | *escuela | nata | En alemán estándar, «Schule».
+# Origen: voc_ml8zqq
+2027-08-24 | palabra | ¿Qué significa esta expresión? | - | En suizo alemán. | La expresión es «Chind». | Empieza por «n». | *niño o niños | pera | regalito | piscina al aire libre | En alemán estándar, «Kind». «Chinderwage» es el carrito del bebé.
+# Origen: voc_3ci2nk
+2027-08-25 | palabra | ¿Qué significa esta expresión? | - | En suizo alemán. | La expresión es «Schwümme». | Empieza por «n». | niña (chica) | *nadar | helado | jaleo | En verano, ir a nadar al lago o al río después del trabajo es un plan nacional.
+# Origen: voc_1drkzjo
+2027-08-26 | palabra | ¿Qué significa esta expresión? | - | En suizo alemán. | La expresión es «Badi». | Empieza por «p». | suizo alemán | *piscina al aire libre | ayer | panecillo | Baño público junto al lago, el río o con piscina. Algunas son gratis.
+# Origen: voc_kdkfs7
+2027-08-27 | palabra | ¿Qué significa esta expresión? | - | En suizo alemán. | La expresión es «Säuli». | Empieza por «c». | tonterías | cena | *cerdito | ayer | Los cerditos de mazapán se regalan en Año Nuevo para dar suerte.
+# Origen: voc_1aferv1
+2027-08-28 | palabra | ¿Qué significa esta expresión? | - | En suizo alemán. | La expresión es «Alp». | Empieza por «p». | besito | *pasto de montaña | galleta | piscina al aire libre | En verano las vacas suben a la «Alp» y en septiembre bajan adornadas con flores.
+# Origen: voc_oxvutq
+2027-08-29 | palabra | ¿Qué significa esta expresión? | - | En suizo alemán. | La expresión es «Senn». | Empieza por «q». | persona muy cuadriculada | *quesero de montaña | pera | hola (formal) | Pastor que pasa el verano en los pastos alpinos haciendo queso.
+# Origen: voc_1e9pmbt
+2027-08-30 | palabra | ¿Qué significa esta expresión? | - | En suizo alemán. | La expresión es «Sirup». | Empieza por «s». | fin de la jornada laboral | *sirope para mezclar con agua | mocos | billete | Refresco de toda la vida en Suiza: sirope de frambuesa o saúco con agua.
+# Origen: voc_ev5qaj
+2027-08-31 | palabra | ¿Qué significa esta expresión? | - | En suizo alemán. | La expresión es «Gugus». | Empieza por «¡». | toro | bar de granja temporal | *¡cucú! | buenísimo | Lo que se dice al jugar a esconderse con un bebé.
+# Origen: voc_nv6igq
+2027-09-01 | palabra | ¿Qué significa esta expresión? | - | En suizo alemán. | La expresión es «Plausch». | Empieza por «d». | sí | gato | *diversión | moto | «Das isch en Plausch!» significa «¡qué divertido!».
+# Origen: voc_18gxmox
+2027-09-02 | palabra | ¿Qué significa esta expresión? | - | En suizo alemán. | La expresión es «Gschänkli». | Empieza por «r». | *regalito | compañero de juegos | colina | mudarse | Diminutivo de «Gschänk», regalo. Llevar un «Gschänkli» a una casa es casi obligatorio.
+# Origen: voc_nqf4sh
+2027-09-03 | palabra | ¿Qué significa esta expresión? | - | En suizo alemán. | La expresión es «Besebeiz». | Empieza por «b». | mañana (el día siguiente) | suizo alemán | *bar de granja temporal | ciclista de carretera | Granjas que abren unas semanas al año como bar sencillo, con comida casera.
+# Origen: voc_7sdjxt
+2027-09-04 | palabra | ¿Qué significa esta expresión? | - | En suizo alemán. | La expresión es «Muni». | Empieza por «t». | suficiente | *toro | cebolla (en Basilea) | pasto de montaña | El ganador del gran festival nacional de Schwingen se lleva un «Muni» de premio.
+# Origen: voc_tyofsr
+2027-09-05 | palabra | ¿Qué significa esta expresión? | - | En suizo alemán. | La expresión es «Chue». | Empieza por «v». | buenísimo | *vaca | ¡cucú! | ¡mira! | En Suiza hay alrededor de 1,5 millones de vacas y bueyes.
+# Origen: voc_r8ql7n
+2027-09-06 | palabra | ¿Qué significa esta expresión? | - | En suizo alemán. | La expresión es «Geiss». | Empieza por «c». | salchicha de Viena | cervecita | *cabra | chuleta (para un examen) | La cabra. Las de Valais, con media cara negra y media blanca, son famosas.
+# Origen: voc_onag0x
+2027-09-07 | palabra | ¿Qué significa esta expresión? | - | En suizo alemán. | La expresión es «Gschwind». | Empieza por «r». | basura | cebolla | *rápido | cariño | «Chumm gschwind!» significa «¡ven rápido!».
+# Origen: voc_1xm3pje
+2027-09-08 | palabra | ¿Qué significa esta expresión? | - | En suizo alemán. | La expresión es «Lüüt». | Empieza por «g». | hoy | peluquería | *gente | banda de carnaval | En alemán estándar, «Leute».
+# Origen: voc_5fwvmu
+2027-09-09 | palabra | ¿Qué significa esta expresión? | - | En suizo alemán. | La expresión es «Gnueg». | Empieza por «s». | casita | *suficiente | cebolla | caña de cerveza | «Es isch gnueg!» significa «¡ya basta!».
+# Origen: voc_ljrmfq
+2027-09-10 | palabra | ¿Qué significa esta expresión? | - | En suizo alemán. | La expresión es «Tschutte». | Empieza por «j». | comida del mediodía | niño o niños | *jugar al fútbol | estantería o armazón | El balón de fútbol es el «Tschuttiballe».
+# Origen: voc_1abjcqc
+2027-09-11 | palabra | ¿Qué significa esta expresión? | - | En suizo alemán. | La expresión es «Welsch». | Empieza por «d». | ¡mira! | monedero | *de la Suiza francesa | pera | Así llaman en la Suiza alemana a la gente y las cosas de la Romandía.
+# Origen: voc_n0tug0
+2027-09-12 | palabra | ¿Qué significa esta expresión? | - | En suizo alemán. | La expresión es «Schnuder». | Empieza por «m». | *mocos | sirope para mezclar con agua | cabra | muchas gracias | «Schnuder» son los mocos. En invierno hay muchos.
+# Origen: voc_12p8skb
+2027-09-13 | palabra | ¿Qué significa esta expresión? | - | En suizo alemán. | La expresión es «Brötli». | Empieza por «p». | ayer | *panecillo | nadar | helado | Los suizos dicen casi todo en diminutivo: «Brötli», «Bierli», «Kafeli».
+# Origen: voc_xz2sn3
+2027-09-14 | palabra | ¿Qué significa esta expresión? | - | En suizo alemán. | La expresión es «Bierli». | Empieza por «c». | *cervecita | ayudante de San Nicolás | engaño | café con aguardiente | «Gömmer es Bierli go näh?» significa «¿vamos a tomar una cervecita?».
+# Origen: voc_1k3p45p
+2027-09-15 | palabra | ¿Qué significa esta expresión? | - | En suizo alemán. | La expresión es «Gümmeler». | Empieza por «c». | cebolla (en Basilea) | fin de la jornada laboral | *ciclista de carretera | cerdito | Así se llama a los ciclistas deportivos con maillot. Los fines de semana hay miles.
+# Origen: voc_f5qmju
+2027-09-16 | palabra | ¿Qué significa esta expresión? | - | En suizo alemán. | La expresión es «Pfnüsel». | Empieza por «r». | ¡mira! | *resfriado | franco (dinero) | perdón | Tener «Pfnüsel» es estar con la nariz tapada.
+# Origen: voc_1eppskv
+2027-09-17 | palabra | ¿Qué significa esta expresión? | - | En suizo alemán. | La expresión es «Gstell». | Empieza por «e». | bicicleta | *estantería o armazón | mocos | niño o niños | También se usa en broma para una persona muy delgada.
+# Origen: voc_tz0nfh
+2027-09-18 | palabra | ¿Qué significa esta expresión? | - | En suizo alemán. | La expresión es «Gugelhopf». | Empieza por «b». | trabajar | cariño | *bizcocho de molde con agujero | suizo alemán | Bizcocho típico de las fiestas, en molde redondo con un agujero en el centro.
+# Origen: voc_16x2w6s
+2027-09-19 | palabra | ¿Qué significa esta expresión? | - | En suizo alemán. | La expresión es «Ämtli». | Empieza por «t». | suficiente | *tarea doméstica asignada | franco (dinero) | resfriado | En los pisos compartidos hay un «Ämtliplan» con las tareas de cada persona.
+# Origen: voc_4zb23e
+2027-09-20 | palabra | ¿Qué significa esta expresión? | - | En suizo alemán. | La expresión es «Spickzettel». | Empieza por «c». | trabajar | moto | *chuleta (para un examen) | tonterías | Ojo: en Suiza también se usa para cualquier papelito de apuntes.
+# Origen: voc_oh5o9m
+2027-09-21 | palabra | ¿Qué significa esta expresión? | - | En suizo alemán. | La expresión es «Rappe». | Empieza por «c». | nata | *céntimo | tiendecita | ayudante de San Nicolás | El franco suizo tiene 100 «Rappen». En francés se llaman «centimes».
+# Origen: voc_1fpu4xt
+2027-09-22 | palabra | ¿Qué significa esta expresión? | - | En la Suiza francesa. | La expresión es «Septante». | Empieza por «s». | bayeta | desayuno | *setenta | guiso de puerros y patatas | En Suiza y Bélgica se dice «septante» en vez del «soixante-dix» de Francia.
+# Origen: voc_1rqso1b
+2027-09-23 | palabra | ¿Qué significa esta expresión? | - | En la Suiza francesa. | La expresión es «Huitante». | Empieza por «o». | *ochenta | queso pequeño y blando | buen provecho | fregona | Se usa en Vaud, Valais y Friburgo. En Ginebra se dice «quatre-vingts».
+# Origen: voc_x0prws
+2027-09-24 | palabra | ¿Qué significa esta expresión? | - | En la Suiza francesa. | La expresión es «Nonante». | Empieza por «n». | programar en la agenda | queso pequeño y blando | *noventa | cajero automático | Mucho más lógico que el «quatre-vingt-dix» de Francia.
+# Origen: voc_16uc3ix
+2027-09-25 | palabra | ¿Qué significa esta expresión? | - | En la Suiza francesa. | La expresión es «Natel». | Empieza por «m». | casa de madera de montaña | *móvil | toalla | desayuno | En la Suiza francesa también se dice «Natel», no «portable».
+# Origen: voc_nx746q
+2027-09-26 | palabra | ¿Qué significa esta expresión? | - | En la Suiza francesa. | La expresión es «Panosse». | Empieza por «f». | *fregona | queso pequeño y blando | libro de familia | está bien, funciona | Palabra muy de la Romandía. «Passer la panosse» es fregar el suelo.
+# Origen: voc_15sxe3y
+2027-09-27 | palabra | ¿Qué significa esta expresión? | - | En la Suiza francesa. | La expresión es «Cornet». | Empieza por «b». | bodeguita para comer y beber vino | *bolsa de plástico | cajero automático | instituto preuniversitario | En la caja del súper te preguntan si quieres un «cornet». No es un helado.
+# Origen: voc_8vv4po
+2027-09-28 | palabra | ¿Qué significa esta expresión? | - | En la Suiza francesa. | La expresión es «Dîner». | Empieza por «c». | *comida del mediodía | desván | libro de familia | desayuno | En Suiza, «déjeuner» es el desayuno, «dîner» la comida y «souper» la cena.
+# Origen: voc_kubkkp
+2027-09-29 | palabra | ¿Qué significa esta expresión? | - | En la Suiza francesa. | La expresión es «Souper». | Empieza por «c». | bodeguita para comer y beber vino | *cena | setenta | piña de pino | Si te invitan a «souper», es por la noche. Si es a «dîner», es al mediodía.
+# Origen: voc_gnc1an
+2027-09-30 | palabra | ¿Qué significa esta expresión? | - | En la Suiza francesa. | La expresión es «Déjeuner». | Empieza por «d». | melaza de zumo de manzana o pera | *desayuno | guiso de puerros y patatas | comida del mediodía | En Francia «déjeuner» es la comida del mediodía. En Suiza, el desayuno.
+# Origen: voc_1vi3ob4
+2027-10-01 | palabra | ¿Qué significa esta expresión? | - | En la Suiza francesa. | La expresión es «Cheni». | Empieza por «d». | oferta | desván | *desorden | secador de pelo | «Quel cheni!» significa «¡qué desorden!». Muy de la Romandía.
+# Origen: voc_78wprw
+2027-10-02 | palabra | ¿Qué significa esta expresión? | - | En la Suiza francesa. | La expresión es «Linge». | Empieza por «t». | *toalla | cajero automático | votación popular | funda | En Suiza, «linge» se usa para la toalla. Un «linge de bain» es una toalla de baño.
+# Origen: voc_ez3xui
+2027-10-03 | palabra | ¿Qué significa esta expresión? | - | En la Suiza francesa. | La expresión es «Galetas». | Empieza por «d». | *desván | guiso de puerros y patatas | casa de madera de montaña | comida del mediodía | El trastero bajo el tejado, donde acaban las maletas y los adornos de Navidad.
+# Origen: voc_yy7cjl
+2027-10-04 | palabra | ¿Qué significa esta expresión? | - | En la Suiza francesa. | La expresión es «Carnotzet». | Empieza por «b». | brioche con azafrán | *bodeguita para comer y beber vino | móvil | suizo alemán (apodo) | Pequeño espacio en el sótano, típico de Vaud y Valais, para fondues y vino con amigos.
+# Origen: voc_g1atvk
+2027-10-05 | palabra | ¿Qué significa esta expresión? | - | En la Suiza francesa. | La expresión es «Fœhn». | Empieza por «s». | de nada | brioche con azafrán | *secador de pelo | oferta | En Suiza el secador se llama «fœhn», como el viento cálido de los Alpes.
+# Origen: voc_vntg0n
+2027-10-06 | palabra | ¿Qué significa esta expresión? | - | En la Suiza francesa. | La expresión es «Pive». | Empieza por «p». | setenta | toalla | *piña de pino | noventa | La piña de los pinos y abetos. Los niños las recogen en los bosques.
+# Origen: voc_1vk1x26
+2027-10-07 | tradicion | ¿Qué significa el nombre de esta tradición? | - | En la Suiza francesa. | La expresión es «Torrée». | Empieza por «b». | *barbacoa en el bosque | ¡salud! (al brindar) | bayeta | móvil | Tradición de Neuchâtel: salchicha cocinada en las brasas de un gran fuego, en otoño.
+# Origen: voc_1xwtxse
+2027-10-08 | palabra | ¿Qué significa esta expresión? | - | En la Suiza francesa. | La expresión es «Bancomat». | Empieza por «c». | perfecto | *cajero automático | móvil | bolsa de plástico | En toda Suiza, el cajero automático se llama «Bancomat».
+# Origen: voc_1fse9jh
+2027-10-09 | palabra | ¿Qué significa esta expresión? | - | En la Suiza francesa. | La expresión es «Agender». | Empieza por «p». | bolsa de plástico | ochenta | *programar en la agenda | cajero automático | «Agender une séance» es fijar una reunión. Un verbo muy suizo.
+# Origen: voc_1lumofq
+2027-10-10 | palabra | ¿Qué significa esta expresión? | - | En la Suiza francesa. | La expresión es «Séance». | Empieza por «r». | *reunión | noventa | guiso de puerros y patatas | ¡salud! (al brindar) | En el trabajo, una reunión es una «séance».
+# Origen: voc_18q5mdr
+2027-10-11 | palabra | ¿Qué significa esta expresión? | - | En la Suiza francesa. | La expresión es «Votation». | Empieza por «v». | alcalde (en Vaud y Friburgo) | toalla | *votación popular | bayeta | Suiza vota varias veces al año sobre leyes e iniciativas populares.
+# Origen: voc_668ekr
+2027-10-12 | palabra | ¿Qué significa esta expresión? | - | En la Suiza francesa. | La expresión es «Syndic». | Empieza por «a». | guiso de puerros y patatas | *alcalde (en Vaud y Friburgo) | bodeguita para comer y beber vino | barbacoa en el bosque | En Vaud y Friburgo el alcalde se llama «syndic».
+# Origen: voc_14izf3k
+2027-10-13 | palabra | ¿Qué significa esta expresión? | - | En la Suiza francesa. | La expresión es «Tip-top». | Empieza por «p». | *perfecto | reunión | cena | oferta | Muy usado en la Suiza francesa y alemana: «C'est tip-top!».
+# Origen: voc_wkv4qa
+2027-10-14 | palabra | ¿Qué significa esta expresión? | - | En la Suiza francesa. | La expresión es «Ça joue». | Empieza por «e». | ¡salud! (al brindar) | desván | *está bien, funciona | casa de madera de montaña | «Ça joue pour toi?» significa «¿te va bien?».
+# Origen: voc_11hfosa
+2027-10-15 | palabra | ¿Qué significa esta expresión? | - | En la Suiza francesa. | La expresión es «Lavette». | Empieza por «b». | piña de pino | *bayeta | oferta | buen provecho | El trapito de cocina para limpiar.
+# Origen: voc_doy97w
+2027-10-16 | palabra | ¿Qué significa esta expresión? | - | En la Suiza francesa. | La expresión es «Fourre». | Empieza por «f». | *funda | comida del mediodía | barbacoa en el bosque | de nada | Una «fourre de duvet» es la funda del edredón. En Francia dirían «housse».
+# Origen: voc_5vj247
+2027-10-17 | palabra | ¿Qué significa esta expresión? | - | En la Suiza francesa. | La expresión es «Cuchaule». | Empieza por «b». | *brioche con azafrán | alcalde (en Vaud y Friburgo) | programar en la agenda | noventa | Pan dulce de Friburgo que se come con la mostaza de la Bénichon.
+# Origen: voc_13xvjkb
+2027-10-18 | tradicion | ¿Qué significa el nombre de esta tradición? | - | En la Suiza francesa. | La expresión es «Bénichon». | Empieza por «f». | de nada | *fiesta de la cosecha de Friburgo | fregona | noventa | Gran comida de otoño con muchos platos típicos y mostaza dulce.
+# Origen: voc_h7lael
+2027-10-19 | palabra | ¿Qué significa esta expresión? | - | En la Suiza francesa. | La expresión es «Gymnase». | Empieza por «i». | *instituto preuniversitario | de nada | desorden | ochenta | En Vaud y otros cantones, el instituto que prepara para la universidad.
+# Origen: voc_11vjucx
+2027-10-20 | palabra | ¿Qué significa esta expresión? | - | En la Suiza francesa. | La expresión es «Bourbine». | Empieza por «s». | *suizo alemán (apodo) | barbacoa en el bosque | libro de familia | fiesta de la cosecha de Friburgo | Apodo burlón con el que en la Romandía llaman a la gente de la Suiza alemana.
+# Origen: voc_1xz7oeq
+2027-10-21 | palabra | ¿Qué significa esta expresión? | - | En la Suiza francesa. | La expresión es «Papet vaudois». | Empieza por «g». | fregona | toalla | *guiso de puerros y patatas | brioche con azafrán | Plato de Vaud que se come con la «saucisse aux choux».
+# Origen: voc_t5sv6m
+2027-10-22 | palabra | ¿Qué significa esta expresión? | - | En la Suiza francesa. | La expresión es «Malakoff». | Empieza por «b». | piña de pino | toalla | *buñuelo de queso | reunión | Especialidad frita de Vaud, de la zona de Eysins y Vinzel.
+# Origen: voc_1n18znl
+2027-10-23 | palabra | ¿Qué significa esta expresión? | - | En la Suiza francesa. | La expresión es «Tomme». | Empieza por «q». | desayuno | *queso pequeño y blando | funda | casa de madera de montaña | La tomme vaudoise es un queso blando muy popular.
+# Origen: voc_1eki011
+2027-10-24 | palabra | ¿Qué significa esta expresión? | - | En la Suiza francesa. | La expresión es «Raisinée». | Empieza por «m». | ochenta | *melaza de zumo de manzana o pera | ¡salud! (al brindar) | libro de familia | Jarabe espeso hecho cociendo zumo durante horas. Se usa para la «tarte au vin cuit».
+# Origen: voc_12clnae
+2027-10-25 | palabra | ¿Qué significa esta expresión? | - | En la Suiza francesa. | La expresión es «Chalet». | Empieza por «c». | noventa | *casa de madera de montaña | alcalde (en Vaud y Friburgo) | buñuelo de queso | La palabra viene de los Alpes francófonos y hoy se usa en medio mundo.
+# Origen: voc_71elee
+2027-10-26 | palabra | ¿Qué significa esta expresión? | - | En la Suiza francesa. | La expresión es «Bonne app». | Empieza por «b». | *buen provecho | oferta | alcalde (en Vaud y Friburgo) | cena | La forma corta de «bon appétit». Se dice antes de empezar a comer.
+# Origen: voc_12by7mq
+2027-10-27 | palabra | ¿Qué significa esta expresión? | - | En la Suiza francesa. | La expresión es «Santé». | Empieza por «¡». | barbacoa en el bosque | libro de familia | *¡salud! (al brindar) | noventa | Al brindar se mira a los ojos de cada persona, una por una.
+# Origen: voc_m6vgg0
+2027-10-28 | palabra | ¿Qué significa esta expresión? | - | En la Suiza francesa. | La expresión es «Service». | Empieza por «d». | instituto preuniversitario | barbacoa en el bosque | *de nada | buñuelo de queso | En la Suiza francesa, a un «merci» se responde a menudo con «service».
+# Origen: voc_1ch3fn
+2027-10-29 | palabra | ¿Qué significa esta expresión? | - | En la Suiza francesa. | La expresión es «Action». | Empieza por «o». | queso pequeño y blando | *oferta | guiso de puerros y patatas | brioche con azafrán | En los súper suizos, las ofertas son «actions». En Francia dirían «promotion».
+# Origen: voc_buvt8g
+2027-10-30 | palabra | ¿Qué significa esta expresión? | - | En la Suiza francesa. | La expresión es «Livret de famille». | Empieza por «l». | *libro de familia | queso pequeño y blando | perfecto | noventa | Documento suizo que recoge matrimonio e hijos.
+# Origen: voc_1izbkf7
+2027-10-31 | palabra | ¿Qué significa esta expresión? | - | En el Tesino. | La expresión es «Grotto». | Empieza por «r». | salchichas típicas | *restaurante rústico | muchas gracias | casa de piedra de montaña | Taberna típica del Tesino, a menudo con mesas de piedra a la sombra del bosque.
+# Origen: voc_7g47zg
+2027-11-01 | palabra | ¿Qué significa esta expresión? | - | En el Tesino. | La expresión es «Boccalino». | Empieza por «j». | gachas de maíz | *jarrita de cerámica para el vino | hola y adiós | oferta del súper | El merlot del Tesino se sirve en un «boccalino».
+# Origen: voc_mxx7oz
+2027-11-02 | palabra | ¿Qué significa esta expresión? | - | En el Tesino. | La expresión es «Polenta». | Empieza por «g». | *gachas de maíz | quesitos frescos | casa de piedra de montaña | castañas | Plato tradicional del Tesino, removido durante horas en una olla de cobre.
+# Origen: voc_1f0uvyk
+2027-11-03 | palabra | ¿Qué significa esta expresión? | - | En el Tesino. | La expresión es «Luganighe». | Empieza por «s». | casa de piedra de montaña | restaurante rústico | *salchichas típicas | jarrita de cerámica para el vino | Salchichas del Tesino que se reparten en el carnaval de Bellinzona.
+# Origen: voc_11o3pr2
+2027-11-04 | palabra | ¿Qué significa esta expresión? | - | En el Tesino. | La expresión es «Azione». | Empieza por «o». | *oferta del súper | licor de nueces | feo pero rico | carnet de conducir | En el Tesino la oferta es «azione». En Italia se diría «offerta».
+# Origen: voc_d3tv9d
+2027-11-05 | palabra | ¿Qué significa esta expresión? | - | En el Tesino. | La expresión es «Licenza di condurre». | Empieza por «c». | *carnet de conducir | buenos días | teleférico | quesitos frescos | En el Tesino se dice así. En Italia se dice «patente».
+# Origen: voc_18pxuzv
+2027-11-06 | palabra | ¿Qué significa esta expresión? | - | En el Tesino. | La expresión es «Autopostale». | Empieza por «a». | jarrita de cerámica para el vino | licor de nueces | *autobús de Correos | restaurante rústico | El autobús amarillo de Correos llega a los pueblos de valle donde no llega el tren.
+# Origen: voc_hxmo1l
+2027-11-07 | palabra | ¿Qué significa esta expresión? | - | En el Tesino. | La expresión es «Grazie mille». | Empieza por «m». | refresco gaseoso de limón | *muchas gracias | hola y adiós | gachas de maíz | En el Tesino se habla italiano y también dialecto tesinés.
+# Origen: voc_1jksbje
+2027-11-08 | palabra | ¿Qué significa esta expresión? | - | En el Tesino. | La expresión es «Castagne». | Empieza por «c». | refresco gaseoso de limón | *castañas | muchas gracias | restaurante rústico | La castaña fue durante siglos el «pan de los pobres» de los valles del Tesino.
+# Origen: voc_u7vmez
+2027-11-09 | palabra | ¿Qué significa esta expresión? | - | En el Tesino. | La expresión es «Merlot». | Empieza por «v». | restaurante rústico | *vino tinto típico | carnaval de Bellinzona | castañas | La uva merlot llegó al Tesino a principios del siglo XX y hoy es su vino estrella.
+# Origen: voc_fgd687
+2027-11-10 | palabra | ¿Qué significa esta expresión? | - | En el Tesino. | La expresión es «Rustico». | Empieza por «c». | *casa de piedra de montaña | arroz cremoso | refresco gaseoso de limón | vino tinto típico | Antiguas casas de campesinos, hoy muy buscadas como casas de vacaciones.
+# Origen: voc_j288ho
+2027-11-11 | palabra | ¿Qué significa esta expresión? | - | En el Tesino. | La expresión es «Nocino». | Empieza por «l». | *licor de nueces | arroz cremoso | oferta del súper | hola y adiós | Licor oscuro hecho con nueces verdes. Muy típico de sobremesa.
+# Origen: voc_my1qfv
+2027-11-12 | palabra | ¿Qué significa esta expresión? | - | En el Tesino. | La expresión es «Formaggini». | Empieza por «q». | teleférico | *quesitos frescos | gachas de maíz | casa de piedra de montaña | Quesitos pequeños de cabra o vaca, a menudo con pimienta.
+# Origen: voc_1jz7pe1
+2027-11-13 | palabra | ¿Qué significa esta expresión? | - | En el Tesino. | La expresión es «Gazzosa». | Empieza por «r». | feo pero rico | carnet de conducir | *refresco gaseoso de limón | autobús de Correos | Refresco tradicional del Tesino que se sigue embotellando en botellas de vidrio.
+# Origen: voc_ynslns
+2027-11-14 | palabra | ¿Qué significa esta expresión? | - | En el Tesino. | La expresión es «Funivia». | Empieza por «t». | *teleférico | castañas | oferta del súper | hola y adiós | El Monte Generoso y el Monte Brè tienen trenes y teleféricos con vistas al lago de Lugano.
+# Origen: voc_16jekz3
+2027-11-15 | tradicion | ¿Qué significa el nombre de esta tradición? | - | En el Tesino. | La expresión es «Rabadan». | Empieza por «c». | *carnaval de Bellinzona | feo pero rico | jarrita de cerámica para el vino | oferta del súper | El gran carnaval del Tesino, con risotto repartido en la calle.
+# Origen: voc_9tqcr4
+2027-11-16 | palabra | ¿Qué significa esta expresión? | - | En el Tesino. | La expresión es «Risotto». | Empieza por «a». | *arroz cremoso | refresco gaseoso de limón | quesitos frescos | licor de nueces | En las fiestas del Tesino se cocina risotto en ollas gigantes para todo el pueblo.
+# Origen: voc_1edbxky
+2027-11-17 | palabra | ¿Qué significa esta expresión? | - | En el Tesino. | La expresión es «Buongiorno». | Empieza por «b». | muchas gracias | *buenos días | licor de nueces | jarrita de cerámica para el vino | En el Tesino se saluda al entrar en tiendas y bares, igual que en el resto de Suiza.
+# Origen: voc_1afmluc
+2027-11-18 | palabra | ¿Qué significa esta expresión? | - | En el Tesino. | La expresión es «Ciao». | Empieza por «h». | *hola y adiós | teleférico | restaurante rústico | carnet de conducir | Vale para saludar y para despedirse. En el Tesino se oye a todas horas.
+# Origen: voc_1y8jg7r
+2027-11-19 | palabra | ¿Qué significa esta expresión? | - | En el Tesino. | La expresión es «Brutto ma buono». | Empieza por «f». | casa de piedra de montaña | *feo pero rico | jarrita de cerámica para el vino | hola y adiós | Así se llaman unas galletas de avellana o almendra que no son bonitas, pero están buenísimas.
+# Origen: voc_rd0zzu
+2027-11-20 | palabra | ¿Qué significa esta expresión? | - | En romanche. | La expresión es «Allegra». | Empieza por «h». | buenas tardes | Engadina | *hola | pasta casera tipo spätzle | El saludo típico en romanche, la cuarta lengua nacional, que se habla en partes de Grisones.
+# Origen: voc_r7u44g
+2027-11-21 | palabra | ¿Qué significa esta expresión? | - | En romanche. | La expresión es «Grazia fitg». | Empieza por «m». | casa | fiesta del 1 de marzo | *muchas gracias | buenas tardes | El romanche se habla en Grisones y tiene cinco variantes regionales.
+# Origen: voc_1o5br4w
+2027-11-22 | palabra | ¿Qué significa esta expresión? | - | En romanche. | La expresión es «Bun di». | Empieza por «b». | *buenos días | hojas de acelga rellenas | bienvenida | muchas gracias | En 1982 se creó una forma escrita común del romanche: el «rumantsch grischun».
+# Origen: voc_bjy8ai
+2027-11-23 | palabra | ¿Qué significa esta expresión? | - | En romanche. | La expresión es «Buna saira». | Empieza por «b». | fiesta del 1 de marzo | *buenas tardes | casa | bienvenida | Menos del 1 % de la población suiza tiene el romanche como lengua principal.
+# Origen: voc_l3sslu
+2027-11-24 | palabra | ¿Qué significa esta expresión? | - | En romanche. | La expresión es «Chasa». | Empieza por «c». | fiesta del 1 de marzo | agua | *casa | bienvenida | En la Engadina verás casas con fachadas decoradas con esgrafiados.
+# Origen: voc_1n2uyqp
+2027-11-25 | palabra | ¿Qué significa esta expresión? | - | En romanche. | La expresión es «Aua». | Empieza por «a». | buenos días | Engadina | *agua | fiesta del 1 de marzo | Grisones tiene más de 600 lagos y el nacimiento del río Inn.
+# Origen: voc_1aug1b9
+2027-11-26 | palabra | ¿Qué significa esta expresión? | - | En romanche. | La expresión es «Ustaria». | Empieza por «p». | casa | *posada o restaurante | hojas de acelga rellenas | bienvenida | En los pueblos de Grisones verás carteles de «ustaria» junto a los de «Gasthaus».
+# Origen: voc_100xzog
+2027-11-27 | tradicion | ¿Qué significa el nombre de esta tradición? | - | En romanche. | La expresión es «Chalandamarz». | Empieza por «f». | agua | pasta casera tipo spätzle | *fiesta del 1 de marzo | casa | En la Engadina, los niños recorren el pueblo con cencerros para echar al invierno.
+# Origen: voc_757g4g
+2027-11-28 | palabra | ¿Qué significa esta expresión? | - | En romanche. | La expresión es «Capuns». | Empieza por «h». | bienvenida | *hojas de acelga rellenas | muchas gracias | pasta casera tipo spätzle | Plato típico de Grisones: masa de spätzle con embutido envuelta en hojas de acelga.
+# END CALENDARIO 2026-2027

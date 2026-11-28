@@ -662,3 +662,13 @@ Mapa sin barra por defecto, controles separados para acercar y construir, huecos
 ## Inicio y decoración por cantón (28 de noviembre de 2026)
 
 Las mejoras y negocios ya están activados; el cobro automático sigue apagado. «Juega ahora» se dibuja al cargar la configuración, mientras llegan los datos personales. El resumen reutiliza los lectores existentes sin cargar tres veces más el estado completo. La pastilla «Decorar» del Mapa transmite el cantón elegido: el decorador muestra solo su maqueta, huecos y contador. Su flecha vuelve a la región. Se conserva la colocación y validación del servidor. El misterio del 28 de noviembre está publicado desde el calendario editorial, con las pistas cerradas y la solución privadas. Implementación, migraciones v39/v40, pruebas y operación: [INICIO-RAPIDO-IMPLEMENTACION.md](INICIO-RAPIDO-IMPLEMENTACION.md).
+
+## Carga y calendario anual · actualización de la app
+
+V41 optimiza la lectura compartida del mapa y añade lecturas enfocadas de Tienda,
+Álbum y Nueva partida; precios y acciones originales se conservan. V42 devuelve
+decoraciones al inventario al bajar un cantón a nivel 0. Decorar exige seleccionar
+un cantón construido y el zoom de esa superficie solo afecta a la maqueta.
+V43 publica 366 misterios hasta el 28-11-2027, adaptados del contenido existente,
+sin exponer el calendario ni pistas cerradas al navegador. Detalles, mediciones,
+archivos, SQL y pruebas en `CARGA-CALENDARIO-IMPLEMENTACION.md`.

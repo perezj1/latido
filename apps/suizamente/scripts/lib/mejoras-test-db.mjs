@@ -14,6 +14,7 @@ export async function mejorasDatabase(flags=false,{inicioRapido=true}={}){
   const seeded=(await db.query('SELECT mejoras FROM suizamente_private.mejoras_configuracion')).rows[0].mejoras
   for(const key of ['minuto','espejo','misterio','decorar','unToque'])assert.equal(seeded[key].activo,false,'Release seed defaults off even when applied twice')
   assert.deepEqual((await db.query(fingerprint)).rows,before,'Initial additive migration preserves every legacy function and its ACL')
+  await db.exec(await readFile('supabase/suizamente_v42_decoraciones_nivel_cero.sql','utf8'))
   const juego=JSON.parse(await readFile('server/suizamente/data/juego.json','utf8')),config=juego.mejoras
   for(const [key,value] of Object.entries(config))if(value&&typeof value==='object')value.activo=flags===true||!!flags?.[key]
   const decoraciones=resolverHuecos(JSON.parse(await readFile('server/suizamente/data/decoraciones.json','utf8')))

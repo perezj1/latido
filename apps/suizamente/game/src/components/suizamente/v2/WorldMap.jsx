@@ -28,6 +28,7 @@ export const WorldMap=forwardRef(function WorldMap({state,selected,onSelect=()=>
  const [failed,setFailed]=useState(false),[inView,setInView]=useState(!mini&&!preview)
  const lastAnimation=useRef(null)
  const cantonScope=cantons?.join(',')||''
+ const gesture=useRef({blockedUntil:0})
  latest.current={state,selected,onSelect,reduced,animated,interactive,decorations,onDecoration,businesses}
  useImperativeHandle(ref,()=>({async capture(){if(world.current){world.current.saltar();return {foto:world.current.foto('image/jpeg',.9,3),ajuste:'cubrir'}}return flatMapPhoto(latest.current.state,config,latest.current.selected)}}),[config])
  function animationFor(mark,lessMotion){if(mark===lastAnimation.current)return;lastAnimation.current=mark;return lessMotion?undefined:mark?.canton}
@@ -80,12 +81,37 @@ export const WorldMap=forwardRef(function WorldMap({state,selected,onSelect=()=>
  useEffect(()=>{if(!regionView)return;if(!selected)world.current?.verRegion(config.mapa.regiones[state.region].cantones.map(k=>k.id));else world.current?.enfocar(selected);if(reduced)world.current?.saltar()},[regionView,regionView?state.region:null,selected,reduced,ready])
  useEffect(()=>world.current?.interaccion(interactive),[interactive])
  useEffect(()=>{
+  if(!interactive)return
+  const host=box.current;let start=null,moved=false
+  // OrbitControls listens on its canvas. Overlay buttons must belong to the
+  // same gesture surface, including a pinch that starts on a decoration ＋.
+  const touch=e=>{
+   if(!e.isTrusted)return
+   const canvas=host.querySelector('canvas:not([data-static-frame])')
+   if(!canvas)return
+   if(e.type==='touchstart'&&e.touches.length===1){start=[e.touches[0].clientX,e.touches[0].clientY];moved=false}
+   if(e.touches.length>1||start&&e.touches[0]&&Math.hypot(e.touches[0].clientX-start[0],e.touches[0].clientY-start[1])>6)moved=true
+   if(moved){if(e.cancelable)e.preventDefault();gesture.current.blockedUntil=Date.now()+400}
+   if(e.target!==canvas)canvas.dispatchEvent(new TouchEvent(e.type==='touchcancel'?'touchend':e.type,{touches:e.touches,targetTouches:e.touches,changedTouches:e.changedTouches,cancelable:true,bubbles:false}))
+   if(!e.touches.length)start=null
+  }
+  const wheel=e=>{
+   const canvas=host.querySelector('canvas:not([data-static-frame])');if(!canvas)return
+   // Ctrl+wheel is a trackpad pinch in Chromium. Keep it within the map too.
+   if(e.cancelable)e.preventDefault()
+   if(e.target!==canvas)canvas.dispatchEvent(new WheelEvent('wheel',{deltaX:e.deltaX,deltaY:e.deltaY,deltaMode:e.deltaMode,ctrlKey:e.ctrlKey,cancelable:true,bubbles:false}))
+  }
+  for(const name of ['touchstart','touchmove','touchend','touchcancel'])host.addEventListener(name,touch,{capture:true,passive:false})
+  host.addEventListener('wheel',wheel,{capture:true,passive:false})
+  return()=>{for(const name of ['touchstart','touchmove','touchend','touchcancel'])host.removeEventListener(name,touch,true);host.removeEventListener('wheel',wheel,true)}
+ },[interactive])
+ useEffect(()=>{
   if(!animated||(!ready&&!failed))return
   let active=true
   ;(async()=>{if(reduced)world.current?.saltar();await world.current?.reposo();if(active)onAnimationDone?.(animated)})()
   return()=>{active=false}
  },[animated,ready,failed,reduced])
- return <div className={'sv-world-map'+(selected?' selected':'')+(preview?' preview':'')+(mini?' mini':'')+(home?' home':'')} ref={box} role={mini?'img':'group'} aria-label={selected?'Maqueta del cantón '+selected+', nivel '+(state.niveles[selected]||0):'Maqueta de los cantones de Suiza'}>
+ return <div className={'sv-world-map'+(selected?' selected':'')+(preview?' preview':'')+(mini?' mini':'')+(home?' home':'')} ref={box} style={interactive?{touchAction:'none'}:undefined} onPointerUpCapture={e=>{if(e.pointerType==='touch'&&Date.now()<gesture.current.blockedUntil)e.stopPropagation()}} onClickCapture={e=>{if(Date.now()<gesture.current.blockedUntil){e.preventDefault();e.stopPropagation()}}} role={mini?'img':'group'} aria-label={selected?'Maqueta del cantón '+selected+', nivel '+(state.niveles[selected]||0):'Maqueta de los cantones de Suiza'}>
   {!failed&&!ready&&<span className="sv-map-loading sv-skeleton" role="status" aria-label="Cargando tu mapa"/>}{(failed||!ready)&&<MapDrawing levels={state.niveles} region={state.region} vuelta={state.vuelta} only={selected||undefined}/>}
   {businessPositions.map(p=><button type="button" key={p.id} className="sv-neg-pin" style={{left:p.x*100+'%',top:p.y*100+'%'}} onPointerDown={e=>e.stopPropagation()} onClick={e=>{e.stopPropagation();onBusiness?.(p.id)}} aria-label={p.nombre+' ? Patrocinado. Abrir ficha'}><svg viewBox="0 0 48 48" aria-hidden="true"><path d="M24 44 C24 44 9 29 9 19 A15 15 0 0 1 39 19 C39 29 24 44 24 44 Z" fill={p.color}/><circle cx="24" cy="19" r="6" fill="white"/></svg></button>)}
   {!!slots?.length&&<><svg aria-hidden="true" className="sv-mj-slot-lines" viewBox="0 0 100 100" preserveAspectRatio="none">{slotPositions.map(p=><line key={p.id} x1={p.ax*100} y1={p.ay*100} x2={p.x*100} y2={p.y*100}/>)}</svg>{slotPositions.map(p=><button type="button" key={p.id} className={'sv-mj-slot'+(selectedSlot===p.id?' active':'')} aria-pressed={selectedSlot===undefined?undefined:selectedSlot===p.id} style={{left:p.x*100+'%',top:p.y*100+'%'}} onPointerDown={e=>e.stopPropagation()} onClick={e=>{e.stopPropagation();onSlot?.(p.id)}} aria-label={slotLabel?slotLabel(p.id):'Colocar una decoración en '+p.id}><span aria-hidden="true">{slotText?slotText(p.id):'＋'}</span></button>)}</>}

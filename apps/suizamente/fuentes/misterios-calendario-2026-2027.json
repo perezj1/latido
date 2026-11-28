@@ -1,0 +1,2197 @@
+{
+  "version": 1,
+  "desde": "2026-11-29",
+  "hasta": "2027-11-28",
+  "entradas": [
+    {
+      "fecha": "2026-11-29",
+      "origen": "voc_m2glr5",
+      "tipo": "palabra",
+      "sha256": "a7508621311e521721bb63f6968e2f242a12a021f22dfe3d2714eca9b737cefa"
+    },
+    {
+      "fecha": "2026-11-30",
+      "origen": "vocr_fs81t9",
+      "tipo": "palabra",
+      "sha256": "17a5ea990a636250f91930fe2c113f4f94c26ca81183e056c00c4d229654c2a2"
+    },
+    {
+      "fecha": "2026-12-01",
+      "origen": "per_195ucsv",
+      "tipo": "personaje",
+      "sha256": "29c1a5871cd058dbddbe22c81c030a236c927d2bda5c53060ce2786172433e06"
+    },
+    {
+      "fecha": "2026-12-02",
+      "origen": "ciu_iek7ww",
+      "tipo": "palabra",
+      "sha256": "d5e67e0c375d2dad06e47565356bab613632c3c355fb3ae02fc238b38bd1881c"
+    },
+    {
+      "fecha": "2026-12-03",
+      "origen": "cap_blupch",
+      "tipo": "palabra",
+      "sha256": "64d06dcf730358ff4e746d375f6e518525c15a05eb0d4c3e2cac18e56a51db61"
+    },
+    {
+      "fecha": "2026-12-04",
+      "origen": "inv_oped5b",
+      "tipo": "palabra",
+      "sha256": "0d12e37f060d255b86d095c46d722ebfe88fcfed84a47339ff9ed1e849b6ad5f"
+    },
+    {
+      "fecha": "2026-12-05",
+      "origen": "mapa:LU",
+      "tipo": "silueta",
+      "sha256": "6ecd891fee2d8f07e396720c1bbfeffa671ec623e7f7c7676f0ec1dac30a4c5c"
+    },
+    {
+      "fecha": "2026-12-06",
+      "origen": "voc_9gqg7q",
+      "tipo": "palabra",
+      "sha256": "01727b74c6d8e0edde335722fa328130c462603674d33ec02ddfc08537a33067"
+    },
+    {
+      "fecha": "2026-12-07",
+      "origen": "vocr_ynslns",
+      "tipo": "palabra",
+      "sha256": "9e65ae45a494499f380a5acbb03b2bc045296be7004a43d31fbf7c8f5c1ca9e5"
+    },
+    {
+      "fecha": "2026-12-08",
+      "origen": "per_1whf753",
+      "tipo": "personaje",
+      "sha256": "6a4da2f112c9b6d8319f00f9abf45b7538b7e2d290fa85093d16f64fa021cee8"
+    },
+    {
+      "fecha": "2026-12-09",
+      "origen": "ciu_1784dhm",
+      "tipo": "palabra",
+      "sha256": "6a07ac6a440ff6229e3f51f7c4a4f09c7908ad2ac324c32ca3f8be11e95c6f84"
+    },
+    {
+      "fecha": "2026-12-10",
+      "origen": "cap_9xx36n",
+      "tipo": "palabra",
+      "sha256": "cf85e5c442fef63f9dc90418a6a170999bd7ec0b0ff5995e8492bcf9c6b730fe"
+    },
+    {
+      "fecha": "2026-12-11",
+      "origen": "inv_8jha0u",
+      "tipo": "palabra",
+      "sha256": "4977d4a6ac3c601127042996fe22c4843f4961c31c529f9f41aa5918eee02648"
+    },
+    {
+      "fecha": "2026-12-12",
+      "origen": "mapa:UR / cap_s0dih2",
+      "tipo": "silueta",
+      "sha256": "35d8ab7e9baa0a27b8f5bedf1553f84aaa753848025baf64614783dbfbc70ce4"
+    },
+    {
+      "fecha": "2026-12-13",
+      "origen": "voc_zo0xfi",
+      "tipo": "palabra",
+      "sha256": "a9e71b93f2de7c65cfdd62b4a0ed9ffc64020c3200de74c985adf7550ceddedc"
+    },
+    {
+      "fecha": "2026-12-14",
+      "origen": "vocr_ljrmfq",
+      "tipo": "palabra",
+      "sha256": "fc5eeb3f37b7aaee5f16cb554f391d729fb55020db2d69204aeb7fbb37406bbe"
+    },
+    {
+      "fecha": "2026-12-15",
+      "origen": "per_1rumr3z",
+      "tipo": "personaje",
+      "sha256": "c008db9623d0dadfc6502592c2bb6d4b082349b006bd3b4cce465cf07c236e76"
+    },
+    {
+      "fecha": "2026-12-16",
+      "origen": "ciu_1mef30v",
+      "tipo": "palabra",
+      "sha256": "bfb48704106125ae68f3a29bdaf53aa00f38bf1f34f59cd04611914eb92f58f4"
+    },
+    {
+      "fecha": "2026-12-17",
+      "origen": "cap_gvn5iy",
+      "tipo": "palabra",
+      "sha256": "7701c228190020c8bb3a948b4b1e0663e46f580d0067c373d11f3e187fca6901"
+    },
+    {
+      "fecha": "2026-12-18",
+      "origen": "inv_sxo17t",
+      "tipo": "palabra",
+      "sha256": "d74c759708fbce0136777847defb71533f9c11f3115aae553a2d6fcc3fcc28af"
+    },
+    {
+      "fecha": "2026-12-19",
+      "origen": "mapa:SZ / ciu_bj3kmb",
+      "tipo": "silueta",
+      "sha256": "c26916776bab2ca279c592587737b805077a3c5228c3071e6f5e69096f90f6c8"
+    },
+    {
+      "fecha": "2026-12-20",
+      "origen": "voc_f1kw8q",
+      "tipo": "palabra",
+      "sha256": "366326f48e2de0ade4c77865bddbbc8610cd139e86c2ce13689a19d752402d50"
+    },
+    {
+      "fecha": "2026-12-21",
+      "origen": "vocr_hhzami",
+      "tipo": "palabra",
+      "sha256": "5cb8608552cd83d3a30ee8865f34b66a8c80b66503de2e3c2e7f156b5d94284b"
+    },
+    {
+      "fecha": "2026-12-22",
+      "origen": "per_lenx8c",
+      "tipo": "personaje",
+      "sha256": "263a7ada8d8697596d62a00014576758709f47254667aca95a252fd4e831c7ad"
+    },
+    {
+      "fecha": "2026-12-23",
+      "origen": "ciu_4ext5t",
+      "tipo": "palabra",
+      "sha256": "016c4746ea60959c8d856ac954eae2f3e9e3fa28b0fa35adbad421223fd34477"
+    },
+    {
+      "fecha": "2026-12-24",
+      "origen": "cap_949y7f",
+      "tipo": "palabra",
+      "sha256": "72a10906abca14447530bce891e2ab5bbae2bd16867318f88a7c494d61d05278"
+    },
+    {
+      "fecha": "2026-12-25",
+      "origen": "inv_4eh3qx",
+      "tipo": "palabra",
+      "sha256": "fe51417651c27cb6ddcb9223c989b06ae1c672f6b560b83b50639d30b5b585b3"
+    },
+    {
+      "fecha": "2026-12-26",
+      "origen": "mapa:OW / cap_xtk1fv",
+      "tipo": "silueta",
+      "sha256": "a5b3171f149a29ccf57f96a28f0c362961cde5e0e1f4927d49ec50f3636bfdbd"
+    },
+    {
+      "fecha": "2026-12-27",
+      "origen": "voc_73gyeg",
+      "tipo": "palabra",
+      "sha256": "341c77021516e31913ac739a6401e5f72785d88da9e832e22bb8a16020c02323"
+    },
+    {
+      "fecha": "2026-12-28",
+      "origen": "vocr_kw5i6m",
+      "tipo": "palabra",
+      "sha256": "0dbc8c206fb85b29cce422271ca923f76971ce276f4c3bb81258660de3373553"
+    },
+    {
+      "fecha": "2026-12-29",
+      "origen": "per_7vpsbs",
+      "tipo": "personaje",
+      "sha256": "6523810ddb888552c2685f15e4a3b1d31a6685da70ff6e2cb5c4e63cccf1978c"
+    },
+    {
+      "fecha": "2026-12-30",
+      "origen": "ciu_1id4k1t",
+      "tipo": "palabra",
+      "sha256": "4ba883fcce5595412bd0bc51251a1c85c5e3d4cb3d7b5ce08acc22652e3f5e9c"
+    },
+    {
+      "fecha": "2026-12-31",
+      "origen": "cap_cq4s82",
+      "tipo": "palabra",
+      "sha256": "888399814e4015e1041ff87dc69399d1498429264855c228f1e305641daf2111"
+    },
+    {
+      "fecha": "2027-01-01",
+      "origen": "inv_6l2fyv",
+      "tipo": "palabra",
+      "sha256": "465c8462e890be1342f3e241e7d059941e80f0ff93631cf05824554b91c694a7"
+    },
+    {
+      "fecha": "2027-01-02",
+      "origen": "mapa:NW / cap_bmizg2",
+      "tipo": "silueta",
+      "sha256": "0cbce7afaa46efada210554a342264656bed704d63c68e5c47d7e8b1ff5d378a"
+    },
+    {
+      "fecha": "2027-01-03",
+      "origen": "voc_1r6xy9s",
+      "tipo": "palabra",
+      "sha256": "e56c40ba1b4f0f2eb4fc749fb3f76037a192dbb96b72b56dc70cf9e74a47a10e"
+    },
+    {
+      "fecha": "2027-01-04",
+      "origen": "vocr_lm191b",
+      "tipo": "palabra",
+      "sha256": "85e4beb85f2bb8034bb2ea1c035bad115913d009e343bf991e67fcee12fdc4f2"
+    },
+    {
+      "fecha": "2027-01-05",
+      "origen": "per_od1pqm",
+      "tipo": "personaje",
+      "sha256": "18c16b5ce6e1d32acf1e06aa8408301071abb617d490508fff91359404125708"
+    },
+    {
+      "fecha": "2027-01-06",
+      "origen": "ciu_92fvt2",
+      "tipo": "palabra",
+      "sha256": "3ae30f5eb2286fc24762342e96391945d0748c287611648e5cd47dc3e368f37d"
+    },
+    {
+      "fecha": "2027-01-07",
+      "origen": "cap_u6xrto",
+      "tipo": "palabra",
+      "sha256": "992fd8c21aa7938cc2aed08b4b36d6beac364379e406e6d15edf1dea91cbfe95"
+    },
+    {
+      "fecha": "2027-01-08",
+      "origen": "inv_1caocon",
+      "tipo": "palabra",
+      "sha256": "b4dddcb019e424bc3f17f703074a1aa4063fdac048d82f7fa335dca5410af855"
+    },
+    {
+      "fecha": "2027-01-09",
+      "origen": "mapa:ZG",
+      "tipo": "silueta",
+      "sha256": "d6a12471c7c7cf435adc824f56fd608d8910c07ef6039c13cb4077a53c7cdb7c"
+    },
+    {
+      "fecha": "2027-01-10",
+      "origen": "voc_1yc8upw",
+      "tipo": "palabra",
+      "sha256": "13b1340a0f272c6fd9a62d8b76e9d5e8e8ca1f4357440793756b85258f3815a1"
+    },
+    {
+      "fecha": "2027-01-11",
+      "origen": "vocr_carfe3",
+      "tipo": "palabra",
+      "sha256": "79246fb86b9c40f59bb09d398bd5cb68aa21097c00e29aeed74629be2f8e72c1"
+    },
+    {
+      "fecha": "2027-01-12",
+      "origen": "per_aha4ou",
+      "tipo": "personaje",
+      "sha256": "7fa6ffb99c76ea8a61243545f2465d5c6648f9210b8abac1dd82af762ddc68e1"
+    },
+    {
+      "fecha": "2027-01-13",
+      "origen": "ciu_8sjo0z",
+      "tipo": "palabra",
+      "sha256": "69bfd40df81bdbc3a1e888429109a5fb3d0ecb4d779cf571c7f043d549ba422f"
+    },
+    {
+      "fecha": "2027-01-14",
+      "origen": "cap_fis8rc",
+      "tipo": "palabra",
+      "sha256": "a6679eaf4d3c8767e76670ed06f9967d56f465b1adc5a1b7abd1e8aa909250a9"
+    },
+    {
+      "fecha": "2027-01-15",
+      "origen": "inv_1n1i0fj",
+      "tipo": "palabra",
+      "sha256": "fb8d01cbf33596b4dbbed96c6f56f2b207422c7ff70cae88c557284163e742e6"
+    },
+    {
+      "fecha": "2027-01-16",
+      "origen": "mapa:ZH / ciu_tntngn",
+      "tipo": "silueta",
+      "sha256": "fddb58cfcf1ff4f6784eb42cff2834c4ffef84adc2193d7d26c673a6a2e73a80"
+    },
+    {
+      "fecha": "2027-01-17",
+      "origen": "voc_ez4ckd",
+      "tipo": "palabra",
+      "sha256": "d4f6415d074962d65cd46bae7ba54d07ef78de7a1b83f689fc98b0c71e6b2b9e"
+    },
+    {
+      "fecha": "2027-01-18",
+      "origen": "vocr_9gqg7q",
+      "tipo": "palabra",
+      "sha256": "cea35dfdceab39e459545a8a9fb6d49a19dc39d209c06da61ec3bf238c113144"
+    },
+    {
+      "fecha": "2027-01-19",
+      "origen": "per_1qqwcrm",
+      "tipo": "personaje",
+      "sha256": "6c839695fc09d625c1d911222dbd148179b1628695381a431caad3330b265672"
+    },
+    {
+      "fecha": "2027-01-20",
+      "origen": "ciu_1dyt7gw",
+      "tipo": "palabra",
+      "sha256": "d1fe4f86528ae6f8a2ec535364e7986f3401ef7aeab9c39cfec66f55a5a8a64b"
+    },
+    {
+      "fecha": "2027-01-21",
+      "origen": "cap_bmizg2",
+      "tipo": "palabra",
+      "sha256": "f04eafa0af9e73daa65db490f7f40368d029b4f987f4f80d270ffb47ad3d179c"
+    },
+    {
+      "fecha": "2027-01-22",
+      "origen": "inv_1dbbifr",
+      "tipo": "palabra",
+      "sha256": "9d03522ecad9865d216ce8f065eaaa655152900a9ce04633697b539a6f287266"
+    },
+    {
+      "fecha": "2027-01-23",
+      "origen": "mapa:BS / cap_cq4s82",
+      "tipo": "silueta",
+      "sha256": "77c6ad628a75318dda85f79177a31512daebaa262ed60191c283deb098057854"
+    },
+    {
+      "fecha": "2027-01-24",
+      "origen": "voc_9gowv",
+      "tipo": "palabra",
+      "sha256": "780edbab7c95674933cd87cbd28901c42802bb20252d257d4a25f8db64e6bf13"
+    },
+    {
+      "fecha": "2027-01-25",
+      "origen": "vocr_1yvm3h3",
+      "tipo": "palabra",
+      "sha256": "a720e01b41f989322dd0c4459d7ece024491605b1e16e4f2954f27c1fecb8906"
+    },
+    {
+      "fecha": "2027-01-26",
+      "origen": "per_1eq4zcj",
+      "tipo": "personaje",
+      "sha256": "74a1976c17006f47868312ca69b2d4d9c916d645da639d5be406a1dae09ab335"
+    },
+    {
+      "fecha": "2027-01-27",
+      "origen": "ciu_1l2fhvl",
+      "tipo": "palabra",
+      "sha256": "bcb1475a863130859f1f02a1343ddd1961d9516e0d47fdf4973b929c0dce514b"
+    },
+    {
+      "fecha": "2027-01-28",
+      "origen": "cap_xtk1fv",
+      "tipo": "palabra",
+      "sha256": "7957653d420a0ad7b49d365da4ee2f011f897774bfafca6bbf543504f3f6829c"
+    },
+    {
+      "fecha": "2027-01-29",
+      "origen": "inv_11jpr6v",
+      "tipo": "palabra",
+      "sha256": "228ebed4a09713a5b0791d7088a9f954ead349f103e72174a49d38b8d6961b2a"
+    },
+    {
+      "fecha": "2027-01-30",
+      "origen": "mapa:BL / cap_949y7f",
+      "tipo": "silueta",
+      "sha256": "ec542ed302903f20a3491185fa89efe91d051bcc9d7a7717029b30a030fc259d"
+    },
+    {
+      "fecha": "2027-01-31",
+      "origen": "voc_xwcufl",
+      "tipo": "palabra",
+      "sha256": "f59f92bd4f4dbb57dd0beae24297ba4f6aa2f165208aafc3d9174ecd386be312"
+    },
+    {
+      "fecha": "2027-02-01",
+      "origen": "vocr_qzbw1l",
+      "tipo": "palabra",
+      "sha256": "4eefe9bedb80c7065d4d21abc114e49a57e63848e260ae6c7386dbf7a4fd6d13"
+    },
+    {
+      "fecha": "2027-02-02",
+      "origen": "per_1loy0zv",
+      "tipo": "personaje",
+      "sha256": "23a3ec03ca7614e8bd0a4782e7a26be3cb394868b191b901adb0625420b87510"
+    },
+    {
+      "fecha": "2027-02-03",
+      "origen": "ciu_zl6vft",
+      "tipo": "palabra",
+      "sha256": "78809768a01fc04dd496c516b359f9d06266370d7e821ac4361a3f2053722bf2"
+    },
+    {
+      "fecha": "2027-02-04",
+      "origen": "cap_77agy4",
+      "tipo": "palabra",
+      "sha256": "a248f187a74a187290d866a33e45f4cb66e02d9e4aeb5c5962f117f24bf64a94"
+    },
+    {
+      "fecha": "2027-02-05",
+      "origen": "inv_9wo2xh",
+      "tipo": "palabra",
+      "sha256": "d871f03da8cf64abbd6ad11b9e34b7c716c188ccd5fe536970aa23cf3ebe4d23"
+    },
+    {
+      "fecha": "2027-02-06",
+      "origen": "mapa:AG / cap_blupch",
+      "tipo": "silueta",
+      "sha256": "6084b924fb0cff27ac403f25786a72229d650cd227f9d70e3b005bb34c07bc65"
+    },
+    {
+      "fecha": "2027-02-07",
+      "origen": "voc_1m5xvqa",
+      "tipo": "palabra",
+      "sha256": "44a9aee8ef095b8a6a32fffbd89c4c84c236c7cf37043abfa1dde0117535d248"
+    },
+    {
+      "fecha": "2027-02-08",
+      "origen": "vocr_g1atvk",
+      "tipo": "palabra",
+      "sha256": "f721daf67f5d6dd8e12080cb9f67343e9e8f716db75e675f9a66cf7e71c40734"
+    },
+    {
+      "fecha": "2027-02-09",
+      "origen": "per_1jrk95d",
+      "tipo": "personaje",
+      "sha256": "e8b2c1cef4ab1c433a1c31742679f2a0c31dd8fd33e622865e79549c84ac8564"
+    },
+    {
+      "fecha": "2027-02-10",
+      "origen": "ciu_8pbvlg",
+      "tipo": "palabra",
+      "sha256": "ad5bf9ad6074d32bf5af86d93377c355ca683bdf300777aeb0e48e93f3fa4b5c"
+    },
+    {
+      "fecha": "2027-02-11",
+      "origen": "cap_8v833y",
+      "tipo": "palabra",
+      "sha256": "35e6762de6a6195549ea4970a151efb0cc0e0bcf019e00dd55226efb434329fe"
+    },
+    {
+      "fecha": "2027-02-12",
+      "origen": "inv_k2fcsj",
+      "tipo": "palabra",
+      "sha256": "4f573f6386b71afde69582f3074c8c41713e02cb0d0df48762c847636432c1e3"
+    },
+    {
+      "fecha": "2027-02-13",
+      "origen": "mapa:BE / ciu_8pbvlg",
+      "tipo": "silueta",
+      "sha256": "b21a96899868662ae6e035ae6565bd4bd4379adbe37ab5d879319fdb687fa424"
+    },
+    {
+      "fecha": "2027-02-14",
+      "origen": "voc_1tzcdei",
+      "tipo": "palabra",
+      "sha256": "c2042d1993bb51a635fc375ef88ef0829e8a31090342edbb84b4d7d5bc07bd0f"
+    },
+    {
+      "fecha": "2027-02-15",
+      "origen": "vocr_oxvutq",
+      "tipo": "palabra",
+      "sha256": "d3e7c998c47893dae68168a0a075190597eccdfd1fab2f609c1949525d1535d2"
+    },
+    {
+      "fecha": "2027-02-16",
+      "origen": "per_1p4r9xf",
+      "tipo": "personaje",
+      "sha256": "dcd807aa95fe7c1cc46a6deb49c0d4a235c8ad4c7fa4ee8a6f0c7554cd05f626"
+    },
+    {
+      "fecha": "2027-02-17",
+      "origen": "ciu_tjdet4",
+      "tipo": "palabra",
+      "sha256": "b47e4d5fd88e00f75c6067d00de41675c69936d5f31beed48ab2560f011da623"
+    },
+    {
+      "fecha": "2027-02-18",
+      "origen": "cap_s0dih2",
+      "tipo": "palabra",
+      "sha256": "21685b8464d37d003fa5abd9e7d71f49783c3a0a880780f2d6a6ed2f10504faf"
+    },
+    {
+      "fecha": "2027-02-19",
+      "origen": "inv_a68yce",
+      "tipo": "palabra",
+      "sha256": "cffc7c12bdfd7d16cfaea88ea6111761f816b142e8dd4f3b9415b8b2a10bceaf"
+    },
+    {
+      "fecha": "2027-02-20",
+      "origen": "mapa:FR / ciu_1frkm4c",
+      "tipo": "silueta",
+      "sha256": "960c40075fde8edb58021e63da6ddb52ff1740281ebc984419656cb3356ab7b6"
+    },
+    {
+      "fecha": "2027-02-21",
+      "origen": "voc_15p8jfm",
+      "tipo": "palabra",
+      "sha256": "5ef37d82ddd1640c0d8af3b0c15b41d6a06f53856006d6ac3dab586e091e0557"
+    },
+    {
+      "fecha": "2027-02-22",
+      "origen": "vocr_1vk1x26",
+      "tipo": "palabra",
+      "sha256": "afa6660f9119cbc63f029db7150e56291f6b8755aa8bccef435737a1be98c895"
+    },
+    {
+      "fecha": "2027-02-23",
+      "origen": "per_4km00f",
+      "tipo": "personaje",
+      "sha256": "f6e4c66943f44868675fbde6e83d161ed4d0511c1f1f06c64b4daf877805e17b"
+    },
+    {
+      "fecha": "2027-02-24",
+      "origen": "ciu_i0ntc8",
+      "tipo": "palabra",
+      "sha256": "4a3a19c0f7bdc1d23f6b8819c95d9dc6e2642e90935a4489a79dfde55b4633d9"
+    },
+    {
+      "fecha": "2027-02-25",
+      "origen": "cap_t4ldqv",
+      "tipo": "palabra",
+      "sha256": "64421fc1c272151260306fad1bff6394ba3a7682c51a3571481e3eb0066a38d5"
+    },
+    {
+      "fecha": "2027-02-26",
+      "origen": "inv_1pokm3i",
+      "tipo": "palabra",
+      "sha256": "8d32673a7f1534684b6777aa1c0650bafd636851a304c5cae7fe11c8e7343508"
+    },
+    {
+      "fecha": "2027-02-27",
+      "origen": "mapa:SO / ciu_1rkmxxx",
+      "tipo": "silueta",
+      "sha256": "73a97768a94970d4334d6f2d81654df08e05b282a1dd7bd18ccdd931bdb6545d"
+    },
+    {
+      "fecha": "2027-02-28",
+      "origen": "voc_1j8yzf4",
+      "tipo": "palabra",
+      "sha256": "06c7bea4623a72679b12e2e1b7d7f211fe9569fc7f85905c1240ecb21927d34d"
+    },
+    {
+      "fecha": "2027-03-01",
+      "origen": "vocr_1s99qa8",
+      "tipo": "palabra",
+      "sha256": "0968924a5efab43c227b8d8a8339d6bed994f031cea3bb08c8f157fda43c1bc7"
+    },
+    {
+      "fecha": "2027-03-02",
+      "origen": "per_18g1cy7",
+      "tipo": "personaje",
+      "sha256": "f6d511e59fdd5f687354f97ed785f1e808447105fcca2bc19d68ab4133b70bec"
+    },
+    {
+      "fecha": "2027-03-03",
+      "origen": "ciu_10t27cl",
+      "tipo": "palabra",
+      "sha256": "1ada4e3520905f60ce63c41d2b778cf3f703eb606c413c8d8f9d7ac5b39ebd02"
+    },
+    {
+      "fecha": "2027-03-04",
+      "origen": "cap_wqg7ri",
+      "tipo": "palabra",
+      "sha256": "076beeaa28fe71eac96e2dacf637d90d30afa6f65179d3b478755515600ddf74"
+    },
+    {
+      "fecha": "2027-03-05",
+      "origen": "inv_13l8ci0",
+      "tipo": "palabra",
+      "sha256": "02de31ea99c9b122c663ff9274b75fe28d003630bb8a37a100a2b6dc387c152a"
+    },
+    {
+      "fecha": "2027-03-06",
+      "origen": "mapa:NE / ciu_6r6t4g",
+      "tipo": "silueta",
+      "sha256": "82db2f283b7d807748a1699fa5fdae3a2b75b6b52f42801be891e164d00dc595"
+    },
+    {
+      "fecha": "2027-03-07",
+      "origen": "voc_1hvp94e",
+      "tipo": "palabra",
+      "sha256": "3a4a853e4ebeee9c7f14d46eff7ca7c4f30c3de64cd5d3a9a5c5dd7c6dd50a84"
+    },
+    {
+      "fecha": "2027-03-08",
+      "origen": "vocr_tz0nfh",
+      "tipo": "palabra",
+      "sha256": "ebbea5bb6b2d4a8af10772b27e326c2496a4c4c72283acddcbd9a1a760fd99e8"
+    },
+    {
+      "fecha": "2027-03-09",
+      "origen": "per_10z8gzd",
+      "tipo": "personaje",
+      "sha256": "db80bc5c09f6db943a97616cbe20c78455eb888045a1fe7fb26f087831f21a36"
+    },
+    {
+      "fecha": "2027-03-10",
+      "origen": "ciu_1q2yigl",
+      "tipo": "palabra",
+      "sha256": "9f4752a4d8df78d70ed110f1571a34bd0c6c3cbbd89d737b7c88d7daf8372bcf"
+    },
+    {
+      "fecha": "2027-03-11",
+      "origen": "inv_1jajbkf",
+      "tipo": "palabra",
+      "sha256": "1967a330e55956cfe7b81514145fb62033c84eb11343379f8e6346516717aaa5"
+    },
+    {
+      "fecha": "2027-03-12",
+      "origen": "mapa:JU / cap_fis8rc",
+      "tipo": "silueta",
+      "sha256": "be790f101052762013f84034e3aa4335a3ce9adf056b4dc2c6184a9c4cadfd8b"
+    },
+    {
+      "fecha": "2027-03-13",
+      "origen": "voc_1l60gd",
+      "tipo": "palabra",
+      "sha256": "161b4210d85f39f4dd8c04307ffeeac05c8079573adf1cf4d8da743fb8771023"
+    },
+    {
+      "fecha": "2027-03-14",
+      "origen": "vocr_my1qfv",
+      "tipo": "palabra",
+      "sha256": "861f33bca55d6ec642efb1a20d860c81bb1dbcf646b427822ab6b774a4f01254"
+    },
+    {
+      "fecha": "2027-03-15",
+      "origen": "per_o8oorv",
+      "tipo": "personaje",
+      "sha256": "f13e558727f6689066b89b860f474b614b3ced780c9ed6f035f4b8a19b21c8ce"
+    },
+    {
+      "fecha": "2027-03-16",
+      "origen": "ciu_x52ac1",
+      "tipo": "palabra",
+      "sha256": "d628be68c532deb095402569a3643ba7ff3198164bfc7e5de9796c40325d67ea"
+    },
+    {
+      "fecha": "2027-03-17",
+      "origen": "inv_nglod",
+      "tipo": "palabra",
+      "sha256": "3c2227fa84f06cc1d67a3f246c5a551829d0600c5acc4390e0e0f68b00c7058a"
+    },
+    {
+      "fecha": "2027-03-18",
+      "origen": "mapa:VD / cap_t4ldqv",
+      "tipo": "silueta",
+      "sha256": "c4917728310db8ae493d928d00432a9f6f3f981f3167b7a254f55c06e9f80c98"
+    },
+    {
+      "fecha": "2027-03-19",
+      "origen": "voc_1k44rpo",
+      "tipo": "palabra",
+      "sha256": "9a3d3065048621878553d3ee5aab269a609ae809aa2eaa1043e63f14f7bc370c"
+    },
+    {
+      "fecha": "2027-03-20",
+      "origen": "vocr_8vv4po",
+      "tipo": "palabra",
+      "sha256": "e3c67019d6f5513d9c107b17c202ad383f6b6a5e5332875766940944d52e275d"
+    },
+    {
+      "fecha": "2027-03-21",
+      "origen": "per_1obsi1j",
+      "tipo": "personaje",
+      "sha256": "399502f2e6cbdc155d3310a4d70faf21e4f694a283859bd819488ae79e33ead5"
+    },
+    {
+      "fecha": "2027-03-22",
+      "origen": "ciu_j6s3pi",
+      "tipo": "palabra",
+      "sha256": "238159ee763d2828d17d3102ec0ddc5c7e960d7826e8946c533d2c8804ca856a"
+    },
+    {
+      "fecha": "2027-03-23",
+      "origen": "inv_1ldz4mk",
+      "tipo": "palabra",
+      "sha256": "4f8935b4b4f3280286ef3d26f8364c3d568ae93323b6318527aaf295cee33cde"
+    },
+    {
+      "fecha": "2027-03-24",
+      "origen": "mapa:VS / cap_wqg7ri",
+      "tipo": "silueta",
+      "sha256": "2b4e30142477ed11f98b831beae496d7c11c67bfa1ae405cb1992a5ba0e72a05"
+    },
+    {
+      "fecha": "2027-03-25",
+      "origen": "voc_1i482vn",
+      "tipo": "palabra",
+      "sha256": "1cf7f03c63550879ce02ecc7b34cffcdba71203db89b7232a1fbdfa711d0face"
+    },
+    {
+      "fecha": "2027-03-26",
+      "origen": "vocr_gxie66",
+      "tipo": "palabra",
+      "sha256": "3df965ee58f4ecfb0ebb61299318b3bb863225a2ce9d57b950647718608448e0"
+    },
+    {
+      "fecha": "2027-03-27",
+      "origen": "per_1nxhi2v",
+      "tipo": "personaje",
+      "sha256": "1335822d117399b3d3111a851cad2dd0b4546740ff63ee49540f3bb6e12967b8"
+    },
+    {
+      "fecha": "2027-03-28",
+      "origen": "ciu_mlq7a5",
+      "tipo": "palabra",
+      "sha256": "8cbab87e2fa931c5a2f9112be90f78f1073010b269f1726cebf64cdae26a1bc3"
+    },
+    {
+      "fecha": "2027-03-29",
+      "origen": "inv_1yugnl4",
+      "tipo": "palabra",
+      "sha256": "1808eef08fd7730d8f5189ec08b8264e1ea1106e99ada4636ec1ebd7af4dfbba"
+    },
+    {
+      "fecha": "2027-03-30",
+      "origen": "mapa:GE",
+      "tipo": "silueta",
+      "sha256": "de9d9ee2e248e8957b04c1cf70810a7400d31fbb161cccf5517af30f385ae0a7"
+    },
+    {
+      "fecha": "2027-03-31",
+      "origen": "voc_1xl81ww",
+      "tipo": "palabra",
+      "sha256": "585f5c78de9648b8a504c688152f3b64d6db95d7ce88e32ecc65d063b0e615e8"
+    },
+    {
+      "fecha": "2027-04-01",
+      "origen": "vocr_1lumofq",
+      "tipo": "palabra",
+      "sha256": "29172c1e007ff2b82f496015a9e05901d139aab607a526a053983d76fa9c61ec"
+    },
+    {
+      "fecha": "2027-04-02",
+      "origen": "per_7fs459",
+      "tipo": "personaje",
+      "sha256": "14efa7036743c70bbdbb0728d7d71ea5eb0238e44b09bcc18df820276938445e"
+    },
+    {
+      "fecha": "2027-04-03",
+      "origen": "ciu_47fdfv",
+      "tipo": "palabra",
+      "sha256": "fd57f57448f0aa5ed0da04ea4bb385566e1aae59c8de39d13582a10d47c2b43d"
+    },
+    {
+      "fecha": "2027-04-04",
+      "origen": "inv_1pd6pg2",
+      "tipo": "palabra",
+      "sha256": "10090dd2b29c83e6e402cea724c5072c2a95264e5aee5d7cb65bb84f38edac24"
+    },
+    {
+      "fecha": "2027-04-05",
+      "origen": "mapa:TI / cap_8v833y",
+      "tipo": "silueta",
+      "sha256": "002598ec377ec266a8d63b1165027b2d30e0f32a79408e68df497dcfc15eaffb"
+    },
+    {
+      "fecha": "2027-04-06",
+      "origen": "voc_hy2d2r",
+      "tipo": "palabra",
+      "sha256": "cad428119b608f4ad3390fa9579ee1200cc2e14024a222f3596c8ba8f9d4c08a"
+    },
+    {
+      "fecha": "2027-04-07",
+      "origen": "vocr_mxx7oz",
+      "tipo": "palabra",
+      "sha256": "b737cbef9eb00f513dfa01a12373e02ad8e4a884b20ca149c524f93105b57d08"
+    },
+    {
+      "fecha": "2027-04-08",
+      "origen": "per_1tjsp5r",
+      "tipo": "personaje",
+      "sha256": "c8ba862f3178cb5dec68c19e9b5c719f73eda8e525c52acbd8bd7089d66b0199"
+    },
+    {
+      "fecha": "2027-04-09",
+      "origen": "ciu_1frkm4c",
+      "tipo": "palabra",
+      "sha256": "46a7777d0bf24b2b512a468dbd7206c138fbde015e8373a3c7f3fb8c777c7803"
+    },
+    {
+      "fecha": "2027-04-10",
+      "origen": "inv_ff4vul",
+      "tipo": "palabra",
+      "sha256": "bf6e1d3f830ca103b2e2f870d8d5090b8f51350102338c415e54f1ee76cad460"
+    },
+    {
+      "fecha": "2027-04-11",
+      "origen": "mapa:GL",
+      "tipo": "silueta",
+      "sha256": "b697f8afdd26cd86ac5face8360e21f7d21fc2e81c83c7ef19eb1f9d34ff47db"
+    },
+    {
+      "fecha": "2027-04-12",
+      "origen": "voc_1abfnhn",
+      "tipo": "palabra",
+      "sha256": "5f2094e8d3fd3f815e0ab6343aa31ede152f9ee10790815d7e869c59cdfdfae5"
+    },
+    {
+      "fecha": "2027-04-13",
+      "origen": "vocr_r7u44g",
+      "tipo": "palabra",
+      "sha256": "fb4730ac272ba2ca8c65ddef27eecbf968b4d73ef83178baaa279fbcf52fe585"
+    },
+    {
+      "fecha": "2027-04-14",
+      "origen": "per_gbfdca",
+      "tipo": "personaje",
+      "sha256": "90a40bd1fa887ed5a48823ddf6f64b3395a6cf4253d2ab4f4f7803ea1e5d0625"
+    },
+    {
+      "fecha": "2027-04-15",
+      "origen": "ciu_bj3kmb",
+      "tipo": "palabra",
+      "sha256": "896ad5316f02bb1493d5778ea4815fe5013cf2eb1d0ff69781fc79e14f7e75f2"
+    },
+    {
+      "fecha": "2027-04-16",
+      "origen": "mapa:SH",
+      "tipo": "silueta",
+      "sha256": "7b60ac16f73e130205c54621a2fc4e67e5a9babd6435ad9e71ae9ccc1e922ac5"
+    },
+    {
+      "fecha": "2027-04-17",
+      "origen": "voc_1s5depo",
+      "tipo": "palabra",
+      "sha256": "1a510af698701d0ad269da4fe4992df9daa99efdb77d9918439b816b8c6407f8"
+    },
+    {
+      "fecha": "2027-04-18",
+      "origen": "vocr_1j8yzf4",
+      "tipo": "palabra",
+      "sha256": "c88bf297b239136a63f46456e947205933d51784abc873c8b5babbff7b4664c6"
+    },
+    {
+      "fecha": "2027-04-19",
+      "origen": "per_10f7g8g",
+      "tipo": "personaje",
+      "sha256": "d1173a340fafed95e0ac3874d98275ea3c4814610e126c4862c9d18b30d6abbf"
+    },
+    {
+      "fecha": "2027-04-20",
+      "origen": "ciu_tntngn",
+      "tipo": "palabra",
+      "sha256": "20de68780d2673db596a133e704543307db7d5b27a137dc49a61f7ed94d2863b"
+    },
+    {
+      "fecha": "2027-04-21",
+      "origen": "mapa:AR",
+      "tipo": "silueta",
+      "sha256": "a5b3815d71d840ade30882eb0aecfb7f2c98a86aa566adaaeb3a8529948ccccb"
+    },
+    {
+      "fecha": "2027-04-22",
+      "origen": "voc_2y931l",
+      "tipo": "palabra",
+      "sha256": "c62cbbd7e3a3ca42cc08a79dfc0be9858d9e6b716a6156987aef1ae14c3973e4"
+    },
+    {
+      "fecha": "2027-04-23",
+      "origen": "vocr_xz2sn3",
+      "tipo": "palabra",
+      "sha256": "f4f62899675592ba02dbb355f91c4b7e810bf14fe2716a9f82da75b55e4e3810"
+    },
+    {
+      "fecha": "2027-04-24",
+      "origen": "per_17mml8o",
+      "tipo": "personaje",
+      "sha256": "ff54357a60ae0c0b9e6940e1d00411dd4b0315e32bd4b6973eb760eb277f98d5"
+    },
+    {
+      "fecha": "2027-04-25",
+      "origen": "ciu_drrhq8",
+      "tipo": "palabra",
+      "sha256": "7f7ea237bbb0e794f64bc235af676f203c5ec6b5e5727af7119c04bbeacb2b61"
+    },
+    {
+      "fecha": "2027-04-26",
+      "origen": "mapa:AI",
+      "tipo": "silueta",
+      "sha256": "1c339b03473abbc2527afc1bec76ae8b4b82c8b7af20a9d7a675fefbdc25061d"
+    },
+    {
+      "fecha": "2027-04-27",
+      "origen": "voc_lx8o6l",
+      "tipo": "palabra",
+      "sha256": "371f0f939de4d6933d044033a6f05cf635b38079e2318e47b10fe80decb56c77"
+    },
+    {
+      "fecha": "2027-04-28",
+      "origen": "vocr_gnc1an",
+      "tipo": "palabra",
+      "sha256": "0a108a0e7b58a00eca9513110bad571a4b5ee702c46d85de7f53bfed77936d06"
+    },
+    {
+      "fecha": "2027-04-29",
+      "origen": "per_c6y02x",
+      "tipo": "personaje",
+      "sha256": "8f1f714786a0845534ffa06ad920b1c66b4628bdcd408e2b286ae8d0b9733157"
+    },
+    {
+      "fecha": "2027-04-30",
+      "origen": "ciu_1c9fyj",
+      "tipo": "palabra",
+      "sha256": "cb2222315622db5b82c1d4598d0e6372c49e55d05054666eca9ecbda2e744d84"
+    },
+    {
+      "fecha": "2027-05-01",
+      "origen": "mapa:SG / ciu_drrhq8",
+      "tipo": "silueta",
+      "sha256": "76a227ba39b5bc7c970d00f95c31df6439481acbce341bf215d44975adffb785"
+    },
+    {
+      "fecha": "2027-05-02",
+      "origen": "voc_1yaggok",
+      "tipo": "palabra",
+      "sha256": "884e8fe855952956592fb219f1d4cff619ceedc9da2452ccd768cffeb3a34f4e"
+    },
+    {
+      "fecha": "2027-05-03",
+      "origen": "vocr_3ci2nk",
+      "tipo": "palabra",
+      "sha256": "852d44c8581c1479c851a363b46f95e8b01422ddf5f782bee56d60ea1f2026cc"
+    },
+    {
+      "fecha": "2027-05-04",
+      "origen": "per_awy5ko",
+      "tipo": "personaje",
+      "sha256": "f646d326f53b883ff0919cd1c4615020e5dfde9e6e2825f143ccc4c8726d484d"
+    },
+    {
+      "fecha": "2027-05-05",
+      "origen": "ciu_6r6t4g",
+      "tipo": "palabra",
+      "sha256": "273ae7e9bf0700fdd4f71230de537b7bff29ce60256b1ce7acae8143108c5638"
+    },
+    {
+      "fecha": "2027-05-06",
+      "origen": "mapa:GR / cap_u6xrto",
+      "tipo": "silueta",
+      "sha256": "523ab0708b637945c3a05dd0f2d6bc7fa8cfc9c65041736ba649f74da60f382b"
+    },
+    {
+      "fecha": "2027-05-07",
+      "origen": "voc_1il40mq",
+      "tipo": "palabra",
+      "sha256": "e01896ea9b47086355a2099bd4c246bffac4d28d1577f9daf3b9d0ff08d19edc"
+    },
+    {
+      "fecha": "2027-05-08",
+      "origen": "vocr_tyofsr",
+      "tipo": "palabra",
+      "sha256": "ba8179adc8ed710d4a8d2df5b75d524919261662228b83d0d43b8358aa04488d"
+    },
+    {
+      "fecha": "2027-05-09",
+      "origen": "per_1fs0uff",
+      "tipo": "personaje",
+      "sha256": "a026a8cdb650931bc87071a9ba8ef6f8e902c93a2bc4c5eb0cf55c8d1c8ca6cf"
+    },
+    {
+      "fecha": "2027-05-10",
+      "origen": "ciu_138e4f0",
+      "tipo": "palabra",
+      "sha256": "5cc563b68a5bcb7de3900a4448d5843eae1fc2b3c296df297aeaa5131e220232"
+    },
+    {
+      "fecha": "2027-05-11",
+      "origen": "mapa:TG / cap_77agy4",
+      "tipo": "silueta",
+      "sha256": "f48160d1bf0fd5ef71127473ed33a3af3f8cabb87701c05681cbfd6acec61734"
+    },
+    {
+      "fecha": "2027-05-12",
+      "origen": "voc_1qqkcxu",
+      "tipo": "palabra",
+      "sha256": "3fc2488caa7ae89e8da85fc5b6764a0b20e2866393470ce35da300451b0b1138"
+    },
+    {
+      "fecha": "2027-05-13",
+      "origen": "vocr_11vjucx",
+      "tipo": "palabra",
+      "sha256": "4b8a35d9ad49376ca3307071935f397fc67075e32401a351711a17d87113be85"
+    },
+    {
+      "fecha": "2027-05-14",
+      "origen": "per_1dxxy7j",
+      "tipo": "personaje",
+      "sha256": "b69b7de796ba35864e7cf104089d1b5c115060b2eac59a072dee2348c35e1806"
+    },
+    {
+      "fecha": "2027-05-15",
+      "origen": "ciu_1ozz5x0",
+      "tipo": "palabra",
+      "sha256": "fdb11bd0b7bdad85eb0784fd41a074bc9682da84c2e7253bf099641463c5240c"
+    },
+    {
+      "fecha": "2027-05-16",
+      "origen": "voc_rho1yc",
+      "tipo": "palabra",
+      "sha256": "9f2aae698e0c57804f90368fcdb453ae4850af21ac433271f5a11029b4d11a85"
+    },
+    {
+      "fecha": "2027-05-17",
+      "origen": "vocr_71elee",
+      "tipo": "palabra",
+      "sha256": "ec536b2d32c274443c3b6ab3bd03dba33868c8f95be77dae43a9ce643139a1de"
+    },
+    {
+      "fecha": "2027-05-18",
+      "origen": "per_1btd1r5",
+      "tipo": "personaje",
+      "sha256": "c0b5521323c8fb3da6cb63cab3cdddde0498a69dbe69f1a7559f27effa47747b"
+    },
+    {
+      "fecha": "2027-05-19",
+      "origen": "ciu_y1qi6g",
+      "tipo": "palabra",
+      "sha256": "dcdd98dc20115f18ddff6af9335da9e5499c5b14ebfab9e3d98a43c22f554d83"
+    },
+    {
+      "fecha": "2027-05-20",
+      "origen": "voc_t5cii",
+      "tipo": "palabra",
+      "sha256": "5d4742589b21b0ef6a33f3f122e3b9c2e85f785bb0a8d3c070ef505779a7f03d"
+    },
+    {
+      "fecha": "2027-05-21",
+      "origen": "vocr_1euw3bo",
+      "tipo": "palabra",
+      "sha256": "8ce06041ef2ed1f479648c0db40501265c15aac8b7e3be9869c8f9cd849a9282"
+    },
+    {
+      "fecha": "2027-05-22",
+      "origen": "per_98970x",
+      "tipo": "personaje",
+      "sha256": "0ae8e97763368d13ffea1d8e98bc25af25a70950b52b4a7c4156369f8fd3d749"
+    },
+    {
+      "fecha": "2027-05-23",
+      "origen": "ciu_yza8hh",
+      "tipo": "palabra",
+      "sha256": "85395d4e09a0f116c533f912e0a3f311c4ad1e7282ef80ca312367b4f1ec4c03"
+    },
+    {
+      "fecha": "2027-05-24",
+      "origen": "voc_7u990h",
+      "tipo": "palabra",
+      "sha256": "3fce3d4d0d770aa176bc965eadf2bb3c46a0f79b8f192a744f4c168c4c917686"
+    },
+    {
+      "fecha": "2027-05-25",
+      "origen": "vocr_ryhad7",
+      "tipo": "palabra",
+      "sha256": "942b280c7990e6fc2d646098d9486204aba8d8e7f7f6bfa59954460858cef552"
+    },
+    {
+      "fecha": "2027-05-26",
+      "origen": "per_1miz6gv",
+      "tipo": "personaje",
+      "sha256": "28472d968e838bd3e96bf78f769462866b7fb4b7e96a18943b1c27b15c5074de"
+    },
+    {
+      "fecha": "2027-05-27",
+      "origen": "ciu_1vbxo3c",
+      "tipo": "palabra",
+      "sha256": "0d033424993b000a4ec580afe53221036ce8478eaee764966308a67e715e3bc2"
+    },
+    {
+      "fecha": "2027-05-28",
+      "origen": "voc_xh462d",
+      "tipo": "palabra",
+      "sha256": "6120c33064c306e3744d62b0f4a2a1c38ba8fd40dd0691be3ee228a83a4aa963"
+    },
+    {
+      "fecha": "2027-05-29",
+      "origen": "vocr_18q5mdr",
+      "tipo": "palabra",
+      "sha256": "6f3c046a3b5ce2fb8b4fa4d6fb55d4a64fcb9ee863959d9e1c22186759c02567"
+    },
+    {
+      "fecha": "2027-05-30",
+      "origen": "per_1cblxtc",
+      "tipo": "personaje",
+      "sha256": "4aec6f8bb515bdeaf3e63db2a16e2cf12139534e57751771ff65569fefa5e97c"
+    },
+    {
+      "fecha": "2027-05-31",
+      "origen": "ciu_4hib3w",
+      "tipo": "palabra",
+      "sha256": "d35af0dc3ea17a57124b94cff31fcf634ce1878a89d18dda23ae6416c2a6e436"
+    },
+    {
+      "fecha": "2027-06-01",
+      "origen": "voc_xmpj72",
+      "tipo": "palabra",
+      "sha256": "b5978ea913517ba6725af94fab11f1974c2d8859718837c17aeaca04050a782d"
+    },
+    {
+      "fecha": "2027-06-02",
+      "origen": "vocr_9ce8nh",
+      "tipo": "palabra",
+      "sha256": "0f451c14558d4bb11ea3f8e5eb3a022814924adf28da9d182d9a5b648f271a19"
+    },
+    {
+      "fecha": "2027-06-03",
+      "origen": "per_1x2d6cm",
+      "tipo": "personaje",
+      "sha256": "141a44cfcbe3618ddf6cccbb190768daf92edc9e7d7d0c30b70930ef12418747"
+    },
+    {
+      "fecha": "2027-06-04",
+      "origen": "ciu_1kpad0p",
+      "tipo": "palabra",
+      "sha256": "977e0da4c45c06d5b919060f039c01e0a3085b1179df7926a81a18cb7f707db9"
+    },
+    {
+      "fecha": "2027-06-05",
+      "origen": "voc_wudmot",
+      "tipo": "palabra",
+      "sha256": "0effefe0c98d3b2c162e1b64aa6525561824043518f453854a9d865100623c19"
+    },
+    {
+      "fecha": "2027-06-06",
+      "origen": "vocr_1sdb5ac",
+      "tipo": "palabra",
+      "sha256": "e8beb508df0492b04c42ce28c9950c6adbb113e7a9d031c63ba45d089e15722b"
+    },
+    {
+      "fecha": "2027-06-07",
+      "origen": "per_1wx94fn",
+      "tipo": "personaje",
+      "sha256": "39b44439f85b9d9c047c53774cc5c0358521c87f19f502cfa93abfed090307c8"
+    },
+    {
+      "fecha": "2027-06-08",
+      "origen": "ciu_1ad58bz",
+      "tipo": "palabra",
+      "sha256": "4af331ff8a9934d7e7304c37f8ce6ddc0f678058eeedbc749786469de0069f7a"
+    },
+    {
+      "fecha": "2027-06-09",
+      "origen": "voc_10bbg9w",
+      "tipo": "palabra",
+      "sha256": "4dd0dd4b3945adfd8b0de7057975a057457e330e1084cf04d25433d457a95ba7"
+    },
+    {
+      "fecha": "2027-06-10",
+      "origen": "vocr_xmpj72",
+      "tipo": "palabra",
+      "sha256": "047eead093dffd9d82bd9c1047174ba77363488d6511a201c06f01405abe266f"
+    },
+    {
+      "fecha": "2027-06-11",
+      "origen": "per_139drxd",
+      "tipo": "personaje",
+      "sha256": "8c8a23b6158b1157b4082d09fcadf5d4cdfea1f977f3b6d608f8c18acc463866"
+    },
+    {
+      "fecha": "2027-06-12",
+      "origen": "ciu_1tjnhpr",
+      "tipo": "palabra",
+      "sha256": "969411ae1d39c074a169ec4eb9e7df9068af53ed73628bf3a816e84c6230da20"
+    },
+    {
+      "fecha": "2027-06-13",
+      "origen": "voc_mxbrt9",
+      "tipo": "palabra",
+      "sha256": "6118892488776ea017ed1d854e319a4515ae3827df95ae776cf07464a31c2ac1"
+    },
+    {
+      "fecha": "2027-06-14",
+      "origen": "vocr_doy97w",
+      "tipo": "palabra",
+      "sha256": "18fb6c7a2c6669f83b51d2959922da773acb792cbc0b7bc8e0e94a201d1c470b"
+    },
+    {
+      "fecha": "2027-06-15",
+      "origen": "per_11socwf",
+      "tipo": "personaje",
+      "sha256": "2337d84c1a8828554c601c165070edc7154e2c123d6ef363c576662d97f19822"
+    },
+    {
+      "fecha": "2027-06-16",
+      "origen": "ciu_1bc7shb",
+      "tipo": "palabra",
+      "sha256": "a4261fd012e50a641cea9b6549aa955feeaa9a0e32712d49d5125617dff47239"
+    },
+    {
+      "fecha": "2027-06-17",
+      "origen": "voc_figrn4",
+      "tipo": "palabra",
+      "sha256": "a5db5fa607cad41723a1c8b872e534045adb2f0e6e086c023ba4942fe9b3bd57"
+    },
+    {
+      "fecha": "2027-06-18",
+      "origen": "vocr_1k44rpo",
+      "tipo": "palabra",
+      "sha256": "ba37b59bd29bb2b152131e3a837de771454df1a4bd7f3818d61d45edc030e421"
+    },
+    {
+      "fecha": "2027-06-19",
+      "origen": "per_1k6f4js",
+      "tipo": "personaje",
+      "sha256": "d005c06193a36a27b4cdf46e0a1cfaaa3509793912c855f0e94f68d695d2d2fe"
+    },
+    {
+      "fecha": "2027-06-20",
+      "origen": "ciu_piixg2",
+      "tipo": "palabra",
+      "sha256": "766c6e7e46199687c8018f41c3bab6f08e90c069cdc395789b8ba710aad1a68c"
+    },
+    {
+      "fecha": "2027-06-21",
+      "origen": "voc_s4qdo",
+      "tipo": "palabra",
+      "sha256": "0d53a08241d93433ac6e65be906769cd32529df9d9a1d43cde6da7b3091e5102"
+    },
+    {
+      "fecha": "2027-06-22",
+      "origen": "vocr_1aug1b9",
+      "tipo": "palabra",
+      "sha256": "fc0e06b73fd96eb4323beb38e1cb01e5426316981899eeb38f66a0bebf0a35da"
+    },
+    {
+      "fecha": "2027-06-23",
+      "origen": "per_4qly3k",
+      "tipo": "personaje",
+      "sha256": "160dbacf0ba2910111521ce61b623460c9e9a2975860cc98fe30bb0818944bda"
+    },
+    {
+      "fecha": "2027-06-24",
+      "origen": "ciu_1rkmxxx",
+      "tipo": "palabra",
+      "sha256": "d760908abc0a03e1097312b1b2579b27a20dc6ba55a3e1b93214a2728d33f636"
+    },
+    {
+      "fecha": "2027-06-25",
+      "origen": "voc_gxie66",
+      "tipo": "palabra",
+      "sha256": "49c13776aad94c6eac7a0a232d0543bb5e4c24f4fb31a00f25b7b874ce87f221"
+    },
+    {
+      "fecha": "2027-06-26",
+      "origen": "per_1sxhj4j",
+      "tipo": "personaje",
+      "sha256": "94f2010271044ee613f9321a7ac195330a487af843664264be095574bedfa85a"
+    },
+    {
+      "fecha": "2027-06-27",
+      "origen": "ciu_1gn4zxf",
+      "tipo": "palabra",
+      "sha256": "45a3af28fda89b35000cab2fa884f3d048474533f189f2d1ca6f71c479854d91"
+    },
+    {
+      "fecha": "2027-06-28",
+      "origen": "voc_1s99qa8",
+      "tipo": "palabra",
+      "sha256": "05793566a258bc625cd6898d877740082b1a93497d958bf71224260f6b2276e2"
+    },
+    {
+      "fecha": "2027-06-29",
+      "origen": "per_s6sg1m",
+      "tipo": "personaje",
+      "sha256": "aae4b1a89583b5e5fcc4611bdd6c2cdd8a32bce59c474ff5bd74b28e6866ea81"
+    },
+    {
+      "fecha": "2027-06-30",
+      "origen": "ciu_4fzxiq",
+      "tipo": "palabra",
+      "sha256": "24e20a506688bf60d422ef10c546cda795f3ffa5ad3bf6758d26c38f425ac645"
+    },
+    {
+      "fecha": "2027-07-01",
+      "origen": "voc_carfe3",
+      "tipo": "palabra",
+      "sha256": "71d364247dac9ba61897a079fb4dcdcadefafd56aca42b36e9633698ec8d9811"
+    },
+    {
+      "fecha": "2027-07-02",
+      "origen": "per_1iwf5xo",
+      "tipo": "personaje",
+      "sha256": "c05056e8b1d4803e6fb16a3510e7073f0a3d197be8164337e30aaf1012e16adc"
+    },
+    {
+      "fecha": "2027-07-03",
+      "origen": "ciu_1pasvx3",
+      "tipo": "palabra",
+      "sha256": "a4b02c78743d432d4c29e1db4ae3870292d3e07c2ffd6ba45406b2b608733d8c"
+    },
+    {
+      "fecha": "2027-07-04",
+      "origen": "voc_1cef8xa",
+      "tipo": "palabra",
+      "sha256": "5fa4b67fe15277568ce1c2e41bf1955b360f4486de13728d29a1ade4ac8f3e68"
+    },
+    {
+      "fecha": "2027-07-05",
+      "origen": "voc_1tv7ill",
+      "tipo": "palabra",
+      "sha256": "ac1170ae2961611285ba32b19af187c976f3f1bfe5b12b849a4ae1e9078a0ca2"
+    },
+    {
+      "fecha": "2027-07-06",
+      "origen": "voc_evlsla",
+      "tipo": "palabra",
+      "sha256": "e8b6cdd578ac1475dbb072b36980ce49865d9bab16309ea754cbf593505de65e"
+    },
+    {
+      "fecha": "2027-07-07",
+      "origen": "voc_lt5g88",
+      "tipo": "palabra",
+      "sha256": "f3f7bb385ef27ff580f667fef5e1a4312ff33a33cd3ba346bc606828c0886998"
+    },
+    {
+      "fecha": "2027-07-08",
+      "origen": "voc_1j03wdu",
+      "tipo": "palabra",
+      "sha256": "8980ab3ddc7d0a9dfc027cec53a7b9df20216c7a1c8998f74c6774f1f1e8b23f"
+    },
+    {
+      "fecha": "2027-07-09",
+      "origen": "voc_1slf1oz",
+      "tipo": "palabra",
+      "sha256": "6a616d22c948358ad702600d4f9cbd0860a850df27686c89946e2e9fb7228816"
+    },
+    {
+      "fecha": "2027-07-10",
+      "origen": "voc_dn7yr0",
+      "tipo": "palabra",
+      "sha256": "347e485ee0a28685d62c5d3e4dae71b2f3e4e2963316c8ac30aff03883d358a1"
+    },
+    {
+      "fecha": "2027-07-11",
+      "origen": "voc_q704vj",
+      "tipo": "palabra",
+      "sha256": "b045e0b30d962c81ca8fa3d47d9c3aa5a0b5e1c79297caab62fd769472512bf6"
+    },
+    {
+      "fecha": "2027-07-12",
+      "origen": "voc_1a4l2y2",
+      "tipo": "palabra",
+      "sha256": "06063fd7954d95c4e07e348b62de0e6a5bebae06041d48f83e30a72a94b0622f"
+    },
+    {
+      "fecha": "2027-07-13",
+      "origen": "voc_1vd1f26",
+      "tipo": "palabra",
+      "sha256": "4ed820b41c35bd22364327f1e77dca0ac8b943ea70700e5f39e5d0b53df27ecc"
+    },
+    {
+      "fecha": "2027-07-14",
+      "origen": "voc_130uera",
+      "tipo": "palabra",
+      "sha256": "2bd1263ec23d7adf2b7ecfdeb0bf9e73c692a85786bcdf304b7de704c2058560"
+    },
+    {
+      "fecha": "2027-07-15",
+      "origen": "voc_ppu3mu",
+      "tipo": "palabra",
+      "sha256": "ccfa8fab5fb144c46376831786aa3a3973dffa0a2fd7a0716b25bd4347bed45f"
+    },
+    {
+      "fecha": "2027-07-16",
+      "origen": "voc_lm191b",
+      "tipo": "palabra",
+      "sha256": "0317ca8eb2890d03ab9f6317a8d4e0bda5fec8b13ff8c957cb2b2ce78ce537ad"
+    },
+    {
+      "fecha": "2027-07-17",
+      "origen": "voc_szkybx",
+      "tipo": "palabra",
+      "sha256": "5ec6865a4d9d9fc913a92196ce7742aa3f1b43d0107add807899379a2f4a69b4"
+    },
+    {
+      "fecha": "2027-07-18",
+      "origen": "voc_f5z9ug",
+      "tipo": "palabra",
+      "sha256": "46fe05aaab9461b5083854a053b9d62061b2290eda238abb0f52bd73eb27785a"
+    },
+    {
+      "fecha": "2027-07-19",
+      "origen": "voc_1dzv46a",
+      "tipo": "palabra",
+      "sha256": "30deeb8ecc873878c2622bf4d2f4b335604156740d796d9a4195514d118e128a"
+    },
+    {
+      "fecha": "2027-07-20",
+      "origen": "voc_dlm0fq",
+      "tipo": "palabra",
+      "sha256": "469b3844080f7725cd9400a0e043a96bfe8c30979477cd8eb18eddd63576691f"
+    },
+    {
+      "fecha": "2027-07-21",
+      "origen": "voc_in7v3d",
+      "tipo": "palabra",
+      "sha256": "fc9ce6b033e83d87ffa0baf2813bf50246d68bd38ca78ae39815c9b5a3198d83"
+    },
+    {
+      "fecha": "2027-07-22",
+      "origen": "voc_196o7n2",
+      "tipo": "palabra",
+      "sha256": "e111eb4909d6c6f6728abcf739247f1e4b2878750cd7214aa4a92d6f30e73d57"
+    },
+    {
+      "fecha": "2027-07-23",
+      "origen": "voc_1f1z91m",
+      "tipo": "palabra",
+      "sha256": "c65cd54f54ce22b63f83ce63937bffd32e7e6ec02a77209fcc216877b52f1dae"
+    },
+    {
+      "fecha": "2027-07-24",
+      "origen": "voc_94dcl0",
+      "tipo": "palabra",
+      "sha256": "6298e43598d39188df88b2c8d5c7eecc294707ee5c2307b3d9d2141932d8639e"
+    },
+    {
+      "fecha": "2027-07-25",
+      "origen": "voc_qzbw1l",
+      "tipo": "palabra",
+      "sha256": "9ed09534545e955cc51d10ce924fe85f74d42b36dd5a39b2204bd35512951a94"
+    },
+    {
+      "fecha": "2027-07-26",
+      "origen": "voc_fs81t9",
+      "tipo": "palabra",
+      "sha256": "11fb27a5d029b82122e2767baf002623907428ecf0d1ec7ab033afcda9921231"
+    },
+    {
+      "fecha": "2027-07-27",
+      "origen": "voc_1urrd02",
+      "tipo": "palabra",
+      "sha256": "492623df150f5e64ac67830b1aec7d59bb00a1868c574fa4ebc3ca6c89547dff"
+    },
+    {
+      "fecha": "2027-07-28",
+      "origen": "voc_1b3z7wg",
+      "tipo": "palabra",
+      "sha256": "bc8037e234e0d7a17f9d091c1e487a76f73749531e9296597637dff8b1f6fc8d"
+    },
+    {
+      "fecha": "2027-07-29",
+      "origen": "voc_n5n5i4",
+      "tipo": "palabra",
+      "sha256": "dc09a1819ac336ea8d1343b6350ce9397ca0cebb173a4dc823d0ce50300d531e"
+    },
+    {
+      "fecha": "2027-07-30",
+      "origen": "voc_1euw3bo",
+      "tipo": "palabra",
+      "sha256": "1a8f9c41869914a3b64e515277158d964e7bd29da4edf25a9166893e447a0a6b"
+    },
+    {
+      "fecha": "2027-07-31",
+      "origen": "voc_1lpga07",
+      "tipo": "palabra",
+      "sha256": "fe8a57fee9c409dca02fa18ae54af78fc92a439212781a34a15e804bc64f8a28"
+    },
+    {
+      "fecha": "2027-08-01",
+      "origen": "voc_1nvj14r",
+      "tipo": "palabra",
+      "sha256": "247d049aba9d52f80b0a601ea571adaa87608c71cf68ef96590760bf14b6b9a6"
+    },
+    {
+      "fecha": "2027-08-02",
+      "origen": "voc_1yvm3h3",
+      "tipo": "palabra",
+      "sha256": "45424cbcaefac045cf1b59487f78264ec5167a011625afccc3a997edd871feba"
+    },
+    {
+      "fecha": "2027-08-03",
+      "origen": "voc_n6f4vj",
+      "tipo": "palabra",
+      "sha256": "535e43f743d96bc4cd2fc9331927b74e14fe08db42e90e3e72f521ccf68953c3"
+    },
+    {
+      "fecha": "2027-08-04",
+      "origen": "voc_9g495m",
+      "tipo": "palabra",
+      "sha256": "53c750f96483edc735bd69fa102e5c31f5f4bd5844e5bf68a5cd01f34100749c"
+    },
+    {
+      "fecha": "2027-08-05",
+      "origen": "voc_9ce8nh",
+      "tipo": "palabra",
+      "sha256": "cbd84f4cb65a1e8badf258ab286252918d6409c615793cbf10edea8fe2f9040b"
+    },
+    {
+      "fecha": "2027-08-06",
+      "origen": "voc_xfmys5",
+      "tipo": "palabra",
+      "sha256": "376a15b119275b9ca21f78f4bb841020d6b64004b91e9773d9ed8af5342f615a"
+    },
+    {
+      "fecha": "2027-08-07",
+      "origen": "voc_1q0hxn5",
+      "tipo": "palabra",
+      "sha256": "35b549012c17ac0511edbc9476d362a19ebf526f3a1dd5f9dcb7a433cbac63b1"
+    },
+    {
+      "fecha": "2027-08-08",
+      "origen": "voc_fghhvn",
+      "tipo": "palabra",
+      "sha256": "b213b2d3c394652198c435aa3fca7a39bccef36b04215ed1401bd2e5df4150d5"
+    },
+    {
+      "fecha": "2027-08-09",
+      "origen": "voc_xe4sma",
+      "tipo": "palabra",
+      "sha256": "bde10ff0b6afc30cd7b5b22a8b18cb936993e75e8d6353f6930536268da49379"
+    },
+    {
+      "fecha": "2027-08-10",
+      "origen": "voc_xbthvi",
+      "tipo": "palabra",
+      "sha256": "99295ca098d5e20fb6f2ef1bd3c3d8a7947deaa4f6cf161371a25ef306a3b7f8"
+    },
+    {
+      "fecha": "2027-08-11",
+      "origen": "voc_gge13c",
+      "tipo": "palabra",
+      "sha256": "44d621800b560e5a37d1db38b85dea27ca15b9e09e6fdafcdd356dd0651f4ecc"
+    },
+    {
+      "fecha": "2027-08-12",
+      "origen": "voc_l76cm0",
+      "tipo": "palabra",
+      "sha256": "5f44c814de13f22729de1306743a2a26dfa165ae8e684f88d4427950195b730b"
+    },
+    {
+      "fecha": "2027-08-13",
+      "origen": "voc_ha9iwk",
+      "tipo": "palabra",
+      "sha256": "60543bab59e2801dfdc920a7dd214d0c37713a5e3f94e0556665fdbfaf795023"
+    },
+    {
+      "fecha": "2027-08-14",
+      "origen": "voc_kuhgqu",
+      "tipo": "palabra",
+      "sha256": "5e7760e346c1212d1476f00e947c5277fa406dfcb7c4e959c155f56889619537"
+    },
+    {
+      "fecha": "2027-08-15",
+      "origen": "voc_qs7a0e",
+      "tipo": "palabra",
+      "sha256": "33f82c02221989a2afd230749f248c16082b8f0f029a83eb324c06f947dd4aa2"
+    },
+    {
+      "fecha": "2027-08-16",
+      "origen": "voc_1vvblc8",
+      "tipo": "palabra",
+      "sha256": "a8e8989d21420c5007ed2d8746288d48037cda6822cf3cf8b790244cdbc77099"
+    },
+    {
+      "fecha": "2027-08-17",
+      "origen": "voc_3jmdyz",
+      "tipo": "palabra",
+      "sha256": "82762f651619b2dfd439781bdbda74b79c5a73a3c6a5cdabff720dcfe778c646"
+    },
+    {
+      "fecha": "2027-08-18",
+      "origen": "voc_ryhad7",
+      "tipo": "palabra",
+      "sha256": "c38379264fffe6e21122e77611b180e8ab1e45b748e789bab3c0abc1d6e6d539"
+    },
+    {
+      "fecha": "2027-08-19",
+      "origen": "voc_edkjum",
+      "tipo": "palabra",
+      "sha256": "710862ecee5c83d8930b065fbae51df1af48f9edeff35c0fd137dd1da1457ae3"
+    },
+    {
+      "fecha": "2027-08-20",
+      "origen": "voc_1ised2o",
+      "tipo": "palabra",
+      "sha256": "9266a986455789462398ffe4e48892a44dbecfb58b84c8a8f25f71cd4ddbe5ab"
+    },
+    {
+      "fecha": "2027-08-21",
+      "origen": "voc_1vna4e0",
+      "tipo": "palabra",
+      "sha256": "5133e61c790479db5bf7eda7959f3fede6acb66cbcfdbf4546c263a7ed05112f"
+    },
+    {
+      "fecha": "2027-08-22",
+      "origen": "voc_hhzami",
+      "tipo": "palabra",
+      "sha256": "5344cd1564c2ac7a6461a8beceb3325cc6c45dda37df6844c340ea19c75de3c3"
+    },
+    {
+      "fecha": "2027-08-23",
+      "origen": "voc_kw5i6m",
+      "tipo": "palabra",
+      "sha256": "22a911ab4e8bb47f38047e6627796a2bc50328c2f8a69d858fd2cf342e48d77b"
+    },
+    {
+      "fecha": "2027-08-24",
+      "origen": "voc_ml8zqq",
+      "tipo": "palabra",
+      "sha256": "b87c8f7dbf00291e452500cb8072de59efe44b8e26bd78e2163d699e348144ac"
+    },
+    {
+      "fecha": "2027-08-25",
+      "origen": "voc_3ci2nk",
+      "tipo": "palabra",
+      "sha256": "f05242533efcf94565425d24a94571a3c585b783134bcfaf31adddb9a8db5d58"
+    },
+    {
+      "fecha": "2027-08-26",
+      "origen": "voc_1drkzjo",
+      "tipo": "palabra",
+      "sha256": "71315e60360b41ddb5fdd4e1f7ba122148e3922c79a8e51ef6cf97449e17aef0"
+    },
+    {
+      "fecha": "2027-08-27",
+      "origen": "voc_kdkfs7",
+      "tipo": "palabra",
+      "sha256": "94a48a8d612c7c3e51ac01da2e82eb437d9b42b1e00f79a455da9e77966986db"
+    },
+    {
+      "fecha": "2027-08-28",
+      "origen": "voc_1aferv1",
+      "tipo": "palabra",
+      "sha256": "75b260722f210822f6e549ae091db3efcc23f35de1b952a7ca5c48490fd8e525"
+    },
+    {
+      "fecha": "2027-08-29",
+      "origen": "voc_oxvutq",
+      "tipo": "palabra",
+      "sha256": "f154413ad24dfcd8cb32ff13377b3b74f474933c4452adc259ac7992e9d009f3"
+    },
+    {
+      "fecha": "2027-08-30",
+      "origen": "voc_1e9pmbt",
+      "tipo": "palabra",
+      "sha256": "307a50f7529d1fedb62afc8c52b81762dccbfee31ff237a3ea989251334f6495"
+    },
+    {
+      "fecha": "2027-08-31",
+      "origen": "voc_ev5qaj",
+      "tipo": "palabra",
+      "sha256": "0697321fa023f418dad3f505b053cd05c48bc0ddfd3e108e974522c7adafe12b"
+    },
+    {
+      "fecha": "2027-09-01",
+      "origen": "voc_nv6igq",
+      "tipo": "palabra",
+      "sha256": "da79d869987b50d297551a0d18c6feb411da4bdea7bb5d0ef608f4aed2c32648"
+    },
+    {
+      "fecha": "2027-09-02",
+      "origen": "voc_18gxmox",
+      "tipo": "palabra",
+      "sha256": "274db695cba9294e5cff1e873ccd768035517d98a9055aefb6d07d083a111115"
+    },
+    {
+      "fecha": "2027-09-03",
+      "origen": "voc_nqf4sh",
+      "tipo": "palabra",
+      "sha256": "65b7d58a024d3c17b47b7a7071006532ce7ebad3fa6752bf3aec1714919ea6b5"
+    },
+    {
+      "fecha": "2027-09-04",
+      "origen": "voc_7sdjxt",
+      "tipo": "palabra",
+      "sha256": "2ad4d0e6be8b6b70f25f47d1127aee9cdc00487816e2cc7956acee2f69a7bc61"
+    },
+    {
+      "fecha": "2027-09-05",
+      "origen": "voc_tyofsr",
+      "tipo": "palabra",
+      "sha256": "c924e4a4157c0da700974b0ebdad8a9afac5cc9d11bc5477e703cb0f963266a3"
+    },
+    {
+      "fecha": "2027-09-06",
+      "origen": "voc_r8ql7n",
+      "tipo": "palabra",
+      "sha256": "7409167fadcc3ffcca69167872232fba51ff36c97a4a9ce0de5b1badb47ae8d5"
+    },
+    {
+      "fecha": "2027-09-07",
+      "origen": "voc_onag0x",
+      "tipo": "palabra",
+      "sha256": "c3e7082b531a96d0041bca57d9c7e9389ebf466fdde65b1554bc816443b68ea8"
+    },
+    {
+      "fecha": "2027-09-08",
+      "origen": "voc_1xm3pje",
+      "tipo": "palabra",
+      "sha256": "eb5af8150f208880f120ab4018d335699d666a8c7103a4cfbf85a6a79d07bdff"
+    },
+    {
+      "fecha": "2027-09-09",
+      "origen": "voc_5fwvmu",
+      "tipo": "palabra",
+      "sha256": "f8294c342aff212f6abb19b3dc595b710457ae3b85034f98ebbf3df7a6bd86e5"
+    },
+    {
+      "fecha": "2027-09-10",
+      "origen": "voc_ljrmfq",
+      "tipo": "palabra",
+      "sha256": "b302b3a4ebb4a8e2258684438c5fde1a093feff409d436227683e23d66cef6f0"
+    },
+    {
+      "fecha": "2027-09-11",
+      "origen": "voc_1abjcqc",
+      "tipo": "palabra",
+      "sha256": "f08f7c4c16f9d25a5bc6078d18b39ce18a866c9951231be7d26552bd87af1c3c"
+    },
+    {
+      "fecha": "2027-09-12",
+      "origen": "voc_n0tug0",
+      "tipo": "palabra",
+      "sha256": "a7cc7a38168c7d1833b5da52de07bc4815c635a006d2400a11b5f21bc4aff294"
+    },
+    {
+      "fecha": "2027-09-13",
+      "origen": "voc_12p8skb",
+      "tipo": "palabra",
+      "sha256": "07c98912d3e7724deefca2677c49000a118d1334972b00a4e8af3c55032acd81"
+    },
+    {
+      "fecha": "2027-09-14",
+      "origen": "voc_xz2sn3",
+      "tipo": "palabra",
+      "sha256": "c920d57c15345c1065b5be840f89dbad44e55264f3aa6504833dad18ccec9a93"
+    },
+    {
+      "fecha": "2027-09-15",
+      "origen": "voc_1k3p45p",
+      "tipo": "palabra",
+      "sha256": "4cff42f76ca2ac5576ea4fe67ededaa4c845fc8d0f0ee397aed53910d73c88a5"
+    },
+    {
+      "fecha": "2027-09-16",
+      "origen": "voc_f5qmju",
+      "tipo": "palabra",
+      "sha256": "c56b1fb238d783982b4a73e701091f2a3098356dcf5b52b459ebb67d97b34110"
+    },
+    {
+      "fecha": "2027-09-17",
+      "origen": "voc_1eppskv",
+      "tipo": "palabra",
+      "sha256": "e61f4a7ccb25b9afc14583f7ff6251637af69865964be8e60db12daae40a7584"
+    },
+    {
+      "fecha": "2027-09-18",
+      "origen": "voc_tz0nfh",
+      "tipo": "palabra",
+      "sha256": "936c3d8b163d43a4be0fc0d8259ab17f0ad257957a4cc1ba4a7fa6727ef7aa5f"
+    },
+    {
+      "fecha": "2027-09-19",
+      "origen": "voc_16x2w6s",
+      "tipo": "palabra",
+      "sha256": "087de4052a45ab84563cfd9dc9f619fa70e803e3e51f5996fdd6d3db2e249556"
+    },
+    {
+      "fecha": "2027-09-20",
+      "origen": "voc_4zb23e",
+      "tipo": "palabra",
+      "sha256": "1297f0b2fe9e8d4acba168c6e7c0ea79fb372134d3a7aa25695f47a91cfcabe3"
+    },
+    {
+      "fecha": "2027-09-21",
+      "origen": "voc_oh5o9m",
+      "tipo": "palabra",
+      "sha256": "61114d818f11e60c9d8c4d13fbf2b3090fb7123a39d52f0b979f72abf33a2b07"
+    },
+    {
+      "fecha": "2027-09-22",
+      "origen": "voc_1fpu4xt",
+      "tipo": "palabra",
+      "sha256": "6646b0c03b7e6b1ca8ebaab057befb572eb7a0e5c0683769cce67a6029832138"
+    },
+    {
+      "fecha": "2027-09-23",
+      "origen": "voc_1rqso1b",
+      "tipo": "palabra",
+      "sha256": "966b48a726cf4a16cdf0dfb8ce10ed863b93a12b87961d76bb881e56f6c058f3"
+    },
+    {
+      "fecha": "2027-09-24",
+      "origen": "voc_x0prws",
+      "tipo": "palabra",
+      "sha256": "03697120118e0219e3997eafaf161e1178c803aee3047b1f57b95491e8190211"
+    },
+    {
+      "fecha": "2027-09-25",
+      "origen": "voc_16uc3ix",
+      "tipo": "palabra",
+      "sha256": "8a3619b825ec4ab6e5b1e5435acb23524fd3bcde8232b591373e5ceb6c7ddb58"
+    },
+    {
+      "fecha": "2027-09-26",
+      "origen": "voc_nx746q",
+      "tipo": "palabra",
+      "sha256": "9bdb3f70875780fd832237dc8fc3080a378668966f58d1a896c4082bbf47bbb6"
+    },
+    {
+      "fecha": "2027-09-27",
+      "origen": "voc_15sxe3y",
+      "tipo": "palabra",
+      "sha256": "e33b35ff104a9c5cfd36ff1b313a067fa6ac0c9fcbf77ec3a0f7610dcf180bd1"
+    },
+    {
+      "fecha": "2027-09-28",
+      "origen": "voc_8vv4po",
+      "tipo": "palabra",
+      "sha256": "73b3089388c60b3749fbbad03df48e7409742883f0cbcebab3696c52b88e09b6"
+    },
+    {
+      "fecha": "2027-09-29",
+      "origen": "voc_kubkkp",
+      "tipo": "palabra",
+      "sha256": "cc10e5a0e6c405bbf8b94ebdd777e8c1b4c3f254d3f39a131b6a991054af8897"
+    },
+    {
+      "fecha": "2027-09-30",
+      "origen": "voc_gnc1an",
+      "tipo": "palabra",
+      "sha256": "e5725f23439bc1d785295c4e71c0fd95a39d952c71ae66719256bf282fb2566e"
+    },
+    {
+      "fecha": "2027-10-01",
+      "origen": "voc_1vi3ob4",
+      "tipo": "palabra",
+      "sha256": "91f845f6f74cf48523fee29a9da5ac35a9cb5bcbfdd190da27a5c405f007ad32"
+    },
+    {
+      "fecha": "2027-10-02",
+      "origen": "voc_78wprw",
+      "tipo": "palabra",
+      "sha256": "4c3238dc786c998b0993aea29418203d011a1eaa55c76d2b7e764ac38adbda6c"
+    },
+    {
+      "fecha": "2027-10-03",
+      "origen": "voc_ez3xui",
+      "tipo": "palabra",
+      "sha256": "3b2fd287fe41799b718f5bf2fce077180000a2d91bbe4e3c9691c11feb1c5054"
+    },
+    {
+      "fecha": "2027-10-04",
+      "origen": "voc_yy7cjl",
+      "tipo": "palabra",
+      "sha256": "b886bee03430aa0192b0c722f95379a8fcf4c34e1e7386502d2edcae5b3da00a"
+    },
+    {
+      "fecha": "2027-10-05",
+      "origen": "voc_g1atvk",
+      "tipo": "palabra",
+      "sha256": "3f8f7c62c8eb2b46415d47129594c27a9d22c2616e8376f775847c7bb1bad824"
+    },
+    {
+      "fecha": "2027-10-06",
+      "origen": "voc_vntg0n",
+      "tipo": "palabra",
+      "sha256": "fe68dbdc142ce2fe34a4cb5e149280055ad4e02425b3b4fd5bc71771381c5836"
+    },
+    {
+      "fecha": "2027-10-07",
+      "origen": "voc_1vk1x26",
+      "tipo": "tradicion",
+      "sha256": "3c0616fd058b2df4a63c45314486e12366eceec7d2b8691b7516fd4436740cce"
+    },
+    {
+      "fecha": "2027-10-08",
+      "origen": "voc_1xwtxse",
+      "tipo": "palabra",
+      "sha256": "098e2c58e2d1daa7ef8ebd89675d16a37036d8b021d6b0ce33a9df478f45f0e0"
+    },
+    {
+      "fecha": "2027-10-09",
+      "origen": "voc_1fse9jh",
+      "tipo": "palabra",
+      "sha256": "b7db73d2174227e642cbf2cbf1127ee607599c617b1e275887717b5ac08ab6bc"
+    },
+    {
+      "fecha": "2027-10-10",
+      "origen": "voc_1lumofq",
+      "tipo": "palabra",
+      "sha256": "8eb81fe88b48ff2668212d5fd959a9741ba0055c561032e03753381db0c7160b"
+    },
+    {
+      "fecha": "2027-10-11",
+      "origen": "voc_18q5mdr",
+      "tipo": "palabra",
+      "sha256": "9ab0b1a44daa322791fcfe13ff7c11aa57151a2d74131c20e0f8fc2a29a045e6"
+    },
+    {
+      "fecha": "2027-10-12",
+      "origen": "voc_668ekr",
+      "tipo": "palabra",
+      "sha256": "fef4a3a0ee970c3ac18f608431d67d5f5e1ea8ea2cdab9c0c8e649169f411af9"
+    },
+    {
+      "fecha": "2027-10-13",
+      "origen": "voc_14izf3k",
+      "tipo": "palabra",
+      "sha256": "5d3a932faa632079d9d7a31eb4eb7e13ca8395656a8529c0b15af1648ae0d46f"
+    },
+    {
+      "fecha": "2027-10-14",
+      "origen": "voc_wkv4qa",
+      "tipo": "palabra",
+      "sha256": "5ba878f217adf726df65cb268eae7dff01cfb58af7687be436e933aea4670009"
+    },
+    {
+      "fecha": "2027-10-15",
+      "origen": "voc_11hfosa",
+      "tipo": "palabra",
+      "sha256": "baaccc77b8cf66d4f975b6b8b62653fd0108e26c3afff6c02c47e90bb0402018"
+    },
+    {
+      "fecha": "2027-10-16",
+      "origen": "voc_doy97w",
+      "tipo": "palabra",
+      "sha256": "acf4707ea787765221047c0f0fca3971c201677b78faf635e5569a6647d01baa"
+    },
+    {
+      "fecha": "2027-10-17",
+      "origen": "voc_5vj247",
+      "tipo": "palabra",
+      "sha256": "180928a99b282e6c37b0890380a8a3886bf55b44bde8de57c28c5d38ba0acba8"
+    },
+    {
+      "fecha": "2027-10-18",
+      "origen": "voc_13xvjkb",
+      "tipo": "tradicion",
+      "sha256": "08aa1ac14896bc4cabc49521f3616d62ac90066670b7ea839c26f1e9645a09c0"
+    },
+    {
+      "fecha": "2027-10-19",
+      "origen": "voc_h7lael",
+      "tipo": "palabra",
+      "sha256": "992509229fce0c895e136d7a12713bce58cce3577b566948d4d7edc8efc38cf4"
+    },
+    {
+      "fecha": "2027-10-20",
+      "origen": "voc_11vjucx",
+      "tipo": "palabra",
+      "sha256": "92aa845fd50f184690c2da2cff300a104b5ed05f023b6428c4df99e6b895d1ca"
+    },
+    {
+      "fecha": "2027-10-21",
+      "origen": "voc_1xz7oeq",
+      "tipo": "palabra",
+      "sha256": "c0e8db04fe5b32107641eef488238a8b0c0e766011f95740bb4ad56a1bcd75d5"
+    },
+    {
+      "fecha": "2027-10-22",
+      "origen": "voc_t5sv6m",
+      "tipo": "palabra",
+      "sha256": "97ee22e56ebdd5ee591efe68b119f2ba9ae0d7b5c5791e31bd63fbfd8557b494"
+    },
+    {
+      "fecha": "2027-10-23",
+      "origen": "voc_1n18znl",
+      "tipo": "palabra",
+      "sha256": "69cb788ec2c2cea0af56214de0bb27a974e4319c2ea0a7fd0dc88098da09518c"
+    },
+    {
+      "fecha": "2027-10-24",
+      "origen": "voc_1eki011",
+      "tipo": "palabra",
+      "sha256": "e9894ee7f3a666af1ed23a83879128715ae43df32dd3b392cec8bf13b664b9f9"
+    },
+    {
+      "fecha": "2027-10-25",
+      "origen": "voc_12clnae",
+      "tipo": "palabra",
+      "sha256": "4e4630e590cab5afe1baad7a2df1cc16f74bac77c7b8ffb11a682e58b40b825b"
+    },
+    {
+      "fecha": "2027-10-26",
+      "origen": "voc_71elee",
+      "tipo": "palabra",
+      "sha256": "fd6d2970dbbd9d1b8d5055ca0db6f6fa61982e81304f1e88912c97e2da85e337"
+    },
+    {
+      "fecha": "2027-10-27",
+      "origen": "voc_12by7mq",
+      "tipo": "palabra",
+      "sha256": "f3f1419c953a46a17f90cb10227476f1fb4cd5d2a855b59704fd9163b2b65455"
+    },
+    {
+      "fecha": "2027-10-28",
+      "origen": "voc_m6vgg0",
+      "tipo": "palabra",
+      "sha256": "ae29a733cd8c445826b5cf180ee03d950e85d75456ea3eebf8d20a0efd88b7fc"
+    },
+    {
+      "fecha": "2027-10-29",
+      "origen": "voc_1ch3fn",
+      "tipo": "palabra",
+      "sha256": "903c00bd0a333bf95910ad8ddc7e4cf4017502e09f3392f0e03ccbc22d358e4a"
+    },
+    {
+      "fecha": "2027-10-30",
+      "origen": "voc_buvt8g",
+      "tipo": "palabra",
+      "sha256": "65f04330408b730fd469fe0e3f455bdb06bb910c852198475ebead608f055f88"
+    },
+    {
+      "fecha": "2027-10-31",
+      "origen": "voc_1izbkf7",
+      "tipo": "palabra",
+      "sha256": "310c7915533809b5431086677b5aac7b6e2f0091a707b242c053d10f961276de"
+    },
+    {
+      "fecha": "2027-11-01",
+      "origen": "voc_7g47zg",
+      "tipo": "palabra",
+      "sha256": "17ae4bd3228cf5e4cfd08289bdd05109b7b9cdac3e37bc7bc543ada35ed309b0"
+    },
+    {
+      "fecha": "2027-11-02",
+      "origen": "voc_mxx7oz",
+      "tipo": "palabra",
+      "sha256": "1c4ae51a0ec2d568845affeca35b4795f903b421cf164560ecad285585ded4a7"
+    },
+    {
+      "fecha": "2027-11-03",
+      "origen": "voc_1f0uvyk",
+      "tipo": "palabra",
+      "sha256": "c15a21c87b5577e18e6977bdbd15a971c5a39adca3acc3b6fa492c725a6b2f13"
+    },
+    {
+      "fecha": "2027-11-04",
+      "origen": "voc_11o3pr2",
+      "tipo": "palabra",
+      "sha256": "6427e86c64429e333b159fcb9da4f4b29c6a28fd89a6b13240bf55776a4cf254"
+    },
+    {
+      "fecha": "2027-11-05",
+      "origen": "voc_d3tv9d",
+      "tipo": "palabra",
+      "sha256": "9e8304b74005382d8b3a59793618d56bace303dbb15e4c08930df74ef7835cd1"
+    },
+    {
+      "fecha": "2027-11-06",
+      "origen": "voc_18pxuzv",
+      "tipo": "palabra",
+      "sha256": "1bf55b402cd69aa1e773e679a557cdbf7ef319b561689f601def92cd63f1eae3"
+    },
+    {
+      "fecha": "2027-11-07",
+      "origen": "voc_hxmo1l",
+      "tipo": "palabra",
+      "sha256": "9a767badb51cf67a05f45d39773641c7cb9c4ea1fe440d3779e2717cc3dc5434"
+    },
+    {
+      "fecha": "2027-11-08",
+      "origen": "voc_1jksbje",
+      "tipo": "palabra",
+      "sha256": "d1b03a2d2aa790c7d3efa9c6095c2d258061c2041f988bf963951168e62929a8"
+    },
+    {
+      "fecha": "2027-11-09",
+      "origen": "voc_u7vmez",
+      "tipo": "palabra",
+      "sha256": "6b4e0ef956a4de02c5a12edea8070b668a0798b3dc591b3b7d0e21707725a84e"
+    },
+    {
+      "fecha": "2027-11-10",
+      "origen": "voc_fgd687",
+      "tipo": "palabra",
+      "sha256": "bb3a5a15eddc37b1599f1364276117a9552717fd69f222176333e650d34b70e8"
+    },
+    {
+      "fecha": "2027-11-11",
+      "origen": "voc_j288ho",
+      "tipo": "palabra",
+      "sha256": "c546b729309fcb8d48d4405662c1e7bb0e4ee832670726892d39a5fb7a187a8a"
+    },
+    {
+      "fecha": "2027-11-12",
+      "origen": "voc_my1qfv",
+      "tipo": "palabra",
+      "sha256": "77404aafb71be1c7aa5b0d31e7d4c0f5eb19b7a976cf384c0e67366ef07296eb"
+    },
+    {
+      "fecha": "2027-11-13",
+      "origen": "voc_1jz7pe1",
+      "tipo": "palabra",
+      "sha256": "6239dfbb5cecdc094550c5b2c104c6421c1ef1ddd0d661ab5c9aaac8cde5029d"
+    },
+    {
+      "fecha": "2027-11-14",
+      "origen": "voc_ynslns",
+      "tipo": "palabra",
+      "sha256": "19371ee49c68d77984995dca7384e67a1b7e50f3c5e335ec9d0f2b7503d08e48"
+    },
+    {
+      "fecha": "2027-11-15",
+      "origen": "voc_16jekz3",
+      "tipo": "tradicion",
+      "sha256": "854c1cb1825ca62753f8d90bd77108b2974c49a45fd79ec12684ebeac9939e78"
+    },
+    {
+      "fecha": "2027-11-16",
+      "origen": "voc_9tqcr4",
+      "tipo": "palabra",
+      "sha256": "e6566347c053cccd461d1c8aeffe57c2e20538122863dbbeb1728d0e30d28e7c"
+    },
+    {
+      "fecha": "2027-11-17",
+      "origen": "voc_1edbxky",
+      "tipo": "palabra",
+      "sha256": "56c5ea1a123792c28b6d0c50f1ae55bcdf7fc11ed6453e64e9dc4f172760d944"
+    },
+    {
+      "fecha": "2027-11-18",
+      "origen": "voc_1afmluc",
+      "tipo": "palabra",
+      "sha256": "aeffefffaa3cd968d979ebd1f330ccdcab4fdf0d43331effc29988c84fca9a6b"
+    },
+    {
+      "fecha": "2027-11-19",
+      "origen": "voc_1y8jg7r",
+      "tipo": "palabra",
+      "sha256": "f986e35ed464a2c1a3124598e7ee773de7e9921abc56ec9642f16c687961126b"
+    },
+    {
+      "fecha": "2027-11-20",
+      "origen": "voc_rd0zzu",
+      "tipo": "palabra",
+      "sha256": "aee8b6ef9daa094089d3af4d192749d482b6004eaee926f83fd3139d520e2ed0"
+    },
+    {
+      "fecha": "2027-11-21",
+      "origen": "voc_r7u44g",
+      "tipo": "palabra",
+      "sha256": "b14f11379c79e49a0a851cd2a1f6480f9691f27eded11a89733b697e30830200"
+    },
+    {
+      "fecha": "2027-11-22",
+      "origen": "voc_1o5br4w",
+      "tipo": "palabra",
+      "sha256": "d5c2ca7a925ac1600005cfbdfd5a1c06c70b958a65bbf5d1635016ac1329ecb4"
+    },
+    {
+      "fecha": "2027-11-23",
+      "origen": "voc_bjy8ai",
+      "tipo": "palabra",
+      "sha256": "5693d60a01e0861cb9983419681d1f78ee69f2e520c73675c7f8fa33c7e0ec21"
+    },
+    {
+      "fecha": "2027-11-24",
+      "origen": "voc_l3sslu",
+      "tipo": "palabra",
+      "sha256": "52fa6e8cd2552437e42db3cd1ebd1588bdf3903a0670d0a9768b46b9333b5412"
+    },
+    {
+      "fecha": "2027-11-25",
+      "origen": "voc_1n2uyqp",
+      "tipo": "palabra",
+      "sha256": "6eb8af34cfc9ba5ef586bb1c642f22b6b9f959f80e05828735b4636c305196db"
+    },
+    {
+      "fecha": "2027-11-26",
+      "origen": "voc_1aug1b9",
+      "tipo": "palabra",
+      "sha256": "81597fa964f676bb9dc1a95bd5a60486482e3f14f933927debb9753a7313037c"
+    },
+    {
+      "fecha": "2027-11-27",
+      "origen": "voc_100xzog",
+      "tipo": "tradicion",
+      "sha256": "3b607893623fe4e625f8fe792f1905d866563fd864bff613d2a35c8c9a8e3337"
+    },
+    {
+      "fecha": "2027-11-28",
+      "origen": "voc_757g4g",
+      "tipo": "palabra",
+      "sha256": "53daf2cfd57b3de6f09f20464408347468ba8389438465313896833187c98c76"
+    }
+  ]
+}

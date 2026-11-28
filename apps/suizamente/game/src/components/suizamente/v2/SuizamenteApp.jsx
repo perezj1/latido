@@ -116,7 +116,15 @@ export default function SuizamenteApp(){
     return()=>{alive=false;clearInterval(timer);window.removeEventListener('focus',refresh)}
   },[entered,ready,player?.jugador_id,playing])
   useEffect(()=>{if(entered&&ready&&player?.ajustes?.onboarding)return warmNavigationCode()},[entered,ready,player?.jugador_id,player?.ajustes?.onboarding])
-  useEffect(()=>{if(entered&&ready&&player?.ajustes?.onboarding)return warmNavigationData(player.jugador_id,window.location.pathname)},[entered,ready,player?.jugador_id,player?.ajustes?.onboarding])
+  useEffect(()=>{
+    if(!entered||!ready||!player?.ajustes?.onboarding)return
+    let cancelled=false,dispose
+    // Prepared invitations are writes. Finish them before warming reads so their
+    // normal cache invalidation cannot discard the just-loaded shop and album.
+    const prepared=user&&/^\/suizamente\/?(?:$|nueva$|amigos$)/.test(window.location.pathname)?warmInvitations(user.id,config.partida.invitacionDias):Promise.resolve()
+    prepared.then(()=>{if(!cancelled)dispose=warmNavigationData(player.jugador_id,window.location.pathname)})
+    return()=>{cancelled=true;dispose?.()}
+  },[entered,ready,player?.jugador_id,player?.ajustes?.onboarding])
   useEffect(()=>{
     if(!entered||!ready||!user||!config||!player?.ajustes?.onboarding||!/^\/suizamente\/?(?:$|nueva$|amigos$)/.test(location.pathname))return
     const warm=()=>{if(!document.hidden)warmInvitations(user.id,config.partida.invitacionDias)}

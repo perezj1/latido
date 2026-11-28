@@ -15,9 +15,8 @@ export function NewGame({invitation}){
  const [query,setQuery]=useState(''),[players,setPlayers]=useState([]),[busy,setBusy]=useState(false),[error,setError]=useState(''),[invite,setInvite]=useState(()=>{const ready=peekInvitation(user?.id);return ready?location.origin+ready.enlace:''}),[searching,setSearching]=useState(false)
  const inviteRequest=useRef(null),usedInvitation=useRef(null)
  const [inviteLoading,setInviteLoading]=useState(!!user&&!invitation&&!peekInvitation(user?.id))
- const {data:lobby,error:lobbyError,reload:reloadLobby}=useData('emparejamiento',{refreshMs:15000,enabled:!invitation})
- const {data:matchData,error:matchesError,reload:reloadMatches}=useData('partidas',{refreshMs:15000,enabled:!invitation})
- const {data:friendData,error:friendsError,reload:reloadFriends}=useData('amigos',{refreshMs:15000,enabled:!!user&&!invitation,reuseCached:true})
+ const {data:pageData,error:lobbyError,reload:reloadLobby}=useData('nueva',{refreshMs:15000,enabled:!invitation,reuseCached:true})
+ const lobby=pageData?.emparejamiento,matchData=pageData,friendData=pageData?.amigos,matchesError=lobbyError,friendsError=lobbyError,reloadMatches=reloadLobby,reloadFriends=reloadLobby
  const friends=[...(friendData?.lista||[])].sort((a,b)=>Number(b.online)-Number(a.online)),online=friends.filter(p=>p.online).length
  const term=query.trim().toLocaleLowerCase('es'),local=friends.filter(p=>p.apodo.toLocaleLowerCase('es').includes(term.replace(/^@/,'')))
  const results=term?[...new Map([...local,...players].map(p=>[p.id,friends.find(f=>f.id===p.id)||p])).values()].sort((a,b)=>Number(!!b.online)-Number(!!a.online)):friends.slice(0,3)
@@ -67,7 +66,7 @@ export function NewGame({invitation}){
    </section>
    <section aria-labelledby="sv-np-azar" className="sv-np-section">
     <div className="sv-np-heading"><Icono nombre="dado" size={26}/><h2 id="sv-np-azar">Rival al azar</h2></div>
-    <div className="sv-np-random"><div><b>Alguien de Latido de tu nivel</b><p>Que esté conectado ahora. Empezáis al momento.</p></div><button type="button" className="sv-start-random" disabled={busy||!lobby?.disponible} onClick={()=>start('azar')} aria-describedby={!lobby?.disponible?'sv-random-availability':undefined}><Icono nombre="dado" size={30}/>Buscar rival</button>{!lobby?.disponible&&<p id="sv-random-availability" role="status">{lobby?'Ahora no hay nadie libre. Prueba en un rato.':lobbyError||'Comprobando quién está disponible…'}</p>}{lobbyError&&<button type="button" className="sv-np-retry" onClick={reloadLobby}>Reintentar</button>}</div>
+    <div className="sv-np-random"><div><b>Compite con alguien al azar</b><p>Que esté conectado ahora o tenga menos partidas empezadas en espera.</p></div><button type="button" className="sv-start-random" disabled={busy||!lobby?.disponible} onClick={()=>start('azar')} aria-describedby={!lobby?.disponible?'sv-random-availability':undefined}><Icono nombre="dado" size={30}/>Buscar rival</button>{!lobby?.disponible&&<p id="sv-random-availability" role="status">{lobby?'Ahora no hay nadie libre. Prueba en un rato.':lobbyError||'Comprobando quién está disponible…'}</p>}{lobbyError&&<button type="button" className="sv-np-retry" onClick={reloadLobby}>Reintentar</button>}</div>
    </section>
   </div>}
   {problem&&<div className="sv-np-error"><p role="alert" className="sv-error">{problem}</p>{(matchesError||friendsError)&&<button className="sv-text-button" onClick={()=>{reloadMatches();reloadFriends()}}>Reintentar</button>}</div>}{busy&&<p className="sv-sr-only" role="status">Preparando la partida…</p>}

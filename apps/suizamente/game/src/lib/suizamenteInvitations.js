@@ -30,7 +30,7 @@ export function discardInvitation(owner,kind='game',enlace){
  if(!enlace||entry?.data?.enlace===enlace)drafts.delete(key)
 }
 export function warmInvitations(owner,days){
- for(const kind of ['game','friend'])prepareInvitation(owner,kind,days).catch(()=>{})
+ return Promise.allSettled(['game','friend'].map(kind=>prepareInvitation(owner,kind,days)))
 }
 
 export async function copyInvitationText(text){

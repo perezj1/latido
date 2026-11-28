@@ -1,5 +1,10 @@
 # Inicio, misterio y decoración por cantón · 28 de noviembre de 2026
 
+Actualización posterior: el calendario anual, la devolución de decoraciones al
+nivel 0, el editor exclusivamente por cantón y la optimización global del lector
+de mapa están documentados en `CARGA-CALENDARIO-IMPLEMENTACION.md`. Esa entrega
+sustituye la vista general del decorador y amplía las fechas descritas aquí.
+
 «Juega ahora» está justo debajo del botón grande de Inicio. Sus accesos se
 dibujan con la configuración pública, sin esperar al resumen de la cuenta. Los
 récords, retos, contadores y recomendaciones los sustituye después la respuesta

@@ -7,13 +7,13 @@ export function loadScreen(group){
  if(!modules.has(group))modules.set(group,loaders[group]().catch(error=>{modules.delete(group);throw error}))
  return modules.get(group)
 }
-const destinations={album:['Rewards','album'],tienda:['Economy','tienda'],amigos:['Community','amigos'],perfil:['Economy','perfil'],mapa:['MapPage3D','mapa'],nueva:[null,'emparejamiento']}
+const destinations={album:['Rewards','album'],tienda:['Economy','tienda'],amigos:['Community','amigos'],perfil:['Economy','perfil'],mapa:['MapPage3D','mapa'],nueva:[null,'nueva']}
 export function warmDestination(path,{data=true}={}){
  if(typeof path!=='string')return
  const name=path.replace(/^\/suizamente\/?/,'').split(/[/?#]/)[0],target=destinations[name]
  if(!target||document.hidden)return
  if(target[0])loadScreen(target[0]).catch(()=>{})
- if(data){szApi(target[1]).catch(()=>{});if(name==='nueva')szApi('partidas').catch(()=>{})}
+ if(data)szApi(target[1]).catch(()=>{})
 }
 export function warmNavigationCode(){
  if(navigator.connection?.saveData||/^(slow-)?2g$/.test(navigator.connection?.effectiveType||''))return()=>{}
@@ -31,7 +31,7 @@ export function warmNavigationCode(){
 export function warmNavigationData(owner,pathname){
  if(!owner||navigator.connection?.saveData||/^(slow-)?2g$/.test(navigator.connection?.effectiveType||''))return()=>{}
  const current=pathname.replace(/^\/suizamente\/?/,'').split(/[/?#]/)[0],skip=destinations[current]?.[1]
- const queue=['album','tienda','amigos','emparejamiento','mapa'].filter(path=>path!==skip&&!peekSzData(path,owner))
+ const queue=['album','tienda','nueva'].filter(path=>path!==skip&&!peekSzData(path,owner))
  let cancelled=false,idle,timer,running=0
  const work=()=>{
   if(cancelled||document.hidden)return

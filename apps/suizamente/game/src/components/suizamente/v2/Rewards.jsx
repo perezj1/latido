@@ -44,7 +44,7 @@ function AlbumCard({card,onClick,pack=false,justRevealed=false}){
   </button>
 }
 export function Album(){
-  const {player}=useSv(),{data,error}=useData('album'),[index,setIndex]=useState(0),[selected,setSelected]=useState(null),pack=useOpenPack('/suizamente/album',data)
+  const {player}=useSv(),{data,error}=useData('album',{reuseCached:true}),[index,setIndex]=useState(0),[selected,setSelected]=useState(null),pack=useOpenPack('/suizamente/album',data)
   const monthlyIndex=data?.colecciones.findIndex(c=>c.mes===data.mes)??-1
   const col=data?.colecciones[index],sobres=player.inventario?.sobres||0
   return <section className="sv-screen sv-album"><header className="sv-shop-header"><h1><Icono nombre="sobre"/> Álbum</h1><Wallet/><MusicButton/></header>

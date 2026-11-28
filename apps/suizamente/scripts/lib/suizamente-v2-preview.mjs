@@ -3,7 +3,7 @@ import {createServer} from 'vite'
 import {realpathSync} from 'node:fs'
 import react from '@vitejs/plugin-react'
 import {createSuizamenteHandler} from '../../server/suizamente/http.mjs'
-import {database,call,profile,A,B,C} from './suizamente-v2-test-db.mjs'
+import {database,call,lecturaCall,profile,A,B,C} from './suizamente-v2-test-db.mjs'
 import {mejorasDatabase,mejoraCall} from './mejoras-test-db.mjs'
 import {negociosDatabase,negocioCall,cobroCall} from './negocios-test-db.mjs'
 import {createBusinessPayments} from '../../server/suizamente/negocios-pagos.mjs'
@@ -34,7 +34,7 @@ export async function startSuizamentePreview(port=5265,{demo=false,host='127.0.0
   process.env.SUPABASE_ANON_KEY='test-anon'
   const sqlFetch=async(_url,options)=>{
     const b=JSON.parse(options.body),actor=actorFrom(options.headers.Authorization)
-    try{return Response.json(await(_url.endsWith('/suizamente_negocios_cobros')?cobroCall(db,actor,b.p_action,b.p_args):_url.endsWith('/suizamente_negocios')?negocioCall(db,actor,b.p_action,b.p_args):_url.endsWith('/suizamente_mejoras')?mejoraCall(db,actor,b.p_action,b.p_args):call(db,actor,b.p_action,b.p_args,b.p_guest_id,b.p_guest_token)))}
+    try{return Response.json(await(_url.endsWith('/suizamente_lectura')?lecturaCall(db,actor,b.p_action,b.p_args):_url.endsWith('/suizamente_negocios_cobros')?cobroCall(db,actor,b.p_action,b.p_args):_url.endsWith('/suizamente_negocios')?negocioCall(db,actor,b.p_action,b.p_args):_url.endsWith('/suizamente_mejoras')?mejoraCall(db,actor,b.p_action,b.p_args):call(db,actor,b.p_action,b.p_args,b.p_guest_id,b.p_guest_token)))}
     catch(e){if(!e.message.startsWith('SZV2:'))console.error('QA SQL:',e.message,e.where||'');return Response.json({message:e.message,code:e.code},{status:400})}
   }
   const previewMejoras=structuredClone(getSuizamenteConfig().juego.mejoras)

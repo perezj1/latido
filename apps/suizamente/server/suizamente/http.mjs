@@ -17,7 +17,7 @@ const methods = {
   'GET tienda':'tienda', 'POST tienda/comprar':'comprar', 'POST tienda/regalo':'regalo',
   'GET mapa':'mapa', 'POST mapa/construir':'construir',
   'GET album':'album', 'POST sobres':'abrir_sobre',
-  'GET config':'config','GET capacidades':'capacidades','GET portada':'portada',
+  'GET nueva':'nueva','GET config':'config','GET capacidades':'capacidades','GET portada':'portada',
   'GET dia':'dia','POST dia/voto':'votar_dia','GET amigos':'amigos','GET amigos/buscar':'buscar','POST amigos':'amistad',
   'POST amigos/invitaciones':'invitar_amigo','POST amigos/invitaciones/aceptar':'aceptar_amigo',
   'GET ranking':'ranking','GET libreta':'libreta','PUT libreta':'guardar_dato',
@@ -121,10 +121,11 @@ export function createSuizamenteHandler({ fetchImpl = fetch,mejorasConfig=()=>ge
       const auth = req.headers.authorization
       if (auth && !/^Bearer [A-Za-z0-9._-]+$/.test(auth)) return send(401, { error:'Sesión de Latido no válida' })
       const deadline=Date.now()+15000
+      const focusedRead=req.method==='GET'&&['tienda','album','amigos','nueva'].includes(action)
       const rpc=async(operation,parameters)=>{
         const rpcBody=JSON.stringify({p_action:business?.action||improvement?.action||operation,p_args:parameters,p_guest_id:session.id,p_guest_token:session.token})
         for(let attempt=0;;attempt++){
-          const response=await fetchImpl(endpoint + '/rest/v1/rpc/'+(business?'suizamente_negocios':improvement?'suizamente_mejoras':'suizamente_v2'), {
+          const response=await fetchImpl(endpoint + '/rest/v1/rpc/'+(business?'suizamente_negocios':improvement?'suizamente_mejoras':focusedRead?'suizamente_lectura':'suizamente_v2'), {
             method:'POST',
             headers:{ apikey:anon, Authorization:operation==='config'?'Bearer '+anon:auth || 'Bearer ' + anon, 'Content-Type':'application/json' },
             body:rpcBody,

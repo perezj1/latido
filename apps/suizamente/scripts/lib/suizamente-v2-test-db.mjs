@@ -52,6 +52,7 @@ export async function database({economia=false,tienda=false,mapa=false,album=fal
   if(concurrencia)await db.exec(await readFile('supabase/suizamente_v24_concurrencia.sql','utf8'))
   if(invitaciones)await db.exec(await readFile('supabase/suizamente_v25_invitaciones_amigos.sql','utf8'))
   if(emparejamiento)await db.exec(await readFile('supabase/suizamente_v26_emparejamiento_asincrono.sql','utf8'))
+  if(emparejamiento)await db.exec(await readFile('supabase/suizamente_v41_lecturas_rapidas.sql','utf8'))
   return db
   }catch(error){await db.close();throw error}
 }
@@ -61,6 +62,12 @@ export async function call(db,actor,action,args={},guest=G,token=TOKEN) {
     await tx.exec('SET LOCAL ROLE '+(actor?'authenticated':'anon'))
     return (await tx.query('SELECT public.suizamente_v2($1,$2::jsonb,$3::uuid,$4) result',[action,JSON.stringify(args),guest,token])).rows[0].result
   })
+}
+export async function lecturaCall(db,actor,action,args={}){
+ return db.transaction(async tx=>{
+  await tx.query("SELECT set_config('test.uid',$1,true)",[actor||'']);await tx.exec('SET LOCAL ROLE '+(actor?'authenticated':'anon'))
+  return(await tx.query('SELECT public.suizamente_lectura($1,$2::jsonb) result',[action,JSON.stringify(args)])).rows[0].result
+ })
 }
 export function profile(name='Alex') {
   return {apodo:name,color:'menta',pais:'ES',canton:'ZH',anos_suiza:'1a3',ajustes:{}}
