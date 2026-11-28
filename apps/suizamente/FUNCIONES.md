@@ -658,3 +658,7 @@ Archivos de emparejamiento: `v2/Lobby.jsx`, la migración v26, `scripts/lib/suiz
 ## Mapa y negocios (37–39)
 
 Mapa sin barra por defecto, controles separados para acercar y construir, huecos compartidos generados con Huecos3D y módulo de negocios revisados por Latido, con factura manual. Negocios y cobro automático quedan apagados. Latido ha aplazado Stripe: el pago automático muestra «Próximamente disponible». Se mantienen las funciones anteriores, los bancos y la economía. Migraciones aditivas v34, v35 y v36 aplicadas el 27 de noviembre de 2026. Detalles, archivos, verificación y operación en [NEGOCIOS-IMPLEMENTACION.md](NEGOCIOS-IMPLEMENTACION.md).
+
+## Inicio y decoración por cantón (28 de noviembre de 2026)
+
+Las mejoras y negocios ya están activados; el cobro automático sigue apagado. «Juega ahora» se dibuja al cargar la configuración, mientras llegan los datos personales. El resumen reutiliza los lectores existentes sin cargar tres veces más el estado completo. La pastilla «Decorar» del Mapa transmite el cantón elegido: el decorador muestra solo su maqueta, huecos y contador. Su flecha vuelve a la región. Se conserva la colocación y validación del servidor. El misterio del 28 de noviembre está publicado desde el calendario editorial, con las pistas cerradas y la solución privadas. Implementación, migraciones v39/v40, pruebas y operación: [INICIO-RAPIDO-IMPLEMENTACION.md](INICIO-RAPIDO-IMPLEMENTACION.md).

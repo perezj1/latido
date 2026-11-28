@@ -20,13 +20,14 @@ function visibleSlots(points,width,height){
  }
  return placed
 }
-export const WorldMap=forwardRef(function WorldMap({state,selected,onSelect=()=>{},animated,onMetadata,onAnimationDone,preview=false,demo=false,mini=false,home=false,decorations,slots,onSlot,onDecoration,regionView=false,businesses,onBusiness,slotLabel,slotText,selectedSlot},ref){
+export const WorldMap=forwardRef(function WorldMap({state,selected,onSelect=()=>{},animated,onMetadata,onAnimationDone,preview=false,demo=false,mini=false,home=false,decorations,slots,onSlot,onDecoration,regionView=false,businesses,onBusiness,slotLabel,slotText,selectedSlot,cantons},ref){
  const {reduced:preference,config}=useSv(),reduced=preference||mini||home||(preview&&!demo),box=useRef(null),world=useRef(null),visible=useRef(true),latest=useRef({state,selected,onSelect,reduced})
  const interactive=!preview&&!mini&&!home
  const [ready,setReady]=useState(false),[slotPositions,setSlotPositions]=useState([])
  const [businessPositions,setBusinessPositions]=useState([])
  const [failed,setFailed]=useState(false),[inView,setInView]=useState(!mini&&!preview)
  const lastAnimation=useRef(null)
+ const cantonScope=cantons?.join(',')||''
  latest.current={state,selected,onSelect,reduced,animated,interactive,decorations,onDecoration,businesses}
  useImperativeHandle(ref,()=>({async capture(){if(world.current){world.current.saltar();return {foto:world.current.foto('image/jpeg',.9,3),ajuste:'cubrir'}}return flatMapPhoto(latest.current.state,config,latest.current.selected)}}),[config])
  function animationFor(mark,lessMotion){if(mark===lastAnimation.current)return;lastAnimation.current=mark;return lessMotion?undefined:mark?.canton}
@@ -37,11 +38,12 @@ export const WorldMap=forwardRef(function WorldMap({state,selected,onSelect=()=>
  },[])
  useEffect(()=>{
   if(!inView)return
-  let alive=true,instance;setReady(false)
-  const fail=()=>{const old=instance;instance=null;world.current=null;try{old?.destruir()}finally{old?.elemento.remove();if(alive)setFailed(true)}}
+  let alive=true,instance;setReady(false);setFailed(false)
+  const fail=()=>{if(!alive)return;const old=instance;instance=null;if(world.current===old)world.current=null;try{old?.destruir()}finally{old?.elemento.remove();if(alive)setFailed(true)}}
   Promise.all([loadMapAssets(),decorations?import('../../../lib/suizamenteDecoraciones').then(m=>m.loadDecorations()):null,businesses?import('../../../lib/suizamenteNegocios').then(m=>m.loadBusinesses()):null]).then(([[{Mapa3D},geometry],decorEngine,businessEngine])=>{
    if(!alive)return
-   const datos=mini||preview?{...geometry,cantones:{[selected]:geometry.cantones[selected]}}:geometry
+   const ids=mini||preview?[selected]:cantonScope?cantonScope.split(','):null
+   const datos=ids?{...geometry,cantones:Object.fromEntries(ids.filter(k=>geometry.cantones[k]).map(k=>[k,geometry.cantones[k]]))}:geometry
    instance=Mapa3D.crear({datos,decoraciones:decorEngine,negocios:businessEngine,alDecoracion:onDecoration?k=>latest.current.onDecoration?.(k):null,alFallo:fail,foto:preview,mini,mode:mini?'mini':home?'home':preview?'preview':'map',regiones:config.mapa.regiones.map(r=>({c:r.cantones.map(k=>k.id)})),alSeleccionar:k=>latest.current.onSelect(k),reduced:()=>latest.current.reduced,interactive:()=>latest.current.interactive,visible:()=>visible.current,dark:()=>document.documentElement.dataset.suizamenteTheme==='oscura'})
    instance.montar(box.current);instance.interaccion(latest.current.interactive);instance.estado({v:latest.current.state.vuelta,r:latest.current.state.region,niv:latest.current.state.niveles},animationFor(latest.current.animated,latest.current.reduced));instance.enfocar(latest.current.selected)
    if(latest.current.decorations)instance.decorar(latest.current.decorations)
@@ -53,7 +55,7 @@ export const WorldMap=forwardRef(function WorldMap({state,selected,onSelect=()=>
   const themeObserver=new MutationObserver(()=>{if(instance)instance.estado({v:latest.current.state.vuelta,r:latest.current.state.region,niv:latest.current.state.niveles})})
   themeObserver.observe(document.documentElement,{attributes:true,attributeFilter:['data-suizamente-theme']})
   return()=>{alive=false;themeObserver.disconnect();world.current=null;instance?.destruir();instance?.elemento.remove()}
- },[inView,reduced,!!decorations,!!businesses])
+ },[inView,reduced,!!decorations,!!businesses,cantonScope])
  useEffect(()=>{if(world.current)world.current.estado({v:state.vuelta,r:state.region,niv:state.niveles},animationFor(animated,reduced))},[state,animated,reduced])
  useEffect(()=>{if(decorations)world.current?.decorar(decorations)},[decorations,state,ready])
  useEffect(()=>{if(businesses)world.current?.negocios(businesses)},[businesses,state,ready])

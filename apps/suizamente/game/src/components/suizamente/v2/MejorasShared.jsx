@@ -9,6 +9,7 @@ import {copyInvitationText} from '../../../lib/suizamenteInvitations'
 import {notify} from '../../../lib/suizamenteNotices'
 import {SHARE_URL} from './shareData'
 import './mejoras.css'
+import {initialModes} from '../../../lib/suizamenteModes'
 
 export const mejoraActiva=(config,key)=>config?.mejoras?.[key]?.activo===true
 export function MejoraPage({title,children,right,back,className=''}){return <section className={'sv-screen sv-mj-page '+className}><Header title={title} back={back} right={right||<Wallet/>}/><div className="sv-mj-content">{children}</div></section>}
@@ -51,4 +52,4 @@ export function MejoraModeLink({mode,compact=false}){return <Link className={com
 export function MejoraModes({modes=[],title=true}){return modes.length?<section className="sv-mj-now" aria-label="Juega ahora">{title&&<div className="sv-mj-section-title"><h2>Juega ahora</h2><span>Sin esperar a nadie</span></div>}<div className="sv-mj-modes">{modes.map(m=><MejoraModeLink key={m.id} mode={m}/>)}</div></section>:null}
 export function MejoraIdeas({ideas=[]}){return ideas.length?<section className="sv-mj-ideas" aria-label="Para ti"><div className="sv-mj-section-title"><h2>Para ti</h2><span>Lo que tienes más cerca</span></div><ul>{ideas.map(i=><li key={i.id}><Icono nombre={i.icono} size={30}/><span><b>{i.titulo}</b><small>{i.linea}</small></span><Link to={i.to}>{i.boton}</Link></li>)}</ul></section>:null}
 export function useMejoraSummary(enabled){return useData('mejoras/resumen',{enabled,refreshMs:30000,reuseCached:true})}
-export function MejoraMenuRows(){const {config}=useSv(),enabled=['minuto','espejo','misterio'].some(k=>mejoraActiva(config,k)),{data}=useMejoraSummary(enabled);return data?.modos?.map(m=><div role="listitem" key={m.id}><MejoraModeLink compact mode={m}/></div>)||null}
+export function MejoraMenuRows(){const {config}=useSv(),enabled=['minuto','espejo','misterio'].some(k=>mejoraActiva(config,k)),{data}=useMejoraSummary(enabled);return (data?.modos||initialModes(config)).map(m=><div role="listitem" key={m.id}><MejoraModeLink compact mode={m}/></div>)}

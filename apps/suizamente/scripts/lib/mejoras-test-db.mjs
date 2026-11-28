@@ -3,13 +3,14 @@ import {database} from './suizamente-v2-test-db.mjs'
 import assert from 'node:assert/strict'
 import {resolverHuecos} from '../../server/suizamente/huecos.mjs'
 export const migrations=['27_mejoras_base','28_minuto','29_espejo','30_misterio','31_decorar','32_un_toque']
-export async function mejorasDatabase(flags=false){
+export async function mejorasDatabase(flags=false,{inicioRapido=true}={}){
  const db=await database({emparejamiento:true})
  try{
   const fingerprint="SELECT p.oid::regprocedure::text name,pg_get_functiondef(p.oid) definition,p.proacl::text acl FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname IN('public','suizamente_private') AND p.proname NOT LIKE 'mej_%' AND p.proname NOT LIKE 'suizamente_mejoras%' ORDER BY name"
   const before=(await db.query(fingerprint)).rows
   for(const name of migrations)await db.exec(await readFile('supabase/suizamente_v'+name+'.sql','utf8'))
   const seed=await readFile('supabase/suizamente_v33_mejoras_datos.sql','utf8');await db.exec(seed);await db.exec(seed)
+  if(inicioRapido)await db.exec(await readFile('supabase/suizamente_v39_inicio_rapido.sql','utf8'))
   const seeded=(await db.query('SELECT mejoras FROM suizamente_private.mejoras_configuracion')).rows[0].mejoras
   for(const key of ['minuto','espejo','misterio','decorar','unToque'])assert.equal(seeded[key].activo,false,'Release seed defaults off even when applied twice')
   assert.deepEqual((await db.query(fingerprint)).rows,before,'Initial additive migration preserves every legacy function and its ACL')

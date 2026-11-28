@@ -1,5 +1,5 @@
 import { randomBytes, randomUUID } from 'node:crypto'
-import { publicSuizamenteConfig,getSuizamenteConfig } from './config.mjs'
+import { publicSuizamenteConfig,getSuizamenteConfig,publicImprovementFlags } from './config.mjs'
 import {mejoraRoute} from './mejoras-routes.mjs'
 import {negocioRoute} from './negocios-routes.mjs'
 import {createBusinessPayments,isBusinessPaymentRoute} from './negocios-pagos.mjs'
@@ -25,7 +25,7 @@ const methods = {
   'POST denuncias':'denunciar','POST reportes':'reportar',
   'GET misiones':'misiones','POST misiones/cambiar':'cambiar_mision','GET liga':'liga','GET mapa/vuelta':'vuelta',
 }
-export function createSuizamenteHandler({ fetchImpl = fetch,mejorasConfig=()=>getSuizamenteConfig().juego.mejoras,negociosConfig=()=>getSuizamenteConfig().juego.negocios,barraCanton=()=>getSuizamenteConfig().juego.mapa.barraCanton,payments=createBusinessPayments({fetchImpl}) } = {}) {
+export function createSuizamenteHandler({ fetchImpl = fetch,mejorasConfig=()=>getSuizamenteConfig().juego.mejoras,negociosConfig=()=>getSuizamenteConfig().juego.negocios,barraCanton=()=>getSuizamenteConfig().juego.mapa.barraCanton,payments=createBusinessPayments({fetchImpl}),mysteryToday=()=>undefined } = {}) {
   return async function handler(req, res) {
     const send = (status, data) => {
       res.statusCode = status
@@ -126,7 +126,7 @@ export function createSuizamenteHandler({ fetchImpl = fetch,mejorasConfig=()=>ge
         for(let attempt=0;;attempt++){
           const response=await fetchImpl(endpoint + '/rest/v1/rpc/'+(business?'suizamente_negocios':improvement?'suizamente_mejoras':'suizamente_v2'), {
             method:'POST',
-            headers:{ apikey:anon, Authorization:auth || 'Bearer ' + anon, 'Content-Type':'application/json' },
+            headers:{ apikey:anon, Authorization:operation==='config'?'Bearer '+anon:auth || 'Bearer ' + anon, 'Content-Type':'application/json' },
             body:rpcBody,
             signal:AbortSignal.timeout(Math.max(1,deadline-Date.now())),
           }),data=await response.json()
@@ -160,7 +160,7 @@ export function createSuizamenteHandler({ fetchImpl = fetch,mejorasConfig=()=>ge
         return send(503, { error:'No se pudo completar la acción. Inténtalo otra vez.' })
       }
       if (data?.conflicto) return send(409, { error:'El turno ha caducado', partida:data.partida })
-      if(action==='config')data={...data,mejoras:mejorasConfig(),mapa:{...data.mapa,barraCanton:barraCanton()},negocios:negociosConfig()}
+      if(action==='config')data={...data,mejoras:publicImprovementFlags(mejorasConfig(),mysteryToday()),mapa:{...data.mapa,barraCanton:barraCanton()},negocios:negociosConfig()}
       return send(200, data)
     } catch (error) {
       if(error.status)return send(error.status,{error:error.message})

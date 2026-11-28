@@ -73,6 +73,7 @@
     "test:negocios:huecos": "node scripts/generar-huecos.mjs",
     "capturas:negocios": "node scripts/capturar-negocios-referencia.mjs && node scripts/comparar-negocios-pantallas.mjs",
     "test:negocios:apagados": "node scripts/test-negocios-apagados.mjs && node scripts/comparar-negocios-apagados.mjs",
+    "test:inicio:rapido": "node scripts/test-inicio-rapido.mjs && node scripts/test-inicio-canton-browser.mjs",
     "test:negocios:pagos": "node scripts/test-negocios-pagos.mjs && node scripts/test-negocios-pagos-browser.mjs"
   },
   "dependencies": {

@@ -15,7 +15,7 @@ export function testToken(id){
   const b64=value=>Buffer.from(JSON.stringify(value)).toString('base64url')
   return b64({alg:'HS256',typ:'JWT'})+'.'+b64({sub:id,aud:'authenticated',role:'authenticated',exp:Math.floor(Date.now()/1000)+86400})+'.test-signature'
 }
-export async function startSuizamentePreview(port=5265,{demo=false,host='127.0.0.1',hmr=demo,pushPrompt=demo,mejoras=false,negocios=false,barraCanton=false,cobroAutomatico=false}={}){
+export async function startSuizamentePreview(port=5265,{demo=false,host='127.0.0.1',hmr=demo,pushPrompt=demo,mejoras=false,negocios=false,barraCanton=false,cobroAutomatico=false,misterioHoy=false}={}){
   const extras=negocios?await negociosDatabase(negocios===true,mejoras,{payments:cobroAutomatico}):mejoras?await mejorasDatabase(mejoras):null,db=extras?.db||await database({emparejamiento:true})
   for(const [id,name] of [[A,'Alex'],[B,'Lu'],[C,'Caro']]){
     await call(db,id,'guardar_jugador',profile(name))
@@ -39,7 +39,7 @@ export async function startSuizamentePreview(port=5265,{demo=false,host='127.0.0
   }
   const previewMejoras=structuredClone(getSuizamenteConfig().juego.mejoras)
   for(const key of ['minuto','espejo','misterio','decorar','unToque'])previewMejoras[key].activo=mejoras===true||!!mejoras?.[key]
-  const handler=createSuizamenteHandler({fetchImpl:sqlFetch,payments:createBusinessPayments({fetchImpl:sqlFetch}),barraCanton:()=>barraCanton,negociosConfig:()=>({...getSuizamenteConfig().juego.negocios,activo:negocios===true,cobroAutomatico}),mejorasConfig:()=>extras?.config||previewMejoras})
+  const handler=createSuizamenteHandler({mysteryToday:()=>misterioHoy,fetchImpl:sqlFetch,payments:createBusinessPayments({fetchImpl:sqlFetch}),barraCanton:()=>barraCanton,negociosConfig:()=>({...getSuizamenteConfig().juego.negocios,activo:negocios===true,cobroAutomatico}),mejorasConfig:()=>extras?.config||previewMejoras})
   const server=await createServer({
     css:{postcss:{plugins:[]}},configFile:false,envDir:'output/no-env-loaded',plugins:[react(),{
       name:'suizamente-isolated-sql-api',

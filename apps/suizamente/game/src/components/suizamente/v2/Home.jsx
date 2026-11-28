@@ -16,6 +16,7 @@ import {FriendInviteSheet} from './Sharing'
 import {MatchHistory} from './MatchHistory'
 import './home.css'
 import {mejoraActiva,useMejoraSummary,MejoraModes,MejoraIdeas} from './MejorasShared'
+import {initialModes} from '../../../lib/suizamenteModes'
 const icon=name=><Icono nombre={name}/>
 export function Home(){const {search}=useLocation();return new URLSearchParams(search).get('terminadas')==='1'?<MatchHistory/>:<HomeScene/>}
 function HomeScene(){
@@ -59,7 +60,7 @@ function HomeScene(){
    <Link className="sv-home-map-target" to="/suizamente/mapa" aria-label={region.nombre+' en 3D: '+(done??'cargando')+' de '+total+' niveles. Abrir el mapa'}><HomeMapPhoto/></Link>
    <Link className={"sv-home-create"+(hero&&hero.id!=="nueva"?" sv-mj-best":"")} to={hero?.to||"/suizamente/nueva"} aria-label={hero?hero.titulo+(hero.linea?". "+hero.linea:""):undefined}><span className="sv-home-create-ring" aria-hidden="true"><i/></span><span className="sv-home-create-plus" aria-hidden="true">{hero&&hero.id!=="nueva"?"▶︎":"＋"}</span>{hero&&hero.id!=="nueva"?<span className="sv-mj-best-text"><b>{hero.titulo}</b><small>{hero.linea}</small></span>:"Nueva partida"}</Link>
   </section>
-  {oneTouch&&<MejoraModes modes={improvements?.modos}/>}
+  {oneTouch&&<MejoraModes modes={improvements?.modos||initialModes(config)}/>}
   <section className="sv-home-matches" aria-label="Tus partidas">
    <div className="sv-home-filters" role="tablist" aria-label="Tus partidas" onKeyDown={filterKeys}>
     {[['seguir','Seguir jugando',mine.length],['espera','En espera',theirs.length]].map(([key,label,count])=><button key={key} ref={el=>tabs.current[key]=el} type="button" role="tab" id={'sv-home-tab-'+key} aria-selected={filter===key} aria-controls={'sv-home-panel-'+key} tabIndex={filter===key?0:-1} aria-label={label+': '+count+' '+(count===1?'partida':'partidas')} onClick={()=>{selectFilter(key);tabs.current[key]?.focus({preventScroll:true})}}>{label}{count>0&&<span className={'sv-home-count '+key} aria-hidden="true">{count}</span>}</button>)}

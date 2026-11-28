@@ -1,4 +1,7 @@
-# Contenido pendiente de aprobación por Latido. No hay misterios publicados.
+# Calendario editorial de Misterio. El ejemplo comentado no se publica.
 # fecha | tipo | pregunta | imagen | pista 1 | pista 2 | pista 3 | *correcta | opción | opción | opción | dato
 # EJEMPLO COMENTADO DEL DISEÑO; sustituir FECHA y aprobar antes de publicarlo:
 # FECHA | monumento | ¿Qué monumento es? | - | Está en la ciudad de Lucerna. | [Pista 2 pendiente de Latido] | [Pista 3 pendiente de Latido] | *Monumento del León | Kapellbrücke | Jet d’Eau | Torre del Reloj | El Monumento del León de Lucerna recuerda a los guardias suizos muertos en 1792.
+# Propuesta completa presentada a Latido y continuada el 28 de noviembre de 2026.
+# Fuente: https://www.luzern.com/en/the-city/sights/top-sights/lion-monument
+2026-11-28 | monumento | ¿Qué monumento es? | - | Está en Lucerna. | Se inauguró en 1821. | Representa un león tallado en roca. | *Monumento del León | Kapellbrücke | Jet d’Eau | Torre del Reloj | Recuerda a los guardias suizos muertos en París en 1792.
