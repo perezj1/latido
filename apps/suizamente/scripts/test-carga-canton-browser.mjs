@@ -20,6 +20,22 @@ try{
  await go('/mapa');await expect(page.getByRole('heading',{name:'Suiza central',exact:true})).toBeVisible();await expect(page.getByRole('link',{name:/Decorar tu Suiza/})).toHaveCount(0)
  await page.getByRole('link',{name:'Lucerna: nivel 3 de 3. Verlo de cerca',exact:true}).click();await page.getByRole('link',{name:/Decorar tu Suiza/}).click();await expect(page.getByRole('heading',{name:'Decora Lucerna',exact:true})).toBeVisible();await expect(page.locator('.sv-mj-slot')).toHaveCount(8);await expect(page.locator('.sv-map-loading')).toHaveCount(0)
  assert.ok((await page.locator('.sv-mj-slot').evaluateAll(nodes=>nodes.map(n=>n.getAttribute('aria-label')))).every(label=>label.includes('LU-')))
+ const types=(await mejoraCall(db,A,'decorar/inicio')).tipos
+ for(const item of types){
+  const trigger=page.getByRole('button',{name:'Cómo conseguir '+item.nombre,exact:true});await trigger.tap()
+  const details=page.getByRole('dialog',{name:item.nombre,exact:true});await expect(details).toBeVisible();await expect(details.getByRole('heading',{name:'Cómo conseguirla',exact:true})).toBeVisible();await expect(details.getByText(item.condicion.texto,{exact:true})).toBeVisible()
+  if(item.tuya)await expect(details.getByText('Ya la has conseguido',{exact:true})).toBeVisible()
+  else if(item.condicion.contador!=='navidad'){await expect(details.getByRole('progressbar')).toHaveAttribute('value',String(item.avance));await expect(details.getByRole('progressbar')).toHaveAttribute('max',String(item.condicion.meta))}
+  if(item.id==='tren'){
+   for(const [width,height]of [[390,844],[375,667]]){await page.setViewportSize({width,height});const rect=await details.boundingBox();assert.ok(Math.abs(rect.y+rect.height-height)<2,'Description sheet opens at the bottom');assert.ok(rect.width<=width);await expect(details).toHaveCSS('animation-name','none');await page.screenshot({path:out+'/ComoConseguirTren-'+width+'.png'})}
+   await page.setViewportSize({width:390,height:844})
+  }
+  await details.getByRole('button',{name:'Cerrar',exact:true}).click();await expect(details).toHaveCount(0)
+ }
+ const inspect=page.getByRole('button',{name:'Cómo conseguir Tren regional',exact:true});await inspect.focus();await page.keyboard.press('Enter');await expect(page.getByRole('dialog',{name:'Tren regional',exact:true})).toBeVisible();await page.keyboard.press('Escape');await expect(inspect).toBeFocused()
+ await page.getByRole('button',{name:'Colocar Vacas con cencerro',exact:true}).click();await page.getByRole('button',{name:'Colocar una decoración en LU-t2',exact:true}).click();await page.getByRole('button',{name:'Mover o quitar Vacas con cencerro',exact:true}).click()
+ const manage=page.getByRole('dialog',{name:'Vacas con cencerro',exact:true});await expect(manage.getByText(types.find(t=>t.id==='vacas').condicion.texto,{exact:true})).toBeVisible();await expect(manage.getByRole('button',{name:'Mover',exact:true})).toBeVisible();await manage.getByRole('button',{name:'Quitar',exact:true}).click();await expect(manage).toHaveCount(0);await expect(page.locator('.sv-mj-slot')).toHaveCount(8)
+ await page.getByRole('heading',{name:'Decora Lucerna',exact:true}).scrollIntoViewIfNeeded()
  const scale=await page.evaluate(()=>visualViewport.scale)
  if(engine==='chromium'){
  const cdp=await context.newCDPSession(page),point=await page.getByRole('button',{name:'Colocar una decoración en LU-t1',exact:true}).boundingBox(),before=await page.locator('.sv-mj-slot-lines line').evaluateAll(ns=>ns.map(n=>n.getAttribute('x1')+':'+n.getAttribute('y1')))

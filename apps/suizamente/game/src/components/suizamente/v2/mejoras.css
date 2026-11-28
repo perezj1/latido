@@ -28,3 +28,9 @@ html[data-suizamente-theme=oscura] .sv-root :is(.sv-mj-record button,.sv-mj-idea
 
 /* The moment is portalled outside the game theme root. */
 .sv-mj-new-decoration>.sv-button{background:#4A76EF;color:#FFFFFF!important}
+.sv-root .sv-mj-decoration>.sv-mj-decoration-info{align-self:stretch;flex-direction:column;justify-content:flex-start;gap:6px;min-height:0;padding:0;border-radius:14px;background:transparent;color:inherit;font-size:11px;line-height:1.3}
+.sv-mj-decoration-info>img{width:100%;max-width:90px;height:72px;object-fit:contain}.sv-mj-decoration-info>b{min-height:29px;display:flex;align-items:center;justify-content:center}.sv-mj-decoration.locked .sv-mj-decoration-info>img{filter:grayscale(1);opacity:.45}
+.sv-mj-decoration-info:focus-visible{outline:3px solid var(--sv-blue);outline-offset:3px}
+.sv-mj-decoration-description{display:flex;flex-direction:column;gap:12px}.sv-mj-decoration-description>img{width:100%;height:130px;object-fit:contain;background:var(--sv-card);border-radius:20px}.sv-mj-decoration-description h3,.sv-mj-decoration-description p{margin:0}.sv-mj-decoration-description h3{font-size:16px}.sv-mj-decoration-description p,.sv-mj-decoration-progress{font-size:14px}.sv-mj-decoration-owned{display:flex;align-items:center;gap:6px;color:var(--sv-green);font-weight:700}.sv-mj-decoration-progress{display:flex;flex-direction:column;gap:8px}.sv-mj-decoration-progress progress{width:100%;height:12px;accent-color:var(--sv-blue)}
+.sv-mj-decoration-details{animation:sv-decoration-sheet-in .2s ease-out}@keyframes sv-decoration-sheet-in{from{transform:translateY(100%)}to{transform:translateY(0)}}
+html[data-suizamente-reduced=true] .sv-mj-decoration-details{animation:none}@media(prefers-reduced-motion:reduce){.sv-mj-decoration-details{animation:none}}

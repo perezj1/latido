@@ -672,3 +672,12 @@ un cantón construido y el zoom de esa superficie solo afecta a la maqueta.
 V43 publica 366 misterios hasta el 28-11-2027, adaptados del contenido existente,
 sin exponer el calendario ni pistas cerradas al navegador. Detalles, mediciones,
 archivos, SQL y pruebas en `CARGA-CALENDARIO-IMPLEMENTACION.md`.
+
+## Fichas de las decoraciones
+
+En Decorar, tocar la imagen o el nombre de cualquier artículo abre una ficha
+desde abajo con su condición real y su progreso, también si está bloqueado.
+Las decoraciones conseguidas indican que ya son tuyas. Los controles de colocar,
+mover y quitar se conservan; al gestionar una puesta también se explica cómo se
+consigue. La ficha reutiliza los datos cargados, se cierra con «Cerrar» o Escape,
+devuelve el foco y respeta «menos animaciones». No requiere migraciones.
